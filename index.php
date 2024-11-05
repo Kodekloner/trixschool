@@ -63,8 +63,8 @@
 	ini_set('file_uploads', 'On');
 
 
-	define('ENVIRONMENT', 'production');
-	// define('ENVIRONMENT', 'development');
+	// define('ENVIRONMENT', 'production');
+	define('ENVIRONMENT', 'development');
 
 
 	if( ! ini_get('date.timezone') )
