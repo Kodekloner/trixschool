@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<script src="../assets/js/jquery-3.5.1.min.js"></script>
+
+	<!--DataTable Style-->
+	<link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
+	<link rel="stylesheet" href="../assets/css/datatables.min.css">
+    <!-- Bootstrap CSS -->
+	<link rel="stylesheet" href="../assets/bootstrap/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+	 <!--My New Stylesheet CSS -->
+	 <link rel="stylesheet" href="../assets/css/myStyleSheet.css">
+    <title>British Result Sheet </title>
+  </head>
+  <body style="background: rgb(236, 234, 234);">
+
+	
+
+	<div class="container-fluid">
+
+        <div class="row" style="margin: 15px;">
+        
+            <div class="col-sm-12 cardBoxSty">
+				
+
+				<form style="margin: 0px;">
+                    <div class="form-row">
+                        <div class="form-group col-sm">
+                            <select class="form-control">
+                                <option>Session</option>
+                                <option>2020/2021</option>
+                                <option>2021/2022</option>
+                                <option>2022/2023</option>
+                            </select>
+							<!--They would need to select Session in-order to pick a term-->
+						</div>
+						
+						<div class="form-group col-sm">
+                            <select class="form-control">
+                                <option>Term</option>
+                                <option>1st Term</option>
+                                <option>2nd Term</option>
+                                <option>3rd Term</option>
+                            </select>
+							<!--They would need to select Term in-order to display the Exam Group Created for that term-->
+                        </div>
+                        
+                        <div class="form-group col-sm">
+                            <select class="form-control">
+                                <option>Exam Group</option>
+                                <option>Creche Examination</option>
+                                <option>Nursery Examination</option>
+                                <option>Primary Examination</option>
+                                <option>Secondary Examination</option>
+                            </select>
+							<!--They would need to select Exam Group inorder to display the Classes Assigned to the Group-->
+						</div>
+
+						<div class="form-group col-sm">
+                            <select class="form-control">
+                                <option>Class</option>
+                                <option>Nursery 1</option>
+								<option>Nursery 2</option>
+								<option>Primary 1</option>
+                            </select>
+							<!--They would need to select class and section in-order to display the Exam Names assigned to a particular class-->
+						</div>
+
+						<div class="form-group col-sm">
+                            <select class="form-control">
+                                <option>Section</option>
+                                <option>Blue</option>
+								<option>Red</option>
+                            </select>
+						</div>
+						
+																		
+                        <div class="form-group col-sm">
+							<button type="submit" class="btn btn-primary" style="border-radius: 20px;">
+								<i class="fa fa-search" aria-hidden="true"></i>
+								<span style="margin-left: 5px;">Search</span>
+							</button>
+                        </div>
+                    </div>
+                </form>
+					
+
+            </div>
+		</div>
+
+		<div class="card cardBoxSty" style="margin: 15px;">
+
+			<div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            
+                            <div class="row" style="margin-top: 20px;">
+
+                                <div class="col-md-8 col-sm-8">
+                                    <h3 class="card-title">Online Result Computation</h3>
+                                </div>
+                                
+                                <div class="col-md-2 col-sm-2">
+                                    <form>
+                                        <div class="form-group">
+                                            <select class="form-control">
+                                                <option>Subject</option>
+                                                <option>Health Habit</option>
+                                                <option>Social Habit</option>
+                                                <option>Numeracy</option>
+                                                <option>Science</option>
+                                                <option>Mathematics</option>
+                                                <option>English Language</option>
+                                                <option>Computer Studies</option>
+                                                <option>Home Economics</option>
+                                            </select>
+                                        </div>
+
+                                    </form>
+                                </div>
+
+                                <div class="col-md-2 col-sm-2">
+                                    <button type="button" class="btn btn-primary" style="border-radius: 20px;">
+                                        <i class="fa fa-search" aria-hidden="true"></i>
+                                        <span style="font-weight: 500;">&nbsp;Load&nbsp;&nbsp;&nbsp;</span>
+                                    </button>
+                                </div>
+                            </div>
+
+
+                            <form style="margin-top: 50px;">
+                                <div class="form-row">
+                                    <div class="form-group col-sm-3">
+                                        <input type="text" disabled class="form-control" placeholder="Subject: Health Habit">
+                                    </div>
+                                    
+                                    <div class="form-group col-sm-7">
+                                       
+                                    </div>
+                                    
+                                    <div class="form-group col-sm-2">
+                                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal" style="font-weight: 600; border-radius: 30px;">
+                                            <i class="fa fa-check"></i> Submit Result
+                                        </button>
+                                    </div>
+            
+                                   
+                                </div>
+                            </form>
+
+                       
+                            <div class="table-responsive">
+                                <table class="table table-striped table-bordered" id="editable-datatable">
+                                    <thead>
+                                        <tr>
+                                            <th>Admission No.</th>
+                                            <th>Full Name</th>
+                                            <th>Remark</th>
+                                            <th>Additional Comments</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr id="1" class="gradeX">
+                                            <td>051</td>
+                                            <td>Ebuka james mark</td>
+                                            <td>
+                                                <select class="custom-select my-1 mr-sm-2" id="inlineFormCustomSelectPref">
+                                                    <option selected>Select Remark</option>
+                                                    <option value="Expected">Expected</option>
+                                                    <option value="2">Emerging</option>
+                                                    <option value="3">Exceeding</option>
+                                                  </select>
+                                            </td>
+                                            <td> </td>
+                                            <td class="center">
+                                                <a style="color: #ff0000; font-size: 15px;" href="#"><i class="fa fa-close"></i></a>
+                                            </td>
+                                        </tr>
+                                        <tr id="2" class="gradeX">
+                                            <td>051</td>
+                                            <td>Ebuka james mark</td>
+                                            <td>
+                                                <select class="custom-select my-1 mr-sm-2" id="inlineFormCustomSelectPref">
+                                                    <option selected>Select Remark</option>
+                                                    <option value="Expected">Expected</option>
+                                                    <option value="2">Emerging</option>
+                                                    <option value="3">Exceeding</option>
+                                                  </select>
+                                            </td>
+                                            <td> </td>
+                                            <td class="center">
+                                                <a style="color: #ff0000; font-size: 15px;" href="#"><i class="fa fa-close"></i></a>
+                                            </td>
+                                        </tr>
+                                        <tr id="3" class="gradeX">
+                                            <td>051</td>
+                                            <td>Ebuka james mark</td>
+                                            <td>
+                                                <select class="custom-select my-1 mr-sm-2" id="inlineFormCustomSelectPref">
+                                                    <option selected>Select Remark</option>
+                                                    <option value="Expected">Expected</option>
+                                                    <option value="2">Emerging</option>
+                                                    <option value="3">Exceeding</option>
+                                                  </select>
+                                            </td>
+                                            <td> </td>
+                                            <td class="center">
+                                                <a style="color: #ff0000; font-size: 15px;" href="#"><i class="fa fa-close"></i></a>
+                                            </td>
+                                        </tr>
+                                        <tr id="4" class="gradeX">
+                                            <td>051</td>
+                                            <td>Ebuka james mark</td>
+                                            <td>
+                                                <select class="custom-select my-1 mr-sm-2" id="inlineFormCustomSelectPref">
+                                                    <option selected>Select Remark</option>
+                                                    <option value="Expected">Expected</option>
+                                                    <option value="2">Emerging</option>
+                                                    <option value="3">Exceeding</option>
+                                                  </select>
+                                            </td>
+                                            <td> </td>
+                                            <td class="center">
+                                                <a style="color: #ff0000; font-size: 15px;" href="#"><i class="fa fa-close"></i></a>
+                                            </td>
+                                        </tr>
+                                        <tr id="5" class="gradeX">
+                                            <td>051</td>
+                                            <td>Ebuka james mark</td>
+                                            <td>
+                                                <select class="custom-select my-1 mr-sm-2" id="inlineFormCustomSelectPref">
+                                                    <option selected>Select Remark</option>
+                                                    <option value="Expected">Expected</option>
+                                                    <option value="2">Emerging</option>
+                                                    <option value="3">Exceeding</option>
+                                                  </select>
+                                            </td>
+                                            <td> </td>
+                                            <td class="center">
+                                                <a style="color: #ff0000; font-size: 15px;" href="#"><i class="fa fa-close"></i></a>
+                                            </td>
+                                        </tr>
+                                        <tr id="6" class="gradeX">
+                                            <td>051</td>
+                                            <td>Ebuka james mark</td>
+                                            <td>
+                                                <select class="custom-select my-1 mr-sm-2" id="inlineFormCustomSelectPref">
+                                                    <option selected>Select Remark</option>
+                                                    <option value="Expected">Expected</option>
+                                                    <option value="2">Emerging</option>
+                                                    <option value="3">Exceeding</option>
+                                                  </select>
+                                            </td>
+                                            <td> </td>
+                                            <td class="center">
+                                                <a style="color: #ff0000; font-size: 15px;" href="#"><i class="fa fa-close"></i></a>
+                                            </td>
+                                        </tr>
+                                        <tr id="7" class="gradeX">
+                                            <td>051</td>
+                                            <td>Ebuka james mark</td>
+                                            <td>
+                                                <select class="custom-select my-1 mr-sm-2" id="inlineFormCustomSelectPref">
+                                                    <option selected>Select Remark</option>
+                                                    <option value="Expected">Expected</option>
+                                                    <option value="2">Emerging</option>
+                                                    <option value="3">Exceeding</option>
+                                                  </select>
+                                            </td>
+                                            <td> </td>
+                                            <td class="center">
+                                                <a style="color: #ff0000; font-size: 15px;" href="#"><i class="fa fa-close"></i></a>
+                                            </td>
+                                        </tr>
+                                    
+                                    </tbody>
+                                    
+                            </div>                               
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+		</div>
+
+        <!-- Modal -->
+			<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            
+                        <h3 class="modal-title" id="exampleModalLabel" style="margin-left: 35%; color: #ff0000;">Warning <i class="fa fa-exclamation-triangle"></i></h3>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        </div>
+                        <div class="modal-body" align="center">
+                            <span style="font-size: 18px; font-weight: 500;">Are you sure you want to submit this Result now. <br>
+                            Please note this action cannot be reversed!!!</span>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary"><i class="fa fa-check"></i> Submit Result</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <!-- Modal -->
+		
+
+
+	</div>
+
+
+
+
+
+
+
+	<script src="../assets/plugins/jquery-datatables-editable/jquery.dataTables.js"></script>
+	<script src="../assets/plugins/datatables/dataTables.bootstrap.js"></script>
+	<script src="../assets/plugins/tiny-editable/mindmup-editabletable.js"></script>
+	<script src="../assets/plugins/tiny-editable/numeric-input-example.js"></script>
+	<script>
+	$('#mainTable').editableTableWidget().numericInputExample().find('td:first').focus();
+	$('#editable-datatable').editableTableWidget().numericInputExample().find('td:first').focus();
+	$(document).ready(function() {
+		$('#editable-datatable').DataTable();
+	});
+	</script>
+	
+	<!-- Option 1: jQuery and Bootstrap Bundle (includes Popper) -->
+   	<script src="../assets/bootstrap/js/jquery.slim.min.js"></script>
+	<script src="../assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+
+
+	<script src="../assets/js/jquery-3.5.1.js"></script>
+	<script src="../assets/js/jquery.dataTables.min.js"></script>
+   <script src="../assets/js/datatables.min.js"></script>
+	<script src="../assets/js/pdfmake.min.js"></script>
+	<script src="../assets/js/vfs_fonts.js"></script>
+
+	
+
+  </body>
+</html>

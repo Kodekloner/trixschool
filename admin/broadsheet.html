@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <script src="../assets/js/jquery-3.5.1.min.js"></script>
+
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="../assets/bootstrap/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+        <!--My New Stylesheet CSS -->
+        <link rel="stylesheet" href="../assets/css/myStyleSheet.css">
+
+         <!--The result stylesheet -->
+         <link rel="stylesheet" href="../assets/css/resultStyleSheet.css">
+
+        <title>BroadSheet</title>
+    </head>
+
+    <body style="background: rgb(236, 234, 234);">
+
+       
+
+            <div class="container-fluid" >
+
+                <div class="row" id="non-printable">
+        
+                    <div class="col-sm-12">
+                        
+                        <div class="cardBoxSty">
+        
+                            <form>
+                                <div class="form-row">
+                                    <div class="form-group col-sm">
+                                        <select class="form-control">
+                                            <option>Select Session</option>
+                                            <option>2020/2021</option>
+                                            <option>2021/2022</option>
+                                            <option>2022/2023</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="form-group col-sm">
+                                        <select class="form-control">
+                                            <option>Select Term</option>
+                                            <option>1st Term</option>
+                                            <option>2nd Term</option>
+                                            <option>3rd Term</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="form-group col-sm">
+                                        <select class="form-control">
+                                            <option>Select Class</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group col-sm">
+                                        <select class="form-control">
+                                            <option>Select Section</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group col-sm">
+                                        <select class="form-control">
+                                            <option>Select</option>
+                                            <option>Mid-Term</option>
+                                            <option>Termly</option>
+                                            <option>Cummulative</option>
+                                        </select>
+                                    </div>
+                                                    
+                                    
+                                    
+                                    <div class="form-group col-sm">
+                                        <button type="submit" class="btn btn-primary" style="border-radius: 20px;">
+                                            <i class="fa fa-search" aria-hidden="true"></i>
+                                            <span style="margin-left: 5px;">Search</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                            
+        
+                        </div>
+                    </div>
+                </div>
+
+                         
+                <div class="row" id="non-printable" style="margin-top: 20px;">
+                    <div class="col-md-10 "></div>
+            
+                    <div class="col-md-2">
+                        <a href=""  style="color: #000000; font-weight: 600;" onclick="window.print()"><i class="fa fa-print"></i> Print</a>
+                    </div>
+                    
+                </div>
+       
+
+                <div class="card">
+                    <div class="card-body" style="color: black;">
+                        <div class="container rel">
+                            <div class="row">
+                              <div class="col-sm-3 col-md-3 col-xs-3 col-lg-3">
+                                  <div style="margin-top: 60px; margin-left: 10px;">
+                                      <img src="../assets/img/schlogo.png" class="img-fluid" alt="...">
+                                  </div>
+                              </div>
+                              <div class="col-sm-9 col-md-9 col-xs-9 col-lg-9">
+                                    <p class="schname">TRIX SCHOOL</p>
+                                    <p class="schloc" style="color: rgb(185, 7, 7);">Plot 152 Itsekiri Way, FHA Karu, FCT Abuja, Nigeria.</p>
+                                    <p style="text-align: center; font-weight: bold; font-size: 30px; margin-top: -10px; color: #333636;">BROAD SHEET</p>
+          
+                              </div>
+                            </div>
+          
+          
+                          
+                          <div class="result" style="margin-bottom: 20px;">
+                            <table class="rotate-table-grid" style="font-size: 13px;">
+                            
+                              
+                                <tr>
+                                  <th colspan="2" style="width: 100px;">    
+                                      <p style="color: black; margin-top: 20px; font-size: 10px; margin-left: -5px;">SESSION:------------------------------</p>
+                                      <p style="color: black; margin-left: -5px; font-size: 10px;">TERM:---------------------------------</p>
+                                      <p style="color: black; margin-left: -5px; font-size: 10px;">CLASS:--------------------------------</p>
+                                      <p style="color: black; margin-left: -5px; font-size: 10px;">FORM TEACHER:------------------------</p>
+                                  </th>
+                                  <th><span>English Language</span></th>
+                                  <th><span>GEN. Maths</span></th>
+                                  <th><span>BUSINESS STUDIES</span></th>
+                                  <th><span>COMPUTER STUDIES</span></th>
+                                  <th><span>LIT. IN ENGLISH</span></th>
+                                  <th><span>FURTHER MATHS</span></th>
+                                  <th><span>CHEMISTRY</span></th>
+                                  <th><span>PHYSICS</span></th>
+                                  <th><span>BIOLOGY</span></th>
+                                  <th><span>GEOGRAPHY</span></th>
+                                  <th><span>GOVERNMENT</span></th>
+                                  <th><span>ECONOMIC</span></th>
+                                  <th><span>FOOD & NUTRITION</span></th>
+                                  <th><span>AGRIC. SCIENCE</span></th>
+                                  <th><span>C.R.S</span></th>
+                                  <th><span>CIVIC EDUCATION</span></th>
+                                  <th><span>ACCOUNTING</span></th>
+                                  <th><span>COMMERCE</span></th>
+                                  <th><span>TECH. DRAWING</span></th>
+                                  <th><span>MARKETING</span></th>
+                                  <th><span>TOTAL SCORE</span></th>
+                                  <th><span>AVERAGE SCORE</span></th>
+                                  <th><span>SUBJECT GRADE</span></th>
+                                  <th><span>GRADE INTERPRETATION</span></th>
+                                  <th><span>INTERPRETATION OF RESULT</span></th>
+                                  <th><span>ATTENDANCE</span></th>
+                              </tr>
+                              
+                              <tbody>
+                                  <tr>
+                                      <th style="width: 20px;">S/N</th>
+                                        <th style="width: 300px;">NAMES OF STUDENTS</th>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                        <td> </td>
+                                       
+                                    </tr>
+                                  <tr>
+                                      <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                  </tr>
+                                  <tr>
+                                      <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                  </tr>
+                                  <tr>
+                                      <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                  </tr>
+                                  <tr>
+                                      <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                  </tr>
+          
+                                  <tr>
+                                      <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                  </tr>
+                                  <tr>
+                                      <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                  </tr>
+                                  <tr>
+                                      <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                  </tr>
+                                  <tr>
+                                      <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                  </tr>
+          
+                                  <tr>
+                                      <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                  </tr>
+                                  <tr>
+                                      <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                  </tr>
+                                  <tr>
+                                      <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                  </tr>
+                                  <tr>
+                                      <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                      <td> </td>
+                                  </tr>
+          
+                                 
+                              </tbody>
+                            </table>
+                          </div>                         
+                    </div>
+                  </div>
+                </div>
+
+           
+            
+            </div>
+          
+
+
+
+
+        <!-- ============================================================== -->
+        <!-- All Jquery -->
+        <!-- ============================================================== -->
+        <!-- My own external JS file -->
+        <script src="../assets/js/myScript.js"></script>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+
+        <script>
+            var xValues = ["Class Ave.", "Ave. Score", "Highest Class Ave.", "Lowest Class Ave.",];
+            var yValues = [76.02, 82.50, 93.50, 26.50,];
+            var barColors = ["red", "green","blue","orange",];
+            
+            new Chart("myChart", {
+              type: "bar",
+              data: {
+                labels: xValues,
+                datasets: [{
+                  backgroundColor: barColors,
+                  data: yValues
+                }]
+              },
+              options: {
+                legend: {display: false},
+                title: {
+                  display: true,
+                  text: "ACADEMIC PERFORMANCE"
+                }
+              }
+            });
+            </script>
+        
+        <!-- Option 1: jQuery and Bootstrap Bundle (includes Popper) -->
+        <script src="../assets/bootstrap/js/jquery.slim.min.js"></script>
+        <script src="../assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+        <script src="../assets/js/jquery-3.5.1.js"></script>
+        <script src="../assets/js/jquery.dataTables.min.js"></script>
+        <script src="../assets/js/datatables.min.js"></script>
+        <script src="../assets/js/pdfmake.min.js"></script>
+        <script src="../assets/js/vfs_fonts.js"></script>
+
+    </body>
+
+</html>

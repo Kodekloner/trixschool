@@ -1,0 +1,32 @@
+
+.data_table{
+    background-color: #ffffff;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 1px 3px 5px #aaa;
+}
+
+.data_table .btn{
+    padding: 5px 10px;
+    margin: 5px 3px 5px 0;
+    background-color: #3399FF;
+    border: #3399FF;
+    border-radius: 5px;
+    
+}
+
+.form_table{
+    background-color: #ffffff;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 1px 3px 5px #aaa;
+    width: 100%;
+}
+
+
+.cardBoxSty{
+    background-color: #ffffff;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 1px 3px 5px #aaa;
+}

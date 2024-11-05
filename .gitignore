@@ -1,0 +1,33 @@
+application/controllers/Schsettings.php
+db/
+database/
+backup/
+
+# CodeIgniter config files
+application/config/config.php
+application/config/database.php
+
+# Cache and logs
+application/cache/
+application/logs/
+writable/
+
+# Composer and vendor
+composer.lock
+vendor/
+
+# Node modules
+node_modules/
+
+# Environment files
+.env
+
+# OS-generated and IDE files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+uploads/
+img/
+backup.sql
