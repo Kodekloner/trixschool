@@ -5,7 +5,7 @@ use Aws\S3\S3Client;
 use Aws\Exception\S3Exception;
 use Dotenv\Dotenv;
 
-$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv = Dotenv::createImmutable('/var/www/trixschool');
 $dotenv->load();
 
 if (!function_exists('upload_to_s3')) {

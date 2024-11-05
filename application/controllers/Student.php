@@ -6,7 +6,7 @@ use Aws\S3\Exception\S3Exception;
 use Dotenv\Dotenv;
 
 // Load the .env file
-$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv = Dotenv::createImmutable('/var/www/trixschool');
 $dotenv->load();
 
 if (!defined('BASEPATH')) {
