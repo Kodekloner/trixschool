@@ -3,6 +3,11 @@
 
 use Aws\S3\S3Client;
 use Aws\S3\Exception\S3Exception;
+use Dotenv\Dotenv;
+
+// Load the .env file
+$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv->load();
 
 if (!defined('BASEPATH')) {
     exit('No direct script access allowed');
@@ -562,8 +567,8 @@ class Student extends Admin_Controller
                             'version' => 'latest',
                             'region'  => 'us-east-2',
                             'credentials' => [
-                                'key'    => 'AKIAXC7XRFGT25OMXJ22',
-                                'secret' => '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',
+                                'key'    => getenv('AWS_ACCESS_KEY_ID'),
+                                'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
                             ],
                         ]);
 
@@ -1527,8 +1532,8 @@ class Student extends Admin_Controller
                         'version' => 'latest',
                         'region'  => 'us-east-2',
                         'credentials' => [
-                            'key'    => 'AKIAXC7XRFGT25OMXJ22',
-                            'secret' => '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',
+                            'key'    => getenv('AWS_ACCESS_KEY_ID'),
+                            'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
                         ],
                     ]);
 

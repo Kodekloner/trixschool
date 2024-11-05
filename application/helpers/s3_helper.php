@@ -3,6 +3,10 @@ require  '/var/www/trixschool/vendor/autoload.php'; // Adjust the path as needed
 
 use Aws\S3\S3Client;
 use Aws\Exception\S3Exception;
+use Dotenv\Dotenv;
+
+$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv->load();
 
 if (!function_exists('upload_to_s3')) {
     /**
@@ -45,8 +49,8 @@ if (!function_exists('upload_to_s3')) {
                 'version' => 'latest',
                 'region'  => 'us-east-2',
                 'credentials' => [
-                    'key'    => 'AKIAXC7XRFGT25OMXJ22',
-                    'secret' => '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',
+                    'key'    => getenv('AWS_ACCESS_KEY_ID'),
+                    'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
                 ],
             ]);
 
