@@ -17,12 +17,12 @@
 	 <!--My New Stylesheet CSS -->
 	 <link rel="stylesheet" href="../assets/css/myStyleSheet.css">
     <title>Manual Attendance</title>
-    
+
     <style type="text/css">
         .editbox
         {
             display:none
-         
+
         }
         .editbox
         {
@@ -39,12 +39,12 @@
         }
     </style>
   </head>
-  
+
   <?php include ('../layout/style.php');?>
-  
+
   <body style="background: rgb(236, 234, 234);">
 
-	
+
 	 <div class="menu-wrapper">
        	<div class="sidebar-header">
 			<?php include ('../layout/sidebar.php');?>
@@ -56,38 +56,38 @@
 				<?php include ('../layout/header.php');?>
 
 					<div class="content-data">
-					    
+
 					    <div class="row" style="margin: 15px;">
-        
+
             <div class="col-sm-12 cardBoxSty">
-				
+
 
 				<form style="margin: 0px;">
                     <div class="form-row">
                         <div class="form-group col-sm">
                             <select class="form-control" id="session">
                                 <option value="0">Session</option>
-                                
+
                                 <?php
-                                
+
                                     $sqlsessions = "SELECT * FROM `sessions`";
                                     $resultsessions = mysqli_query($link, $sqlsessions);
                                     $rowsessions = mysqli_fetch_assoc($resultsessions);
                                     $row_cntsessions = mysqli_num_rows($resultsessions);
-                
+
                                     if($row_cntsessions > 0)
                                     {
                                         do{
-                                            
+
                                             echo'<option value="'.$rowsessions['id'].'">'.$rowsessions['session'].'</option>';
-                                            
+
                                         }while($rowsessions = mysqli_fetch_assoc($resultsessions));
                                     }
                                 ?>
                             </select>
 							<!--They would need to select Session in-order to pick a term-->
 						</div>
-						
+
 						<div class="form-group col-sm">
                             <select class="form-control" id="term">
                               <option value="0">Select Term</option>
@@ -97,18 +97,18 @@
                             </select>
 							<!--They would need to select Term in-order to display the Exam Group Created for that term-->
                         </div>
-                        
+
 						<div class="form-group col-sm">
 
 							<select class="form-control" id="class">
                                 <option value="0">Class</option>
                                 <?php
-                                    
+
                                    $sqlstaffcheck = "SELECT * FROM `staff_roles` INNER JOIN roles ON staff_roles.role_id=roles.id WHERE staff_roles.staff_id='$id'";
                                     $resultstaffcheck = mysqli_query($link, $sqlstaffcheck);
                                     $rowstaffcheck = mysqli_fetch_assoc($resultstaffcheck);
                                     $row_cntstaffcheck = mysqli_num_rows($resultstaffcheck);
-                                    
+
                                     if($row_cntstaffcheck > 0)
                                     {
                                         if($rowstaffcheck['name'] == 'Teacher')
@@ -117,13 +117,13 @@
                                             $resultclasses = mysqli_query($link, $sqlclasses);
                                             $rowclasses = mysqli_fetch_assoc($resultclasses);
                                             $row_cntclasses = mysqli_num_rows($resultclasses);
-                        
+
                                             if($row_cntclasses > 0)
                                             {
                                                 do{
-                                                    
+
                                                     echo'<option value="'.$rowclasses['class_id'].'">'.$rowclasses['class'].'</option>';
-                                                    
+
                                                 }while($rowclasses = mysqli_fetch_assoc($resultclasses));
                                             }
                                             else
@@ -137,27 +137,27 @@
                                             $resultclasses = mysqli_query($link, $sqlclasses);
                                             $rowclasses = mysqli_fetch_assoc($resultclasses);
                                             $row_cntclasses = mysqli_num_rows($resultclasses);
-                        
+
                                             if($row_cntclasses > 0)
                                             {
                                                 do{
-                                                    
+
                                                     echo'<option value="'.$rowclasses['ClassID'].'">'.$rowclasses['class'].'</option>';
-                                                    
+
                                                 }while($rowclasses = mysqli_fetch_assoc($resultclasses));
                                             }
                                         }
-                                        
+
                                     }
                                     else
                                     {
-                                        
+
                                         echo'<option value="0">No Records Found</option>';
-                                            
+
                                     }
-                                        
+
                                 ?>
-                            </select>	
+                            </select>
 							<!--They would need to select class and section in-order to display the Exam Names assigned to a particular class-->
 						</div>
 
@@ -166,7 +166,7 @@
                                 <option value="0">Section</option>
                             </select>
 						</div>
-						
+
 						<div class="col-md-12" align="right">
 							<button type="button" class="btn btn-primary" style="border-radius: 20px;" id="getstud">
 								<i class="fa fa-search" aria-hidden="true"></i>
@@ -175,7 +175,7 @@
 						</div>
                     </div>
                 </form>
-				
+
             </div>
 		</div>
 
@@ -207,15 +207,15 @@
 							<!--		<div class="col-12">-->
 							<!--			<div class="card">-->
 							<!--				<div class="card-body">-->
-																																	   
+
 							<!--					<h3 style="color: black;">Download Class Exam List</h3>-->
 
 							<!--					<div class="row" style="margin-top: 20px;">-->
 
 							<!--						<div class="col-md-7">-->
-														
+
 							<!--						</div>-->
-													
+
 							<!--						<div class="col-md-3">-->
 							<!--							<form>-->
 							<!--								<div class="form-group col-sm">-->
@@ -243,43 +243,43 @@
 							<!--							<table class="table display table-striped">-->
 							<!--								<thead>-->
 							<!--									<tr>-->
-																	
+
 							<!--										<th>Subject</th>-->
 							<!--										<th>Download Link</th>-->
-																	
+
 							<!--									</tr>-->
 							<!--								</thead>-->
 							<!--								<tbody>-->
 							<!--									<tr>-->
 							<!--										<td>English Language</td>-->
 							<!--										<td><a href="#">Download Link</a></td>-->
-																	
+
 							<!--									</tr>-->
 							<!--									<tr>-->
 							<!--										<td>Maths</td>-->
 							<!--										<td><a href="#">Download Link</a></td>-->
-																	
+
 							<!--									</tr>-->
 							<!--									<tr>-->
 							<!--										<td>Computer</td>-->
 							<!--										<td><a href="#">Download Link</a></td>-->
-																	
+
 							<!--									</tr>-->
 							<!--									<tr>-->
 							<!--										<td>Civil Education</td>-->
 							<!--										<td><a href="#">Download Link</a></td>-->
-																	
+
 							<!--									</tr>-->
 							<!--									<tr>-->
 							<!--										<td>Agricultural</td>-->
 							<!--										<td><a href="#">Download Link</a></td>-->
-																	
+
 							<!--									</tr>-->
-																												
+
 							<!--								</tbody>-->
 							<!--							</table>-->
 							<!--						</div>-->
-																			
+
 							<!--				</div>-->
 							<!--			</div>-->
 							<!--		</div>-->
@@ -288,7 +288,7 @@
 							<!--</div>-->
 						   <!--================Download Class list=================-->
 						   <!--================Download Class list=================-->
-						
+
 
 							<!--=================Bulk Upload==============-->
 							<!--==================================================-->
@@ -303,9 +303,9 @@
 							<!--					<div class="row" style="margin-top: 20px;">-->
 
 							<!--						<div class="col-md-7">-->
-														
+
 							<!--						</div>-->
-													
+
 							<!--						<div class="col-md-3">-->
 							<!--							<form>-->
 							<!--								<div class="form-group col-sm">-->
@@ -319,7 +319,7 @@
 							<!--								</div>-->
 							<!--							</form>-->
 							<!--						</div>-->
-													
+
 							<!--						<div class="col-md-2">-->
 							<!--							<button type="button" class="btn btn-primary" style="border-radius: 20px;">-->
 							<!--								<i class="fa fa-search" aria-hidden="true"></i>-->
@@ -329,41 +329,41 @@
 							<!--					</div>-->
 
 
-												
+
 							<!--					<form style="margin-top: 50px; padding: 20px;">                                          -->
 
 							<!--						<div class="form-group">-->
 							<!--							<label>English Language:</label>-->
 							<!--							<input type="file" class="form-control" id="exampleInputFile" aria-describedby="fileHelp">-->
 							<!--						</div>-->
-		
+
 							<!--						<div class="form-group">-->
 							<!--							<label>Maths:</label>-->
 							<!--							<input type="file" class="form-control" id="exampleInputFile" aria-describedby="fileHelp">-->
 							<!--						</div>-->
-		
+
 							<!--						<div class="form-group">-->
 							<!--							<label>Civil Education:</label>-->
 							<!--							<input type="file" class="form-control" id="exampleInputFile" aria-describedby="fileHelp">-->
 							<!--						</div>-->
-		
+
 							<!--						<div class="form-group">-->
 							<!--							<label>History:</label>-->
 							<!--							<input type="file" class="form-control" id="exampleInputFile" aria-describedby="fileHelp">-->
 							<!--						</div>-->
-		
+
 							<!--						<div class="form-group">-->
 							<!--							<label>Computer:</label>-->
 							<!--							<input type="file" class="form-control" id="exampleInputFile" aria-describedby="fileHelp">-->
 							<!--						</div>-->
-		
+
 							<!--						<div class="form-group">-->
 							<!--							<label>Economic:</label>-->
 							<!--							<input type="file" class="form-control" id="exampleInputFile" aria-describedby="fileHelp">-->
 							<!--						</div>-->
-																				  
+
 							<!--						<button type="submit" class="btn btn-primary" style="font-weight: 500; border-radius: 20px; margin-top: 20px;">Upload CSV Files</button>-->
-												   
+
 							<!--					</form>-->
 
 							<!--				</div>-->
@@ -374,7 +374,7 @@
 							<!--</div>-->
 							 <!--=================Bulk Upload==============-->
 							<!--==================================================-->
-						
+
 
 							<!--==================================================-->
 							<!--Online Computation-->
@@ -390,7 +390,7 @@
 												<div class="alert alert-primary" role="alert">
                                                     Please Filter to proceed.
                                                 </div>
-											</div>                               
+											</div>
 										</div>
 									</div>
 								</div>
@@ -398,12 +398,12 @@
 							</div>
 							<!--Online Computation-->
 							<!--==================================================-->
-							
+
 						<!--</div>-->
 					</div>
 
 				</div>
-				
+
 			</div>
 
 		</div>
@@ -413,7 +413,7 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            
+
                         <h3 class="modal-title" id="exampleModalLabel" style="margin-left: 35%; color: #ff0000;">Warning <i class="fa fa-exclamation-triangle"></i></h3>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
@@ -431,41 +431,41 @@
                 </div>
             </div>
             <!-- Modal -->
-            
+
             <!-- Delet Single-->
             <div class="modal fade" id="delScore" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-md" role="document">
                     <div align="center" class="modal-content">
-                         
+
                         <form>
                             <div class="modal-body">
-                                    
+
                                   <span id="CompleteScoreDeleteOutput"></span>
-                                    
+
                                     <div id="displayScoreDelMsg">
                                         <div align="center">Loading...</div>
-                                    </div> 
+                                    </div>
                             </div>
-                        
+
                             <div style="margin:auto; padding-bottom: 15px;">
-                                
+
                                 <button type="button" class="btn btn-info" data-dismiss="modal">Cancel</button>
                                 <button id="ProcToDelSelScore" type="button" class="btn btn-danger ProcToDelAllSelScore">Yes! Delete</button>
                             </div>
-                            
+
                         </form>
                     </div>
                 </div>
             </div>
 
-		
-                        
+
+
 					</div>
 
 			</div>
 		</div>
     </div>
-	
+
 	<script src="../assets/plugins/jquery-datatables-editable/jquery.dataTables.js"></script>
 	<script src="../assets/plugins/datatables/dataTables.bootstrap.js"></script>
 	<script src="../assets/plugins/tiny-editable/mindmup-editabletable.js"></script>
@@ -484,122 +484,123 @@
 	<script src="../assets/js/vfs_fonts.js"></script>
 
     <script>
-        
+
         $("body").on("change", "#class", function(){
-  
+
             var classid = $(this).val();
-            
+
             var staffid = "<?php echo $id; ?>";
-            
+
             var rolefirst = "<?php echo $rolefirst;?>";
-            
+
             $('#classsection').html('<option value="0">Loading...</option>');
-            
+
             if(classid != '' && classid != '0')
             {
 
                 var dataString = 'classid=' + classid + '&staffid=' + staffid + '&rolefirst=' + rolefirst;
-                
+                console.log(dataString);
+
                 // alert(dataString);
                 $.ajax({
                     url: '../../../phpscript/get-class-section-other.php',
                     method:'POST',
                     data:dataString,
-                    
+
                     success: function(maindata2) {
-                    
+
                         $('#classsection').html(maindata2);
-                        
+
                     }
                 });
             }
             else
             {
                 $('#classsection').html('<option value="0">Please select class</option>');
-                
+
             }
-             
+
         });
-        
+
         $("body").on("change", "#classsection", function(){
-            
+
             $('#subjects').html('<option value="0">Loading...</option>');
-  
+
             var classid = $("#class").val();
-            
+
             var actualclasssection = $(this).val();
-            
+
             var session = $("#session").val();
-            
+
             var term = $("#term").val();
-            
+
             var staffid = "<?php echo $id; ?>";
-            
+
             // alert(actualclasssection);
-            
-            
-             
+
+
+
         });
-        
+
         $("body").on("click", "#getstud", function(){
-            
+
             $('#tbl_data').html('<i class="fa fa-circle-o-notch fa-spin"></i> ...Processing');
-            
+
            // var subjects = $("#subjects").val();
-  
+
             //var classsection = $('#subjects :selected').data('id');
-            
+
             var classsection = $("#classsection").val();
-            
+
             var classid = $("#class").val();
-            
+
             var session = $("#session").val();
-            
+
             var term = $("#term").val();
-            
+
             var dataString = 'classid=' + classid + '&classsection=' + classsection + '&session=' + session + '&term=' + term;
-                
+
             // alert(dataString);
             if(classid != '' && classid != '0' && classsection != '' && classsection != '0' && session != '' && session != '0' && term != '' && term != '0')
             {
-                
+
                 $.ajax({
                     url: '../../../phpscript/manualattendance/insert-studentsscoretbl.php',
                     method:'POST',
                     data:dataString,
-                    
+
                     success: function(maindata2) {
-                        
+
                         // alert(maindata2);
-                    
+
                         $.ajax({
                             url: '../../../phpscript/manualattendance/get-subjectsstudents.php',
                             method:'POST',
                             data:dataString,
-                            
+
                             success: function(maindata3) {
-                            
+
                                 $('#tbl_data').html(maindata3);
-                                
+
                             }
                         });
-                        
+
                     }
                 });
             }
             else
             {
                 $('#tbl_data').html('Please filter to view student list');
-                
+
             }
-             
+
         });
-        
+
         $(document).on('click', '.edit_tr', function () {
 
             //get the unique ID of the row
             var ID=$(this).attr('id');
-            
+
             //Hide all the label
             $("#ca1_"+ID).hide();
             $("#ca2_"+ID).hide();
@@ -610,28 +611,28 @@
             $("#ca2_input_"+ID).fadeIn(1000);
             $("#ca3_input_"+ID).fadeIn(1000);
             $("#ca4_input_"+ID).fadeIn(1000);
-            
+
         });
-    
-    
+
+
         $(document).on('change', '.edit_tr', function () {
             var ID = $(this).attr('id');
-        
+
             var ca1 = parseFloat($("#ca1_input_"+ID).val());
             var ca2 = parseFloat($("#ca2_input_"+ID).val());
             var ca3 = parseFloat($("#ca3_input_"+ID).val());
             var ca4 = parseFloat($("#ca4_input_"+ID).val());
-            
+
             var studname = $("#studname_"+ID).val();
-            
+
             var term = $("#term").val();
-            
+
             var session = $("#session").val();
-    
-            
+
+
             var dataString = 'ID='+ ID + '&ca1='+ ca1 + '&ca2='+ ca2 + '&ca3='+ ca3 + '&ca4='+ ca4 + '&term='+ term + '&session='+ session;
             //$("#ca1_"+ID).html('>>>'); // Loading image
-            
+
             // alert(dataString);
             if(0)
             {
@@ -640,7 +641,7 @@
             else
             {
                 $('#displaysmg').html('<div class="alert alert-primary" role="alert"> To input scores kindly click on the CA or Exam That you would like to input the score and input the score.</div>');
-                
+
                 $.ajax({
                     type: "POST",
                     url: "../../../phpscript/manualattendance/updateStudentScoreLiveTable.php",
@@ -652,153 +653,153 @@
                             $("#ca2_"+ID).html(ca2);
                             $("#ca3_"+ID).html(ca3);
                             $("#ca4_"+ID).html(ca4);
-    
+
                         }
                 });
-    
+
             }
-                
+
         });
-    
+
         // Edit input box click action
         $(document).on('mouseup', '.editbox', function () {
            return false
         });
-        
-        
+
+
         // Outside click action
         $(document).mouseup(function(){
             $(".editbox").hide();
             $(".text").show();
         });
-        
+
         $('body').on('click','#delbtn',function () {
             var ScoreID = $(this).data('id');
-            
+
             var studname = $(this).data('name');
-          
+
             var dataString = '&ScoreID='+ ScoreID+'&studname='+ studname;
             $.ajax({
                type: "POST",
                url: "../../../phpscript/loadSingleScoreDelPrompt.php",
                data: dataString,
                cache: false,
-               
+
                success: function(result)
                {
 
-                  $('#displayScoreDelMsg').html(result);                            
+                  $('#displayScoreDelMsg').html(result);
                }
            });
-         
+
         });
         $('#desktop').click(function(){
-        
+
             $('li a').toggleClass('hideMenuList');
             $('.sidebar').toggleClass('changeWidth');
         })
-        
-        
-        
+
+
+
         $('#mobile').click(function(){
-        
+
             $('.sidebar').toggleClass('showMenu');
             $('.backdrop').toggleClass('showBackdrop');
         })
-        
-        
+
+
         $('.cross-icon').click(function(){
-        
+
             $('.sidebar').toggleClass('showMenu');
             $('.backdrop').removeClass('showBackdrop');
         })
-        
+
         $('.backdrop').click(function(){
-        
+
             $('.sidebar').removeClass('showMenu');
             $('.backdrop').removeClass('showBackdrop');
         })
-        
+
         $('li').click(function () {
             $('li').removeClass();
             $(this).addclass('selected');
             $('.sideBar').removeClass('showMenu');
         })
-        
+
         $(document).ready(function(){
-            
+
             $("#ProcToDelSelScore").click(function(){
-             
+
                 $('#ProcToDelSelScore').html('Removing...<i class="fa fa-spinner fa-spin"></i>');
-               
+
                 var selDeleteID = $('#selDeleteID').val();
-         
+
                 var dataString = '&selDeleteID='+ selDeleteID;
-                
+
                 $.ajax({
                     type: "POST",
                     url: "../../../phpscript/ProceedToDelSingleScore.php",
                     data: dataString,
                     cache: false,
-                    
+
                     success: function(result){
-                        $('#CompleteScoreDeleteOutput').html(result); 
-                        
+                        $('#CompleteScoreDeleteOutput').html(result);
+
                         $('#tbl_data').html('<i class="fa fa-circle-o-notch fa-spin"></i> ...Processing');
-            
+
                         var subjects = $("#subjects").val();
-              
+
                         var classsection = $("#classsection").val();
-                        
+
                         var classsectionactual = $('#classsection :selected').data('id');
-                        
+
                         var classid = $("#class").val();
-                        
+
                         var session = $("#session").val();
-                        
+
                         var term = $("#term").val();
-                        
+
                         if(classid != '' && classid != '0' && classsection != '' && classsection != '0' && session != '' && session != '0' && term != '' && term != '0' && subjects != '' && subjects != '0')
                         {
                             var dataString = 'classid=' + classid + '&classsection=' + classsection + '&session=' + session + '&term=' + term + '&subjects=' + subjects + '&classsectionactual=' + classsectionactual;
-                            
+
                             // alert(dataString);
                             $.ajax({
                                 url: '../../../phpscript/insert-studentsscoretbl.php',
                                 method:'POST',
                                 data:dataString,
-                                
+
                                 success: function(maindata2) {
-                                    
+
                                     // alert(maindata2);
-                                
+
                                     $.ajax({
                                         url: '../../../phpscript/get-subjectsstudents.php',
                                         method:'POST',
                                         data:dataString,
-                                        
+
                                         success: function(maindata3) {
-                                        
+
                                             $('#tbl_data').html(maindata3);
-                                            
+
                                         }
                                     });
-                                    
+
                                 }
                             });
                         }
                         else
                         {
                             $('#tbl_data').html('Please filter and select subject to view student list');
-                            
+
                         }
-                        //location.reload();   
-                        $('#ProcToDelSelScore').html('Yes! Delete');  
-                        // $('#ProcToDelSelStaff').attr('disabled', true);                                    
+                        //location.reload();
+                        $('#ProcToDelSelScore').html('Yes! Delete');
+                        // $('#ProcToDelSelStaff').attr('disabled', true);
                     }
                 });
-            });  
-            
+            });
+
         });
     </script>
   </body>
