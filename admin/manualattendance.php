@@ -499,7 +499,6 @@
             {
 
                 var dataString = 'classid=' + classid + '&staffid=' + staffid + '&rolefirst=' + rolefirst;
-                console.log(dataString);
 
                 // alert(dataString);
                 $.ajax({
@@ -559,6 +558,7 @@
             var term = $("#term").val();
 
             var dataString = 'classid=' + classid + '&classsection=' + classsection + '&session=' + session + '&term=' + term;
+            console.log(dataString);
 
             // alert(dataString);
             if(classid != '' && classid != '0' && classsection != '' && classsection != '0' && session != '' && session != '0' && term != '' && term != '0')
