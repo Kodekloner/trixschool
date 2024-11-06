@@ -62,9 +62,18 @@
 	ini_set('file_uploads', 'On');
 	ini_set('file_uploads', 'On');
 
+  $domain = $_SERVER['HTTP_HOST'];
+  $full_domain = preg_replace('/^www\./i', '', $domain); // Remove "www." if it exists
+  $domain = preg_replace('/\.(com\.ng|com|ng|org\.ng|org)$/i', '', $full_domain); // Remove common extensions
 
-	// define('ENVIRONMENT', 'production');
-	define('ENVIRONMENT', 'development');
+  if ($domain == 'joyfoundationacademy'){
+    // define('ENVIRONMENT', 'production');
+    define('ENVIRONMENT', 'development');
+  } else {
+    define('ENVIRONMENT', 'production');
+  	// define('ENVIRONMENT', 'development');
+  }
+
 
 
 	if( ! ini_get('date.timezone') )
