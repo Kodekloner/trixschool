@@ -1,4 +1,3 @@
-
 <?php
     include ('../database/config.php');
 ?>
@@ -20,35 +19,35 @@
 
          <!--The result stylesheet -->
          <link rel="stylesheet" href="../assets/css/resultStyleSheet.css">
-         
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
-    
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
         <title>Result Page</title>
     </head>
     <style>
-    
-    
-    
-    
-    
-	    
-    
+
+
+
+
+
+
+
     @media only screen and (max-width: 767px) { /* CSS rules for smaller screens */
-  
+
   /* Adjust the width of the result sheet to fit the screen */
   #result-body {
     width: 1300px;
     overflow: auto;
   }
-  
+
   /* Apply scaling transformation to the result sheet */
   #printable {
     transform-origin: top left;
     transform: scale(0.25);
     width: 1200px;
-    
+
   }
 }
 
@@ -63,13 +62,13 @@
 
 
 
-  
+
         @page {
             margin: 0;
         }
-        
+
         @media print {
-            
+
             canvas.sunygraph {
                 min-height: 200px;
                 max-width: 98%;
@@ -77,36 +76,36 @@
                 height: auto!important;
                 width: auto!important;
             }
-            
+
         }
     </style>
     <?php
-        
+
         $classsection = $_GET['classsection'];
-    
+
         $classsectionactual = $_GET['classsectionactual'];
-                
+
         $classid = $_GET['classid'];
-        
+
         $term = $_GET['term'];
         if($term == '1st'){
             $term2 = 'first term';
         }
-        
+
         if($term == '2nd'){
             $term2 = 'second ter';
         }
-        
+
         if($term == '3rd'){
             $term2 = 'third term';
         }
         $session = $_GET['session'];
         // Build the SQL query
         $sql = "SELECT * FROM feenext WHERE class_id = $classid AND session = '$session' AND term = '$term' LIMIT 1";
-    
+
         // Execute the query
         $next_fee_result = mysqli_query($link, $sql);
-    
+
         // Check if a row was found and display the data
         if (mysqli_num_rows($next_fee_result) > 0) {
             $next_fee = mysqli_fetch_assoc($next_fee_result)["amount"];
@@ -124,95 +123,95 @@
 
 
 
-        
+
         $session = $_GET['session'];
-        
+
         $sessionnew = $session + 1;
-        
+
         $id = $_GET['id'];
-        
+
         // $_GET['reltype'];
-        
+
         $reltypemain = $_GET['reltype'];
-        
+
         $sqlstudents = "SELECT * FROM `students` WHERE id='$id'";
         $resultstudents = mysqli_query($link, $sqlstudents);
         $rowstudents = mysqli_fetch_assoc($resultstudents);
         $row_cntstudents = mysqli_num_rows($resultstudents);
-        
+
         $studimage = $rowstudents['image'];
-        
+
         $studname = $rowstudents['lastname'].' '.$rowstudents['middlename'].' '.$rowstudents['firstname'];
-        
+
         $studgender = $rowstudents['gender'];
-        
+
         $date1 = $rowstudents['dob'];
         $date2 = date("Y-m-d");
-        
+
         $diff = abs(strtotime($date2) - strtotime($date1));
-        
+
         $years = floor($diff / (365*60*60*24));
-        
+
         $sqlGetclasses = "SELECT * FROM `classes` WHERE `id`='$classid'";
         $queryGetclasses = mysqli_query($link, $sqlGetclasses);
         $rowGetclasses = mysqli_fetch_assoc($queryGetclasses);
         $countGetclasses = mysqli_num_rows($queryGetclasses);
-        
+
         $studclass = $rowGetclasses['class'];
-        
+
         $sqlGetassigncatoclass = "SELECT * FROM `assigncatoclass` WHERE `ClassID`='$classid'";
         $queryGetassigncatoclass = mysqli_query($link, $sqlGetassigncatoclass);
         $rowGetassigncatoclass = mysqli_fetch_assoc($queryGetassigncatoclass);
         $countGetassigncatoclass = mysqli_num_rows($queryGetassigncatoclass);
-        
+
         // $rowGetassigncatoclass['ResultType'];'numeric';
-        
+
         $reltype = $rowGetassigncatoclass['ResultType'];
          $sqlGetsessions = "SELECT * FROM `sessions` WHERE `id`='$session'";
         $queryGetsessions = mysqli_query($link, $sqlGetsessions);
         $rowGetsessions = mysqli_fetch_assoc($queryGetsessions);
         $countGetsessions = mysqli_num_rows($queryGetsessions);
-        
+
         $studsession = $rowGetsessions['session'];
-        
+
         $sqlGetclass_sections = "SELECT * FROM `class_sections` WHERE `id`='$classsection'";
         $queryGetclass_sections = mysqli_query($link, $sqlGetclass_sections);
         $rowGetclass_sections = mysqli_fetch_assoc($queryGetclass_sections);
         $countGetclass_sections = mysqli_num_rows($queryGetclass_sections);
-        
+
         $studsecid = $rowGetclass_sections['id'];
-        
+
         $sqlGetsections = "SELECT * FROM `sections` WHERE `id`='$classsectionactual'";
         $queryGetsections = mysqli_query($link, $sqlGetsections);
         $rowGetsections = mysqli_fetch_assoc($queryGetsections);
         $countGetsections = mysqli_num_rows($queryGetsections);
-        
+
         $studsection = $rowGetsections['section'];
-        
+
     ?>
     <body style="background: rgb(236, 234, 234);">
             <div class="container-fluid" style="">
-       
+
                 <div class="row" id="non-printable" style="margin-top: 20px;">
                     <div class="col-md-10 ">
                          <a style="color: black; font-size: 20px;" href="<?php echo $defRUladmin;?>/admin/examResult.php" ><i class="fa fa-angle-double-left"></i> Back
                          </a>
                     </div>
-            
+
                     <div class="col-md-2">
                         <a href=""  style="color: #000000; font-weight: 600;" onclick="window.print()"><i class="fa fa-print"></i> Print</a>
                     </div>
-                    
+
                 </div>
-       
+
 
                 <div class="card" id="printable" style="overflow-x:scroll">
 
                     <div class="card-body" style="color: black;">
 
                         <div class="rel">
-                            
-                                
+
+
                             <div class="row">
                                 <div class="col">
                                     <div align="center">
@@ -221,11 +220,11 @@
                                 </div>
 
                                 <div class="col-6">
-                                    
+
                                     <p class="schname" style="font-size:25px"><?php echo $rowsch_settings['name'];?></p>
                                     <p class="schloc" style="color: rgb(185, 7, 7);font-size:16px;margin-top:-20px;"><?php echo $rowsch_settings['address'];?>.</p>
                                     <div  style="margin-top:-10px;text-align:center">
-                                        <span>Email: <?php echo $rowsch_settings['email']; ?> 
+                                        <span>Email: <?php echo $rowsch_settings['email']; ?>
                                         </span><br />
                                         <span>
                                         Website: <?php echo $defRUlsec; ?>
@@ -241,40 +240,40 @@
                             <div align="center">
                                 <h5 style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo $term;?> TERM</span> <?php echo $session_name;?> SESSION <span><?php $studsectionid;?></span></h5>
                             </div>
-                            
+
                             <?php
-                            
+
                                 if($reltypemain == 'midterm')
                                 {
-                                    
+
                                 ?>
                                         <div class="container-motto">
                                             <?php
-                                                
+
                                                 $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND SubjectID != '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
-                                                
+
                                                 if($row_cntgetsubscore > 0)
                                                 {
-                                                    
+
                                                     $sqlgettotalgrade = "SELECT SUM(CA1) AS CA1,SUM(CA2) AS CA2,SUM(CA3) AS CA3,SUM(CA4) AS CA4,SUM(CA5) AS CA5,SUM(CA6) AS CA6,SUM(CA7) AS CA7,SUM(CA8) AS CA8,SUM(CA9) AS CA9,SUM(CA10) AS CA10 FROM `score` WHERE StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
-        
+
                                                     $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                                     $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                                     $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
-        
+
                                                     $sqltogetresultsettings = mysqli_query($link,"SELECT * FROM `resultsetting` INNER JOIN assigncatoclass ON resultsetting.ResultSettingID=assigncatoclass.ResultSettingID WHERE ClassID = '$classid'");
                                                     $countresultsettings = mysqli_num_rows($sqltogetresultsettings);
                                                     $rowresultsettings = mysqli_fetch_array($sqltogetresultsettings);
-        
+
                                                     if($rowresultsettings > 0)
                                                     {
                                                         $MidTermCaToUse = $rowresultsettings['MidTermCaToUse'];
-        
+
                                                         $MidTermCaToUseArr = explode(',',$MidTermCaToUse);
-        
+
                                                         if(in_array("1", $MidTermCaToUseArr))
                                                         {
                                                             $CA1MidTerm = $rowgettotalgrade['CA1'];
@@ -284,7 +283,7 @@
                                                             $CA1MidTerm = '0';
                                                             $CA1MidTermHighestScore = '0';
                                                         }
-        
+
                                                         if(in_array("2", $MidTermCaToUseArr))
                                                         {
                                                             $CA2MidTerm = $rowgettotalgrade['CA2'];
@@ -366,21 +365,21 @@
                                                             $CA10MidTerm = '0';
                                                             $CA10MidTermHighestScore = '0';
                                                         }
-                                                        
+
                                                     }
                                                     else
                                                     {
-        
+
                                                     }
-        
+
                                                     $getMidTermAVG = $CA1MidTerm + $CA2MidTerm + $CA3MidTerm + $CA4MidTerm + $CA5MidTerm + $CA6MidTerm + $CA7MidTerm + $CA8MidTerm + $CA9MidTerm + $CA10MidTerm;
-        
+
                                                     $getMidTermHighestScore = ($CA1MidTermHighestScore + $CA2MidTermHighestScore + $CA3MidTermHighestScore + $CA4MidTermHighestScore + $CA5MidTermHighestScore + $CA6MidTermHighestScore + $CA7MidTermHighestScore + $CA8MidTermHighestScore + $CA9MidTermHighestScore + $CA10MidTermHighestScore) * $row_cntgetsubscore;
-        
+
                                                     // $gettotgrade = round($getMidTermAVG/$row_cntgetsubscore, 2);
-        
+
                                                     $gettotgradeold = round(($getMidTermAVG/$getMidTermHighestScore) * 100, 2);
-                                                    
+
                                                     if($gettotgradeold == '0' || $gettotgradeold == '' || $gettotgradeold == NULL)
                                                     {
                                                         $gettotgrade = 0;
@@ -389,30 +388,30 @@
                                                     {
                                                         $gettotgrade = $gettotgradeold;
                                                     }
-                                                    
+
                                                     $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
                                                     $resultgettotgradstuc = mysqli_query($link, $sqlgettotgradstuc);
                                                     $rowgettotgradstuc = mysqli_fetch_assoc($resultgettotgradstuc);
                                                     $row_cntgettotgradstuc = mysqli_num_rows($resultgettotgradstuc);
-                
+
                                                     if($row_cntgettotgradstuc > 0)
                                                     {
-                                                        
+
                                                         $totscorgrade = $rowgettotgradstuc['Grade'];
-                
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $totscorgrade = 'NA';
-                
+
                                                     }
-               
+
                                                 }
                                                 else
                                                 {
                                                     $gradeid = 'NA';
-                                                    
+
                                                     $gettotgrade = 0;
                                                 }
                                             ?>
@@ -427,32 +426,32 @@
                                                    <h5 style="color: #000000;"> <b>GENDER:</b> <?php echo $studgender; ?></h5>
                                                 </div>
                                             </div>
-            
+
                                             <div class="row" style="margin: 10px;">
-                                                
+
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>TOTAL SCORE:</b> <?php echo $gettotgrade;?></h5>
                                                 </div>
-                                                
+
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>GRADE:</b> <?php echo $totscorgrade;?></h5>
                                                 </div>
                                             </div>
-            
+
                                         </div>
-            
+
                                         <div align="center">
                                             <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE</h5>
                                         </div>
-            
+
                                         <div class="result table-responsive" style="margin: 10px;">
-                                            <?php 
-            
+                                            <?php
+
                                                 $sqlrelset = ("SELECT * FROM `resultsetting` INNER JOIN assigncatoclass ON resultsetting.ResultSettingID=assigncatoclass.ResultSettingID WHERE ClassID = '$classid'");
                                                 $resultrelset = mysqli_query($link, $sqlrelset);
                                                 $rowGetrelset = mysqli_fetch_assoc($resultrelset);
                                                 $row_cntrelset = mysqli_num_rows($resultrelset);
-            
+
                                                 if($row_cntrelset > 0)
                                                 {
                                                     $MidTermCaToUsegetheader = $rowGetrelset['MidTermCaToUse'];
@@ -530,16 +529,16 @@
                                                     else{
                                                         $ca10test = '';
                                                     }
-                                                    
+
                                                 }
                                                 else
                                                 {
                                                     $ca1test = '';
                                                 }
-                                                
+
                                             ?>
                                             <table class="table-bordered tab table-sm">
-                                            
+
                                                 <tr>
                                                     <th>SUBJECT(s)</th>
                                                     <?php echo $ca1test ; ?>
@@ -557,41 +556,41 @@
                                                     <th>GRADE</th>
                                                     <th>REMARK</th>
                                                 </tr>
-                                            
+
                                             <tbody>
                                                 <?php
-                                
+
                                                     $sqlsub = ("SELECT subjects.name AS name, subjects.id as id FROM `subject_group_class_sections` INNER JOIN subject_group_subjects ON subject_group_class_sections.subject_group_id=subject_group_subjects.subject_group_id INNER JOIN subjects ON subject_group_subjects.subject_id=subjects.id WHERE subject_group_class_sections.class_section_id = '$classsection' AND subject_group_class_sections.session_id='$session' AND subject_group_subjects.session_id='$session'");
                                                     $resultsub = mysqli_query($link, $sqlsub);
                                                     $rowGetsub = mysqli_fetch_assoc($resultsub);
                                                     $row_cntsub = mysqli_num_rows($resultsub);
-                    
+
                                                     $sqlgetscorecheck = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                     $resultgetscorecheck = mysqli_query($link, $sqlgetscorecheck);
                                                     $rowgetscorecheck = mysqli_fetch_assoc($resultgetscorecheck);
                                                     $row_cntgetscorecheck = mysqli_num_rows($resultgetscorecheck);
-                    
+
                                                     if($row_cntgetscorecheck > 0)
                                                     {
-                    
+
                                                         do{
-                                                            
+
                                                             $subname = $rowGetsub['name'];
                                                             $subid = $rowGetsub['id'];
-                    
+
                                                             $sqlgetscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND  StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                             $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                             $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                             $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                                                            
+
                                                             if($row_cntgetscore > 0)
                                                             {
                                                                 if($row_cntrelset > 0)
                                                                 {
                                                                     $MidTermCaToUseshowscores = $rowGetrelset['MidTermCaToUse'];
-    
+
                                                                     $MidTermCaToUseArrshowscores = explode(',',$MidTermCaToUseshowscores);
-    
+
                                                                     if(in_array("1", $MidTermCaToUseArrshowscores))
                                                                     {
                                                                         $ca1 = $rowgetscore['CA1'];
@@ -603,7 +602,7 @@
                                                                         $ca1table = '';
                                                                         $CA1MidTermHighestScoresubscore = '0';
                                                                     }
-    
+
                                                                     if(in_array("2", $MidTermCaToUseArrshowscores))
                                                                     {
                                                                         $ca2 = $rowgetscore['CA2'];
@@ -703,24 +702,24 @@
                                                                         $ca10table = '';
                                                                         $CA10MidTermHighestScoresubscore = '0';
                                                                     }
-                                                                    
+
                                                                 }
                                                                 else
                                                                 {
-    
+
                                                                 }
-    
+
                                                                 $total = $ca1 + $ca2 + $ca3 + $ca4 + $ca5 + $ca6 + $ca7 + $ca8 + $ca9 + $ca10;
-                                                                
+
                                                                 $getMidTermHighestScoresubscore = $CA1MidTermHighestScoresubscore + $CA2MidTermHighestScoresubscore + $CA3MidTermHighestScoresubscore + $CA4MidTermHighestScoresubscore + $CA5MidTermHighestScoresubscore + $CA6MidTermHighestScoresubscore + $CA7MidTermHighestScoresubscore + $CA8MidTermHighestScoresubscore + $CA9MidTermHighestScoresubscore + $CA10MidTermHighestScoresubscore;
-    
+
                                                                 $gettotgradetots = round(($total/$getMidTermHighestScoresubscore) * 100, 2);
-                                                                
+
                                                                 $sqlgetgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $gettotgradetots >= RangeStart AND $gettotgradetots <= RangeEnd AND ClassID = '$classid'");
                                                                 $resultgetgradstuc = mysqli_query($link, $sqlgetgradstuc);
                                                                 $rowgetgradstuc = mysqli_fetch_assoc($resultgetgradstuc);
                                                                 $row_cntgetgradstuc = mysqli_num_rows($resultgetgradstuc);
-                
+
                                                                 if($row_cntgetgradstuc > 0)
                                                                 {
                                                                     $grade = $rowgetgradstuc['Grade'];
@@ -728,30 +727,30 @@
                                                                 }
                                                                 else
                                                                 {
-                                                                    
+
                                                                 }
-                                                                
+
                                                                 echo '<tr>
                                                                             <th>' . $subname . '</th>';
                                                                             echo $ca1table .$ca2table.$ca3table.$ca4table.$ca5table.$ca6table.$ca7table.$ca8table.$ca9table.$ca10table;
                                                                             echo '
-                                                                            
+
                                                                             <td>' . $total . '/'.$getMidTermHighestScoresubscore.'</td>
                                                                             <td>' . $gettotgradetots.'</td>
                                                                             <td>' . $grade . '</td>
-                                                                            
+
                                                                             <td>' . $remark . '</td>
                                                                         </tr>';
-                                                                
-                                                            }   
+
+                                                            }
                                                         }while($rowGetsub = mysqli_fetch_assoc($resultsub));
-                    
+
                                                     }
                                                     else
                                                     {
                                                         echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
                                                     }
-                    
+
                                                 ?>
                                             </tbody>
                                             </table>
@@ -759,11 +758,11 @@
 
 						<?php
                                             $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='$term'");
-                                            
+
                                             $resultresumdateOld = mysqli_query($link, $sqlresumdateOld);
                                             $getresumdateOld = mysqli_fetch_assoc($resultresumdateOld);
                                             $sqlrow_cntresumdateOld = mysqli_num_rows($resultresumdateOld);
-                                            
+
                                             if($sqlrow_cntresumdateOld > 0)
                                             {
                                                 $resumdateOld = $getresumdateOld['Date'];
@@ -772,25 +771,25 @@
                                             {
                                                 $resumdateOld = 'N/A';
                                             }
-                                            
+
                                             $sqlgetsubscore = ("SELECT * FROM `score` WHERE `ca1` != '0' AND `ca1` != '' AND `ca1` IS NOT NULL AND StudentID = '$id' AND ClassID = '$classid' AND SubjectID = '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                             $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                             $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                             $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
-                                            
+
                                             if($row_cntgetsubscore > 0)
                                             {
-                                        
+
                                                 $rowcountfixedgennew = $rowgetsubscore['ca1'];
                                                 $rowcountfixedpresent = $rowgetsubscore['ca2'];
                                                 $rowcountfixedlate = $rowgetsubscore['ca3'];
                                                 $rowcountfixedabsent = $rowgetsubscore['ca4'];
-                                                
+
                                             }else{
                                                 $sqlgettechgen = mysqli_query($link,"SELECT DISTINCT(student_attendences.`date`) FROM `student_attendences` WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2'");
                                                 $fetchfixedgen = mysqli_fetch_assoc($sqlgettechgen);
                                                 $rowcountfixedgen = mysqli_num_rows($sqlgettechgen);
-                                                
+
                                                 if($rowcountfixedgen == NULL || $rowcountfixedgen == '')
                                                 {
                                                     $rowcountfixedgennew = 0;
@@ -799,11 +798,11 @@
                                                 {
                                                     $rowcountfixedgennew = $rowcountfixedgen;
                                                 }
-                                                
+
                                                 $sqlgettechpresent = mysqli_query($link,"SELECT * FROM `student_attendences` INNER JOIN student_session ON student_attendences.student_session_id=student_session.id WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2' AND student_session.`student_id`='$id' AND student_session.`session_id`='$session' AND student_session.`class_id`='$classid' AND `attendence_type_id`='1'");
                                                 $fetchfixedpresent = mysqli_fetch_assoc($sqlgettechpresent);
                                                 $rowcountfixedpresent = mysqli_num_rows($sqlgettechpresent);
-                                                
+
                                                 if($rowcountfixedpresent == NULL || $rowcountfixedpresent == '')
                                                 {
                                                     $rowcountfixedpresent = 0;
@@ -812,11 +811,11 @@
                                                 {
                                                     $rowcountfixedpresent = $rowcountfixedpresent;
                                                 }
-                                            
+
                                                 $sqlgettechabsent = mysqli_query($link,"SELECT * FROM `student_attendences` INNER JOIN student_session ON student_attendences.student_session_id=student_session.id WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2' AND student_session.`student_id`='$id' AND student_session.`session_id`='$session' AND student_session.`class_id`='$classid' AND `attendence_type_id`='4'");
                                                 $fetchfixedabsent = mysqli_fetch_assoc($sqlgettechabsent);
                                                 $rowcountfixedabsent = mysqli_num_rows($sqlgettechabsent);
-                                                
+
                                                 if($rowcountfixedabsent == NULL || $rowcountfixedabsent == '')
                                                 {
                                                     $rowcountfixedabsent = 0;
@@ -833,14 +832,14 @@
                                                 <p>Class Average: <?php echo $decStubsubavg;?> </p>
                                                 <p>No. of Subjects: <?php echo $row_cntgetscorecheck;?></p>
                                         </div>
-            
+
                                         <div class="performance" >
                                             <div class="row">
                                                 <div class="col-4">
                                                     <div class="containerForChart">
-                                                                        
+
                                                         <canvas class="newgraph" id="mysunChart" style="width:100%;"></canvas>
-                                                        
+
                                                     </div>
                                                 </div>
                                                 <div class="col-4" style="padding-right: 0px">
@@ -851,20 +850,20 @@
                                                                     <th colspan="4" style="text-align: center;">AFFECTIVE DOMAIN</th>
                                                                 </tr>
                                                                 <tbody>
-                                                                <?php 
-                        
+                                                                <?php
+
                                                                     $sqlrelset = ("SELECT * FROM `affective_domain_settings` INNER JOIN assignsaftoclass ON affective_domain_settings.id=assignsaftoclass.AffectiveDomainSettingsId WHERE ClassID = '$classid'");
                                                                     $resultrelset = mysqli_query($link, $sqlrelset);
                                                                     $rowGetrelset = mysqli_fetch_assoc($resultrelset);
                                                                     $row_cntrelset = mysqli_num_rows($resultrelset);
-                                
+
                                                                     if($row_cntrelset > 0)
                                                                     {
                                                                         $sqlgetscore = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND term = '$term' AND sectionid = '$classsectionactual'");
                                                                         $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                                         $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                                         $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                                        
+
                                                                         if($row_cntgetscore > 0)
                                                                         {
                                                                             if($rowGetrelset['NumberofAD'] =='1')
@@ -911,7 +910,7 @@
                                                                                         <td></td>
                                                                                         <td></td>
                                                                                     </tr>';
-                                                                            }        
+                                                                            }
                                                                             elseif($rowGetrelset['NumberofAD'] =='4')
                                                                             {
                                                                                 echo '<tr>
@@ -1408,20 +1407,20 @@
                                                                     <th colspan="4" style="text-align: center;">PSYCOMOTOR</th>
                                                                 </tr>
                                                                 <tbody>
-                                                                <?php 
-                        
+                                                                <?php
+
                                                                     $sqlrelset = ("SELECT * FROM `psycomotor_settings` INNER JOIN assignspsycomotortoclass ON psycomotor_settings.id=assignspsycomotortoclass.PsycomotorSettingsId WHERE ClassID = '$classid'");
                                                                     $resultrelset = mysqli_query($link, $sqlrelset);
                                                                     $rowGetrelset = mysqli_fetch_assoc($resultrelset);
                                                                     $row_cntrelset = mysqli_num_rows($resultrelset);
-                                
+
                                                                     if($row_cntrelset > 0)
                                                                     {
                                                                         $sqlgetscore = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND term = '$term' AND sectionid = '$classsectionactual'");
                                                                         $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                                         $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                                         $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                                        
+
                                                                         if($row_cntgetscore > 0)
                                                                         {
                                                                             if($rowGetrelset['NumberofP'] =='1')
@@ -1468,7 +1467,7 @@
                                                                                         <td></td>
                                                                                         <td></td>
                                                                                     </tr>';
-                                                                            }        
+                                                                            }
                                                                             elseif($rowGetrelset['NumberofP'] =='4')
                                                                             {
                                                                                 echo '<tr>
@@ -1957,26 +1956,26 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <?php
-                                                            
+
                                                     $sqlgettechremark = mysqli_query($link,"SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `remark`!=''");
                                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
-                                                    
-                                                    
+
+
                                                     if($rowcountfixedremark > 0)
                                                     {
                                                         $teacherRemark = $fetchfixedremark['remark'];
-                                                        
+
                                                         $teacherid = $fetchfixedremark['StaffID'];
-                                                        
+
                                                         $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$hedteachid'");
                                                         $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                                         $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                                         $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
-                                                        
-                                            
+
+
                                                         if($row_cntgetheadteachsign > 0)
                                                         {
                                                             $hedteachsign = '<img src="../img/signature/'.$rowgetheadteachsign['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -1985,29 +1984,29 @@
                                                         {
                                                             $hedteachsign = '';
                                                         }
-                                                         
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $sqlgetteachremark = ("SELECT * FROM `defaultcomment` INNER JOIN class_teacher ON defaultcomment.PrincipalOrDeanOrHeadTeacherUserID=class_teacher.staff_id WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'teacher' AND class_id = '$classid'");
                                                         $resultgetteachremark = mysqli_query($link, $sqlgetteachremark);
                                                         $rowgetteachremark = mysqli_fetch_assoc($resultgetteachremark);
                                                         $row_cntgetteachremark = mysqli_num_rows($resultgetteachremark);
-                                                    
+
                                                         if($row_cntgetteachremark > 0)
                                                         {
-                                                            $teacherRemark = $rowgetteachremark['DefaultComment']; 
-                                                            
+                                                            $teacherRemark = $rowgetteachremark['DefaultComment'];
+
                                                             $teacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-                                                            
-                                                            
+
+
                                                             $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$teacherid'");
                                                             $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                                             $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                                             $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
-                                                            
-                                                
+
+
                                                             if($row_cntgetheadteachsign > 0)
                                                             {
                                                                 $hedteachsign = '<img src="../img/signature/'.$rowgetheadteachsign['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -2020,27 +2019,27 @@
                                                         else
                                                         {
                                                             $teacherRemark = 'N/A';
-                                                            
+
                                                             $hedteachsign = '';
                                                         }
-                                                    
+
                                                     }
-                                    
+
                                                     $sqlgetprincremark = mysqli_query($link,"SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `remark`!=''");
                                                     $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                                                     $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
-                                                    
+
                                                     if($rowcountprinfixedremark > 0)
                                                     {
                                                         $principalRemark = $fetchfixedprinremark['remark'];
-                                                        
+
                                                         $headteacherid = $fetchfixedprinremark['staff_id'];
-                                                        
+
                                                         $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
                                                         $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                                         $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-                                                        
+
                                                         if($row_cntgetheadteachsignhead > 0)
                                                         {
                                                             $hedteachsignhead = '<img src="'.$defRUl.'img/signature/'.$rowgetheadteachsignhead['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -2049,27 +2048,27 @@
                                                         {
                                                             $hedteachsignhead = '';
                                                         }
-                                                        
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $sqlgetprincremark = ("SELECT * FROM `defaultcomment` WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'SchoolHead'");
                                                         $resultgetprincremark = mysqli_query($link, $sqlgetprincremark);
                                                         $rowgetteachremark = mysqli_fetch_assoc($resultgetprincremark);
                                                         $row_cntgetprincremark = mysqli_num_rows($resultgetprincremark);
-                                                    
+
                                                         if($row_cntgetprincremark > 0)
                                                         {
-                                                            $principalRemark = $rowgetteachremark['DefaultComment']; 
-                                                            
+                                                            $principalRemark = $rowgetteachremark['DefaultComment'];
+
                                                             $headteacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-                                                            
+
                                                             $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                                             $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                                             $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-                                                            
+
                                                             if($row_cntgetheadteachsignhead > 0)
                                                             {
                                                                 $hedteachsignhead = '<img src="'.$defRUl.'img/signature/'.$rowgetheadteachsignhead['Signature'].'" align="center" class="img-fluid" style="width: 80%;">';
@@ -2078,23 +2077,23 @@
                                                             {
                                                                 $hedteachsignhead = '';
                                                             }
-                                                            
+
                                                         }
                                                         else
                                                         {
                                                             $principalRemark = 'N/A';
-                                                            
+
                                                             $hedteachsignhead = '';
                                                         }
-                                                    
+
                                                     }
-                                                    
+
                                                     $sqlresumdate = ("SELECT * FROM `resumptiondate` WHERE `Session`='$sessionnew' AND `Term`='$term' AND `Type`='$reltypemain'");
-                                                    
+
                                                     $resultresumdate = mysqli_query($link, $sqlresumdate);
                                                     $getresumdate = mysqli_fetch_assoc($resultresumdate);
                                                     $sqlrow_cntresumdate = mysqli_num_rows($resultresumdate);
-                                                    
+
                                                     if($sqlrow_cntresumdate > 0)
                                                     {
                                                         $resumdate = date("l jS \of F Y", strtotime($getresumdate['Date']));
@@ -2105,7 +2104,7 @@
                                                     }
                                                 ?>
                                                 <div class="col-12">
-                                                    
+
                                                     <div class="container-motto">
                                                         <div style="margin: 20px;">
                                                             <div class="row">
@@ -2114,47 +2113,47 @@
                                                                         <p style="text-align: justify;"><b style="font-weight:600;">CLASS TEACHER'S COMMENT:</b>&nbsp;<?php echo $teacherRemark;?></p>
                                                                     </div>
                                                                 </div>
-                        
+
                                                                 <div class="col-sm-2 col-md-2">
                                                                     <div align="center">
-                                                                        <?php echo $hedteachsign;?> 
+                                                                        <?php echo $hedteachsign;?>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                        
+
                                                             <div class="row">
                                                                 <div class="col-sm-10 col-md-10">
                                                                     <div>
                                                                     <p style="text-align: justify;"><b style="font-weight:600;">PRINCIPAL/HEAD TEACHER'S COMMENT:</b>&nbsp;&nbsp;&nbsp;<?php echo $principalRemark;?></p>
                                                                     </div>
                                                                 </div>
-                        
+
                                                                 <div class="col-sm-2 col-md-2">
                                                                     <div>
                                                                         <?php echo $hedteachsignhead;?>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            
+
                                                             <div class="row">
                                                 				<div class="col-sm-12 col-md-12">
                                                 					<div>
                                                 						<p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate;?></b></p>
                                                 					    <?php
-                                                                            if ($next_fee > 0) { 
+                                                                            if ($next_fee > 0) {
                                                                                 echo '<p style="text-align: center;"><b style="font-weight:600;">NEXT TERM FEE: N' . $next_fee. '</b></p>';
                                                                             }
                                                                             ?>
 
                                                 					</div>
                                                 				</div>
-                                                
+
                                                 			</div>
-                                                			
-                                                            
+
+
                                                         </div>
                                                     </div>
-                    
+
                                                 </div>
                                             </div>
                                         </div>
@@ -2162,15 +2161,15 @@
                                         /*
                                             if($term == '3rd')
                                             {
-                                                
+
                                                 $sessionnew = $session + 1;
-                                                   
+
                                                 $sqlstudent_session = ("SELECT * FROM `student_session` WHERE `session_id`='$sessionnew' AND student_id = '$id'");
-                                                
+
                                                 $resultstudent_session = mysqli_query($link, $sqlstudent_session);
                                                 $getstudent_session = mysqli_fetch_assoc($resultstudent_session);
                                                 $sqlrow_cntstudent_session = mysqli_num_rows($resultstudent_session);
-                                                
+
                                                 if($sqlrow_cntstudent_session > 0)
                                                 {
                                                     echo '<center>
@@ -2183,146 +2182,146 @@
                                                         <p class="promoted">NOT PROMOTED TO THE NEXT CLASS</p>
                                                     </center>';
                                                 }
-                                                
+
                                             }
                                             else
                                             {
-                                                
+
                                             }
                                             */
                                         ?>
-                                        
+
                                 <?php
-                                    
+
                                 }
                                 elseif($reltypemain == 'termly')
                                 {
-                                    
+
                                     if($reltype == 'alphabetic')
                                     {
                                 ?>
                                         <div class="container-motto">
                                             <?php
-                                                    
+
                                                 $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
-                                            
+
                                                 $sqlgettotalgrade = "SELECT SUM(exam + ca1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS average FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
                                                 $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                                 $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
-                
+
                                                 $gettotgrade = floatval(round($rowgettotalgrade['average']/$row_cntgetsubscore, 2));
-                                                
+
                                                 $gettotscore = $rowgettotalgrade['average'];
-                                                
+
                                                 $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND SubjectID != '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetClasscount = mysqli_query($link, $sqlgetClasscount);
                                                 $rowgetClasscount = mysqli_fetch_assoc($resultgetClasscount);
                                                 $row_cntClasscount = mysqli_num_rows($resultgetClasscount);
-                                                
+
                                                 $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SubjectID != '0' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscoreALL = mysqli_query($link, $sqlgetsubscoreALL);
                                                 $rowgetsubscoreALL = mysqli_fetch_assoc($resultgetsubscoreALL);
                                                 $row_cntgetsubscoreALL = mysqli_num_rows($resultgetsubscoreALL);
-                                                
+
                                                 $sqlgettotclassscor = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual' ORDER BY exam + ca1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10";
                                                 $resultgettotclassscor = mysqli_query($link, $sqlgettotclassscor);
                                                 $rowgettotclassscor = mysqli_fetch_assoc($resultgettotclassscor);
                                                 $row_cntgettotclassscor = mysqli_num_rows($resultgettotclassscor);
-                                                
+
                                                 $totsubjects = $row_cntClasscount * $row_cntgetsubscore;
                                                 $totsubjectsALL = $row_cntClasscount * $row_cntgetsubscoreALL;
-                                                                    
+
                                                 $decStubsubavg = round($rowgettotclassscor['totalScore']/$totsubjectsALL,2);
-                                                
+
                                                 $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10),COUNT(ID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
                                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
                                                 $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
                                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
-                                                
+
                                                 $sunhihscrun = round($rowsunnyhihhscoreuname['total'],2);
-                                                
+
                                                 $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10),COUNT(ID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND SubjectID != 0 AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
                                                 $resultsunnylowwscoreuname = mysqli_query($link, $sqlsunnylowwscoreuname);
                                                 $rowsunnylowwscoreuname = mysqli_fetch_assoc($resultsunnylowwscoreuname);
                                                 $row_cntsunnylowwscoreuname = mysqli_num_rows($resultsunnylowwscoreuname);
-                                                    
+
                                                 $sunlowscrun = round($rowsunnylowwscoreuname['total'],2);
-                                                
+
                                                 if($row_cntgettotalgrade > 0)
                                                 {
                                                     $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
                                                     $resultgettotgradstuc = mysqli_query($link, $sqlgettotgradstuc);
                                                     $rowgettotgradstuc = mysqli_fetch_assoc($resultgettotgradstuc);
                                                     $row_cntgettotgradstuc = mysqli_num_rows($resultgettotgradstuc);
-                
+
                                                     if($row_cntgettotgradstuc > 0)
                                                     {
-                                                        
+
                                                         $totscorgrade = $rowgettotgradstuc['Grade'];
-                
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $totscorgrade = 'NA';
-                
+
                                                     }
                                                 }
                                                 else
                                                 {
                                                     $gettotgrade = 'NA';
-                                                }   
-                                            
+                                                }
+
                                             ?>
-                                            <div class="row" style="margin: 10px;">
+                                            <div class="row" style="margin: 5px;">
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>NAME:</b> <?php echo $studname; ?></h5>
                                                 </div>
-                                                
+
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>CLASS:</b> <?php echo $studclass.' ' .$studsection; ?></h5>
                                                 </div>
-                                                
+
                                                 <div class="col-4">
                                                    <h5 style="color: #000000;"> <b>SEX:</b> <?php echo $studgender; ?></h5>
                                                 </div>
-                                                  
+
                                             </div>
-            
+
                                             <div class="row" style="margin: 10px;">
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>OVERALL GRADE:</b> <?php echo $totscorgrade; ?></h5>
                                                 </div>
-                                                
+
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;" > <b>HIGHEST IN CLASS AVG:</b> <?php echo $sunhihscrun;?></h5>
-                                                </div>    
-                                                
+                                                </div>
+
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>LOWEST IN CLASS AVE:</b> <?php echo $sunlowscrun;?></h5>
-                                                </div>   
-                                                
+                                                </div>
+
                                             </div>
-                                           
-            
+
+
                                         </div>
-            
+
                                         <div align="center">
                                             <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE</h5>
                                         </div>
-            
+
                                         <div class="result table-responsive" style="margin: 10px;">
-                                            <?php 
-            
+                                            <?php
+
                                                 $sqlrelset = ("SELECT * FROM `resultsetting` INNER JOIN assigncatoclass ON resultsetting.ResultSettingID=assigncatoclass.ResultSettingID WHERE ClassID = '$classid'");
                                                 $resultrelset = mysqli_query($link, $sqlrelset);
                                                 $rowGetrelset = mysqli_fetch_assoc($resultrelset);
                                                 $row_cntrelset = mysqli_num_rows($resultrelset);
-            
+
                                                 if($row_cntrelset > 0)
                                                 {
                                                     if($rowGetrelset['NumberOfCA'] =='1')
@@ -2369,16 +2368,16 @@
                                                     {
                                                         $ca1test = '';
                                                     }
-                                                    
+
                                                 }
                                                 else
                                                 {
                                                     $ca1test = '';
                                                 }
-                                                
+
                                             ?>
                                             <table class="table-bordered tab table-sm" style="width:98%;">
-                                            
+
                                                 <tr>
                                                     <th>SUBJECT(s)</th>
                                                     <?php echo $ca1test ; ?>
@@ -2398,50 +2397,50 @@
                                                     <th style="width:90px;text-align:center">Highest in Class</th>
                                                     <th style="width:120px;text-align:center">Remark</th>
                                                 </tr>
-                                            
+
                                             <tbody>
                                                 <?php
-                                
+
                                                     $sqlsub = ("SELECT subjects.name AS name, subjects.id as id FROM `subject_group_class_sections` INNER JOIN subject_group_subjects ON subject_group_class_sections.subject_group_id=subject_group_subjects.subject_group_id INNER JOIN subjects ON subject_group_subjects.subject_id=subjects.id WHERE subject_group_class_sections.class_section_id = '$classsection' AND subject_group_class_sections.session_id='$session' AND subject_group_subjects.session_id='$session'");
                                                     $resultsub = mysqli_query($link, $sqlsub);
                                                     $rowGetsub = mysqli_fetch_assoc($resultsub);
                                                     $row_cntsub = mysqli_num_rows($resultsub);
-                    
+
                                                     $sqlgetscorecheck = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                     $resultgetscorecheck = mysqli_query($link, $sqlgetscorecheck);
                                                     $rowgetscorecheck = mysqli_fetch_assoc($resultgetscorecheck);
                                                     $row_cntgetscorecheck = mysqli_num_rows($resultgetscorecheck);
-                    
+
                                                     if($row_cntgetscorecheck > 0)
                                                     {
-                    
+
                                                         // $sqlgetgadingmeth = ("SELECT * FROM `classordepartment` WHERE InstitutionID = '$institution' AND FacultyOrSchoolID='$facultyID' AND ClassOrDepartmentID = '$classid'");
                                                         // $resultgetgadingmeth = mysqli_query($link, $sqlgetgadingmeth);
                                                         // $rowgetgadingmeth = mysqli_fetch_assoc($resultgetgadingmeth);
                                                         // $row_cntgetgadingmeth = mysqli_num_rows($resultgetgadingmeth);
-                    
+
                                                         // $gradeid = $rowgetgadingmeth['GradingMethodID'] . '</br>';
-                                                        
+
                                                         do{
-                                                            
+
                                                             $subname = $rowGetsub['name'];
                                                             $subid = $rowGetsub['id'];
-                    
+
                                                             $sqlgetscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                             $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                             $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                             $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                    
-                    
+
+
                                                             $sqlgetscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                             $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                             $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                             $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                    
-                    
+
+
                                                             if($row_cntgetscore > 0)
                                                             {
-                    
+
                                                                 if($rowGetrelset['NumberOfCA'] =='1')
                                                                 {
                                                                     $ca1 = $rowgetscore['ca1'];
@@ -2485,130 +2484,130 @@
                                                                 else{
                                                                     $ca1 = 0;
                                                                 }
-                                                                
+
                                                                 $exam = $rowgetscore['exam'];
-                
+
                                                                 $total = $ca1 + $exam;
-                                                                
+
                                                                 $subavg = $total;
-                                                                
+
                                                                 $sqlgetgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $total >= RangeStart AND $total <= RangeEnd AND ClassID = '$classid'");
                                                                 $resultgetgradstuc = mysqli_query($link, $sqlgetgradstuc);
                                                                 $rowgetgradstuc = mysqli_fetch_assoc($resultgetgradstuc);
                                                                 $row_cntgetgradstuc = mysqli_num_rows($resultgetgradstuc);
-                
+
                                                                 if($row_cntgetgradstuc > 0)
                                                                 {
                                                                     $grade = $rowgetgradstuc['Grade'];
                                                                     $remark = $rowgetgradstuc['Remark'];
-                                                                    
+
                                                                     $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
                                                                     $resultsunnyhihhscoreunamepersub = mysqli_query($link, $sqlsunnyhihhscoreunamepersub);
                                                                     $rowsunnyhihhscoreunamepersub = mysqli_fetch_assoc($resultsunnyhihhscoreunamepersub);
                                                                     $row_cntsunnyhihhscoreunamepersub = mysqli_num_rows($resultsunnyhihhscoreunamepersub);
-                                                                    
+
                                                                     $sunhihscrunpersub = round($rowsunnyhihhscoreunamepersub['total']);
-                                                                    
+
                                                                     $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
                                                                     $resultsunnylowwscoreunamepersub = mysqli_query($link, $sqlsunnylowwscoreunamepersub);
                                                                     $rowsunnylowwscoreunamepersub = mysqli_fetch_assoc($resultsunnylowwscoreunamepersub);
                                                                     $row_cntsunnylowwscoreunamepersub = mysqli_num_rows($resultsunnylowwscoreunamepersub);
-                                                                        
+
                                                                     $sunlowscrunpersub = round($rowsunnylowwscoreunamepersub['total']);
-                                                                            
+
                                                                     $sqlgetscorepos = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam+CA1+CA2+CA3+CA4+CA5) AS total, UserRegNumberOrUsername FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND InstitutionID = '$institution' AND ClassOrDepartmentID = '$classid' AND Session = '$sunnyresultsession' AND CourseOrSubjectID= '$subid' GROUP BY UserRegNumberOrUsername ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.UserRegNumberOrUsername='$regno'";
-                                                                    $resultgetscorepos = mysqli_query($link, $sqlgetscorepos); 
+                                                                    $resultgetscorepos = mysqli_query($link, $sqlgetscorepos);
                                                                     $rowgetscorepos = mysqli_fetch_assoc($resultgetscorepos);
                                                                     $row_cntgetscorepos = mysqli_num_rows($resultgetscorepos);
-                                                                    
+
                                                                     $sqlgetsubper = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS average FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND InstitutionID = '$institution' AND ClassOrDepartmentID = '$classid' AND CourseOrSubjectID = '$subid' AND Session = '$sunnyresultsession' AND TermOrSemester = '$sunnyrelterm' ORDER BY Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10";
                                                                     $resultgetsubper = mysqli_query($link, $sqlgetsubper);
                                                                     $rowgetsubper = mysqli_fetch_assoc($resultgetsubper);
                                                                     $row_cntgetsubper = mysqli_num_rows($resultgetsubper);
-            
+
                                                                     $getsubper = round($rowgetsubper['average']/$row_cntClasscount,2);
-            
+
                                                                     $getsco = round($rowgetscorepos['total'],2);
-                                                                    
+
                                                                     $getscorpos = $rowgetscorepos['n'];
-                                                                      
+
                                                                 }
                                                                 else
                                                                 {
-                                                                    
+
                                                                 }
-                
+
                                                                 echo '<tr>
                                                                     <th>' . $subname . '</th>';
                                                                     if($rowGetrelset['NumberOfCA'] =='1')
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["ca1"].'
-                                                                                
+
                                                                                 </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='2')
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["ca1"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                                 '.$rowgetscore["ca2"].'
-                                                                                
+
                                                                                 </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='3')
                                                                     {
                                                                         echo '<td>
                                                                             '.$rowgetscore["ca1"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                             '.$rowgetscore["ca2"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                             '.$rowgetscore["ca3"].'
-                                                                            
+
                                                                             </td>';
-                                                                    }        
+                                                                    }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='4')
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["ca1"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                                 '.$rowgetscore["ca2"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                             '.$rowgetscore["ca3"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca4"].'
-                                                                            
+
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='5')
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["ca1"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                                 '.$rowgetscore["ca2"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                             '.$rowgetscore["ca3"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca4"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca5"].'
@@ -2618,179 +2617,179 @@
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["ca1"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                                 '.$rowgetscore["ca2"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                             '.$rowgetscore["ca3"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca4"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca5"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca6"].'
-                                                                                
+
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='7')
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["ca1"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                                 '.$rowgetscore["ca2"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                             '.$rowgetscore["ca3"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA4"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA5"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA6"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA7"].'
-                                                                                
+
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='8')
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["ca1"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                                 '.$rowgetscore["ca2"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                             '.$rowgetscore["ca3"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca4"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca5"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca6"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca7"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca8"].'
-                                                                                
+
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='9')
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["ca1"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                                 '.$rowgetscore["ca2"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                             '.$rowgetscore["ca3"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca4"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca5"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca6"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca7"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca8"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca9"].'
-                                                                                
+
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='10')
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["ca1"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                                 '.$rowgetscore["ca2"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                             '.$rowgetscore["ca3"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca4"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca5"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca6"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca7"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca8"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca9"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["ca10"].'
-                                                                                
+
                                                                             </td>';
                                                                     }
                                                                     else{
-                                                                        
+
                                                                     }
                                                                     echo '
                                                                     <td>' . $exam . '</td>
@@ -2800,36 +2799,36 @@
                                                                     <td>'.$sunhihscrunpersub.'</td>
                                                                     <td>' . $remark . '</td>
                                                                 </tr>';
-                
-                                                                
-                
-                                                            
+
+
+
+
                                                         }
                                                             else
                                                             {
-                                                                
+
                                                             }
-                                                            
+
                                                         }while($rowGetsub = mysqli_fetch_assoc($resultsub));
-                    
+
                                                     }
                                                     else
                                                     {
                                                         echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
                                                     }
-                    
+
                                                 ?>
                                             </tbody>
                                             </table>
                                         </div>
-            
+
                                         <?php
                                             $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='$term'");
-                                            
+
                                             $resultresumdateOld = mysqli_query($link, $sqlresumdateOld);
                                             $getresumdateOld = mysqli_fetch_assoc($resultresumdateOld);
                                             $sqlrow_cntresumdateOld = mysqli_num_rows($resultresumdateOld);
-                                            
+
                                             if($sqlrow_cntresumdateOld > 0)
                                             {
                                                 $resumdateOld = $getresumdateOld['Date'];
@@ -2838,24 +2837,24 @@
                                             {
                                                 $resumdateOld = 'N/A';
                                             }
-                                            
+
                                             $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`ca1` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND SubjectID = '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                             $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                             $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                             $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
                                             if($row_cntgetsubscore > 0)
                                             {
-                                                
+
                                                 $rowcountfixedgennew = $rowgetsubscore['ca1'];
                                                 $rowcountfixedpresent = $rowgetsubscore['ca2'];
                                                 $rowcountfixedlate = $rowgetsubscore['ca3'];
                                                 $rowcountfixedabsent = $rowgetsubscore['ca4'];
-                                                
+
                                             }else{
                                                 $sqlgettechgen = mysqli_query($link,"SELECT DISTINCT(student_attendences.`date`) FROM `student_attendences` WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2'");
                                                 $fetchfixedgen = mysqli_fetch_assoc($sqlgettechgen);
                                                 $rowcountfixedgen = mysqli_num_rows($sqlgettechgen);
-                                                
+
                                                 if($rowcountfixedgen == NULL || $rowcountfixedgen == '')
                                                 {
                                                     $rowcountfixedgennew = 0;
@@ -2864,11 +2863,11 @@
                                                 {
                                                     $rowcountfixedgennew = $rowcountfixedgen;
                                                 }
-                                                
+
                                                 $sqlgettechpresent = mysqli_query($link,"SELECT * FROM `student_attendences` INNER JOIN student_session ON student_attendences.student_session_id=student_session.id WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2' AND student_session.`student_id`='$id' AND student_session.`session_id`='$session' AND student_session.`class_id`='$classid' AND `attendence_type_id`='1'");
                                                 $fetchfixedpresent = mysqli_fetch_assoc($sqlgettechpresent);
                                                 $rowcountfixedpresent = mysqli_num_rows($sqlgettechpresent);
-                                            
+
                                                 if($rowcountfixedpresent == NULL || $rowcountfixedpresent == '')
                                                 {
                                                     $rowcountfixedpresent = 0;
@@ -2877,11 +2876,11 @@
                                                 {
                                                     $rowcountfixedpresent = $rowcountfixedpresent;
                                                 }
-                                                
+
                                                 $sqlgettechabsent = mysqli_query($link,"SELECT * FROM `student_attendences` INNER JOIN student_session ON student_attendences.student_session_id=student_session.id WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2' AND student_session.`student_id`='$id' AND student_session.`session_id`='$session' AND student_session.`class_id`='$classid' AND `attendence_type_id`='4'");
                                                 $fetchfixedabsent = mysqli_fetch_assoc($sqlgettechabsent);
                                                 $rowcountfixedabsent = mysqli_num_rows($sqlgettechabsent);
-                                                
+
                                                 if($rowcountfixedabsent == NULL || $rowcountfixedabsent == '')
                                                 {
                                                     $rowcountfixedabsent = 0;
@@ -2899,14 +2898,14 @@
                                                 <p>No. of Subjects: <?php echo $row_cntgetscorecheck;?></p>
                                         </div>
 
-            
+
                                         <div class="performance">
                                             <div class="row">
                                                 <div class="col-4">
                                                     <div class="containerForChart" style="border:0px solid black">
-                                                                        
+
                                                         <canvas class="newgraph" id="mysunChart" style="width:100%;"></canvas>
-                                                        
+
                                                     </div>
                                                 </div>
                                                 <div class="col-8" style="padding-right: 0px">
@@ -2917,20 +2916,20 @@
                                                                     <th colspan="6" style="text-align: center;">AFFECTIVE DOMAIN </th>
                                                                 </tr>
                                                                 <tbody>
-                                                                <?php 
-                        
+                                                                <?php
+
                                                                     $sqlrelset = ("SELECT * FROM `affective_domain_settings` INNER JOIN assignsaftoclass ON affective_domain_settings.id=assignsaftoclass.AffectiveDomainSettingsId WHERE ClassID = '$classid'");
                                                                     $resultrelset = mysqli_query($link, $sqlrelset);
                                                                     $rowGetrelset = mysqli_fetch_assoc($resultrelset);
                                                                     $row_cntrelset = mysqli_num_rows($resultrelset);
-                                
+
                                                                     if($row_cntrelset > 0)
                                                                     {
                                                                         $sqlgetscore = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND term = '$term' AND sectionid = '$classsectionactual'");
                                                                         $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                                         $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                                         $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                                        
+
                                                                         if($row_cntgetscore > 0)
                                                                         {
                                                                             if($rowGetrelset['NumberofAD'] =='1')
@@ -2977,7 +2976,7 @@
                                                                                         <td></td>
                                                                                         <td></td>
                                                                                     </tr>';
-                                                                            }        
+                                                                            }
                                                                             elseif($rowGetrelset['NumberofAD'] =='4')
                                                                             {
                                                                                 echo '<tr>
@@ -3463,7 +3462,7 @@
                                                                     ?>
                                                                 </tbody>
                                                             </table>
-                                                            
+
                                                             <table class="tab table-sm" style="width:22%;border:0px solid red;display:inline-block;position:relative;top:-70px;padding-left:20px">
                                                                 <tr>
                                                                     <th colspan="6" style="text-align: center;">ATTENDANCE</th>
@@ -3473,17 +3472,17 @@
                                                                         <th>TOTAL DAYS</th>
                                                                         <td> <?php echo $rowcountfixedgennew;?></td>
                                                                     </tr>
-                                                                    
+
                                                                     <tr>
                                                                         <th>PRESENT</th>
                                                                         <td><?php echo $rowcountfixedpresent;?></td>
                                                                     </tr>
-                                                                    
+
                                                                     <tr>
                                                                         <th>ABSENT</th>
                                                                         <td><?php echo $rowcountfixedabsent;?></td>
                                                                     </tr>
-                                                                    
+
                                                                     <tr>
                                                                         <th>LATE</th>
                                                                         <td><?php echo $rowcountfixedlate;?></td>
@@ -3491,26 +3490,26 @@
 
                                                                 </body>
                                                             </table>
-                                                            
+
                                                             <table class="tab table-sm" style="width:30%;border:0px solid red;display:inline-block;position:relative;top:0px;padding-left:20px">
                                                                 <tr>
                                                                     <th colspan="4" style="text-align: center;">PSYCOMOTOR</th>
                                                                 </tr>
                                                                 <tbody>
-                                                                <?php 
-                        
+                                                                <?php
+
                                                                     $sqlrelset = ("SELECT * FROM `psycomotor_settings` INNER JOIN assignspsycomotortoclass ON psycomotor_settings.id=assignspsycomotortoclass.PsycomotorSettingsId WHERE ClassID = '$classid'");
                                                                     $resultrelset = mysqli_query($link, $sqlrelset);
                                                                     $rowGetrelset = mysqli_fetch_assoc($resultrelset);
                                                                     $row_cntrelset = mysqli_num_rows($resultrelset);
-                                
+
                                                                     if($row_cntrelset > 0)
                                                                     {
                                                                         $sqlgetscore = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND term = '$term' AND sectionid = '$classsectionactual'");
                                                                         $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                                         $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                                         $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                                        
+
                                                                         if($row_cntgetscore > 0)
                                                                         {
                                                                             if($rowGetrelset['NumberofP'] =='1')
@@ -3557,7 +3556,7 @@
                                                                                         <td></td>
                                                                                         <td></td>
                                                                                     </tr>';
-                                                                            }        
+                                                                            }
                                                                             elseif($rowGetrelset['NumberofP'] =='4')
                                                                             {
                                                                                 echo '<tr>
@@ -4046,27 +4045,27 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
-                                                
+
+
                                                 <?php
-                                                    
+
                                                     $sqlgettechremark = mysqli_query($link,"SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `remark` != ''");
                                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
-                                                    
-                                                    
+
+
                                                     if($rowcountfixedremark > 0)
                                                     {
                                                         $teacherRemark = $fetchfixedremark['remark'];
-                                                        
+
                                                         $teacherid = $fetchfixedremark['StaffID'];
-                                                        
+
                                                         $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = $teacherid");
                                                         $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                                         $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                                         $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
-                                                        
-                                            
+
+
                                                         if($row_cntgetheadteachsign > 0)
                                                         {
                                                             $hedteachsign = '<img src="../img/signature/'.$rowgetheadteachsign['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -4075,29 +4074,29 @@
                                                         {
                                                             $hedteachsign = '';
                                                         }
-                                                         
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $sqlgetteachremark = ("SELECT * FROM `defaultcomment` INNER JOIN class_teacher ON defaultcomment.PrincipalOrDeanOrHeadTeacherUserID=class_teacher.staff_id WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'teacher' AND class_id = '$classid'");
                                                         $resultgetteachremark = mysqli_query($link, $sqlgetteachremark);
                                                         $rowgetteachremark = mysqli_fetch_assoc($resultgetteachremark);
                                                         $row_cntgetteachremark = mysqli_num_rows($resultgetteachremark);
-                                                    
+
                                                         if($row_cntgetteachremark > 0)
                                                         {
-                                                            $teacherRemark = $rowgetteachremark['DefaultComment']; 
-                                                            
+                                                            $teacherRemark = $rowgetteachremark['DefaultComment'];
+
                                                             $teacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-                                                            
-                                                            
+
+
                                                             $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$teacherid'");
                                                             $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                                             $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                                             $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
-                                                            
-                                                
+
+
                                                             if($row_cntgetheadteachsign > 0)
                                                             {
                                                                 $hedteachsign = '<img src="../img/signature/'.$rowgetheadteachsign['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -4110,27 +4109,27 @@
                                                         else
                                                         {
                                                             $teacherRemark = 'N/A';
-                                                            
+
                                                             $hedteachsign = '';
                                                         }
-                                                    
+
                                                     }
-                                    
+
                                                     $sqlgetprincremark = mysqli_query($link,"SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `remark`!=''");
                                                     $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                                                     $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
-                                                    
+
                                                     if($rowcountprinfixedremark > 0)
                                                     {
                                                         $principalRemark = $fetchfixedprinremark['remark'];
-                                                        
+
                                                         $headteacherid = $fetchfixedprinremark['staff_id'];
-                                                        
+
                                                         $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
                                                         $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                                         $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-                                                        
+
                                                         if($row_cntgetheadteachsignhead > 0)
                                                         {
                                                             $hedteachsignhead = '<img src="'.$defRUl.'img/signature/'.$rowgetheadteachsignhead['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -4139,27 +4138,27 @@
                                                         {
                                                             $hedteachsignhead = '';
                                                         }
-                                                        
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $sqlgetprincremark = ("SELECT * FROM `defaultcomment` WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'SchoolHead'");
                                                         $resultgetprincremark = mysqli_query($link, $sqlgetprincremark);
                                                         $rowgetteachremark = mysqli_fetch_assoc($resultgetprincremark);
                                                         $row_cntgetprincremark = mysqli_num_rows($resultgetprincremark);
-                                                    
+
                                                         if($row_cntgetprincremark > 0)
                                                         {
-                                                            $principalRemark = $rowgetteachremark['DefaultComment']; 
-                                                            
+                                                            $principalRemark = $rowgetteachremark['DefaultComment'];
+
                                                             $headteacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-                                                            
+
                                                             $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                                             $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                                             $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-                                                            
+
                                                             if($row_cntgetheadteachsignhead > 0)
                                                             {
                                                                 $hedteachsignhead = '<img src="'.$defRUl.'img/signature/'.$rowgetheadteachsignhead['Signature'].'" align="center" class="img-fluid" style="width: 80%;">';
@@ -4168,21 +4167,21 @@
                                                             {
                                                                 $hedteachsignhead = '';
                                                             }
-                                                            
+
                                                         }
                                                         else
                                                         {
                                                             $principalRemark = 'N/A';
-                                                            
+
                                                             $hedteachsignhead = '';
                                                         }
-                                                    
+
                                                     }
-                                                    
+
                                                     if($term == '1st')
                                                     {
                                                         $termnew = '2nd';
-                                                        
+
                                                         $sessionnew = $session;
                                                     }
                                                     elseif($term == '2nd')
@@ -4195,13 +4194,13 @@
                                                         $termnew = '1st';
                                                         $sessionnew = $session + 1;
                                                     }
-                                                        
+
                                                     $sqlresumdate = ("SELECT * FROM `resumptiondate` WHERE `Session`='$sessionnew' AND `Term`='$termnew'");
-                                                    
+
                                                     $resultresumdate = mysqli_query($link, $sqlresumdate);
                                                     $getresumdate = mysqli_fetch_assoc($resultresumdate);
                                                     $sqlrow_cntresumdate = mysqli_num_rows($resultresumdate);
-                                                    
+
                                                     if($sqlrow_cntresumdate > 0)
                                                     {
                                                         $resumdate = date("l jS \of F Y", strtotime($getresumdate['Date']));
@@ -4211,15 +4210,15 @@
                                                         $resumdate = 'N/A';
                                                     }
                                                 ?>
-                                                
+
                                             </div>
                                             <p style="text-align:center;margin-top:-10px"><b>SCALE: Excellent 05, Good 04, Fair 03, Poor 02, None 01</b></p>
                                         </div>
-                                        
+
                                         <div class="performance" >
                                             <div class="row">
                                                 <div class="col-12">
-                                                    
+
                                                 	<div class="container-motto" style="border:0px solid black">
                                                 		<div style="margin: 20px;">
                                                 			<div class="row">
@@ -4228,21 +4227,21 @@
                                                 						<p style="text-align: justify;"><b style="font-weight:600;">CLASS TEACHER'S COMMENT:</b>&nbsp;<?php echo $teacherRemark;?></p>
                                                 					</div>
                                                 				</div>
-                                                
+
                                                 				<div class="col-sm-2 col-md-2">
                                                 					<div align="center">
                                                 						<?php echo $hedteachsign;?>
                                                 					</div>
                                                 				</div>
                                                 			</div>
-                                                
+
                                                 			<div class="row">
                                                 				<div class="col-sm-10 col-md-10">
                                                 					<div>
                                                 						<p style="text-align: justify;"><b style="font-weight:600;">PRINCIPAL/HEAD TEACHER'S COMMENT:</b>&nbsp;&nbsp;&nbsp;<?php echo $principalRemark;?></p>
                                                 					</div>
                                                 				</div>
-                                                
+
                                                 				<div class="col-sm-2 col-md-2">
                                                 					<div>
                                                 						<?php echo $hedteachsignhead;?>
@@ -4254,19 +4253,19 @@
                                                 					<div>
                                                 						<p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate;?></b></p>
                                                 					    <?php
-                                                                            if ($next_fee > 0) { 
+                                                                            if ($next_fee > 0) {
                                                                                 echo '<p style="text-align: center;"><b style="font-weight:600;">NEXT TERM FEEs: N' . $next_fee. '</b></p>';
                                                                             }
                                                                             ?>
 
                                                 					</div>
                                                 				</div>
-                                                
+
                                                 			</div>
-                                                			
+
                                                 		</div>
                                                 	</div>
-                                                
+
                                                 </div>
                                             </div>
                                         </div>
@@ -4274,15 +4273,15 @@
                                         /*
                                             if($term == '3rd')
                                             {
-                                                
+
                                                 $sessionnew = $session + 1;
-                                                   
+
                                                 $sqlstudent_session = ("SELECT * FROM `student_session` WHERE `session_id`='$sessionnew' AND student_id = '$id'");
-                                                
+
                                                 $resultstudent_session = mysqli_query($link, $sqlstudent_session);
                                                 $getstudent_session = mysqli_fetch_assoc($resultstudent_session);
                                                 $sqlrow_cntstudent_session = mysqli_num_rows($resultstudent_session);
-                                                
+
                                                 if($sqlrow_cntstudent_session > 0)
                                                 {
                                                     echo '<center>
@@ -4295,15 +4294,15 @@
                                                         <p class="promoted">NOT PROMOTED TO THE NEXT CLASS</p>
                                                     </center>';
                                                 }
-                                                
+
                                             }
                                             else
                                             {
-                                                
+
                                             }
                                             */
                                         ?>
-                                        
+
                                 <?php
                                     }
                                     elseif($reltype == 'numeric')
@@ -4311,62 +4310,62 @@
                                 ?>
                                         <div class="container-motto">
                                             <?php
-                                                    
+
                                                 $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
-                                            
+
                                                 $sqlgettotalgrade = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS average FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
                                                 $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                                 $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
-                
+
                                                 $gettotgrade = floatval(round($rowgettotalgrade['average']/$row_cntgetsubscore, 2));
-                                                
+
                                                 $gettotscore = $rowgettotalgrade['average'];
-                                                
+
                                                 $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetClasscount = mysqli_query($link, $sqlgetClasscount);
                                                 $rowgetClasscount = mysqli_fetch_assoc($resultgetClasscount);
                                                 $row_cntClasscount = mysqli_num_rows($resultgetClasscount);
-                                                
+
                                                 $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscoreALL = mysqli_query($link, $sqlgetsubscoreALL);
                                                 $rowgetsubscoreALL = mysqli_fetch_assoc($resultgetsubscoreALL);
                                                 $row_cntgetsubscoreALL = mysqli_num_rows($resultgetsubscoreALL);
-                                                
+
                                                 $sqlgettotclassscor = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS totalScore FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' ORDER BY Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10";
                                                 $resultgettotclassscor = mysqli_query($link, $sqlgettotclassscor);
                                                 $rowgettotclassscor = mysqli_fetch_assoc($resultgettotclassscor);
                                                 $row_cntgettotclassscor = mysqli_num_rows($resultgettotclassscor);
-                                                
+
                                                 $totsubjects = $row_cntClasscount * $row_cntgetsubscore;
                                                 $totsubjectsALL = $row_cntClasscount * $row_cntgetsubscoreALL;
-                                                                    
+
                                                 $decStubsubavg = round($rowgettotclassscor['totalScore']/$totsubjectsALL,2);
-                                                
+
                                                 $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10),COUNT(ID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
                                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
                                                 $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
                                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
-                                                
+
                                                 $sunhihscrun = round($rowsunnyhihhscoreuname['total'],2);
-                                                
+
                                                 $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10),COUNT(ID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
                                                 $resultsunnylowwscoreuname = mysqli_query($link, $sqlsunnylowwscoreuname);
                                                 $rowsunnylowwscoreuname = mysqli_fetch_assoc($resultsunnylowwscoreuname);
                                                 $row_cntsunnylowwscoreuname = mysqli_num_rows($resultsunnylowwscoreuname);
-                                                    
+
                                                 $sunlowscrun = round($rowsunnylowwscoreuname['total'],2);
-                                                
+
                                                 $sqlgetscoretotalscorpositon = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total, StudentID FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
-                                                $resultgetscoretotalscorpositon = mysqli_query($link, $sqlgetscoretotalscorpositon); 
+                                                $resultgetscoretotalscorpositon = mysqli_query($link, $sqlgetscoretotalscorpositon);
                                                 $rowgetscoretotalscorpositon = mysqli_fetch_assoc($resultgetscoretotalscorpositon);
                                                 $row_cntgetscoretotalscorpositon = mysqli_num_rows($resultgetscoretotalscorpositon);
-                                                
+
                                                 $gettotalscorpositon = $rowgetscoretotalscorpositon['n'];
-                                                
+
                                                 function addOrdinalNumberSuffix($num) {
                                                     if (!in_array(($num % 100),array(11,12,13))){
                                                     switch ($num % 10) {
@@ -4378,85 +4377,85 @@
                                                     }
                                                     return $num.'th';
                                                 }
-                                                
+
                                                 if($row_cntgettotalgrade > 0)
                                                 {
                                                     $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
                                                     $resultgettotgradstuc = mysqli_query($link, $sqlgettotgradstuc);
                                                     $rowgettotgradstuc = mysqli_fetch_assoc($resultgettotgradstuc);
                                                     $row_cntgettotgradstuc = mysqli_num_rows($resultgettotgradstuc);
-                
+
                                                     if($row_cntgettotgradstuc > 0)
                                                     {
-                                                        
+
                                                         $totscorgrade = $rowgettotgradstuc['Grade'];
-                
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $totscorgrade = 'NA';
-                
+
                                                     }
                                                 }
                                                 else
                                                 {
                                                     $gettotgrade = 'NA';
-                                                }   
-                                            
+                                                }
+
                                             ?>
                                             <div class="row" style="margin: 10px;">
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>NAME:</b> <?php echo $studname; ?></h5>
                                                 </div>
-                                                
+
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>CLASS:</b> <?php echo $studclass.' ' .$studsection; ?></h5>
                                                 </div>
-                                                
+
                                                  <div class="col-4">
                                                    <h5 style="color: #000000;"> <b>SEX:</b> <?php echo $studgender; ?></h5>
                                                 </div>
                                             </div>
-            
+
                                             <div class="row" style="margin: 10px;">
                                                 <div class="col-4">
-                                                    <h5 style="color: #000000;"> <b>CLASS POSITION:</b> <?php 
+                                                    <h5 style="color: #000000;"> <b>CLASS POSITION:</b> <?php
                                                                     echo addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
-                                                                    
-                                                                    if($gettotalscorpositon % 10 == 0) 
+
+                                                                    if($gettotalscorpositon % 10 == 0)
                                                                     {
                                                                         echo "\n";
-                                                                    
+
                                                                     }
                                                                 ?> </h5>
                                                 </div>
-                                                
+
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>HIGHEST IN CLASS AVE:</b> <?php echo $sunhihscrun;?></h5>
-                                                </div>   
-                                                
+                                                </div>
+
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>LOWEST IN CLASS AVE:</b> <?php echo $sunlowscrun;?></h5>
-                                                </div> 
-                                                
+                                                </div>
+
                                             </div>
-                                            
-            
+
+
                                         </div>
-            
+
                                         <div align="center">
                                             <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE </h5>
                                         </div>
-            
+
                                         <div class="result table-responsive" style="margin: 10px;">
-                                            <?php 
-            
+                                            <?php
+
                                                 $sqlrelset = ("SELECT * FROM `resultsetting` INNER JOIN assigncatoclass ON resultsetting.ResultSettingID=assigncatoclass.ResultSettingID WHERE ClassID = '$classid'");
                                                 $resultrelset = mysqli_query($link, $sqlrelset);
                                                 $rowGetrelset = mysqli_fetch_assoc($resultrelset);
                                                 $row_cntrelset = mysqli_num_rows($resultrelset);
-            
+
                                                 if($row_cntrelset > 0)
                                                 {
                                                     if($rowGetrelset['NumberOfCA'] =='1')
@@ -4503,16 +4502,16 @@
                                                     {
                                                         $ca1test = '';
                                                     }
-                                                    
+
                                                 }
                                                 else
                                                 {
                                                     $ca1test = '';
                                                 }
-                                                
+
                                             ?>
                                             <table class="table-bordered tab table-sm" style="width:98%;">
-                                            
+
                                                 <tr>
                                                     <th>SUBJECT(s)</th>
                                                     <?php echo $ca1test ; ?>
@@ -4532,50 +4531,50 @@
                                                     <th>Highest in Class</th>
                                                     <th>Remark</th>
                                                 </tr>
-                                            
+
                                             <tbody>
                                                 <?php
-                                
+
                                                     $sqlsub = ("SELECT subjects.name AS name, subjects.id as id FROM `subject_group_class_sections` INNER JOIN subject_group_subjects ON subject_group_class_sections.subject_group_id=subject_group_subjects.subject_group_id INNER JOIN subjects ON subject_group_subjects.subject_id=subjects.id WHERE subject_group_class_sections.class_section_id = '$classsection' AND subject_group_class_sections.session_id='$session' AND subject_group_subjects.session_id='$session'");
                                                     $resultsub = mysqli_query($link, $sqlsub);
                                                     $rowGetsub = mysqli_fetch_assoc($resultsub);
                                                     $row_cntsub = mysqli_num_rows($resultsub);
-                    
+
                                                     $sqlgetscorecheck = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                     $resultgetscorecheck = mysqli_query($link, $sqlgetscorecheck);
                                                     $rowgetscorecheck = mysqli_fetch_assoc($resultgetscorecheck);
                                                     $row_cntgetscorecheck = mysqli_num_rows($resultgetscorecheck);
-                    
+
                                                     if($row_cntgetscorecheck > 0)
                                                     {
-                    
+
                                                         // $sqlgetgadingmeth = ("SELECT * FROM `classordepartment` WHERE InstitutionID = '$institution' AND FacultyOrSchoolID='$facultyID' AND ClassOrDepartmentID = '$classid'");
                                                         // $resultgetgadingmeth = mysqli_query($link, $sqlgetgadingmeth);
                                                         // $rowgetgadingmeth = mysqli_fetch_assoc($resultgetgadingmeth);
                                                         // $row_cntgetgadingmeth = mysqli_num_rows($resultgetgadingmeth);
-                    
+
                                                         // $gradeid = $rowgetgadingmeth['GradingMethodID'] . '</br>';
-                                                        
+
                                                         do{
-                                                            
+
                                                             $subname = $rowGetsub['name'];
                                                             $subid = $rowGetsub['id'];
-                    
+
                                                             $sqlgetscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                             $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                             $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                             $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                    
-                    
+
+
                                                             $sqlgetscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                             $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                             $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                             $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                    
-                    
+
+
                                                             if($row_cntgetscore > 0)
                                                             {
-                    
+
                                                                 if($rowGetrelset['NumberOfCA'] =='1')
                                                                 {
                                                                     $ca1 = $rowgetscore['CA1'];
@@ -4619,130 +4618,130 @@
                                                                 else{
                                                                     $ca1 = 0;
                                                                 }
-                                                                
+
                                                                 $exam = $rowgetscore['Exam'];
-                
+
                                                                 $total = $ca1 + $exam;
-                                                                
+
                                                                 $subavg = $total;
-                                                                
+
                                                                 $sqlgetgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $total >= RangeStart AND $total <= RangeEnd AND ClassID = '$classid'");
                                                                 $resultgetgradstuc = mysqli_query($link, $sqlgetgradstuc);
                                                                 $rowgetgradstuc = mysqli_fetch_assoc($resultgetgradstuc);
                                                                 $row_cntgetgradstuc = mysqli_num_rows($resultgetgradstuc);
-                
+
                                                                 if($row_cntgetgradstuc > 0)
                                                                 {
                                                                     $grade = $rowgetgradstuc['Grade'];
                                                                     $remark = $rowgetgradstuc['Remark'];
-                                                                    
+
                                                                     $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
                                                                     $resultsunnyhihhscoreunamepersub = mysqli_query($link, $sqlsunnyhihhscoreunamepersub);
                                                                     $rowsunnyhihhscoreunamepersub = mysqli_fetch_assoc($resultsunnyhihhscoreunamepersub);
                                                                     $row_cntsunnyhihhscoreunamepersub = mysqli_num_rows($resultsunnyhihhscoreunamepersub);
-                                                                    
+
                                                                     $sunhihscrunpersub = round($rowsunnyhihhscoreunamepersub['total']);
-                                                                    
+
                                                                     $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
                                                                     $resultsunnylowwscoreunamepersub = mysqli_query($link, $sqlsunnylowwscoreunamepersub);
                                                                     $rowsunnylowwscoreunamepersub = mysqli_fetch_assoc($resultsunnylowwscoreunamepersub);
                                                                     $row_cntsunnylowwscoreunamepersub = mysqli_num_rows($resultsunnylowwscoreunamepersub);
-                                                                        
+
                                                                     $sunlowscrunpersub = round($rowsunnylowwscoreunamepersub['total']);
-                                                                            
+
                                                                     $sqlgetscorepos = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total, StudentID FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
-                                                                    $resultgetscorepos = mysqli_query($link, $sqlgetscorepos); 
+                                                                    $resultgetscorepos = mysqli_query($link, $sqlgetscorepos);
                                                                     $rowgetscorepos = mysqli_fetch_assoc($resultgetscorepos);
                                                                     $row_cntgetscorepos = mysqli_num_rows($resultgetscorepos);
-                                                                    
+
                                                                     $sqlgetsubper = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS average FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND InstitutionID = '$institution' AND ClassOrDepartmentID = '$classid' AND CourseOrSubjectID = '$subid' AND Session = '$sunnyresultsession' AND TermOrSemester = '$sunnyrelterm' ORDER BY Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10";
                                                                     $resultgetsubper = mysqli_query($link, $sqlgetsubper);
                                                                     $rowgetsubper = mysqli_fetch_assoc($resultgetsubper);
                                                                     $row_cntgetsubper = mysqli_num_rows($resultgetsubper);
-            
+
                                                                     $getsubper = round($rowgetsubper['average']/$row_cntClasscount,2);
-            
+
                                                                     $getsco = round($rowgetscorepos['total'],2);
-                                                                    
+
                                                                     $getscorpos = $rowgetscorepos['n'];
-                                                                      
+
                                                                 }
                                                                 else
                                                                 {
-                                                                    
+
                                                                 }
-                
+
                                                                 echo '<tr>
                                                                     <th>' . $subname . '</th>';
                                                                     if($rowGetrelset['NumberOfCA'] =='1')
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["CA1"].'
-                                                                                
+
                                                                                 </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='2')
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["CA1"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                                 '.$rowgetscore["CA2"].'
-                                                                                
+
                                                                                 </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='3')
                                                                     {
                                                                         echo '<td>
                                                                             '.$rowgetscore["CA1"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                             '.$rowgetscore["CA2"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                             '.$rowgetscore["CA3"].'
-                                                                            
+
                                                                             </td>';
-                                                                    }        
+                                                                    }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='4')
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["CA1"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                                 '.$rowgetscore["CA2"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                             '.$rowgetscore["CA3"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA4"].'
-                                                                            
+
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='5')
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["CA1"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                                 '.$rowgetscore["CA2"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                             '.$rowgetscore["CA3"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA4"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA5"].'
@@ -4752,226 +4751,226 @@
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["CA1"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                                 '.$rowgetscore["CA2"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                             '.$rowgetscore["CA3"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA4"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA5"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA6"].'
-                                                                                
+
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='7')
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["CA1"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                                 '.$rowgetscore["CA2"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                             '.$rowgetscore["CA3"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA4"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA5"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA6"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA7"].'
-                                                                                
+
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='8')
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["CA1"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                                 '.$rowgetscore["CA2"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                             '.$rowgetscore["CA3"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA4"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA5"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA6"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA7"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA8"].'
-                                                                                
+
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='9')
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["CA1"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                                 '.$rowgetscore["CA2"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                             '.$rowgetscore["CA3"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA4"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA5"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA6"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA7"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA8"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA9"].'
-                                                                                
+
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='10')
                                                                     {
                                                                         echo '<td>
                                                                                 '.$rowgetscore["CA1"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                                 '.$rowgetscore["CA2"].'
-                                                                                
+
                                                                                 </td>
                                                                                 <td>
                                                                             '.$rowgetscore["CA3"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA4"].'
-                                                                            
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA5"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA6"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA7"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA8"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA9"].'
-                                                                                
+
                                                                             </td>
                                                                             <td>
                                                                                 '.$rowgetscore["CA10"].'
-                                                                                
+
                                                                             </td>';
                                                                     }
                                                                     else{
-                                                                        
+
                                                                     }
                                                                     echo '
                                                                     <td>' . $exam . '</td>
                                                                     <td>' . $total . '</td>
                                                                     <td>';
                                                                         echo addOrdinalNumberSuffix($getscorpos) . "\t";
-                                                        
-                                                                        if($getscorpos % 10 == 0) 
+
+                                                                        if($getscorpos % 10 == 0)
                                                                         {
                                                                             echo "\n";
-                                                                        
+
                                                                         }
                                                                     echo '</td>
                                                                     <td>'.$sunlowscrunpersub.'</td>
                                                                     <td>'.$sunhihscrunpersub.'</td>
                                                                     <td>' . $remark . '</td>
                                                                 </tr>';
-                
-                                                                
-                
-                                                            
+
+
+
+
                                                         }
                                                             else
                                                             {
-                                                                
+
                                                             }
-                                                            
+
                                                         }while($rowGetsub = mysqli_fetch_assoc($resultsub));
-                    
+
                                                     }
                                                     else
                                                     {
                                                         echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
                                                     }
-                    
+
                                                 ?>
                                             </tbody>
                                             </table>
                                         </div>
-            
+
                                         <?php
                                             $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='$term'");
-                                            
+
                                             $resultresumdateOld = mysqli_query($link, $sqlresumdateOld);
                                             $getresumdateOld = mysqli_fetch_assoc($resultresumdateOld);
                                             $sqlrow_cntresumdateOld = mysqli_num_rows($resultresumdateOld);
-                                            
+
                                             if($sqlrow_cntresumdateOld > 0)
                                             {
                                                 $resumdateOld = $getresumdateOld['Date'];
@@ -4980,25 +4979,25 @@
                                             {
                                                 $resumdateOld = 'N/A';
                                             }
-                                            
+
                                             $sqlgetsubscore = ("SELECT * FROM `score` WHERE `ca1` != '0' AND `ca1` != '' AND `ca1` IS NOT NULL AND StudentID = '$id' AND ClassID = '$classid' AND SubjectID = '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                             $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                             $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                             $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
-                                            
+
                                             if($row_cntgetsubscore > 0)
                                             {
-                                        
+
                                                 $rowcountfixedgennew = $rowgetsubscore['ca1'];
                                                 $rowcountfixedpresent = $rowgetsubscore['ca2'];
                                                 $rowcountfixedlate = $rowgetsubscore['ca3'];
                                                 $rowcountfixedabsent = $rowgetsubscore['ca4'];
-                                                
+
                                             }else{
                                                 $sqlgettechgen = mysqli_query($link,"SELECT DISTINCT(student_attendences.`date`) FROM `student_attendences` WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2'");
                                                 $fetchfixedgen = mysqli_fetch_assoc($sqlgettechgen);
                                                 $rowcountfixedgen = mysqli_num_rows($sqlgettechgen);
-                                                
+
                                                 if($rowcountfixedgen == NULL || $rowcountfixedgen == '')
                                                 {
                                                     $rowcountfixedgennew = 0;
@@ -5007,11 +5006,11 @@
                                                 {
                                                     $rowcountfixedgennew = $rowcountfixedgen;
                                                 }
-                                                
+
                                                 $sqlgettechpresent = mysqli_query($link,"SELECT * FROM `student_attendences` INNER JOIN student_session ON student_attendences.student_session_id=student_session.id WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2' AND student_session.`student_id`='$id' AND student_session.`session_id`='$session' AND student_session.`class_id`='$classid' AND `attendence_type_id`='1'");
                                                 $fetchfixedpresent = mysqli_fetch_assoc($sqlgettechpresent);
                                                 $rowcountfixedpresent = mysqli_num_rows($sqlgettechpresent);
-                                                
+
                                                 if($rowcountfixedpresent == NULL || $rowcountfixedpresent == '')
                                                 {
                                                     $rowcountfixedpresent = 0;
@@ -5020,11 +5019,11 @@
                                                 {
                                                     $rowcountfixedpresent = $rowcountfixedpresent;
                                                 }
-                                            
+
                                                 $sqlgettechabsent = mysqli_query($link,"SELECT * FROM `student_attendences` INNER JOIN student_session ON student_attendences.student_session_id=student_session.id WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2' AND student_session.`student_id`='$id' AND student_session.`session_id`='$session' AND student_session.`class_id`='$classid' AND `attendence_type_id`='4'");
                                                 $fetchfixedabsent = mysqli_fetch_assoc($sqlgettechabsent);
                                                 $rowcountfixedabsent = mysqli_num_rows($sqlgettechabsent);
-                                                
+
                                                 if($rowcountfixedabsent == NULL || $rowcountfixedabsent == '')
                                                 {
                                                     $rowcountfixedabsent = 0;
@@ -5041,36 +5040,36 @@
                                                 <p>Class Average: <?php echo $decStubsubavg;?> </p>
                                                 <p>No. of Subjects: <?php echo $row_cntgetscorecheck;?></p>
                                         </div>
-            
+
                                         <div class="performance" >
                                             <div class="row">
                                                 <div class="col-4">
                                                     <div class="containerForChart">
-                                                                        
+
                                                         <canvas class="newgraph" id="mysunChart" style="width:100%;"></canvas>
-                                                        
+
                                                     </div>
                                                 </div>
-                                                
+
                                                 <?php
-                                                    
+
                                                     $sqlgettechremark = mysqli_query($link,"SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `remark` != ''");
                                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
-                                                    
-                                                    
+
+
                                                     if($rowcountfixedremark > 0)
                                                     {
                                                         $teacherRemark = $fetchfixedremark['remark'];
-                                                        
+
                                                         $teacherid = $fetchfixedremark['StaffID'];
-                                                        
+
                                                         $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$hedteachid'");
                                                         $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                                         $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                                         $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
-                                                        
-                                            
+
+
                                                         if($row_cntgetheadteachsign > 0)
                                                         {
                                                             $hedteachsign = '<img src="../img/signature/'.$rowgetheadteachsign['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -5079,29 +5078,29 @@
                                                         {
                                                             $hedteachsign = '';
                                                         }
-                                                         
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $sqlgetteachremark = ("SELECT * FROM `defaultcomment` INNER JOIN class_teacher ON defaultcomment.PrincipalOrDeanOrHeadTeacherUserID=class_teacher.staff_id WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'teacher' AND class_id = '$classid'");
                                                         $resultgetteachremark = mysqli_query($link, $sqlgetteachremark);
                                                         $rowgetteachremark = mysqli_fetch_assoc($resultgetteachremark);
                                                         $row_cntgetteachremark = mysqli_num_rows($resultgetteachremark);
-                                                    
+
                                                         if($row_cntgetteachremark > 0)
                                                         {
-                                                            $teacherRemark = $rowgetteachremark['DefaultComment']; 
-                                                            
+                                                            $teacherRemark = $rowgetteachremark['DefaultComment'];
+
                                                             $teacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-                                                            
-                                                            
+
+
                                                             $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$teacherid'");
                                                             $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                                             $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                                             $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
-                                                            
-                                                
+
+
                                                             if($row_cntgetheadteachsign > 0)
                                                             {
                                                                 $hedteachsign = '<img src="../img/signature/'.$rowgetheadteachsign['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -5114,27 +5113,27 @@
                                                         else
                                                         {
                                                             $teacherRemark = 'N/A';
-                                                            
+
                                                             $hedteachsign = '';
                                                         }
-                                                    
+
                                                     }
-                                    
+
                                                     $sqlgetprincremark = mysqli_query($link,"SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `remark`!=''");
                                                     $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                                                     $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
-                                                    
+
                                                     if($rowcountprinfixedremark > 0)
                                                     {
                                                         $principalRemark = $fetchfixedprinremark['remark'];
-                                                        
+
                                                         $headteacherid = $fetchfixedprinremark['staff_id'];
-                                                        
+
                                                         $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
                                                         $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                                         $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-                                                        
+
                                                         if($row_cntgetheadteachsignhead > 0)
                                                         {
                                                             $hedteachsignhead = '<img src="'.$defRUl.'img/signature/'.$rowgetheadteachsignhead['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -5143,27 +5142,27 @@
                                                         {
                                                             $hedteachsignhead = '';
                                                         }
-                                                        
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $sqlgetprincremark = ("SELECT * FROM `defaultcomment` WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'SchoolHead'");
                                                         $resultgetprincremark = mysqli_query($link, $sqlgetprincremark);
                                                         $rowgetteachremark = mysqli_fetch_assoc($resultgetprincremark);
                                                         $row_cntgetprincremark = mysqli_num_rows($resultgetprincremark);
-                                                    
+
                                                         if($row_cntgetprincremark > 0)
                                                         {
-                                                            $principalRemark = $rowgetteachremark['DefaultComment']; 
-                                                            
+                                                            $principalRemark = $rowgetteachremark['DefaultComment'];
+
                                                             $headteacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-                                                            
+
                                                             $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                                             $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                                             $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-                                                            
+
                                                             if($row_cntgetheadteachsignhead > 0)
                                                             {
                                                                 $hedteachsignhead = '<img src="'.$defRUl.'img/signature/'.$rowgetheadteachsignhead['Signature'].'" align="center" class="img-fluid" style="width: 80%;">';
@@ -5172,21 +5171,21 @@
                                                             {
                                                                 $hedteachsignhead = '';
                                                             }
-                                                            
+
                                                         }
                                                         else
                                                         {
                                                             $principalRemark = 'N/A';
-                                                            
+
                                                             $hedteachsignhead = '';
                                                         }
-                                                    
+
                                                     }
-                                                    
+
                                                     if($term == '1st')
                                                     {
                                                         $termnew = '2nd';
-                                                        
+
                                                         $sessionnew = $session;
                                                     }
                                                     elseif($term == '2nd')
@@ -5199,13 +5198,13 @@
                                                         $termnew = '1st';
                                                         $sessionnew = $session + 1;
                                                     }
-                                                        
+
                                                     $sqlresumdate = ("SELECT * FROM `resumptiondate` WHERE `Session`='$sessionnew' AND `Term`='$termnew'");
-                                                    
+
                                                     $resultresumdate = mysqli_query($link, $sqlresumdate);
                                                     $getresumdate = mysqli_fetch_assoc($resultresumdate);
                                                     $sqlrow_cntresumdate = mysqli_num_rows($resultresumdate);
-                                                    
+
                                                     if($sqlrow_cntresumdate > 0)
                                                     {
                                                         $resumdate = date("l jS \of F Y", strtotime($getresumdate['Date']));
@@ -5216,7 +5215,7 @@
                                                     }
                                                 ?>
                                                 <div class="col-8">
-                                                    
+
                                                     <div class="container-motto">
                                                         <div style="margin: 20px;">
                                                             <div class="row">
@@ -5225,21 +5224,21 @@
                                                                         <p style="text-align: justify;"><b style="font-weight:600;">CLASS TEACHER'S COMMENT:</b>&nbsp;<?php echo $teacherRemark;?></p>
                                                                     </div>
                                                                 </div>
-                        
+
                                                                 <div class="col-sm-2 col-md-2">
                                                                     <div align="center">
-                                                                        <?php echo $hedteachsign;?> 
+                                                                        <?php echo $hedteachsign;?>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                        
+
                                                             <div class="row">
                                                                 <div class="col-sm-10 col-md-10">
                                                                     <div>
                                                                         <p style="text-align: justify;"><b style="font-weight:600;">PRINCIPAL/HEAD TEACHER'S COMMENT:</b>&nbsp;&nbsp;&nbsp;<?php echo $principalRemark;?></p>
                                                                     </div>
                                                                 </div>
-                        
+
                                                                 <div class="col-sm-2 col-md-2">
                                                                     <div>
                                                                         <?php echo $hedteachsignhead;?>
@@ -5251,19 +5250,19 @@
                                                 					<div>
                                                 						<p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate;?></b></p>
                                                 					    <?php
-                                                                            if ($next_fee > 0) { 
+                                                                            if ($next_fee > 0) {
                                                                                 echo '<p style="text-align: center;"><b style="font-weight:600;">NEXT TERM FEE: N' . $next_fee. '</b></p>';
                                                                             }
                                                                             ?>
 
                                                 					</div>
                                                 				</div>
-                                                
+
                                                 			</div>
-                                                            
+
                                                         </div>
                                                     </div>
-                    
+
                                                 </div>
                                             </div>
                                         </div>
@@ -5271,15 +5270,15 @@
                                         /*
                                             if($term == '3rd')
                                             {
-                                                
+
                                                 $sessionnew = $session + 1;
-                                                   
+
                                                 $sqlstudent_session = ("SELECT * FROM `student_session` WHERE `session_id`='$sessionnew' AND student_id = '$id'");
-                                                
+
                                                 $resultstudent_session = mysqli_query($link, $sqlstudent_session);
                                                 $getstudent_session = mysqli_fetch_assoc($resultstudent_session);
                                                 $sqlrow_cntstudent_session = mysqli_num_rows($resultstudent_session);
-                                                
+
                                                 if($sqlrow_cntstudent_session > 0)
                                                 {
                                                     echo '<center>
@@ -5292,38 +5291,38 @@
                                                         <p class="promoted">NOT PROMOTED TO THE NEXT CLASS</p>
                                                     </center>';
                                                 }
-                                                
+
                                             }
                                             else
                                             {
-                                                
+
                                             }
                                             */
                                         ?>
-                                        
+
                                 <?php
                                     }
                                     elseif($reltype == 'british')
                                     {
                                 ?>
-                                        
+
                                         <div class="container-motto">
-            
+
                                             <div  class="row" style="margin: 10px; padding-left: 50px;">
                                                 <div class="col-6">
                                                     <h5 style="color: #000000;"> <b>Name:</b> <?php echo $studname; ?></h5>
-                                                </div> 
+                                                </div>
                                                 <div class="col-6">
                                                     <h5 style="color: #000000;"> <b>Class:</b> <?php echo $studclass.' ' .$studsection; ?></h5>
                                                 </div>
                                             </div>
                                             <?php
                                                 $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='$term'");
-                                            
+
                                                 $resultresumdateOld = mysqli_query($link, $sqlresumdateOld);
                                                 $getresumdateOld = mysqli_fetch_assoc($resultresumdateOld);
                                                 $sqlrow_cntresumdateOld = mysqli_num_rows($resultresumdateOld);
-                                                
+
                                                 if($sqlrow_cntresumdateOld > 0)
                                                 {
                                                     $resumdateOld = $getresumdateOld['Date'];
@@ -5332,26 +5331,26 @@
                                                 {
                                                     $resumdateOld = 'N/A';
                                                 }
-                                                
+
                                                 $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`ca1` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND SubjectID = '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
-                                                
+
                                                 if($row_cntgetsubscore > 0)
                                                 {
-                                            
+
                                                     $rowcountfixedgennew = $rowgetsubscore['ca1'];
-                                                
+
                                                     $rowcountfixedpresent = $rowgetsubscore['ca2'];
                                                     $rowcountfixedlate = $rowgetsubscore['ca3'];
                                                     $rowcountfixedabsent = $rowgetsubscore['ca4'];
-                                                    
+
                                                 }else{
                                                     $sqlgettechgen = mysqli_query($link,"SELECT DISTINCT(student_attendences.`date`) FROM `student_attendences` WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2'");
                                                     $fetchfixedgen = mysqli_fetch_assoc($sqlgettechgen);
                                                     $rowcountfixedgen = mysqli_num_rows($sqlgettechgen);
-                                                    
+
                                                     if($rowcountfixedgen == NULL || $rowcountfixedgen == '')
                                                     {
                                                         $rowcountfixedgen = 0;
@@ -5360,11 +5359,11 @@
                                                     {
                                                         $rowcountfixedgennew = $rowcountfixedgen;
                                                     }
-                                                    
+
                                                     $sqlgettechpresent = mysqli_query($link,"SELECT * FROM `student_attendences` INNER JOIN student_session ON student_attendences.student_session_id=student_session.id WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2' AND student_session.`student_id`='$id' AND student_session.`session_id`='$session' AND student_session.`class_id`='$classid' AND `attendence_type_id`='1'");
                                                     $fetchfixedpresent = mysqli_fetch_assoc($sqlgettechpresent);
                                                     $rowcountfixedpresent = mysqli_num_rows($sqlgettechpresent);
-                                                    
+
                                                     if($rowcountfixedpresent == NULL || $rowcountfixedpresent == '')
                                                     {
                                                         $rowcountfixedpresent = 0;
@@ -5373,11 +5372,11 @@
                                                     {
                                                         $rowcountfixedpresent = $rowcountfixedpresent;
                                                     }
-                                                    
+
                                                     $sqlgettechabsent = mysqli_query($link,"SELECT * FROM `student_attendences` INNER JOIN student_session ON student_attendences.student_session_id=student_session.id WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2' AND student_session.`student_id`='$id' AND student_session.`session_id`='$session' AND student_session.`class_id`='$classid' AND `attendence_type_id`='4'");
                                                     $fetchfixedabsent = mysqli_fetch_assoc($sqlgettechabsent);
                                                     $rowcountfixedabsent = mysqli_num_rows($sqlgettechabsent);
-                                                    
+
                                                     if($rowcountfixedabsent == NULL || $rowcountfixedabsent == '')
                                                     {
                                                         $rowcountfixedabsent = 0;
@@ -5388,64 +5387,64 @@
                                                     }
                                                 }
                                             ?>
-                                            
-                                            
-                                            
+
+
+
                                             <div class="row" style="margin: 10px; padding-left: 50px;">
                                                 <div class="col-6">
                                                     <h5 style="color: #000000;"> <b>Days Present:</b> <?php echo $rowcountfixedpresent?></h5>
-                                                </div>  
+                                                </div>
                                                 <div class="col-6">
                                                     <h5 style="color: #000000;"> <b>Days School Opened:</b> <?php echo $rowcountfixedgennew; ?></h5>
                                                 </div>
                                             </div>
-            
+
                                             <div  class="row" style="margin: 10px; padding-left: 50px;">
                                                 <div class="col-6">
                                                     <h5 style="color: #000000;"> <b>Days Absent:</b> <?php echo $rowcountfixedabsent;?></h5>
-                                                </div>  
+                                                </div>
                                             </div>
                                         </div>
-            
+
                                         <div align="center">
                                             <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE</h5>
                                         </div>
-            
+
                                         <div class="result table-responsive" style="margin: 10px;">
                                             <table class="table-bordered tab table-sm" style="width:98%;">
-                                            
+
                                                 <tr style="text-align: center;font-size:16px;font-weight:bolder">
                                                     <th style="width: 20%; height:45px; background-color:yellow;">Subject(s)</th>
                                                     <th style="width: 20%; background-color:red;color:white">Remark</th>
                                                     <th style="background-color:blue;color:white">Additional Comments</th>
                                                 </tr>
-                                            
+
                                                     <tbody>
                                                     <?php
-                                    
+
                                                         $sqlsub = ("SELECT subjects.name AS name, subjects.id as id FROM `subject_group_class_sections` INNER JOIN subject_group_subjects ON subject_group_class_sections.subject_group_id=subject_group_subjects.subject_group_id INNER JOIN subjects ON subject_group_subjects.subject_id=subjects.id WHERE subject_group_class_sections.class_section_id = '$classsection' AND subject_group_class_sections.session_id='$session' AND subject_group_subjects.session_id='$session'");
                                                         $resultsub = mysqli_query($link, $sqlsub);
                                                         $rowGetsub = mysqli_fetch_assoc($resultsub);
                                                         $row_cntsub = mysqli_num_rows($resultsub);
-                        
+
                                                         $sqlgetscorecheck = ("SELECT * FROM `britishresult` WHERE StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                         $resultgetscorecheck = mysqli_query($link, $sqlgetscorecheck);
                                                         $rowgetscorecheck = mysqli_fetch_assoc($resultgetscorecheck);
                                                         $row_cntgetscorecheck = mysqli_num_rows($resultgetscorecheck);
-                        
+
                                                         if($row_cntgetscorecheck > 0)
                                                         {
-                        
+
                                                             do{
-                                                                
+
                                                                 $subname = $rowGetsub['name'];
                                                                 $subid = $rowGetsub['id'];
-                        
+
                                                                 $sqlgetscore = ("SELECT * FROM `britishresult` WHERE StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                                 $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                                 $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                                                                
+
                                                                 if($rowgetscore['Remark'] != '' || $rowgetscore['Remark'] != NULL)
                                                                 {
                                                                     $briremark = $rowgetscore['Remark'];
@@ -5454,7 +5453,7 @@
                                                                 {
                                                                     $briremark = 'Nil';
                                                                 }
-                                                                
+
                                                                 if($rowgetscore['AdditionalComments'] != '' || $rowgetscore['AdditionalComments'] != NULL)
                                                                 {
                                                                     $briextcom = $rowgetscore['AdditionalComments'];
@@ -5463,7 +5462,7 @@
                                                                 {
                                                                     $briextcom = 'Nil';
                                                                 }
-                        
+
                                                                 if($row_cntgetscore > 0)
                                                                 {
                                                                     echo '<tr style="">
@@ -5475,9 +5474,9 @@
                                                                 }
                                                                 else
                                                                 {
-                                                                    
+
                                                                 }
-                                                                
+
                                                             }while($rowGetsub = mysqli_fetch_assoc($resultsub));
                                                         }
                                                         else
@@ -5490,26 +5489,26 @@
                                         </div>
                                         <div class="performance" >
                                             <div class="row">
-                                                
+
                                                 <?php
-                                                    
+
                                                     $sqlgettechremark = mysqli_query($link,"SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `remark` != ''");
                                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
-                                                    
-                                                    
+
+
                                                     if($rowcountfixedremark > 0)
                                                     {
                                                         $teacherRemark = $fetchfixedremark['remark'];
-                                                        
+
                                                         $teacherid = $fetchfixedremark['StaffID'];
-                                                        
+
                                                         $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$hedteachid'");
                                                         $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                                         $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                                         $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
-                                                        
-                                            
+
+
                                                         if($row_cntgetheadteachsign > 0)
                                                         {
                                                             $hedteachsign = '<img src="../img/signature/'.$rowgetheadteachsign['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -5518,29 +5517,29 @@
                                                         {
                                                             $hedteachsign = '';
                                                         }
-                                                         
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $sqlgetteachremark = ("SELECT * FROM `defaultcomment` INNER JOIN class_teacher ON defaultcomment.PrincipalOrDeanOrHeadTeacherUserID=class_teacher.staff_id WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'teacher' AND class_id = '$classid'");
                                                         $resultgetteachremark = mysqli_query($link, $sqlgetteachremark);
                                                         $rowgetteachremark = mysqli_fetch_assoc($resultgetteachremark);
                                                         $row_cntgetteachremark = mysqli_num_rows($resultgetteachremark);
-                                                    
+
                                                         if($row_cntgetteachremark > 0)
                                                         {
-                                                            $teacherRemark = $rowgetteachremark['DefaultComment']; 
-                                                            
+                                                            $teacherRemark = $rowgetteachremark['DefaultComment'];
+
                                                             $teacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-                                                            
-                                                            
+
+
                                                             $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$teacherid'");
                                                             $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                                             $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                                             $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
-                                                            
-                                                
+
+
                                                             if($row_cntgetheadteachsign > 0)
                                                             {
                                                                 $hedteachsign = '<img src="../img/signature/'.$rowgetheadteachsign['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -5553,27 +5552,27 @@
                                                         else
                                                         {
                                                             $teacherRemark = 'N/A';
-                                                            
+
                                                             $hedteachsign = '';
                                                         }
-                                                    
+
                                                     }
-                                    
+
                                                     $sqlgetprincremark = mysqli_query($link,"SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `remark`!=''");
                                                     $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                                                     $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
-                                                    
+
                                                     if($rowcountprinfixedremark > 0)
                                                     {
                                                         $principalRemark = $fetchfixedprinremark['remark'];
-                                                        
+
                                                         $headteacherid = $fetchfixedprinremark['staff_id'];
-                                                        
+
                                                         $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
                                                         $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                                         $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-                                                        
+
                                                         if($row_cntgetheadteachsignhead > 0)
                                                         {
                                                             $hedteachsignhead = '<img src="'.$defRUl.'img/signature/'.$rowgetheadteachsignhead['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -5582,27 +5581,27 @@
                                                         {
                                                             $hedteachsignhead = '';
                                                         }
-                                                        
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $sqlgetprincremark = ("SELECT * FROM `defaultcomment` WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'SchoolHead'");
                                                         $resultgetprincremark = mysqli_query($link, $sqlgetprincremark);
                                                         $rowgetteachremark = mysqli_fetch_assoc($resultgetprincremark);
                                                         $row_cntgetprincremark = mysqli_num_rows($resultgetprincremark);
-                                                    
+
                                                         if($row_cntgetprincremark > 0)
                                                         {
-                                                            $principalRemark = $rowgetteachremark['DefaultComment']; 
-                                                            
+                                                            $principalRemark = $rowgetteachremark['DefaultComment'];
+
                                                             $headteacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-                                                            
+
                                                             $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                                             $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                                             $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-                                                            
+
                                                             if($row_cntgetheadteachsignhead > 0)
                                                             {
                                                                 $hedteachsignhead = '<img src="'.$defRUl.'img/signature/'.$rowgetheadteachsignhead['Signature'].'" align="center" class="img-fluid" style="width: 80%;">';
@@ -5611,21 +5610,21 @@
                                                             {
                                                                 $hedteachsignhead = '';
                                                             }
-                                                            
+
                                                         }
                                                         else
                                                         {
                                                             $principalRemark = 'N/A';
-                                                            
+
                                                             $hedteachsignhead = '';
                                                         }
-                                                    
+
                                                     }
-                                                    
+
                                                     if($term == '1st')
                                                     {
                                                         $termnew = '2nd';
-                                                        
+
                                                         $sessionnew = $session;
                                                     }
                                                     elseif($term == '2nd')
@@ -5638,13 +5637,13 @@
                                                         $termnew = '1st';
                                                         $sessionnew = $session + 1;
                                                     }
-                                                        
+
                                                     $sqlresumdate = ("SELECT * FROM `resumptiondate` WHERE `Session`='$sessionnew' AND `Term`='$termnew'");
-                                                    
+
                                                     $resultresumdate = mysqli_query($link, $sqlresumdate);
                                                     $getresumdate = mysqli_fetch_assoc($resultresumdate);
                                                     $sqlrow_cntresumdate = mysqli_num_rows($resultresumdate);
-                                                    
+
                                                     if($sqlrow_cntresumdate > 0)
                                                     {
                                                         $resumdate = date("l jS \of F Y", strtotime($getresumdate['Date']));
@@ -5655,7 +5654,7 @@
                                                     }
                                                 ?>
                                                 <div class="col-12">
-                                                    
+
                                                     <div class="container-motto">
                                                         <div style="margin: 20px;">
                                                             <div class="row">
@@ -5664,21 +5663,21 @@
                                                                         <p style="text-align: justify;"><b style="font-weight:600;">CLASS TEACHER'S COMMENT:</b>&nbsp;<?php echo $teacherRemark;?></p>
                                                                     </div>
                                                                 </div>
-                        
+
                                                                 <div class="col-sm-2 col-md-2">
                                                                     <div align="center">
                                                                         <?php echo $hedteachsign;?>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                        
+
                                                             <div class="row">
                                                                 <div class="col-sm-10 col-md-10">
                                                                     <div>
                                                                         <p style="text-align: justify;"><b style="font-weight:600;">PRINCIPAL/HEAD TEACHER'S COMMENT:</b>&nbsp;&nbsp;&nbsp;<?php echo $principalRemark;?></p>
                                                                     </div>
                                                                 </div>
-                        
+
                                                                 <div class="col-sm-2 col-md-2">
                                                                     <div>
                                                                         <?php echo $hedteachsignhead;?>
@@ -5690,19 +5689,19 @@
                                                 					<div>
                                                 						<p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate;?></b></p>
                                                 					    <?php
-                                                                            if ($next_fee > 0) { 
+                                                                            if ($next_fee > 0) {
                                                                                 echo '<p style="text-align: center;"><b style="font-weight:600;">NEXT TERM FEE: N' . $next_fee. '</b></p>';
                                                                             }
                                                                             ?>
 
                                                 					</div>
                                                 				</div>
-                                                
+
                                                 			</div>
-                                                            
+
                                                         </div>
                                                     </div>
-                    
+
                                                 </div>
                                             </div>
                                         </div>
@@ -5710,15 +5709,15 @@
                                         /*
                                             if($term == '3rd')
                                             {
-                                                
+
                                                 $sessionnew = $session + 1;
-                                                   
+
                                                 $sqlstudent_session = ("SELECT * FROM `student_session` WHERE `session_id`='$sessionnew' AND student_id = '$id'");
-                                                
+
                                                 $resultstudent_session = mysqli_query($link, $sqlstudent_session);
                                                 $getstudent_session = mysqli_fetch_assoc($resultstudent_session);
                                                 $sqlrow_cntstudent_session = mysqli_num_rows($resultstudent_session);
-                                                
+
                                                 if($sqlrow_cntstudent_session > 0)
                                                 {
                                                     echo '<center>
@@ -5731,11 +5730,11 @@
                                                         <p class="promoted">NOT PROMOTED TO THE NEXT CLASS</p>
                                                     </center>';
                                                 }
-                                                
+
                                             }
                                             else
                                             {
-                                                
+
                                             }
                                             */
                                         ?>
@@ -5749,130 +5748,130 @@
                                 }
                                 else
                                 {
-                                    
+
                                     if($reltype == 'alphabetic')
                                     {
                                 ?>
                                         <div class="container-motto">
                                             <?php
-                                                    
+
                                                 $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
-                                            
+
                                                 $sqlgettotalgrade = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS average FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'";
                                                 $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                                 $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
-                
+
                                                 $gettotgrade = floatval(round($rowgettotalgrade['average']/$row_cntgetsubscore, 2));
-                                                
+
                                                 $gettotscore = $rowgettotalgrade['average'];
-                                                
+
                                                 $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetClasscount = mysqli_query($link, $sqlgetClasscount);
                                                 $rowgetClasscount = mysqli_fetch_assoc($resultgetClasscount);
                                                 $row_cntClasscount = mysqli_num_rows($resultgetClasscount);
-                                                
+
                                                 $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscoreALL = mysqli_query($link, $sqlgetsubscoreALL);
                                                 $rowgetsubscoreALL = mysqli_fetch_assoc($resultgetsubscoreALL);
                                                 $row_cntgetsubscoreALL = mysqli_num_rows($resultgetsubscoreALL);
-                                                
+
                                                 $sqlgettotclassscor = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS totalScore FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' ORDER BY Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10";
                                                 $resultgettotclassscor = mysqli_query($link, $sqlgettotclassscor);
                                                 $rowgettotclassscor = mysqli_fetch_assoc($resultgettotclassscor);
                                                 $row_cntgettotclassscor = mysqli_num_rows($resultgettotclassscor);
-                                                
+
                                                 $totsubjects = $row_cntClasscount * $row_cntgetsubscore;
                                                 $totsubjectsALL = $row_cntClasscount * $row_cntgetsubscoreALL;
-                                                                    
+
                                                 $decStubsubavg = round($rowgettotclassscor['totalScore']/$totsubjectsALL,2);
-                                                
+
                                                 $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10),COUNT(ID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
                                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
                                                 $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
                                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
-                                                
+
                                                 $sunhihscrun = round($rowsunnyhihhscoreuname['total'],2);
-                                                
+
                                                 $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10),COUNT(ID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
                                                 $resultsunnylowwscoreuname = mysqli_query($link, $sqlsunnylowwscoreuname);
                                                 $rowsunnylowwscoreuname = mysqli_fetch_assoc($resultsunnylowwscoreuname);
                                                 $row_cntsunnylowwscoreuname = mysqli_num_rows($resultsunnylowwscoreuname);
-                                                    
+
                                                 $sunlowscrun = round($rowsunnylowwscoreuname['total'],2);
-                                                
+
                                                 if($row_cntgettotalgrade > 0)
                                                 {
                                                     $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
                                                     $resultgettotgradstuc = mysqli_query($link, $sqlgettotgradstuc);
                                                     $rowgettotgradstuc = mysqli_fetch_assoc($resultgettotgradstuc);
                                                     $row_cntgettotgradstuc = mysqli_num_rows($resultgettotgradstuc);
-                
+
                                                     if($row_cntgettotgradstuc > 0)
                                                     {
-                                                        
+
                                                         $totscorgrade = $rowgettotgradstuc['Grade'];
-                
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $totscorgrade = 'NA';
-                
+
                                                     }
                                                 }
                                                 else
                                                 {
                                                     $gettotgrade = 'NA';
-                                                }   
-                                            
+                                                }
+
                                             ?>
                                             <div class="row" style="margin: 10px;">
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>NAME:</b> <?php echo $studname; ?></h5>
                                                 </div>
-                                                
+
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>CLASS:</b> <?php echo $studclass.' ' .$studsection; ?></h5>
                                                 </div>
-                                                
+
                                                 <div class="col-4">
                                                    <h5 style="color: #000000;"> <b>SEX:</b> <?php echo $studgender; ?></h5>
                                                 </div>
-                                                
-                                                  
+
+
                                             </div>
-            
+
                                             <div class="row" style="margin: 10px;">
-                                                
-                                                
+
+
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>HIGHEST IN CLASS AVE:</b> <?php echo $sunhihscrun;?></h5>
-                                                </div>    
-                                                
+                                                </div>
+
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>LOWEST IN CLASS AVE:</b> <?php echo $sunlowscrun;?></h5>
-                                                </div> 
-                                                
+                                                </div>
+
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>OVERALL GRADE:</b> <?php echo $totscorgrade; ?></h5>
                                                 </div>
                                             </div>
-                                            
-            
+
+
                                         </div>
-            
+
                                         <div align="center">
                                             <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE</h5>
                                         </div>
-            
+
                                         <div class="result table-responsive" style="margin: 10px;">
-                                            
+
                                             <table class="table-bordered tab table-sm">
-                                            
+
                                                 <tr>
                                                     <th>SUBJECT(s)</th>
                                                     <th>1ST TERM</th>
@@ -5885,129 +5884,129 @@
                                                     <th>HIGHEST IN CLASS</th>
                                                     <th>REMARK</th>
                                                 </tr>
-                                            
+
                                             <tbody>
                                                 <?php
-                                
+
                                                     $sqlsub = ("SELECT subjects.name AS name, subjects.id as id FROM `subject_group_class_sections` INNER JOIN subject_group_subjects ON subject_group_class_sections.subject_group_id=subject_group_subjects.subject_group_id INNER JOIN subjects ON subject_group_subjects.subject_id=subjects.id WHERE subject_group_class_sections.class_section_id = '$classsection' AND subject_group_class_sections.session_id='$session' AND subject_group_subjects.session_id='$session'");
                                                     $resultsub = mysqli_query($link, $sqlsub);
                                                     $rowGetsub = mysqli_fetch_assoc($resultsub);
                                                     $row_cntsub = mysqli_num_rows($resultsub);
-                    
+
                                                     $sqlgetscorecheck = ("SELECT * FROM `score` WHERE StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                     $resultgetscorecheck = mysqli_query($link, $sqlgetscorecheck);
                                                     $rowgetscorecheck = mysqli_fetch_assoc($resultgetscorecheck);
                                                     $row_cntgetscorecheck = mysqli_num_rows($resultgetscorecheck);
-                    
+
                                                     if($row_cntgetscorecheck > 0)
                                                     {
-                    
+
                                                         do{
-                                                            
+
                                                             $subname = $rowGetsub['name'];
                                                             $subid = $rowGetsub['id'];
-                    
+
                                                             $sqlgetscore = ("SELECT * FROM `score` WHERE StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                             $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                             $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                             $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                    
-                    
+
+
                                                             $sqlgetscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                             $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                             $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                             $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                    
-                    
+
+
                                                             if($row_cntgetscore > 0)
                                                             {
                                                                 $sqlgetscoreCUMFirst = ("SELECT SUM(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '1st' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgetscoreCUMFirst = mysqli_query($link, $sqlgetscoreCUMFirst);
                                                                 $rowgetscoreCUMFirst = mysqli_fetch_assoc($resultgetscoreCUMFirst);
                                                                 $row_cntgetscoreCUMFirst = mysqli_num_rows($resultgetscoreCUMFirst);
-        
+
                                                                 if($row_cntgetscoreCUMFirst == NULL)
                                                                 {
-                        
+
                                                                     $totalCUMFirst = 0;
-                                                                    
+
                                                                 }
                                                                 else
                                                                 {
                                                                     $totalCUMFirst = round($rowgetscoreCUMFirst['Total'], 2);
                                                                 }
-                                                                
+
                                                                 $sqlgetscoreCUMsec = ("SELECT SUM(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '2nd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgetscoreCUMsec = mysqli_query($link, $sqlgetscoreCUMsec);
                                                                 $rowgetscoreCUMsec = mysqli_fetch_assoc($resultgetscoreCUMsec);
                                                                 $row_cntgetscoreCUMsec = mysqli_num_rows($resultgetscoreCUMsec);
-        
+
                                                                 if($row_cntgetscoreCUMsec == NULL)
                                                                 {
-                        
+
                                                                     $totalCUMsec = 0;
-                                                                    
+
                                                                 }
                                                                 else
                                                                 {
                                                                     $totalCUMsec = round($rowgetscoreCUMsec['Total'], 2);
                                                                 }
-                                                                
+
                                                                 $sqlgetscoreCUMthr = ("SELECT SUM(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '3rd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgetscoreCUMthr = mysqli_query($link, $sqlgetscoreCUMthr);
                                                                 $rowgetscoreCUMthr = mysqli_fetch_assoc($resultgetscoreCUMthr);
                                                                 $row_cntgetscoreCUMthr = mysqli_num_rows($resultgetscoreCUMthr);
-        
+
                                                                 if($row_cntgetscoreCUMthr == NULL)
                                                                 {
-                        
+
                                                                     $totalCUMthr = 0;
-                                                                    
+
                                                                 }
                                                                 else
                                                                 {
                                                                     $totalCUMthr = round($rowgetscoreCUMthr['Total'], 2);
                                                                 }
-                                                                
+
                                                                 $total = $totalCUMFirst + $totalCUMsec + $totalCUMthr;
-                                                                
+
                                                                 $sqlgettermtodivide = ("SELECT DISTINCT(Term) AS newterm FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgettermtodivide = mysqli_query($link, $sqlgettermtodivide);
                                                                 $rowgettermtodivide = mysqli_fetch_assoc($resultgettermtodivide);
                                                                 $row_cntgettermtodivide = mysqli_num_rows($resultgettermtodivide);
-                                                                
+
                                                                 $subavg =  round(($total/$row_cntgettermtodivide),2);
-                                                                
+
                                                                 $sqlgetgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $subavg >= RangeStart AND $subavg <= RangeEnd AND ClassID = '$classid'");
                                                                 $resultgetgradstuc = mysqli_query($link, $sqlgetgradstuc);
                                                                 $rowgetgradstuc = mysqli_fetch_assoc($resultgetgradstuc);
                                                                 $row_cntgetgradstuc = mysqli_num_rows($resultgetgradstuc);
-                
+
                                                                 if($row_cntgetgradstuc > 0)
                                                                 {
                                                                     $grade = $rowgetgradstuc['Grade'];
                                                                     $remark = $rowgetgradstuc['Remark'];
-                                                                    
+
                                                                     $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
                                                                     $resultsunnyhihhscoreunamepersub = mysqli_query($link, $sqlsunnyhihhscoreunamepersub);
                                                                     $rowsunnyhihhscoreunamepersub = mysqli_fetch_assoc($resultsunnyhihhscoreunamepersub);
                                                                     $row_cntsunnyhihhscoreunamepersub = mysqli_num_rows($resultsunnyhihhscoreunamepersub);
-                                                                    
+
                                                                     $sunhihscrunpersub = round($rowsunnyhihhscoreunamepersub['total']);
-                                                                    
+
                                                                     $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
                                                                     $resultsunnylowwscoreunamepersub = mysqli_query($link, $sqlsunnylowwscoreunamepersub);
                                                                     $rowsunnylowwscoreunamepersub = mysqli_fetch_assoc($resultsunnylowwscoreunamepersub);
                                                                     $row_cntsunnylowwscoreunamepersub = mysqli_num_rows($resultsunnylowwscoreunamepersub);
-                                                                        
+
                                                                     $sunlowscrunpersub = round($rowsunnylowwscoreunamepersub['total']);
-                                                                            
+
                                                                 }
                                                                 else
                                                                 {
-                                                                    
+
                                                                 }
-                
+
                                                                 echo '<tr>
                                                                     <th>' . $subname . '</th>
                                                                     <th>' . $totalCUMFirst . '</th>
@@ -6020,33 +6019,33 @@
                                                                     <td>'.$sunhihscrunpersub.'</td>
                                                                     <td>' . $remark . '</td>
                                                                 </tr>';
-                
+
                                                             }
                                                             else
                                                             {
-                                                                
+
                                                             }
-                                                            
+
                                                         }while($rowGetsub = mysqli_fetch_assoc($resultsub));
-                    
+
                                                     }
                                                     else
                                                     {
                                                         echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
                                                     }
-                    
+
                                                 ?>
                                             </tbody>
                                             </table>
                                         </div>
-            
+
                                         <?php
                                             $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='3rd'");
-                                            
+
                                             $resultresumdateOld = mysqli_query($link, $sqlresumdateOld);
                                             $getresumdateOld = mysqli_fetch_assoc($resultresumdateOld);
                                             $sqlrow_cntresumdateOld = mysqli_num_rows($resultresumdateOld);
-                                            
+
                                             if($sqlrow_cntresumdateOld > 0)
                                             {
                                                 $resumdateOld = $getresumdateOld['Date'];
@@ -6055,25 +6054,25 @@
                                             {
                                                 $resumdateOld = 'N/A';
                                             }
-                                            
+
                                             $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`ca1` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND SubjectID = '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                             $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                             $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                             $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
-                                            
+
                                             if($row_cntgetsubscore > 0)
                                             {
-                                        
+
                                                 $rowcountfixedgen = $rowgetsubscore['ca1'];
                                                 $rowcountfixedpresent = $rowgetsubscore['ca2'];
                                                 $rowcountfixedlate = $rowgetsubscore['ca3'];
                                                 $rowcountfixedabsent = $rowgetsubscore['ca4'];
-                                                
+
                                             }else{
                                                 $sqlgettechgen = mysqli_query($link,"SELECT DISTINCT(student_attendences.`date`) FROM `student_attendences` WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2'");
                                                 $fetchfixedgen = mysqli_fetch_assoc($sqlgettechgen);
                                                 $rowcountfixedgen = mysqli_num_rows($sqlgettechgen);
-                                                
+
                                                 if($rowcountfixedgen == NULL || $rowcountfixedgen == '')
                                                 {
                                                     $rowcountfixedgennew = 0;
@@ -6082,11 +6081,11 @@
                                                 {
                                                     $rowcountfixedgennew = $rowcountfixedgen;
                                                 }
-                                                
+
                                                 $sqlgettechpresent = mysqli_query($link,"SELECT * FROM `student_attendences` INNER JOIN student_session ON student_attendences.student_session_id=student_session.id WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2' AND student_session.`student_id`='$id' AND student_session.`session_id`='$session' AND student_session.`class_id`='$classid' AND `attendence_type_id`='1'");
                                                 $fetchfixedpresent = mysqli_fetch_assoc($sqlgettechpresent);
                                                 $rowcountfixedpresent = mysqli_num_rows($sqlgettechpresent);
-                                                
+
                                                 if($rowcountfixedpresent == NULL || $rowcountfixedpresent == '')
                                                 {
                                                     $rowcountfixedpresent = 0;
@@ -6095,11 +6094,11 @@
                                                 {
                                                     $rowcountfixedpresent = $rowcountfixedpresent;
                                                 }
-                                                
+
                                                 $sqlgettechabsent = mysqli_query($link,"SELECT * FROM `student_attendences` INNER JOIN student_session ON student_attendences.student_session_id=student_session.id WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2' AND student_session.`student_id`='$id' AND student_session.`session_id`='$session' AND student_session.`class_id`='$classid' AND `attendence_type_id`='4'");
                                                 $fetchfixedabsent = mysqli_fetch_assoc($sqlgettechabsent);
                                                 $rowcountfixedabsent = mysqli_num_rows($sqlgettechabsent);
-                                                
+
                                                 if($rowcountfixedabsent == NULL || $rowcountfixedabsent == '')
                                                 {
                                                     $rowcountfixedabsent = 0;
@@ -6116,14 +6115,14 @@
                                                 <p>Class Average: <?php echo $decStubsubavg;?> </p>
                                                 <p>No. of Subjects: <?php echo $row_cntgetscorecheck;?></p>
                                         </div>
-            
+
                                         <div class="performance" >
                                             <div class="row">
                                                 <div class="col-4">
                                                     <div class="containerForChart">
-                                                                        
+
                                                         <canvas class="newgraph" id="mysunChart" style="width:100%;"></canvas>
-                                                        
+
                                                     </div>
                                                 </div>
                                                 <div class="col-4" style="padding-right: 0px">
@@ -6134,20 +6133,20 @@
                                                                     <th colspan="4" style="text-align: center;">AFFECTIVE DOMAIN </th>
                                                                 </tr>
                                                                 <tbody>
-                                                                <?php 
-                        
+                                                                <?php
+
                                                                     $sqlrelset = ("SELECT * FROM `affective_domain_settings` INNER JOIN assignsaftoclass ON affective_domain_settings.id=assignsaftoclass.AffectiveDomainSettingsId WHERE ClassID = '$classid'");
                                                                     $resultrelset = mysqli_query($link, $sqlrelset);
                                                                     $rowGetrelset = mysqli_fetch_assoc($resultrelset);
                                                                     $row_cntrelset = mysqli_num_rows($resultrelset);
-                                
+
                                                                     if($row_cntrelset > 0)
                                                                     {
                                                                         $sqlgetscore = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND term = '3rd' AND sectionid = '$classsectionactual'");
                                                                         $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                                         $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                                         $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                                        
+
                                                                         if($row_cntgetscore > 0)
                                                                         {
                                                                             if($rowGetrelset['NumberofAD'] =='1')
@@ -6194,7 +6193,7 @@
                                                                                         <td></td>
                                                                                         <td></td>
                                                                                     </tr>';
-                                                                            }        
+                                                                            }
                                                                             elseif($rowGetrelset['NumberofAD'] =='4')
                                                                             {
                                                                                 echo '<tr>
@@ -6691,20 +6690,20 @@
                                                                     <th colspan="4" style="text-align: center;">PSYCOMOTOR</th>
                                                                 </tr>
                                                                 <tbody>
-                                                                <?php 
-                        
+                                                                <?php
+
                                                                     $sqlrelset = ("SELECT * FROM `psycomotor_settings` INNER JOIN assignspsycomotortoclass ON psycomotor_settings.id=assignspsycomotortoclass.PsycomotorSettingsId WHERE ClassID = '$classid'");
                                                                     $resultrelset = mysqli_query($link, $sqlrelset);
                                                                     $rowGetrelset = mysqli_fetch_assoc($resultrelset);
                                                                     $row_cntrelset = mysqli_num_rows($resultrelset);
-                                
+
                                                                     if($row_cntrelset > 0)
                                                                     {
                                                                         $sqlgetscore = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND term = '3rd' AND sectionid = '$classsectionactual'");
                                                                         $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                                         $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                                         $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                                        
+
                                                                         if($row_cntgetscore > 0)
                                                                         {
                                                                             if($rowGetrelset['NumberofP'] =='1')
@@ -6751,7 +6750,7 @@
                                                                                         <td></td>
                                                                                         <td></td>
                                                                                     </tr>';
-                                                                            }        
+                                                                            }
                                                                             elseif($rowGetrelset['NumberofP'] =='4')
                                                                             {
                                                                                 echo '<tr>
@@ -7241,26 +7240,26 @@
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <?php
-                                                            
+
                                                     $sqlgettechremark = mysqli_query($link,"SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='3rd' AND `remark`!=''");
                                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
-                                                    
-                                                    
+
+
                                                     if($rowcountfixedremark > 0)
                                                     {
                                                         $teacherRemark = $fetchfixedremark['remark'];
-                                                        
+
                                                         $teacherid = $fetchfixedremark['StaffID'];
-                                                        
+
                                                         $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$hedteachid'");
                                                         $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                                         $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                                         $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
-                                                        
-                                            
+
+
                                                         if($row_cntgetheadteachsign > 0)
                                                         {
                                                             $hedteachsign = '<img src="../img/signature/'.$rowgetheadteachsign['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -7269,29 +7268,29 @@
                                                         {
                                                             $hedteachsign = '';
                                                         }
-                                                         
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $sqlgetteachremark = ("SELECT * FROM `defaultcomment` INNER JOIN class_teacher ON defaultcomment.PrincipalOrDeanOrHeadTeacherUserID=class_teacher.staff_id WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'teacher' AND class_id = '$classid'");
                                                         $resultgetteachremark = mysqli_query($link, $sqlgetteachremark);
                                                         $rowgetteachremark = mysqli_fetch_assoc($resultgetteachremark);
                                                         $row_cntgetteachremark = mysqli_num_rows($resultgetteachremark);
-                                                    
+
                                                         if($row_cntgetteachremark > 0)
                                                         {
-                                                            $teacherRemark = $rowgetteachremark['DefaultComment']; 
-                                                            
+                                                            $teacherRemark = $rowgetteachremark['DefaultComment'];
+
                                                             $teacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-                                                            
-                                                            
+
+
                                                             $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$teacherid'");
                                                             $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                                             $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                                             $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
-                                                            
-                                                
+
+
                                                             if($row_cntgetheadteachsign > 0)
                                                             {
                                                                 $hedteachsign = '<img src="../img/signature/'.$rowgetheadteachsign['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -7304,27 +7303,27 @@
                                                         else
                                                         {
                                                             $teacherRemark = 'N/A';
-                                                            
+
                                                             $hedteachsign = '';
                                                         }
-                                                    
+
                                                     }
-                                    
+
                                                     $sqlgetprincremark = mysqli_query($link,"SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='3rd' AND `remark`!=''");
                                                     $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                                                     $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
-                                                    
+
                                                     if($rowcountprinfixedremark > 0)
                                                     {
                                                         $principalRemark = $fetchfixedprinremark['remark'];
-                                                        
+
                                                         $headteacherid = $fetchfixedprinremark['staff_id'];
-                                                        
+
                                                         $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
                                                         $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                                         $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-                                                        
+
                                                         if($row_cntgetheadteachsignhead > 0)
                                                         {
                                                             $hedteachsignhead = '<img src="'.$defRUl.'img/signature/'.$rowgetheadteachsignhead['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -7333,27 +7332,27 @@
                                                         {
                                                             $hedteachsignhead = '';
                                                         }
-                                                        
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $sqlgetprincremark = ("SELECT * FROM `defaultcomment` WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'SchoolHead'");
                                                         $resultgetprincremark = mysqli_query($link, $sqlgetprincremark);
                                                         $rowgetteachremark = mysqli_fetch_assoc($resultgetprincremark);
                                                         $row_cntgetprincremark = mysqli_num_rows($resultgetprincremark);
-                                                    
+
                                                         if($row_cntgetprincremark > 0)
                                                         {
-                                                            $principalRemark = $rowgetteachremark['DefaultComment']; 
-                                                            
+                                                            $principalRemark = $rowgetteachremark['DefaultComment'];
+
                                                             $headteacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-                                                            
+
                                                             $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                                             $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                                             $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-                                                            
+
                                                             if($row_cntgetheadteachsignhead > 0)
                                                             {
                                                                 $hedteachsignhead = '<img src="'.$defRUl.'img/signature/'.$rowgetheadteachsignhead['Signature'].'" align="center" class="img-fluid" style="width: 80%;">';
@@ -7362,23 +7361,23 @@
                                                             {
                                                                 $hedteachsignhead = '';
                                                             }
-                                                            
+
                                                         }
                                                         else
                                                         {
                                                             $principalRemark = 'N/A';
-                                                            
+
                                                             $hedteachsignhead = '';
                                                         }
-                                                    
+
                                                     }
-                                                    
+
                                                     $sqlresumdate = ("SELECT * FROM `resumptiondate` WHERE `Session`='$sessionnew' AND `Term`='3rd'");
-                                                    
+
                                                     $resultresumdate = mysqli_query($link, $sqlresumdate);
                                                     $getresumdate = mysqli_fetch_assoc($resultresumdate);
                                                     $sqlrow_cntresumdate = mysqli_num_rows($resultresumdate);
-                                                    
+
                                                     if($sqlrow_cntresumdate > 0)
                                                     {
                                                         $resumdate = date("l jS \of F Y", strtotime($getresumdate['Date']));
@@ -7389,7 +7388,7 @@
                                                     }
                                                 ?>
                                                 <div class="col-12">
-                                                    
+
                                                     <div class="container-motto">
                                                         <div style="margin: 20px;">
                                                             <div class="row">
@@ -7398,21 +7397,21 @@
                                                                         <p style="text-align: justify;"><b style="font-weight:600;">CLASS TEACHER'S COMMENT:</b>&nbsp;<?php echo $teacherRemark;?></p>
                                                                     </div>
                                                                 </div>
-                        
+
                                                                 <div class="col-sm-2 col-md-2">
                                                                     <div align="center">
                                                                         <?php echo $hedteachsign;?>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                        
+
                                                             <div class="row">
                                                                 <div class="col-sm-10 col-md-10">
                                                                     <div>
                                                                         <p style="text-align: justify;"><b style="font-weight:600;">PRINCIPAL/HEAD TEACHER'S COMMENT:</b>&nbsp;&nbsp;&nbsp;<?php echo $principalRemark;?></p>
                                                                     </div>
                                                                 </div>
-                        
+
                                                                 <div class="col-sm-2 col-md-2">
                                                                     <div>
                                                                         <?php echo $hedteachsignhead;?>
@@ -7424,28 +7423,28 @@
                                                 					<div>
                                                 						<p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate;?></b></p>
                                                 					    <?php
-                                                                            if ($next_fee > 0) { 
+                                                                            if ($next_fee > 0) {
                                                                                 echo '<p style="text-align: center;"><b style="font-weight:600;">NEXT TERM FEE: N' . $next_fee. '</b></p>';
                                                                             }
                                                                             ?>
 
                                                 					</div>
                                                 				</div>
-                                                
+
                                                 			</div>
-                                                            
+
                                                         </div>
                                                     </div>
-                    
+
                                                 </div>
                                             </div>
                                         </div>
                                         <?php
-                                        
-                                                
-                                                   
+
+
+
                                                 $sqlstudent_session = ("SELECT * FROM `student_session` WHERE `session_id`='$sessionnew' AND student_id = '$id'");
-                                                
+
                                                 $resultstudent_session = mysqli_query($link, $sqlstudent_session);
                                                 $getstudent_session = mysqli_fetch_assoc($resultstudent_session);
                                                 $sqlrow_cntstudent_session = mysqli_num_rows($resultstudent_session);
@@ -7463,9 +7462,9 @@
                                                     </center>';
                                                 }
                                                 */
-                                            
+
                                         ?>
-                                        
+
                                 <?php
                                     }
                                     elseif($reltype == 'numeric')
@@ -7473,62 +7472,62 @@
                                 ?>
                                         <div class="container-motto">
                                             <?php
-                                                    
+
                                                 $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
-                                            
+
                                                 $sqlgettotalgrade = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS average FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'";
                                                 $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                                 $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
-                
+
                                                 $gettotgrade = floatval(round($rowgettotalgrade['average']/$row_cntgetsubscore, 2));
-                                                
+
                                                 $gettotscore = $rowgettotalgrade['average'];
-                                                
+
                                                 $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetClasscount = mysqli_query($link, $sqlgetClasscount);
                                                 $rowgetClasscount = mysqli_fetch_assoc($resultgetClasscount);
                                                 $row_cntClasscount = mysqli_num_rows($resultgetClasscount);
-                                                
+
                                                 $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscoreALL = mysqli_query($link, $sqlgetsubscoreALL);
                                                 $rowgetsubscoreALL = mysqli_fetch_assoc($resultgetsubscoreALL);
                                                 $row_cntgetsubscoreALL = mysqli_num_rows($resultgetsubscoreALL);
-                                                
+
                                                 $sqlgettotclassscor = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS totalScore FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' ORDER BY Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10";
                                                 $resultgettotclassscor = mysqli_query($link, $sqlgettotclassscor);
                                                 $rowgettotclassscor = mysqli_fetch_assoc($resultgettotclassscor);
                                                 $row_cntgettotclassscor = mysqli_num_rows($resultgettotclassscor);
-                                                
+
                                                 $totsubjects = $row_cntClasscount * $row_cntgetsubscore;
                                                 $totsubjectsALL = $row_cntClasscount * $row_cntgetsubscoreALL;
-                                                                    
+
                                                 $decStubsubavg = round($rowgettotclassscor['totalScore']/$totsubjectsALL,2);
-                                                
+
                                                 $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10),COUNT(ID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
                                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
                                                 $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
                                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
-                                                
+
                                                 $sunhihscrun = round($rowsunnyhihhscoreuname['total'],2);
-                                                
+
                                                 $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10),COUNT(ID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
                                                 $resultsunnylowwscoreuname = mysqli_query($link, $sqlsunnylowwscoreuname);
                                                 $rowsunnylowwscoreuname = mysqli_fetch_assoc($resultsunnylowwscoreuname);
                                                 $row_cntsunnylowwscoreuname = mysqli_num_rows($resultsunnylowwscoreuname);
-                                                    
+
                                                 $sunlowscrun = round($rowsunnylowwscoreuname['total'],2);
-                                                
+
                                                 $sqlgetscoretotalscorpositon = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total, StudentID FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
-                                                $resultgetscoretotalscorpositon = mysqli_query($link, $sqlgetscoretotalscorpositon); 
+                                                $resultgetscoretotalscorpositon = mysqli_query($link, $sqlgetscoretotalscorpositon);
                                                 $rowgetscoretotalscorpositon = mysqli_fetch_assoc($resultgetscoretotalscorpositon);
                                                 $row_cntgetscoretotalscorpositon = mysqli_num_rows($resultgetscoretotalscorpositon);
-                                                
+
                                                 $gettotalscorpositon = $rowgetscoretotalscorpositon['n'];
-                                                
+
                                                 function addOrdinalNumberSuffix($num) {
                                                     if (!in_array(($num % 100),array(11,12,13))){
                                                     switch ($num % 10) {
@@ -7540,86 +7539,86 @@
                                                     }
                                                     return $num.'th';
                                                 }
-                                                
+
                                                 if($row_cntgettotalgrade > 0)
                                                 {
                                                     $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
                                                     $resultgettotgradstuc = mysqli_query($link, $sqlgettotgradstuc);
                                                     $rowgettotgradstuc = mysqli_fetch_assoc($resultgettotgradstuc);
                                                     $row_cntgettotgradstuc = mysqli_num_rows($resultgettotgradstuc);
-                
+
                                                     if($row_cntgettotgradstuc > 0)
                                                     {
-                                                        
+
                                                         $totscorgrade = $rowgettotgradstuc['Grade'];
-                
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $totscorgrade = 'NA';
-                
+
                                                     }
                                                 }
                                                 else
                                                 {
                                                     $gettotgrade = 'NA';
-                                                }   
-                                            
+                                                }
+
                                             ?>
-                                            
+
                                             <div class="row" style="margin: 10px;">
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>NAME:</b> <?php echo $studname; ?></h5>
                                                 </div>
-                                                
+
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>CLASS:</b> <?php echo $studclass.' ' .$studsection; ?></h5>
                                                 </div>
-                                                
+
                                                 <div class="col-4">
                                                    <h5 style="color: #000000;"> <b>SEX:</b> <?php echo $studgender; ?></h5>
                                                 </div>
-                                                
-                                                    
+
+
                                             </div>
-            
+
                                             <div class="row" style="margin: 10px;">
-                                                
-                                                
+
+
                                                 <div class="col-4">
-                                                    <h5 style="color: #000000;"> <b>CLASS POSITION:</b> <?php 
+                                                    <h5 style="color: #000000;"> <b>CLASS POSITION:</b> <?php
                                                                     echo addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
-                                                                    
-                                                                    if($gettotalscorpositon % 10 == 0) 
+
+                                                                    if($gettotalscorpositon % 10 == 0)
                                                                     {
                                                                         echo "\n";
-                                                                    
+
                                                                     }
                                                                 ?> </h5>
                                                 </div>
-                                                
+
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>HIGHEST IN CLASS AVE:</b> <?php echo $sunhihscrun;?></h5>
-                                                </div>    
-                                                
+                                                </div>
+
                                                 <div class="col-4">
                                                     <h5 style="color: #000000;"> <b>LOWEST IN CLASS AVE:</b> <?php echo $sunlowscrun;?></h5>
-                                                </div> 
-                                                
+                                                </div>
+
                                             </div>
-                                            
-            
+
+
                                         </div>
-            
+
                                         <div align="center">
                                             <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE</h5>
                                         </div>
-            
+
                                         <div class="result table-responsive" style="margin: 10px;">
-                                            
+
                                             <table class="table-bordered tab table-sm">
-                                            
+
                                                     <tr>
                                                         <th>SUBJECT(s)</th>
                                                         <th>1ST TERM</th>
@@ -7632,137 +7631,137 @@
                                                         <th>HIGHEST IN CLASS</th>
                                                         <th>REMARK</th>
                                                     </tr>
-                                                
+
                                                 <tbody>
                                                     <?php
-                                    
+
                                                         $sqlsub = ("SELECT subjects.name AS name, subjects.id as id FROM `subject_group_class_sections` INNER JOIN subject_group_subjects ON subject_group_class_sections.subject_group_id=subject_group_subjects.subject_group_id INNER JOIN subjects ON subject_group_subjects.subject_id=subjects.id WHERE subject_group_class_sections.class_section_id = '$classsection' AND subject_group_class_sections.session_id='$session' AND subject_group_subjects.session_id='$session'");
                                                         $resultsub = mysqli_query($link, $sqlsub);
                                                         $rowGetsub = mysqli_fetch_assoc($resultsub);
                                                         $row_cntsub = mysqli_num_rows($resultsub);
-                        
+
                                                         $sqlgetscorecheck = ("SELECT * FROM `score` WHERE StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                         $resultgetscorecheck = mysqli_query($link, $sqlgetscorecheck);
                                                         $rowgetscorecheck = mysqli_fetch_assoc($resultgetscorecheck);
                                                         $row_cntgetscorecheck = mysqli_num_rows($resultgetscorecheck);
-                        
+
                                                         if($row_cntgetscorecheck > 0)
                                                         {
-                        
+
                                                             do{
-                                                                
+
                                                                 $subname = $rowGetsub['name'];
                                                                 $subid = $rowGetsub['id'];
-                        
+
                                                                 $sqlgetscore = ("SELECT * FROM `score` WHERE StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                                 $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                                 $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                        
-                        
+
+
                                                                 $sqlgetscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                                 $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                                 $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                        
+
                                                                 if($row_cntgetscore > 0)
                                                                 {
                                                                     $sqlgetscoreCUMFirst = ("SELECT SUM(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '1st' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                     $resultgetscoreCUMFirst = mysqli_query($link, $sqlgetscoreCUMFirst);
                                                                     $rowgetscoreCUMFirst = mysqli_fetch_assoc($resultgetscoreCUMFirst);
                                                                     $row_cntgetscoreCUMFirst = mysqli_num_rows($resultgetscoreCUMFirst);
-            
+
                                                                     if($row_cntgetscoreCUMFirst == NULL)
                                                                     {
-                            
+
                                                                         $totalCUMFirst = 0;
-                                                                        
+
                                                                     }
                                                                     else
                                                                     {
                                                                         $totalCUMFirst = round($rowgetscoreCUMFirst['Total'], 2);
                                                                     }
-                                                                    
+
                                                                     $sqlgetscoreCUMsec = ("SELECT SUM(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '2nd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                     $resultgetscoreCUMsec = mysqli_query($link, $sqlgetscoreCUMsec);
                                                                     $rowgetscoreCUMsec = mysqli_fetch_assoc($resultgetscoreCUMsec);
                                                                     $row_cntgetscoreCUMsec = mysqli_num_rows($resultgetscoreCUMsec);
-            
+
                                                                     if($row_cntgetscoreCUMsec == NULL)
                                                                     {
-                            
+
                                                                         $totalCUMsec = 0;
-                                                                        
+
                                                                     }
                                                                     else
                                                                     {
                                                                         $totalCUMsec = round($rowgetscoreCUMsec['Total'], 2);
                                                                     }
-                                                                    
+
                                                                     $sqlgetscoreCUMthr = ("SELECT SUM(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '3rd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                     $resultgetscoreCUMthr = mysqli_query($link, $sqlgetscoreCUMthr);
                                                                     $rowgetscoreCUMthr = mysqli_fetch_assoc($resultgetscoreCUMthr);
                                                                     $row_cntgetscoreCUMthr = mysqli_num_rows($resultgetscoreCUMthr);
-            
+
                                                                     if($row_cntgetscoreCUMthr == NULL)
                                                                     {
-                            
+
                                                                         $totalCUMthr = 0;
-                                                                        
+
                                                                     }
                                                                     else
                                                                     {
                                                                         $totalCUMthr = round($rowgetscoreCUMthr['Total'], 2);
                                                                     }
-                                                                    
+
                                                                     $total = $totalCUMFirst + $totalCUMsec + $totalCUMthr;
-                                                                    
+
                                                                     $sqlgettermtodivide = ("SELECT DISTINCT(Term) AS newterm FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                     $resultgettermtodivide = mysqli_query($link, $sqlgettermtodivide);
                                                                     $rowgettermtodivide = mysqli_fetch_assoc($resultgettermtodivide);
                                                                     $row_cntgettermtodivide = mysqli_num_rows($resultgettermtodivide);
-                                                                    
+
                                                                     $subavg =  round(($total/$row_cntgettermtodivide),2);
-                                                                    
+
                                                                     $sqlgetgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $subavg >= RangeStart AND $subavg <= RangeEnd AND ClassID = '$classid'");
                                                                     $resultgetgradstuc = mysqli_query($link, $sqlgetgradstuc);
                                                                     $rowgetgradstuc = mysqli_fetch_assoc($resultgetgradstuc);
                                                                     $row_cntgetgradstuc = mysqli_num_rows($resultgetgradstuc);
-                    
+
                                                                     if($row_cntgetgradstuc > 0)
                                                                     {
                                                                         $grade = $rowgetgradstuc['Grade'];
                                                                         $remark = $rowgetgradstuc['Remark'];
-                                                                        
+
                                                                         $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
                                                                         $resultsunnyhihhscoreunamepersub = mysqli_query($link, $sqlsunnyhihhscoreunamepersub);
                                                                         $rowsunnyhihhscoreunamepersub = mysqli_fetch_assoc($resultsunnyhihhscoreunamepersub);
                                                                         $row_cntsunnyhihhscoreunamepersub = mysqli_num_rows($resultsunnyhihhscoreunamepersub);
-                                                                        
+
                                                                         $sunhihscrunpersub = round($rowsunnyhihhscoreunamepersub['total']);
-                                                                        
+
                                                                         $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
                                                                         $resultsunnylowwscoreunamepersub = mysqli_query($link, $sqlsunnylowwscoreunamepersub);
                                                                         $rowsunnylowwscoreunamepersub = mysqli_fetch_assoc($resultsunnylowwscoreunamepersub);
                                                                         $row_cntsunnylowwscoreunamepersub = mysqli_num_rows($resultsunnylowwscoreunamepersub);
-                                                                            
+
                                                                         $sunlowscrunpersub = round($rowsunnylowwscoreunamepersub['total']);
-                                                                        
+
                                                                         $sqlgetscorepos = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total, StudentID FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
-                                                                        $resultgetscorepos = mysqli_query($link, $sqlgetscorepos); 
+                                                                        $resultgetscorepos = mysqli_query($link, $sqlgetscorepos);
                                                                         $rowgetscorepos = mysqli_fetch_assoc($resultgetscorepos);
                                                                         $row_cntgetscorepos = mysqli_num_rows($resultgetscorepos);
-                                                                        
+
                                                                         $getsco = round($rowgetscorepos['total'],2);
-                                                                        
-                                                                        $getscorpos = $rowgetscorepos['n']; 
-                                                                                
+
+                                                                        $getscorpos = $rowgetscorepos['n'];
+
                                                                     }
                                                                     else
                                                                     {
-                                                                        
+
                                                                     }
-                    
+
                                                                     echo '<tr>
                                                                         <th>' . $subname . '</th>
                                                                         <th>' . $totalCUMFirst . '</th>
@@ -7772,44 +7771,44 @@
                                                                         <td>' . $subavg . '</td>
                                                                         <td>';
                                                                         echo addOrdinalNumberSuffix($getscorpos) . "\t";
-                                                        
-                                                                            if($getscorpos % 10 == 0) 
+
+                                                                            if($getscorpos % 10 == 0)
                                                                             {
                                                                                 echo "\n";
-                                                                            
+
                                                                             }
                                                                         echo '</td>
                                                                         <td>'.$sunlowscrunpersub.'</td>
                                                                         <td>'.$sunhihscrunpersub.'</td>
                                                                         <td>' . $remark . '</td>
                                                                     </tr>';
-                    
+
                                                                 }
                                                                 else
                                                                 {
-                                                                    
+
                                                                 }
-                                                                
+
                                                             }while($rowGetsub = mysqli_fetch_assoc($resultsub));
-                        
+
                                                         }
                                                         else
                                                         {
                                                             echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
                                                         }
-                        
+
                                                     ?>
                                                 </tbody>
                                             </table>
                                         </div>
-                                        
+
                                         <?php
                                             $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='$term'");
-                                            
+
                                             $resultresumdateOld = mysqli_query($link, $sqlresumdateOld);
                                             $getresumdateOld = mysqli_fetch_assoc($resultresumdateOld);
                                             $sqlrow_cntresumdateOld = mysqli_num_rows($resultresumdateOld);
-                                            
+
                                             if($sqlrow_cntresumdateOld > 0)
                                             {
                                                 $resumdateOld = $getresumdateOld['Date'];
@@ -7818,25 +7817,25 @@
                                             {
                                                 $resumdateOld = 'N/A';
                                             }
-                                            
+
                                             $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`ca1` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND SubjectID = '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                             $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                             $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                             $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
-                                            
+
                                             if($row_cntgetsubscore > 0)
                                             {
-                                        
+
                                                 $rowcountfixedgen = $rowgetsubscore['ca1'];
                                                 $rowcountfixedpresent = $rowgetsubscore['ca2'];
                                                 $rowcountfixedlate = $rowgetsubscore['ca3'];
                                                 $rowcountfixedabsent = $rowgetsubscore['ca4'];
-                                                
+
                                             }else{
                                                 $sqlgettechgen = mysqli_query($link,"SELECT DISTINCT(student_attendences.`date`) FROM `student_attendences` WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2'");
                                                 $fetchfixedgen = mysqli_fetch_assoc($sqlgettechgen);
                                                 $rowcountfixedgen = mysqli_num_rows($sqlgettechgen);
-                                                
+
                                                 if($rowcountfixedgen == NULL || $rowcountfixedgen == '')
                                                 {
                                                     $rowcountfixedgennew = 0;
@@ -7845,11 +7844,11 @@
                                                 {
                                                     $rowcountfixedgennew = $rowcountfixedgen;
                                                 }
-                                                
+
                                                 $sqlgettechpresent = mysqli_query($link,"SELECT * FROM `student_attendences` INNER JOIN student_session ON student_attendences.student_session_id=student_session.id WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2' AND student_session.`student_id`='$id' AND student_session.`session_id`='$session' AND student_session.`class_id`='$classid' AND `attendence_type_id`='1'");
                                                 $fetchfixedpresent = mysqli_fetch_assoc($sqlgettechpresent);
                                                 $rowcountfixedpresent = mysqli_num_rows($sqlgettechpresent);
-                                                
+
                                                 if($rowcountfixedpresent == NULL || $rowcountfixedpresent == '')
                                                 {
                                                     $rowcountfixedpresent = 0;
@@ -7858,11 +7857,11 @@
                                                 {
                                                     $rowcountfixedpresent = $rowcountfixedpresent;
                                                 }
-                                            
+
                                                 $sqlgettechabsent = mysqli_query($link,"SELECT * FROM `student_attendences` INNER JOIN student_session ON student_attendences.student_session_id=student_session.id WHERE student_attendences.`session` = '$session' AND student_attendences.`term` = '$term2' AND student_session.`student_id`='$id' AND student_session.`session_id`='$session' AND student_session.`class_id`='$classid' AND `attendence_type_id`='4'");
                                                 $fetchfixedabsent = mysqli_fetch_assoc($sqlgettechabsent);
                                                 $rowcountfixedabsent = mysqli_num_rows($sqlgettechabsent);
-                                                
+
                                                 if($rowcountfixedabsent == NULL || $rowcountfixedabsent == '')
                                                 {
                                                     $rowcountfixedabsent = 0;
@@ -7879,14 +7878,14 @@
                                                 <p>Class Average: <?php echo $decStubsubavg;?> </p>
                                                 <p>No. of Subjects: <?php echo $row_cntgetscorecheck;?></p>
                                         </div>
-            
+
                                         <div class="performance" >
                                             <div class="row">
                                                 <div class="col-4">
                                                     <div class="containerForChart">
-                                                                        
+
                                                         <canvas class="newgraph" id="mysunChart" style="width:100%;height:100%;"></canvas>
-                                                        
+
                                                     </div>
                                                 </div>
                                                 <?php
@@ -7894,18 +7893,18 @@
                                                     $queryGetGradingSystem = mysqli_query($link, $sqlGetGradingSystem);
                                                     $rowGetGradingSystem = mysqli_fetch_assoc($queryGetGradingSystem);
                                                     $countGetGradingSystem = mysqli_num_rows($queryGetGradingSystem);
-                                                    
+
                                                     if($countGetGradingSystem > 0)
                                                     {
                                                         if($rowGetGradingSystem['NumberofAD'] =='1')
                                                         {
                                                             $ad1title = $rowGetGradingSystem['AD1Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                             }
@@ -7914,12 +7913,12 @@
                                                         {
                                                             $ad1title = $rowGetGradingSystem['AD1Title'];
                                                             $ad2title = $rowGetGradingSystem['AD2Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                                 $domain2 = $rowGetstudent_session["domain2"];
@@ -7930,12 +7929,12 @@
                                                             $ad1title = $rowGetGradingSystem['AD1Title'];
                                                             $ad2title = $rowGetGradingSystem['AD2Title'];
                                                             $ad3title = $rowGetGradingSystem['AD3Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                                 $domain2 = $rowGetstudent_session["domain2"];
@@ -7948,12 +7947,12 @@
                                                             $ad2title = $rowGetGradingSystem['AD2Title'];
                                                             $ad3title = $rowGetGradingSystem['AD3Title'];
                                                             $ad4title = $rowGetGradingSystem['AD4Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                                 $domain2 = $rowGetstudent_session["domain2"];
@@ -7968,12 +7967,12 @@
                                                             $ad3title = $rowGetGradingSystem['AD3Title'];
                                                             $ad4title = $rowGetGradingSystem['AD4Title'];
                                                             $ad5title = $rowGetGradingSystem['AD5Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                                 $domain2 = $rowGetstudent_session["domain2"];
@@ -7990,12 +7989,12 @@
                                                             $ad4title = $rowGetGradingSystem['AD4Title'];
                                                             $ad5title = $rowGetGradingSystem['AD5Title'];
                                                             $ad6title = $rowGetGradingSystem['AD6Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                                 $domain2 = $rowGetstudent_session["domain2"];
@@ -8014,12 +8013,12 @@
                                                             $ad5title = $rowGetGradingSystem['AD5Title'];
                                                             $ad6title = $rowGetGradingSystem['AD6Title'];
                                                             $ad7title = $rowGetGradingSystem['AD7Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                                 $domain2 = $rowGetstudent_session["domain2"];
@@ -8040,12 +8039,12 @@
                                                             $ad6title = $rowGetGradingSystem['AD6Title'];
                                                             $ad7title = $rowGetGradingSystem['AD7Title'];
                                                             $ad8title = $rowGetGradingSystem['AD8Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                                 $domain2 = $rowGetstudent_session["domain2"];
@@ -8068,12 +8067,12 @@
                                                             $ad7title = $rowGetGradingSystem['AD7Title'];
                                                             $ad8title = $rowGetGradingSystem['AD8Title'];
                                                             $ad9title = $rowGetGradingSystem['AD9Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                                 $domain2 = $rowGetstudent_session["domain2"];
@@ -8098,12 +8097,12 @@
                                                             $ad8title = $rowGetGradingSystem['AD8Title'];
                                                             $ad9title = $rowGetGradingSystem['AD9Title'];
                                                             $ad10title = $rowGetGradingSystem['AD10Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                                 $domain2 = $rowGetstudent_session["domain2"];
@@ -8130,12 +8129,12 @@
                                                             $ad9title = $rowGetGradingSystem['AD9Title'];
                                                             $ad10title = $rowGetGradingSystem['AD10Title'];
                                                             $ad11title = $rowGetGradingSystem['AD11Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                                 $domain2 = $rowGetstudent_session["domain2"];
@@ -8164,12 +8163,12 @@
                                                             $ad10title = $rowGetGradingSystem['AD10Title'];
                                                             $ad11title = $rowGetGradingSystem['AD11Title'];
                                                             $ad12title = $rowGetGradingSystem['AD12Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                                 $domain2 = $rowGetstudent_session["domain2"];
@@ -8200,12 +8199,12 @@
                                                             $ad11title = $rowGetGradingSystem['AD11Title'];
                                                             $ad12title = $rowGetGradingSystem['AD12Title'];
                                                             $ad13title = $rowGetGradingSystem['AD13Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                                 $domain2 = $rowGetstudent_session["domain2"];
@@ -8238,12 +8237,12 @@
                                                             $ad12title = $rowGetGradingSystem['AD12Title'];
                                                             $ad13title = $rowGetGradingSystem['AD13Title'];
                                                             $ad14title = $rowGetGradingSystem['AD14Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                                 $domain2 = $rowGetstudent_session["domain2"];
@@ -8278,12 +8277,12 @@
                                                             $ad13title = $rowGetGradingSystem['AD13Title'];
                                                             $ad14title = $rowGetGradingSystem['AD14Title'];
                                                             $ad15title = $rowGetGradingSystem['AD15Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                                 $domain2 = $rowGetstudent_session["domain2"];
@@ -8303,23 +8302,23 @@
                                                             }
                                                         }
                                                     }
-                                                    
+
                                                     $sqlGetGradingSystem = "SELECT * FROM `assignspsycomotortoclass` INNER JOIN psycomotor_settings ON assignspsycomotortoclass.PsycomotorSettingsId=psycomotor_settings.id WHERE assignspsycomotortoclass.ClassID='$classid'";
                                                     $queryGetGradingSystem = mysqli_query($link, $sqlGetGradingSystem);
                                                     $rowGetGradingSystem = mysqli_fetch_assoc($queryGetGradingSystem);
                                                     $countGetGradingSystem = mysqli_num_rows($queryGetGradingSystem);
-                                                    
+
                                                     if($countGetGradingSystem > 0)
                                                     {
                                                         if($rowGetGradingSystem['NumberofP'] =='1')
                                                         {
                                                             $p1title = $rowGetGradingSystem['P1Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                             }
@@ -8328,12 +8327,12 @@
                                                         {
                                                             $p1title = $rowGetGradingSystem['P1Title'];
                                                             $p2title = $rowGetGradingSystem['P2Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
@@ -8344,12 +8343,12 @@
                                                             $p1title = $rowGetGradingSystem['P1Title'];
                                                             $p2title = $rowGetGradingSystem['P2Title'];
                                                             $p3title = $rowGetGradingSystem['P3Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
@@ -8362,12 +8361,12 @@
                                                             $p2title = $rowGetGradingSystem['P2Title'];
                                                             $p3title = $rowGetGradingSystem['P3Title'];
                                                             $p4title = $rowGetGradingSystem['P4Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
@@ -8382,12 +8381,12 @@
                                                             $p3title = $rowGetGradingSystem['P3Title'];
                                                             $p4title = $rowGetGradingSystem['P4Title'];
                                                             $p5title = $rowGetGradingSystem['P5Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
@@ -8404,12 +8403,12 @@
                                                             $p4title = $rowGetGradingSystem['P4Title'];
                                                             $p5title = $rowGetGradingSystem['P5Title'];
                                                             $p6title = $rowGetGradingSystem['P6Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
@@ -8428,12 +8427,12 @@
                                                             $p5title = $rowGetGradingSystem['P5Title'];
                                                             $p6title = $rowGetGradingSystem['P6Title'];
                                                             $p7title = $rowGetGradingSystem['P7Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
@@ -8454,12 +8453,12 @@
                                                             $p6title = $rowGetGradingSystem['P6Title'];
                                                             $p7title = $rowGetGradingSystem['P7Title'];
                                                             $p8title = $rowGetGradingSystem['P8Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
@@ -8482,12 +8481,12 @@
                                                             $p7title = $rowGetGradingSystem['P7Title'];
                                                             $p8title = $rowGetGradingSystem['P8Title'];
                                                             $p9title = $rowGetGradingSystem['P9Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
@@ -8512,12 +8511,12 @@
                                                             $p8title = $rowGetGradingSystem['P8Title'];
                                                             $p9title = $rowGetGradingSystem['P9Title'];
                                                             $p10title = $rowGetGradingSystem['P10Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
@@ -8544,12 +8543,12 @@
                                                             $p9title = $rowGetGradingSystem['P9Title'];
                                                             $p10title = $rowGetGradingSystem['P10Title'];
                                                             $p11title = $rowGetGradingSystem['P11Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
@@ -8578,12 +8577,12 @@
                                                             $p10title = $rowGetGradingSystem['P10Title'];
                                                             $p11title = $rowGetGradingSystem['P11Title'];
                                                             $p12title = $rowGetGradingSystem['P12Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
@@ -8614,12 +8613,12 @@
                                                             $p11title = $rowGetGradingSystem['P11Title'];
                                                             $p12title = $rowGetGradingSystem['P12Title'];
                                                             $p13title = $rowGetGradingSystem['P13Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
@@ -8652,12 +8651,12 @@
                                                             $p12title = $rowGetGradingSystem['P12Title'];
                                                             $p13title = $rowGetGradingSystem['P13Title'];
                                                             $p14title = $rowGetGradingSystem['P14Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
@@ -8692,12 +8691,12 @@
                                                             $p13title = $rowGetGradingSystem['P13Title'];
                                                             $p14title = $rowGetGradingSystem['P14Title'];
                                                             $p15title = $rowGetGradingSystem['P15Title'];
-                                                            
+
                                                             $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
                                                             $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
                                                             $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
                                                             $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
-                            
+
                                                             if($row_cntgetscorecheck > 0){
                                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
@@ -8719,7 +8718,7 @@
                                                     }
                                                 ?>
                                                 <div class="col-8">
-                                                    
+
                                                     <div class="container-motto">
                                                         <div style="margin: 20px;">
                                                             <div class="row">
@@ -8823,34 +8822,34 @@
                                                                             <tb></tb>
                                                                             <tb></tb>
                                                                         </tr>
-                                                                    <?php } ?> 
+                                                                    <?php } ?>
                                                                 </table>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    
+
                                                 </div>
-                                            
-                                                
+
+
                                                 <?php
-                                                            
+
                                                     $sqlgettechremark = mysqli_query($link,"SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term'");
                                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
-                                                    
-                                                    
+
+
                                                     if($rowcountfixedremark > 0)
                                                     {
                                                         $teacherRemark = $fetchfixedremark['RemarkComment'];
-                                                        
+
                                                         $teacherid = $fetchfixedremark['StaffID'];
-                                                        
+
                                                         $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$hedteachid'");
                                                         $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                                         $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                                         $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
-                                                        
-                                            
+
+
                                                         if($row_cntgetheadteachsign > 0)
                                                         {
                                                             $hedteachsign = '<img src="../img/signature/'.$rowgetheadteachsign['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -8859,29 +8858,29 @@
                                                         {
                                                             $hedteachsign = '';
                                                         }
-                                                         
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $sqlgetteachremark = ("SELECT * FROM `defaultcomment` INNER JOIN class_teacher ON defaultcomment.PrincipalOrDeanOrHeadTeacherUserID=class_teacher.staff_id WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'teacher' AND class_id = '$classid'");
                                                         $resultgetteachremark = mysqli_query($link, $sqlgetteachremark);
                                                         $rowgetteachremark = mysqli_fetch_assoc($resultgetteachremark);
                                                         $row_cntgetteachremark = mysqli_num_rows($resultgetteachremark);
-                                                    
+
                                                         if($row_cntgetteachremark > 0)
                                                         {
-                                                            $teacherRemark = $rowgetteachremark['DefaultComment']; 
-                                                            
+                                                            $teacherRemark = $rowgetteachremark['DefaultComment'];
+
                                                             $teacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-                                                            
-                                                            
+
+
                                                             $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$teacherid'");
                                                             $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                                             $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                                             $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
-                                                            
-                                                
+
+
                                                             if($row_cntgetheadteachsign > 0)
                                                             {
                                                                 $hedteachsign = '<img src="../img/signature/'.$rowgetheadteachsign['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -8894,27 +8893,27 @@
                                                         else
                                                         {
                                                             $teacherRemark = 'N/A';
-                                                            
+
                                                             $hedteachsign = '';
                                                         }
-                                                    
+
                                                     }
-                                    
+
                                                     $sqlgetprincremark = mysqli_query($link,"SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term'");
                                                     $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                                                     $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
-                                                    
+
                                                     if($rowcountprinfixedremark > 0)
                                                     {
                                                         $principalRemark = $fetchfixedprinremark['Remark'];
-                                                        
+
                                                         $headteacherid = $fetchfixedprinremark['staff_id'];
-                                                        
+
                                                         $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
                                                         $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                                         $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-                                                        
+
                                                         if($row_cntgetheadteachsignhead > 0)
                                                         {
                                                             $hedteachsignhead = '<img src="'.$defRUl.'img/signature/'.$rowgetheadteachsignhead['Signature'].'" align="center" class="img-fluid" style="width: 70%;">';
@@ -8923,27 +8922,27 @@
                                                         {
                                                             $hedteachsignhead = '';
                                                         }
-                                                        
+
                                                     }
                                                     else
                                                     {
-                                                        
+
                                                         $sqlgetprincremark = ("SELECT * FROM `defaultcomment` WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'SchoolHead'");
                                                         $resultgetprincremark = mysqli_query($link, $sqlgetprincremark);
                                                         $rowgetteachremark = mysqli_fetch_assoc($resultgetprincremark);
                                                         $row_cntgetprincremark = mysqli_num_rows($resultgetprincremark);
-                                                    
+
                                                         if($row_cntgetprincremark > 0)
                                                         {
-                                                            $principalRemark = $rowgetteachremark['DefaultComment']; 
-                                                            
+                                                            $principalRemark = $rowgetteachremark['DefaultComment'];
+
                                                             $headteacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-                                                            
+
                                                             $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                                             $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                                             $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-                                                            
+
                                                             if($row_cntgetheadteachsignhead > 0)
                                                             {
                                                                 $hedteachsignhead = '<img src="'.$defRUl.'img/signature/'.$rowgetheadteachsignhead['Signature'].'" align="center" class="img-fluid" style="width: 80%;">';
@@ -8952,21 +8951,21 @@
                                                             {
                                                                 $hedteachsignhead = '';
                                                             }
-                                                            
+
                                                         }
                                                         else
                                                         {
                                                             $principalRemark = 'N/A';
-                                                            
+
                                                             $hedteachsignhead = '';
                                                         }
-                                                    
+
                                                     }
-                                                    
+
                                                     if($term == '1st')
                                                     {
                                                         $termnew = '2nd';
-                                                        
+
                                                         $sessionnew = $session;
                                                     }
                                                     elseif($term == '2nd')
@@ -8979,13 +8978,13 @@
                                                         $termnew = '1st';
                                                         $sessionnew = $session + 1;
                                                     }
-                                                        
+
                                                     $sqlresumdate = ("SELECT * FROM `resumptiondate` WHERE `Session`='$sessionnew' AND `Term`='$termnew'");
-                                                    
+
                                                     $resultresumdate = mysqli_query($link, $sqlresumdate);
                                                     $getresumdate = mysqli_fetch_assoc($resultresumdate);
                                                     $sqlrow_cntresumdate = mysqli_num_rows($resultresumdate);
-                                                    
+
                                                     if($sqlrow_cntresumdate > 0)
                                                     {
                                                         $resumdate = date("l jS \of F Y", strtotime($getresumdate['Date']));
@@ -8996,7 +8995,7 @@
                                                     }
                                                 ?>
                                                 <div class="col-12">
-                                                    
+
                                                     <div class="container-motto">
                                                         <div style="margin: 20px;">
                                                             <div class="row">
@@ -9005,21 +9004,21 @@
                                                                         <p style="text-align: justify;"><b style="font-weight:600;">CLASS TEACHER'S COMMENT:</b>&nbsp;<?php echo $teacherRemark;?></p>
                                                                     </div>
                                                                 </div>
-                        
+
                                                                 <div class="col-sm-2 col-md-2">
                                                                     <div align="center">
                                                                         <?php echo $hedteachsign;?>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                        
+
                                                             <div class="row">
                                                                 <div class="col-sm-10 col-md-10">
                                                                     <div>
                                                                         <p style="text-align: justify;"><b style="font-weight:600;">PRINCIPAL/HEAD TEACHER'S COMMENT:</b>&nbsp;&nbsp;&nbsp;<?php echo $principalRemark;?></p>
                                                                     </div>
                                                                 </div>
-                        
+
                                                                 <div class="col-sm-2 col-md-2">
                                                                     <div>
                                                                         <?php echo $hedteachsignhead;?>
@@ -9031,31 +9030,31 @@
                                                 					<div>
                                                 						<p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate;?></b></p>
                                                 					    <?php
-                                                                            if ($next_fee > 0) { 
+                                                                            if ($next_fee > 0) {
                                                                                 echo '<p style="text-align: center;"><b style="font-weight:600;">NEXT TERM FEE: N' . $next_fee. '</b></p>';
                                                                             }
                                                                             ?>
 
                                                 					</div>
                                                 				</div>
-                                                
+
                                                 			</div>
-                                                            
+
                                                         </div>
                                                     </div>
-                    
+
                                                 </div>
                                             </div>
                                         </div>
                                         <?php
-                                        
+
                                             if($term == '3rd')
                                             {
-                                                
+
                                                 $sessionnew = $session + 1;
-                                                   
+
                                                 $sqlstudent_session = ("SELECT * FROM `student_session` WHERE `session_id`='$sessionnew' AND student_id = '$id'");
-                                                
+
                                                 $resultstudent_session = mysqli_query($link, $sqlstudent_session);
                                                 $getstudent_session = mysqli_fetch_assoc($resultstudent_session);
                                                 $sqlrow_cntstudent_session = mysqli_num_rows($resultstudent_session);
@@ -9076,11 +9075,11 @@
                                             }
                                             else
                                             {
-                                                
+
                                             }
-                                            
+
                                         ?>
-                                        
+
                                 <?php
                                     }
                                     else
@@ -9089,17 +9088,17 @@
                                     }
 
                                 }
-                            
+
                             ?>
                         </div>
                     </div>
 
                 </div>
 
-           
-            
+
+
             </div>
-          
+
 
 
 
@@ -9113,7 +9112,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
 
          <script>
-            
+
             var ctx = document.getElementById("mysunChart");
             var chart = new Chart(ctx, {
                 responsive:"true",
@@ -9140,10 +9139,10 @@
                     label: "ACADEMIC PERFORMANCE",
                     order: 1,
                     data: [<?php echo $decStubsubavg ; ?>, <?php echo $gettotgrade ; ?>, <?php echo $sunhihscrun ; ?>, <?php echo $sunlowscrun ; ?>]
-                     
+
                 },
-                
-                
+
+
                 ]
             },
                 options: {
@@ -9162,7 +9161,7 @@
                         ctx.font = Chart.helpers.fontString(12, 16, Chart.defaults.global.defaultFontFamily);
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
-            
+
                         this.data.datasets.forEach(function (dataset, i) {
                         var meta = chartInstance.controller.getDatasetMeta(i);
                         meta.data.forEach(function (bar, index) {
@@ -9176,15 +9175,15 @@
                     title: {
                     display: true,
                     text: "ACADEMIC PERFORMANCE"
-                    
+
                     }
                 }
             });
-            
-            
+
+
         </script>
-        
-        
+
+
         <!-- Option 1: jQuery and Bootstrap Bundle (includes Popper) -->
         <script src="../assets/bootstrap/js/jquery.slim.min.js"></script>
         <script src="../assets/bootstrap/js/bootstrap.bundle.min.js"></script>
