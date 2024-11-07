@@ -250,7 +250,7 @@
                                         <div class="container-motto">
                                             <?php
 
-                                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND SubjectID != '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND SubjectID != '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
@@ -258,7 +258,7 @@
                                                 if($row_cntgetsubscore > 0)
                                                 {
 
-                                                    $sqlgettotalgrade = "SELECT SUM(CA1) AS CA1,SUM(CA2) AS CA2,SUM(CA3) AS CA3,SUM(CA4) AS CA4,SUM(CA5) AS CA5,SUM(CA6) AS CA6,SUM(CA7) AS CA7,SUM(CA8) AS CA8,SUM(CA9) AS CA9,SUM(CA10) AS CA10 FROM `score` WHERE StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
+                                                    $sqlgettotalgrade = "SELECT SUM(ca1) AS ca1,SUM(ca2) AS ca2,SUM(ca3) AS ca3,SUM(ca4) AS ca4,SUM(ca5) AS ca5,SUM(ca6) AS ca6,SUM(ca7) AS ca7,SUM(ca8) AS ca8,SUM(ca9) AS ca9,SUM(ca10) AS ca10 FROM `score` WHERE StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
 
                                                     $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                                     $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
@@ -276,7 +276,7 @@
 
                                                         if(in_array("1", $MidTermCaToUseArr))
                                                         {
-                                                            $CA1MidTerm = $rowgettotalgrade['CA1'];
+                                                            $CA1MidTerm = $rowgettotalgrade['ca1'];
                                                             $CA1MidTermHighestScore = $rowresultsettings['CA1Score'];
                                                         }
                                                         else{
@@ -286,7 +286,7 @@
 
                                                         if(in_array("2", $MidTermCaToUseArr))
                                                         {
-                                                            $CA2MidTerm = $rowgettotalgrade['CA2'];
+                                                            $CA2MidTerm = $rowgettotalgrade['ca2'];
                                                             $CA2MidTermHighestScore = $rowresultsettings['CA2Score'];
                                                         }
                                                         else{
@@ -295,7 +295,7 @@
                                                         }
                                                         if(in_array("3", $MidTermCaToUseArr))
                                                         {
-                                                            $CA3MidTerm = $rowgettotalgrade['CA3'];
+                                                            $CA3MidTerm = $rowgettotalgrade['ca3'];
                                                             $CA3MidTermHighestScore = $rowresultsettings['CA3Score'];
                                                         }
                                                         else{
@@ -304,7 +304,7 @@
                                                         }
                                                         if(in_array("4", $MidTermCaToUseArr))
                                                         {
-                                                            $CA4MidTerm = $rowgettotalgrade['CA4'];
+                                                            $CA4MidTerm = $rowgettotalgrade['ca4'];
                                                             $CA4MidTermHighestScore = $rowresultsettings['CA4Score'];
                                                         }
                                                         else{
@@ -313,7 +313,7 @@
                                                         }
                                                         if(in_array("5", $MidTermCaToUseArr))
                                                         {
-                                                            $CA5MidTerm = $rowgettotalgrade['CA5'];
+                                                            $CA5MidTerm = $rowgettotalgrade['ca5'];
                                                             $CA5MidTermHighestScore = $rowresultsettings['CA5Score'];
                                                         }
                                                         else{
@@ -322,7 +322,7 @@
                                                         }
                                                         if(in_array("6", $MidTermCaToUseArr))
                                                         {
-                                                            $CA6MidTerm = $rowgettotalgrade['CA6'];
+                                                            $CA6MidTerm = $rowgettotalgrade['ca6'];
                                                             $CA6MidTermHighestScore = $rowresultsettings['CA6Score'];
                                                         }
                                                         else{
@@ -331,7 +331,7 @@
                                                         }
                                                         if(in_array("7", $MidTermCaToUseArr))
                                                         {
-                                                            $CA7MidTerm = $rowgettotalgrade['CA7'];
+                                                            $CA7MidTerm = $rowgettotalgrade['ca7'];
                                                             $CA7MidTermHighestScore = $rowresultsettings['CA7Score'];
                                                         }
                                                         else{
@@ -340,7 +340,7 @@
                                                         }
                                                         if(in_array("8", $MidTermCaToUseArr))
                                                         {
-                                                            $CA8MidTerm = $rowgettotalgrade['CA8'];
+                                                            $CA8MidTerm = $rowgettotalgrade['ca8'];
                                                             $CA8MidTermHighestScore = $rowresultsettings['CA8Score'];
                                                         }
                                                         else{
@@ -349,7 +349,7 @@
                                                         }
                                                         if(in_array("9", $MidTermCaToUseArr))
                                                         {
-                                                            $CA9MidTerm = $rowgettotalgrade['CA9'];
+                                                            $CA9MidTerm = $rowgettotalgrade['ca9'];
                                                             $CA9MidTermHighestScore = $rowresultsettings['CA9Score'];
                                                         }
                                                         else{
@@ -358,7 +358,7 @@
                                                         }
                                                         if(in_array("10", $MidTermCaToUseArr))
                                                         {
-                                                            $CA10MidTerm = $rowgettotalgrade['CA10'];
+                                                            $CA10MidTerm = $rowgettotalgrade['ca10'];
                                                             $CA10MidTermHighestScore = $rowresultsettings['CA10Score'];
                                                         }
                                                         else{
@@ -565,7 +565,7 @@
                                                     $rowGetsub = mysqli_fetch_assoc($resultsub);
                                                     $row_cntsub = mysqli_num_rows($resultsub);
 
-                                                    $sqlgetscorecheck = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                                    $sqlgetscorecheck = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                     $resultgetscorecheck = mysqli_query($link, $sqlgetscorecheck);
                                                     $rowgetscorecheck = mysqli_fetch_assoc($resultgetscorecheck);
                                                     $row_cntgetscorecheck = mysqli_num_rows($resultgetscorecheck);
@@ -578,7 +578,7 @@
                                                             $subname = $rowGetsub['name'];
                                                             $subid = $rowGetsub['id'];
 
-                                                            $sqlgetscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND  StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                            $sqlgetscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND  StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                             $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                             $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                             $row_cntgetscore = mysqli_num_rows($resultgetscore);
@@ -593,8 +593,8 @@
 
                                                                     if(in_array("1", $MidTermCaToUseArrshowscores))
                                                                     {
-                                                                        $ca1 = $rowgetscore['CA1'];
-                                                                        $ca1table = '<td>'.$rowgetscore['CA1'].'</td>';
+                                                                        $ca1 = $rowgetscore['ca1'];
+                                                                        $ca1table = '<td>'.$rowgetscore['ca1'].'</td>';
                                                                         $CA1MidTermHighestScoresubscore = $rowGetrelset['CA1Score'];
                                                                     }
                                                                     else{
@@ -605,8 +605,8 @@
 
                                                                     if(in_array("2", $MidTermCaToUseArrshowscores))
                                                                     {
-                                                                        $ca2 = $rowgetscore['CA2'];
-                                                                        $ca2table = '<td>'.$rowgetscore['CA2'].'</td>';
+                                                                        $ca2 = $rowgetscore['ca2'];
+                                                                        $ca2table = '<td>'.$rowgetscore['ca2'].'</td>';
                                                                         $CA2MidTermHighestScoresubscore = $rowGetrelset['CA2Score'];
                                                                     }
                                                                     else{
@@ -616,8 +616,8 @@
                                                                     }
                                                                     if(in_array("3", $MidTermCaToUseArrshowscores))
                                                                     {
-                                                                        $ca3 = $rowgetscore['CA3'];
-                                                                        $ca3table = '<td>'.$rowgetscore['CA3'].'</td>';
+                                                                        $ca3 = $rowgetscore['ca3'];
+                                                                        $ca3table = '<td>'.$rowgetscore['ca3'].'</td>';
                                                                         $CA3MidTermHighestScoresubscore = $rowGetrelset['CA3Score'];
                                                                     }
                                                                     else{
@@ -627,8 +627,8 @@
                                                                     }
                                                                     if(in_array("4", $MidTermCaToUseArrshowscores))
                                                                     {
-                                                                        $ca4 = $rowgetscore['CA4'];
-                                                                        $ca4table = '<td>'.$rowgetscore['CA4'].'</td>';
+                                                                        $ca4 = $rowgetscore['ca4'];
+                                                                        $ca4table = '<td>'.$rowgetscore['ca4'].'</td>';
                                                                         $CA4MidTermHighestScoresubscore = $rowGetrelset['CA4Score'];
                                                                     }
                                                                     else{
@@ -638,8 +638,8 @@
                                                                     }
                                                                     if(in_array("5", $MidTermCaToUseArrshowscores))
                                                                     {
-                                                                        $ca5 = $rowgetscore['CA5'];
-                                                                        $ca5table = '<td>'.$rowgetscore['CA5'].'</td>';
+                                                                        $ca5 = $rowgetscore['ca5'];
+                                                                        $ca5table = '<td>'.$rowgetscore['ca5'].'</td>';
                                                                         $CA5MidTermHighestScoresubscore = $rowGetrelset['CA5Score'];
                                                                     }
                                                                     else{
@@ -649,8 +649,8 @@
                                                                     }
                                                                     if(in_array("6", $MidTermCaToUseArrshowscores))
                                                                     {
-                                                                        $ca6 = $rowgetscore['CA6'];
-                                                                        $ca6table = '<td>'.$rowgetscore['CA6'].'</td>';
+                                                                        $ca6 = $rowgetscore['ca6'];
+                                                                        $ca6table = '<td>'.$rowgetscore['ca6'].'</td>';
                                                                         $CA6MidTermHighestScoresubscore = $rowGetrelset['CA6Score'];
                                                                     }
                                                                     else{
@@ -660,8 +660,8 @@
                                                                     }
                                                                     if(in_array("7", $MidTermCaToUseArrshowscores))
                                                                     {
-                                                                        $ca7 = $rowgetscore['CA7'];
-                                                                        $ca7table = '<td>'.$rowgetscore['CA7'].'</td>';
+                                                                        $ca7 = $rowgetscore['ca7'];
+                                                                        $ca7table = '<td>'.$rowgetscore['ca7'].'</td>';
                                                                         $CA7MidTermHighestScoresubscore = $rowGetrelset['CA7Score'];
                                                                     }
                                                                     else{
@@ -671,8 +671,8 @@
                                                                     }
                                                                     if(in_array("8", $MidTermCaToUseArrshowscores))
                                                                     {
-                                                                        $ca8 = $rowgetscore['CA8'];
-                                                                        $ca8table = '<td>'.$rowgetscore['CA8'].'</td>';
+                                                                        $ca8 = $rowgetscore['ca8'];
+                                                                        $ca8table = '<td>'.$rowgetscore['ca8'].'</td>';
                                                                         $CA8MidTermHighestScoresubscore = $rowGetrelset['CA8Score'];
                                                                     }
                                                                     else{
@@ -682,8 +682,8 @@
                                                                     }
                                                                     if(in_array("9", $MidTermCaToUseArrshowscores))
                                                                     {
-                                                                        $ca9 = $rowgetscore['CA9'];
-                                                                        $ca9table = '<td>'.$rowgetscore['CA9'].'</td>';
+                                                                        $ca9 = $rowgetscore['ca9'];
+                                                                        $ca9table = '<td>'.$rowgetscore['ca9'].'</td>';
                                                                         $CA9MidTermHighestScoresubscore = $rowGetrelset['CA9Score'];
                                                                     }
                                                                     else{
@@ -693,8 +693,8 @@
                                                                     }
                                                                     if(in_array("10", $MidTermCaToUseArrshowscores))
                                                                     {
-                                                                        $ca10 = $rowgetscore['CA10'];
-                                                                        $ca10table = '<td>'.$rowgetscore['CA10'].'</td>';
+                                                                        $ca10 = $rowgetscore['ca10'];
+                                                                        $ca10table = '<td>'.$rowgetscore['ca10'].'</td>';
                                                                         $CA10MidTermHighestScoresubscore = $rowGetrelset['CA10Score'];
                                                                     }
                                                                     else{
@@ -2203,12 +2203,12 @@
                                         <div class="container-motto">
                                             <?php
 
-                                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
 
-                                                $sqlgettotalgrade = "SELECT SUM(exam + ca1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS average FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
+                                                $sqlgettotalgrade = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
                                                 $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                                 $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
@@ -2217,17 +2217,17 @@
 
                                                 $gettotscore = $rowgettotalgrade['average'];
 
-                                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND SubjectID != '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND SubjectID != '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetClasscount = mysqli_query($link, $sqlgetClasscount);
                                                 $rowgetClasscount = mysqli_fetch_assoc($resultgetClasscount);
                                                 $row_cntClasscount = mysqli_num_rows($resultgetClasscount);
 
-                                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SubjectID != '0' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SubjectID != '0' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscoreALL = mysqli_query($link, $sqlgetsubscoreALL);
                                                 $rowgetsubscoreALL = mysqli_fetch_assoc($resultgetsubscoreALL);
                                                 $row_cntgetsubscoreALL = mysqli_num_rows($resultgetsubscoreALL);
 
-                                                $sqlgettotclassscor = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual' ORDER BY exam + ca1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10";
+                                                $sqlgettotclassscor = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual' ORDER BY exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
                                                 $resultgettotclassscor = mysqli_query($link, $sqlgettotclassscor);
                                                 $rowgettotclassscor = mysqli_fetch_assoc($resultgettotclassscor);
                                                 $row_cntgettotclassscor = mysqli_num_rows($resultgettotclassscor);
@@ -2237,14 +2237,14 @@
 
                                                 $decStubsubavg = round($rowgettotclassscor['totalScore']/$totsubjectsALL,2);
 
-                                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10),COUNT(ID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
+                                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
                                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
                                                 $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
                                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
 
                                                 $sunhihscrun = round($rowsunnyhihhscoreuname['total'],2);
 
-                                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10),COUNT(ID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND SubjectID != 0 AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
+                                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND SubjectID != 0 AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
                                                 $resultsunnylowwscoreuname = mysqli_query($link, $sqlsunnylowwscoreuname);
                                                 $rowsunnylowwscoreuname = mysqli_fetch_assoc($resultsunnylowwscoreuname);
                                                 $row_cntsunnylowwscoreuname = mysqli_num_rows($resultsunnylowwscoreuname);
@@ -2406,7 +2406,7 @@
                                                     $rowGetsub = mysqli_fetch_assoc($resultsub);
                                                     $row_cntsub = mysqli_num_rows($resultsub);
 
-                                                    $sqlgetscorecheck = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                                    $sqlgetscorecheck = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                     $resultgetscorecheck = mysqli_query($link, $sqlgetscorecheck);
                                                     $rowgetscorecheck = mysqli_fetch_assoc($resultgetscorecheck);
                                                     $row_cntgetscorecheck = mysqli_num_rows($resultgetscorecheck);
@@ -2467,15 +2467,15 @@
                                                                 }
                                                                 elseif($rowGetrelset['NumberOfCA'] =='7')
                                                                 {
-                                                                    $ca1 = $rowgetscore['ca1'] + $rowgetscore['CA2'] + $rowgetscore['CA3'] + $rowgetscore['CA4'] + $rowgetscore['CA5'] + $rowgetscore['CA6'] + $rowgetscore['CA7'];
+                                                                    $ca1 = $rowgetscore['ca1'] + $rowgetscore['ca2'] + $rowgetscore['ca3'] + $rowgetscore['ca4'] + $rowgetscore['ca5'] + $rowgetscore['ca6'] + $rowgetscore['ca7'];
                                                                 }
                                                                 elseif($rowGetrelset['NumberOfCA'] =='8')
                                                                 {
-                                                                    $ca1 = $rowgetscore['CA1'] + $rowgetscore['CA2'] + $rowgetscore['CA3'] + $rowgetscore['CA4'] + $rowgetscore['CA5'] + $rowgetscore['CA6'] + $rowgetscore['CA7'] + $rowgetscore['CA8'];
+                                                                    $ca1 = $rowgetscore['ca1'] + $rowgetscore['ca2'] + $rowgetscore['ca3'] + $rowgetscore['ca4'] + $rowgetscore['ca5'] + $rowgetscore['ca6'] + $rowgetscore['ca7'] + $rowgetscore['ca8'];
                                                                 }
                                                                 elseif($rowGetrelset['NumberOfCA'] =='9')
                                                                 {
-                                                                    $ca1 = $rowgetscore['CA1'] + $rowgetscore['CA2'] + $rowgetscore['CA3'] + $rowgetscore['CA4'] + $rowgetscore['CA5'] + $rowgetscore['CA6'] + $rowgetscore['CA7'] + $rowgetscore['CA8'] + $rowgetscore['CA9'];
+                                                                    $ca1 = $rowgetscore['ca1'] + $rowgetscore['ca2'] + $rowgetscore['ca3'] + $rowgetscore['ca4'] + $rowgetscore['ca5'] + $rowgetscore['ca6'] + $rowgetscore['ca7'] + $rowgetscore['ca8'] + $rowgetscore['ca9'];
                                                                 }
                                                                 elseif($rowGetrelset['NumberOfCA'] =='10')
                                                                 {
@@ -2501,26 +2501,26 @@
                                                                     $grade = $rowgetgradstuc['Grade'];
                                                                     $remark = $rowgetgradstuc['Remark'];
 
-                                                                    $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
+                                                                    $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
                                                                     $resultsunnyhihhscoreunamepersub = mysqli_query($link, $sqlsunnyhihhscoreunamepersub);
                                                                     $rowsunnyhihhscoreunamepersub = mysqli_fetch_assoc($resultsunnyhihhscoreunamepersub);
                                                                     $row_cntsunnyhihhscoreunamepersub = mysqli_num_rows($resultsunnyhihhscoreunamepersub);
 
                                                                     $sunhihscrunpersub = round($rowsunnyhihhscoreunamepersub['total']);
 
-                                                                    $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
+                                                                    $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
                                                                     $resultsunnylowwscoreunamepersub = mysqli_query($link, $sqlsunnylowwscoreunamepersub);
                                                                     $rowsunnylowwscoreunamepersub = mysqli_fetch_assoc($resultsunnylowwscoreunamepersub);
                                                                     $row_cntsunnylowwscoreunamepersub = mysqli_num_rows($resultsunnylowwscoreunamepersub);
 
                                                                     $sunlowscrunpersub = round($rowsunnylowwscoreunamepersub['total']);
 
-                                                                    $sqlgetscorepos = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam+CA1+CA2+CA3+CA4+CA5) AS total, UserRegNumberOrUsername FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND InstitutionID = '$institution' AND ClassOrDepartmentID = '$classid' AND Session = '$sunnyresultsession' AND CourseOrSubjectID= '$subid' GROUP BY UserRegNumberOrUsername ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.UserRegNumberOrUsername='$regno'";
+                                                                    $sqlgetscorepos = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam+ca1+ca2+ca3+ca4+ca5) AS total, UserRegNumberOrUsername FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND InstitutionID = '$institution' AND ClassOrDepartmentID = '$classid' AND Session = '$sunnyresultsession' AND CourseOrSubjectID= '$subid' GROUP BY UserRegNumberOrUsername ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.UserRegNumberOrUsername='$regno'";
                                                                     $resultgetscorepos = mysqli_query($link, $sqlgetscorepos);
                                                                     $rowgetscorepos = mysqli_fetch_assoc($resultgetscorepos);
                                                                     $row_cntgetscorepos = mysqli_num_rows($resultgetscorepos);
 
-                                                                    $sqlgetsubper = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS average FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND InstitutionID = '$institution' AND ClassOrDepartmentID = '$classid' AND CourseOrSubjectID = '$subid' AND Session = '$sunnyresultsession' AND TermOrSemester = '$sunnyrelterm' ORDER BY Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10";
+                                                                    $sqlgetsubper = "SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND InstitutionID = '$institution' AND ClassOrDepartmentID = '$classid' AND CourseOrSubjectID = '$subid' AND Session = '$sunnyresultsession' AND TermOrSemester = '$sunnyrelterm' ORDER BY Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
                                                                     $resultgetsubper = mysqli_query($link, $sqlgetsubper);
                                                                     $rowgetsubper = mysqli_fetch_assoc($resultgetsubper);
                                                                     $row_cntgetsubper = mysqli_num_rows($resultgetsubper);
@@ -2655,19 +2655,19 @@
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA4"].'
+                                                                                '.$rowgetscore["ca4"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA5"].'
+                                                                                '.$rowgetscore["ca5"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA6"].'
+                                                                                '.$rowgetscore["ca6"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA7"].'
+                                                                                '.$rowgetscore["ca7"].'
 
                                                                             </td>';
                                                                     }
@@ -4311,12 +4311,12 @@
                                         <div class="container-motto">
                                             <?php
 
-                                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
 
-                                                $sqlgettotalgrade = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS average FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
+                                                $sqlgettotalgrade = "SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
                                                 $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                                 $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
@@ -4325,17 +4325,17 @@
 
                                                 $gettotscore = $rowgettotalgrade['average'];
 
-                                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetClasscount = mysqli_query($link, $sqlgetClasscount);
                                                 $rowgetClasscount = mysqli_fetch_assoc($resultgetClasscount);
                                                 $row_cntClasscount = mysqli_num_rows($resultgetClasscount);
 
-                                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscoreALL = mysqli_query($link, $sqlgetsubscoreALL);
                                                 $rowgetsubscoreALL = mysqli_fetch_assoc($resultgetsubscoreALL);
                                                 $row_cntgetsubscoreALL = mysqli_num_rows($resultgetsubscoreALL);
 
-                                                $sqlgettotclassscor = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS totalScore FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' ORDER BY Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10";
+                                                $sqlgettotclassscor = "SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' ORDER BY Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
                                                 $resultgettotclassscor = mysqli_query($link, $sqlgettotclassscor);
                                                 $rowgettotclassscor = mysqli_fetch_assoc($resultgettotclassscor);
                                                 $row_cntgettotclassscor = mysqli_num_rows($resultgettotclassscor);
@@ -4345,21 +4345,21 @@
 
                                                 $decStubsubavg = round($rowgettotclassscor['totalScore']/$totsubjectsALL,2);
 
-                                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10),COUNT(ID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
+                                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
                                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
                                                 $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
                                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
 
                                                 $sunhihscrun = round($rowsunnyhihhscoreuname['total'],2);
 
-                                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10),COUNT(ID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
+                                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
                                                 $resultsunnylowwscoreuname = mysqli_query($link, $sqlsunnylowwscoreuname);
                                                 $rowsunnylowwscoreuname = mysqli_fetch_assoc($resultsunnylowwscoreuname);
                                                 $row_cntsunnylowwscoreuname = mysqli_num_rows($resultsunnylowwscoreuname);
 
                                                 $sunlowscrun = round($rowsunnylowwscoreuname['total'],2);
 
-                                                $sqlgetscoretotalscorpositon = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total, StudentID FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
+                                                $sqlgetscoretotalscorpositon = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total, StudentID FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
                                                 $resultgetscoretotalscorpositon = mysqli_query($link, $sqlgetscoretotalscorpositon);
                                                 $rowgetscoretotalscorpositon = mysqli_fetch_assoc($resultgetscoretotalscorpositon);
                                                 $row_cntgetscoretotalscorpositon = mysqli_num_rows($resultgetscoretotalscorpositon);
@@ -4540,7 +4540,7 @@
                                                     $rowGetsub = mysqli_fetch_assoc($resultsub);
                                                     $row_cntsub = mysqli_num_rows($resultsub);
 
-                                                    $sqlgetscorecheck = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                                    $sqlgetscorecheck = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                     $resultgetscorecheck = mysqli_query($link, $sqlgetscorecheck);
                                                     $rowgetscorecheck = mysqli_fetch_assoc($resultgetscorecheck);
                                                     $row_cntgetscorecheck = mysqli_num_rows($resultgetscorecheck);
@@ -4560,13 +4560,13 @@
                                                             $subname = $rowGetsub['name'];
                                                             $subid = $rowGetsub['id'];
 
-                                                            $sqlgetscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                            $sqlgetscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                             $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                             $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                             $row_cntgetscore = mysqli_num_rows($resultgetscore);
 
 
-                                                            $sqlgetscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                            $sqlgetscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                             $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                             $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                             $row_cntgetscore = mysqli_num_rows($resultgetscore);
@@ -4577,43 +4577,43 @@
 
                                                                 if($rowGetrelset['NumberOfCA'] =='1')
                                                                 {
-                                                                    $ca1 = $rowgetscore['CA1'];
+                                                                    $ca1 = $rowgetscore['ca1'];
                                                                 }
                                                                 elseif($rowGetrelset['NumberOfCA'] =='2')
                                                                 {
-                                                                    $ca1 = $rowgetscore['CA1'] + $rowgetscore['CA2'];
+                                                                    $ca1 = $rowgetscore['ca1'] + $rowgetscore['ca2'];
                                                                 }
                                                                 elseif($rowGetrelset['NumberOfCA'] =='3')
                                                                 {
-                                                                    $ca1 = $rowgetscore['CA1'] + $rowgetscore['CA2'] + $rowgetscore['CA3'];
+                                                                    $ca1 = $rowgetscore['ca1'] + $rowgetscore['ca2'] + $rowgetscore['ca3'];
                                                                 }
                                                                 elseif($rowGetrelset['NumberOfCA'] =='4')
                                                                 {
-                                                                    $ca1 = $rowgetscore['CA1'] + $rowgetscore['CA2'] + $rowgetscore['CA3'] + $rowgetscore['CA4'];
+                                                                    $ca1 = $rowgetscore['ca1'] + $rowgetscore['ca2'] + $rowgetscore['ca3'] + $rowgetscore['ca4'];
                                                                 }
                                                                 elseif($rowGetrelset['NumberOfCA'] =='5')
                                                                 {
-                                                                    $ca1 = $rowgetscore['CA1'] + $rowgetscore['CA2'] + $rowgetscore['CA3'] + $rowgetscore['CA4'] + $rowgetscore['CA5'];
+                                                                    $ca1 = $rowgetscore['ca1'] + $rowgetscore['ca2'] + $rowgetscore['ca3'] + $rowgetscore['ca4'] + $rowgetscore['ca5'];
                                                                 }
                                                                 elseif($rowGetrelset['NumberOfCA'] =='6')
                                                                 {
-                                                                    $ca1 = $rowgetscore['CA1'] + $rowgetscore['CA2'] + $rowgetscore['CA3'] + $rowgetscore['CA4'] + $rowgetscore['CA5'] + $rowgetscore['CA6'];
+                                                                    $ca1 = $rowgetscore['ca1'] + $rowgetscore['ca2'] + $rowgetscore['ca3'] + $rowgetscore['ca4'] + $rowgetscore['ca5'] + $rowgetscore['ca6'];
                                                                 }
                                                                 elseif($rowGetrelset['NumberOfCA'] =='7')
                                                                 {
-                                                                    $ca1 = $rowgetscore['CA1'] + $rowgetscore['CA2'] + $rowgetscore['CA3'] + $rowgetscore['CA4'] + $rowgetscore['CA5'] + $rowgetscore['CA6'] + $rowgetscore['CA7'];
+                                                                    $ca1 = $rowgetscore['ca1'] + $rowgetscore['ca2'] + $rowgetscore['ca3'] + $rowgetscore['ca4'] + $rowgetscore['ca5'] + $rowgetscore['ca6'] + $rowgetscore['ca7'];
                                                                 }
                                                                 elseif($rowGetrelset['NumberOfCA'] =='8')
                                                                 {
-                                                                    $ca1 = $rowgetscore['CA1'] + $rowgetscore['CA2'] + $rowgetscore['CA3'] + $rowgetscore['CA4'] + $rowgetscore['CA5'] + $rowgetscore['CA6'] + $rowgetscore['CA7'] + $rowgetscore['CA8'];
+                                                                    $ca1 = $rowgetscore['ca1'] + $rowgetscore['ca2'] + $rowgetscore['ca3'] + $rowgetscore['ca4'] + $rowgetscore['ca5'] + $rowgetscore['ca6'] + $rowgetscore['ca7'] + $rowgetscore['ca8'];
                                                                 }
                                                                 elseif($rowGetrelset['NumberOfCA'] =='9')
                                                                 {
-                                                                    $ca1 = $rowgetscore['CA1'] + $rowgetscore['CA2'] + $rowgetscore['CA3'] + $rowgetscore['CA4'] + $rowgetscore['CA5'] + $rowgetscore['CA6'] + $rowgetscore['CA7'] + $rowgetscore['CA8'] + $rowgetscore['CA9'];
+                                                                    $ca1 = $rowgetscore['ca1'] + $rowgetscore['ca2'] + $rowgetscore['ca3'] + $rowgetscore['ca4'] + $rowgetscore['ca5'] + $rowgetscore['ca6'] + $rowgetscore['ca7'] + $rowgetscore['ca8'] + $rowgetscore['ca9'];
                                                                 }
                                                                 elseif($rowGetrelset['NumberOfCA'] =='10')
                                                                 {
-                                                                    $ca1 = $rowgetscore['CA1'] + $rowgetscore['CA2'] + $rowgetscore['CA3'] + $rowgetscore['CA4'] + $rowgetscore['CA5'] + $rowgetscore['CA6'] + $rowgetscore['CA7'] + $rowgetscore['CA8'] + $rowgetscore['CA9'] + $rowgetscore['CA10'];
+                                                                    $ca1 = $rowgetscore['ca1'] + $rowgetscore['ca2'] + $rowgetscore['ca3'] + $rowgetscore['ca4'] + $rowgetscore['ca5'] + $rowgetscore['ca6'] + $rowgetscore['ca7'] + $rowgetscore['ca8'] + $rowgetscore['ca9'] + $rowgetscore['ca10'];
                                                                 }
                                                                 else{
                                                                     $ca1 = 0;
@@ -4635,26 +4635,26 @@
                                                                     $grade = $rowgetgradstuc['Grade'];
                                                                     $remark = $rowgetgradstuc['Remark'];
 
-                                                                    $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
+                                                                    $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
                                                                     $resultsunnyhihhscoreunamepersub = mysqli_query($link, $sqlsunnyhihhscoreunamepersub);
                                                                     $rowsunnyhihhscoreunamepersub = mysqli_fetch_assoc($resultsunnyhihhscoreunamepersub);
                                                                     $row_cntsunnyhihhscoreunamepersub = mysqli_num_rows($resultsunnyhihhscoreunamepersub);
 
                                                                     $sunhihscrunpersub = round($rowsunnyhihhscoreunamepersub['total']);
 
-                                                                    $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
+                                                                    $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
                                                                     $resultsunnylowwscoreunamepersub = mysqli_query($link, $sqlsunnylowwscoreunamepersub);
                                                                     $rowsunnylowwscoreunamepersub = mysqli_fetch_assoc($resultsunnylowwscoreunamepersub);
                                                                     $row_cntsunnylowwscoreunamepersub = mysqli_num_rows($resultsunnylowwscoreunamepersub);
 
                                                                     $sunlowscrunpersub = round($rowsunnylowwscoreunamepersub['total']);
 
-                                                                    $sqlgetscorepos = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total, StudentID FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
+                                                                    $sqlgetscorepos = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total, StudentID FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
                                                                     $resultgetscorepos = mysqli_query($link, $sqlgetscorepos);
                                                                     $rowgetscorepos = mysqli_fetch_assoc($resultgetscorepos);
                                                                     $row_cntgetscorepos = mysqli_num_rows($resultgetscorepos);
 
-                                                                    $sqlgetsubper = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS average FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND InstitutionID = '$institution' AND ClassOrDepartmentID = '$classid' AND CourseOrSubjectID = '$subid' AND Session = '$sunnyresultsession' AND TermOrSemester = '$sunnyrelterm' ORDER BY Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10";
+                                                                    $sqlgetsubper = "SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND InstitutionID = '$institution' AND ClassOrDepartmentID = '$classid' AND CourseOrSubjectID = '$subid' AND Session = '$sunnyresultsession' AND TermOrSemester = '$sunnyrelterm' ORDER BY Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
                                                                     $resultgetsubper = mysqli_query($link, $sqlgetsubper);
                                                                     $rowgetsubper = mysqli_fetch_assoc($resultgetsubper);
                                                                     $row_cntgetsubper = mysqli_num_rows($resultgetsubper);
@@ -4676,249 +4676,249 @@
                                                                     if($rowGetrelset['NumberOfCA'] =='1')
                                                                     {
                                                                         echo '<td>
-                                                                                '.$rowgetscore["CA1"].'
+                                                                                '.$rowgetscore["ca1"].'
 
                                                                                 </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='2')
                                                                     {
                                                                         echo '<td>
-                                                                                '.$rowgetscore["CA1"].'
+                                                                                '.$rowgetscore["ca1"].'
 
                                                                                 </td>
                                                                                 <td>
-                                                                                '.$rowgetscore["CA2"].'
+                                                                                '.$rowgetscore["ca2"].'
 
                                                                                 </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='3')
                                                                     {
                                                                         echo '<td>
-                                                                            '.$rowgetscore["CA1"].'
+                                                                            '.$rowgetscore["ca1"].'
 
                                                                             </td>
                                                                             <td>
-                                                                            '.$rowgetscore["CA2"].'
+                                                                            '.$rowgetscore["ca2"].'
 
                                                                             </td>
                                                                             <td>
-                                                                            '.$rowgetscore["CA3"].'
+                                                                            '.$rowgetscore["ca3"].'
 
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='4')
                                                                     {
                                                                         echo '<td>
-                                                                                '.$rowgetscore["CA1"].'
+                                                                                '.$rowgetscore["ca1"].'
 
                                                                                 </td>
                                                                                 <td>
-                                                                                '.$rowgetscore["CA2"].'
+                                                                                '.$rowgetscore["ca2"].'
 
                                                                                 </td>
                                                                                 <td>
-                                                                            '.$rowgetscore["CA3"].'
+                                                                            '.$rowgetscore["ca3"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA4"].'
+                                                                                '.$rowgetscore["ca4"].'
 
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='5')
                                                                     {
                                                                         echo '<td>
-                                                                                '.$rowgetscore["CA1"].'
+                                                                                '.$rowgetscore["ca1"].'
 
                                                                                 </td>
                                                                                 <td>
-                                                                                '.$rowgetscore["CA2"].'
+                                                                                '.$rowgetscore["ca2"].'
 
                                                                                 </td>
                                                                                 <td>
-                                                                            '.$rowgetscore["CA3"].'
+                                                                            '.$rowgetscore["ca3"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA4"].'
+                                                                                '.$rowgetscore["ca4"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA5"].'
+                                                                                '.$rowgetscore["ca5"].'
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='6')
                                                                     {
                                                                         echo '<td>
-                                                                                '.$rowgetscore["CA1"].'
+                                                                                '.$rowgetscore["ca1"].'
 
                                                                                 </td>
                                                                                 <td>
-                                                                                '.$rowgetscore["CA2"].'
+                                                                                '.$rowgetscore["ca2"].'
 
                                                                                 </td>
                                                                                 <td>
-                                                                            '.$rowgetscore["CA3"].'
+                                                                            '.$rowgetscore["ca3"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA4"].'
+                                                                                '.$rowgetscore["ca4"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA5"].'
+                                                                                '.$rowgetscore["ca5"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA6"].'
+                                                                                '.$rowgetscore["ca6"].'
 
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='7')
                                                                     {
                                                                         echo '<td>
-                                                                                '.$rowgetscore["CA1"].'
+                                                                                '.$rowgetscore["ca1"].'
 
                                                                                 </td>
                                                                                 <td>
-                                                                                '.$rowgetscore["CA2"].'
+                                                                                '.$rowgetscore["ca2"].'
 
                                                                                 </td>
                                                                                 <td>
-                                                                            '.$rowgetscore["CA3"].'
+                                                                            '.$rowgetscore["ca3"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA4"].'
+                                                                                '.$rowgetscore["ca4"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA5"].'
+                                                                                '.$rowgetscore["ca5"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA6"].'
+                                                                                '.$rowgetscore["ca6"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA7"].'
+                                                                                '.$rowgetscore["ca7"].'
 
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='8')
                                                                     {
                                                                         echo '<td>
-                                                                                '.$rowgetscore["CA1"].'
+                                                                                '.$rowgetscore["ca1"].'
 
                                                                                 </td>
                                                                                 <td>
-                                                                                '.$rowgetscore["CA2"].'
+                                                                                '.$rowgetscore["ca2"].'
 
                                                                                 </td>
                                                                                 <td>
-                                                                            '.$rowgetscore["CA3"].'
+                                                                            '.$rowgetscore["ca3"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA4"].'
+                                                                                '.$rowgetscore["ca4"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA5"].'
+                                                                                '.$rowgetscore["ca5"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA6"].'
+                                                                                '.$rowgetscore["ca6"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA7"].'
+                                                                                '.$rowgetscore["ca7"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA8"].'
+                                                                                '.$rowgetscore["ca8"].'
 
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='9')
                                                                     {
                                                                         echo '<td>
-                                                                                '.$rowgetscore["CA1"].'
+                                                                                '.$rowgetscore["ca1"].'
 
                                                                                 </td>
                                                                                 <td>
-                                                                                '.$rowgetscore["CA2"].'
+                                                                                '.$rowgetscore["ca2"].'
 
                                                                                 </td>
                                                                                 <td>
-                                                                            '.$rowgetscore["CA3"].'
+                                                                            '.$rowgetscore["ca3"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA4"].'
+                                                                                '.$rowgetscore["ca4"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA5"].'
+                                                                                '.$rowgetscore["ca5"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA6"].'
+                                                                                '.$rowgetscore["ca6"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA7"].'
+                                                                                '.$rowgetscore["ca7"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA8"].'
+                                                                                '.$rowgetscore["ca8"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA9"].'
+                                                                                '.$rowgetscore["ca9"].'
 
                                                                             </td>';
                                                                     }
                                                                     elseif($rowGetrelset['NumberOfCA'] =='10')
                                                                     {
                                                                         echo '<td>
-                                                                                '.$rowgetscore["CA1"].'
+                                                                                '.$rowgetscore["ca1"].'
 
                                                                                 </td>
                                                                                 <td>
-                                                                                '.$rowgetscore["CA2"].'
+                                                                                '.$rowgetscore["ca2"].'
 
                                                                                 </td>
                                                                                 <td>
-                                                                            '.$rowgetscore["CA3"].'
+                                                                            '.$rowgetscore["ca3"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA4"].'
+                                                                                '.$rowgetscore["ca4"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA5"].'
+                                                                                '.$rowgetscore["ca5"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA6"].'
+                                                                                '.$rowgetscore["ca6"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA7"].'
+                                                                                '.$rowgetscore["ca7"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA8"].'
+                                                                                '.$rowgetscore["ca8"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA9"].'
+                                                                                '.$rowgetscore["ca9"].'
 
                                                                             </td>
                                                                             <td>
-                                                                                '.$rowgetscore["CA10"].'
+                                                                                '.$rowgetscore["ca10"].'
 
                                                                             </td>';
                                                                     }
@@ -5755,12 +5755,12 @@
                                         <div class="container-motto">
                                             <?php
 
-                                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
+                                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
 
-                                                $sqlgettotalgrade = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS average FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'";
+                                                $sqlgettotalgrade = "SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'";
                                                 $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                                 $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
@@ -5769,17 +5769,17 @@
 
                                                 $gettotscore = $rowgettotalgrade['average'];
 
-                                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
+                                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetClasscount = mysqli_query($link, $sqlgetClasscount);
                                                 $rowgetClasscount = mysqli_fetch_assoc($resultgetClasscount);
                                                 $row_cntClasscount = mysqli_num_rows($resultgetClasscount);
 
-                                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
+                                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscoreALL = mysqli_query($link, $sqlgetsubscoreALL);
                                                 $rowgetsubscoreALL = mysqli_fetch_assoc($resultgetsubscoreALL);
                                                 $row_cntgetsubscoreALL = mysqli_num_rows($resultgetsubscoreALL);
 
-                                                $sqlgettotclassscor = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS totalScore FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' ORDER BY Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10";
+                                                $sqlgettotclassscor = "SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' ORDER BY Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
                                                 $resultgettotclassscor = mysqli_query($link, $sqlgettotclassscor);
                                                 $rowgettotclassscor = mysqli_fetch_assoc($resultgettotclassscor);
                                                 $row_cntgettotclassscor = mysqli_num_rows($resultgettotclassscor);
@@ -5789,14 +5789,14 @@
 
                                                 $decStubsubavg = round($rowgettotclassscor['totalScore']/$totsubjectsALL,2);
 
-                                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10),COUNT(ID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
+                                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
                                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
                                                 $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
                                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
 
                                                 $sunhihscrun = round($rowsunnyhihhscoreuname['total'],2);
 
-                                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10),COUNT(ID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
+                                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
                                                 $resultsunnylowwscoreuname = mysqli_query($link, $sqlsunnylowwscoreuname);
                                                 $rowsunnylowwscoreuname = mysqli_fetch_assoc($resultsunnylowwscoreuname);
                                                 $row_cntsunnylowwscoreuname = mysqli_num_rows($resultsunnylowwscoreuname);
@@ -5912,7 +5912,7 @@
                                                             $row_cntgetscore = mysqli_num_rows($resultgetscore);
 
 
-                                                            $sqlgetscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                            $sqlgetscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                             $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                             $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                             $row_cntgetscore = mysqli_num_rows($resultgetscore);
@@ -5920,7 +5920,7 @@
 
                                                             if($row_cntgetscore > 0)
                                                             {
-                                                                $sqlgetscoreCUMFirst = ("SELECT SUM(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '1st' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                $sqlgetscoreCUMFirst = ("SELECT SUM(`Exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '1st' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgetscoreCUMFirst = mysqli_query($link, $sqlgetscoreCUMFirst);
                                                                 $rowgetscoreCUMFirst = mysqli_fetch_assoc($resultgetscoreCUMFirst);
                                                                 $row_cntgetscoreCUMFirst = mysqli_num_rows($resultgetscoreCUMFirst);
@@ -5936,7 +5936,7 @@
                                                                     $totalCUMFirst = round($rowgetscoreCUMFirst['Total'], 2);
                                                                 }
 
-                                                                $sqlgetscoreCUMsec = ("SELECT SUM(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '2nd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                $sqlgetscoreCUMsec = ("SELECT SUM(`Exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '2nd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgetscoreCUMsec = mysqli_query($link, $sqlgetscoreCUMsec);
                                                                 $rowgetscoreCUMsec = mysqli_fetch_assoc($resultgetscoreCUMsec);
                                                                 $row_cntgetscoreCUMsec = mysqli_num_rows($resultgetscoreCUMsec);
@@ -5952,7 +5952,7 @@
                                                                     $totalCUMsec = round($rowgetscoreCUMsec['Total'], 2);
                                                                 }
 
-                                                                $sqlgetscoreCUMthr = ("SELECT SUM(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '3rd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                $sqlgetscoreCUMthr = ("SELECT SUM(`Exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '3rd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgetscoreCUMthr = mysqli_query($link, $sqlgetscoreCUMthr);
                                                                 $rowgetscoreCUMthr = mysqli_fetch_assoc($resultgetscoreCUMthr);
                                                                 $row_cntgetscoreCUMthr = mysqli_num_rows($resultgetscoreCUMthr);
@@ -5970,7 +5970,7 @@
 
                                                                 $total = $totalCUMFirst + $totalCUMsec + $totalCUMthr;
 
-                                                                $sqlgettermtodivide = ("SELECT DISTINCT(Term) AS newterm FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                $sqlgettermtodivide = ("SELECT DISTINCT(Term) AS newterm FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgettermtodivide = mysqli_query($link, $sqlgettermtodivide);
                                                                 $rowgettermtodivide = mysqli_fetch_assoc($resultgettermtodivide);
                                                                 $row_cntgettermtodivide = mysqli_num_rows($resultgettermtodivide);
@@ -5987,14 +5987,14 @@
                                                                     $grade = $rowgetgradstuc['Grade'];
                                                                     $remark = $rowgetgradstuc['Remark'];
 
-                                                                    $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
+                                                                    $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
                                                                     $resultsunnyhihhscoreunamepersub = mysqli_query($link, $sqlsunnyhihhscoreunamepersub);
                                                                     $rowsunnyhihhscoreunamepersub = mysqli_fetch_assoc($resultsunnyhihhscoreunamepersub);
                                                                     $row_cntsunnyhihhscoreunamepersub = mysqli_num_rows($resultsunnyhihhscoreunamepersub);
 
                                                                     $sunhihscrunpersub = round($rowsunnyhihhscoreunamepersub['total']);
 
-                                                                    $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
+                                                                    $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
                                                                     $resultsunnylowwscoreunamepersub = mysqli_query($link, $sqlsunnylowwscoreunamepersub);
                                                                     $rowsunnylowwscoreunamepersub = mysqli_fetch_assoc($resultsunnylowwscoreunamepersub);
                                                                     $row_cntsunnylowwscoreunamepersub = mysqli_num_rows($resultsunnylowwscoreunamepersub);
@@ -7473,12 +7473,12 @@
                                         <div class="container-motto">
                                             <?php
 
-                                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
+                                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
 
-                                                $sqlgettotalgrade = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS average FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'";
+                                                $sqlgettotalgrade = "SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'";
                                                 $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                                 $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
@@ -7487,17 +7487,17 @@
 
                                                 $gettotscore = $rowgettotalgrade['average'];
 
-                                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
+                                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetClasscount = mysqli_query($link, $sqlgetClasscount);
                                                 $rowgetClasscount = mysqli_fetch_assoc($resultgetClasscount);
                                                 $row_cntClasscount = mysqli_num_rows($resultgetClasscount);
 
-                                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
+                                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscoreALL = mysqli_query($link, $sqlgetsubscoreALL);
                                                 $rowgetsubscoreALL = mysqli_fetch_assoc($resultgetsubscoreALL);
                                                 $row_cntgetsubscoreALL = mysqli_num_rows($resultgetsubscoreALL);
 
-                                                $sqlgettotclassscor = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS totalScore FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' ORDER BY Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10";
+                                                $sqlgettotclassscor = "SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' ORDER BY Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
                                                 $resultgettotclassscor = mysqli_query($link, $sqlgettotclassscor);
                                                 $rowgettotclassscor = mysqli_fetch_assoc($resultgettotclassscor);
                                                 $row_cntgettotclassscor = mysqli_num_rows($resultgettotclassscor);
@@ -7507,21 +7507,21 @@
 
                                                 $decStubsubavg = round($rowgettotclassscor['totalScore']/$totsubjectsALL,2);
 
-                                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10),COUNT(ID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
+                                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
                                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
                                                 $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
                                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
 
                                                 $sunhihscrun = round($rowsunnyhihhscoreuname['total'],2);
 
-                                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10),COUNT(ID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
+                                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
                                                 $resultsunnylowwscoreuname = mysqli_query($link, $sqlsunnylowwscoreuname);
                                                 $rowsunnylowwscoreuname = mysqli_fetch_assoc($resultsunnylowwscoreuname);
                                                 $row_cntsunnylowwscoreuname = mysqli_num_rows($resultsunnylowwscoreuname);
 
                                                 $sunlowscrun = round($rowsunnylowwscoreuname['total'],2);
 
-                                                $sqlgetscoretotalscorpositon = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total, StudentID FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
+                                                $sqlgetscoretotalscorpositon = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total, StudentID FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
                                                 $resultgetscoretotalscorpositon = mysqli_query($link, $sqlgetscoretotalscorpositon);
                                                 $rowgetscoretotalscorpositon = mysqli_fetch_assoc($resultgetscoretotalscorpositon);
                                                 $row_cntgetscoretotalscorpositon = mysqli_num_rows($resultgetscoretotalscorpositon);
@@ -7659,14 +7659,14 @@
                                                                 $row_cntgetscore = mysqli_num_rows($resultgetscore);
 
 
-                                                                $sqlgetscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                $sqlgetscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                                 $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                                 $row_cntgetscore = mysqli_num_rows($resultgetscore);
 
                                                                 if($row_cntgetscore > 0)
                                                                 {
-                                                                    $sqlgetscoreCUMFirst = ("SELECT SUM(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '1st' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                    $sqlgetscoreCUMFirst = ("SELECT SUM(`Exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '1st' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                     $resultgetscoreCUMFirst = mysqli_query($link, $sqlgetscoreCUMFirst);
                                                                     $rowgetscoreCUMFirst = mysqli_fetch_assoc($resultgetscoreCUMFirst);
                                                                     $row_cntgetscoreCUMFirst = mysqli_num_rows($resultgetscoreCUMFirst);
@@ -7682,7 +7682,7 @@
                                                                         $totalCUMFirst = round($rowgetscoreCUMFirst['Total'], 2);
                                                                     }
 
-                                                                    $sqlgetscoreCUMsec = ("SELECT SUM(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '2nd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                    $sqlgetscoreCUMsec = ("SELECT SUM(`Exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '2nd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                     $resultgetscoreCUMsec = mysqli_query($link, $sqlgetscoreCUMsec);
                                                                     $rowgetscoreCUMsec = mysqli_fetch_assoc($resultgetscoreCUMsec);
                                                                     $row_cntgetscoreCUMsec = mysqli_num_rows($resultgetscoreCUMsec);
@@ -7698,7 +7698,7 @@
                                                                         $totalCUMsec = round($rowgetscoreCUMsec['Total'], 2);
                                                                     }
 
-                                                                    $sqlgetscoreCUMthr = ("SELECT SUM(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '3rd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                    $sqlgetscoreCUMthr = ("SELECT SUM(`Exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '3rd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                     $resultgetscoreCUMthr = mysqli_query($link, $sqlgetscoreCUMthr);
                                                                     $rowgetscoreCUMthr = mysqli_fetch_assoc($resultgetscoreCUMthr);
                                                                     $row_cntgetscoreCUMthr = mysqli_num_rows($resultgetscoreCUMthr);
@@ -7716,7 +7716,7 @@
 
                                                                     $total = $totalCUMFirst + $totalCUMsec + $totalCUMthr;
 
-                                                                    $sqlgettermtodivide = ("SELECT DISTINCT(Term) AS newterm FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                    $sqlgettermtodivide = ("SELECT DISTINCT(Term) AS newterm FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                     $resultgettermtodivide = mysqli_query($link, $sqlgettermtodivide);
                                                                     $rowgettermtodivide = mysqli_fetch_assoc($resultgettermtodivide);
                                                                     $row_cntgettermtodivide = mysqli_num_rows($resultgettermtodivide);
@@ -7733,21 +7733,21 @@
                                                                         $grade = $rowgetgradstuc['Grade'];
                                                                         $remark = $rowgetgradstuc['Remark'];
 
-                                                                        $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
+                                                                        $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
                                                                         $resultsunnyhihhscoreunamepersub = mysqli_query($link, $sqlsunnyhihhscoreunamepersub);
                                                                         $rowsunnyhihhscoreunamepersub = mysqli_fetch_assoc($resultsunnyhihhscoreunamepersub);
                                                                         $row_cntsunnyhihhscoreunamepersub = mysqli_num_rows($resultsunnyhihhscoreunamepersub);
 
                                                                         $sunhihscrunpersub = round($rowsunnyhihhscoreunamepersub['total']);
 
-                                                                        $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total FROM score WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
+                                                                        $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
                                                                         $resultsunnylowwscoreunamepersub = mysqli_query($link, $sqlsunnylowwscoreunamepersub);
                                                                         $rowsunnylowwscoreunamepersub = mysqli_fetch_assoc($resultsunnylowwscoreunamepersub);
                                                                         $row_cntsunnylowwscoreunamepersub = mysqli_num_rows($resultsunnylowwscoreunamepersub);
 
                                                                         $sunlowscrunpersub = round($rowsunnylowwscoreunamepersub['total']);
 
-                                                                        $sqlgetscorepos = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total, StudentID FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
+                                                                        $sqlgetscorepos = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total, StudentID FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
                                                                         $resultgetscorepos = mysqli_query($link, $sqlgetscorepos);
                                                                         $rowgetscorepos = mysqli_fetch_assoc($resultgetscorepos);
                                                                         $row_cntgetscorepos = mysqli_num_rows($resultgetscorepos);
