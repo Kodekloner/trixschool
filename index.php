@@ -69,6 +69,9 @@
   if ($domain == 'joyfoundationacademy'){
     // define('ENVIRONMENT', 'production');
     define('ENVIRONMENT', 'development');
+  }else if ($domain == 'joyfoundationacademy') {
+	// define('ENVIRONMENT', 'production');
+	define('ENVIRONMENT', 'development');
   } else {
     define('ENVIRONMENT', 'production');
   	// define('ENVIRONMENT', 'development');

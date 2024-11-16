@@ -82,6 +82,7 @@ class Generateidcard extends Admin_Controller
         $studentid           = $this->input->post('data');
         $student_array       = json_decode($studentid);
         $idcard              = $this->input->post('id_card');
+        echo $idcard .'<br>';
         $class               = $this->input->post('class_id');
         $data                = array();
         $results             = array();

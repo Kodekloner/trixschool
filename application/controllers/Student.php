@@ -1287,6 +1287,7 @@ class Student extends Admin_Controller
             $this->form_validation->set_rules('guardian_name', $this->lang->line('guardian_name'), 'trim|required|xss_clean');
             $this->form_validation->set_rules('guardian_is', $this->lang->line('guardian'), 'trim|required|xss_clean');
         }
+
         if ($this->sch_setting_detail->guardian_phone) {
             $this->form_validation->set_rules('guardian_phone', $this->lang->line('guardian_phone'), 'trim|required|xss_clean');
         }
@@ -1307,6 +1308,7 @@ class Student extends Admin_Controller
         $this->form_validation->set_rules('father_pic', $this->lang->line('image'), 'callback_handle_father_upload');
         $this->form_validation->set_rules('mother_pic', $this->lang->line('image'), 'callback_handle_mother_upload');
         $this->form_validation->set_rules('guardian_pic', $this->lang->line('image'), 'callback_handle_guardian_upload');
+
         if ($this->form_validation->run() == false) {
             $this->load->view('layout/header', $data);
             $this->load->view('student/studentEdit', $data);
@@ -1375,6 +1377,7 @@ class Student extends Admin_Controller
                 'note'              => $this->input->post('note'),
                 'is_active'         => 'yes',
             );
+            
             if ($this->sch_setting_detail->guardian_occupation) {
                 $data['guardian_occupation'] = $this->input->post('guardian_occupation');
             }
