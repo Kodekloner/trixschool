@@ -9,6 +9,8 @@ use Dotenv\Dotenv;
 $dotenv = Dotenv::createImmutable('/var/www/trixschool');
 $dotenv->load();
 
+echo getenv('AWS_ACCESS_KEY_ID');
+
 if (!defined('BASEPATH')) {
     exit('No direct script access allowed');
 }
