@@ -9,8 +9,6 @@ use Dotenv\Dotenv;
 $dotenv = Dotenv::createImmutable('/var/www/trixschool');
 $dotenv->load();
 
-echo getenv("AWS_ACCESS_KEY_ID");
-
 if (!defined('BASEPATH')) {
     exit('No direct script access allowed');
 }
@@ -569,8 +567,8 @@ class Student extends Admin_Controller
                             'version' => 'latest',
                             'region'  => 'us-east-2',
                             'credentials' => [
-                                'key'    => getenv('AWS_ACCESS_KEY_ID'),
-                                'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
+                                'key'    => $_ENV['AWS_ACCESS_KEY_ID'],
+                                'secret' => $_ENV['AWS_SECRET_ACCESS_KEY'],
                             ],
                         ]);
 
@@ -1532,21 +1530,16 @@ class Student extends Admin_Controller
                 $fileExtension = strtolower($fileInfo['extension']);
 
                 $contentType = isset($mimeTypes[$fileExtension]) ? $mimeTypes[$fileExtension] : 'application/octet-stream';
-                echo getenv('AWS_ACCESS_KEY_ID') . "<br>";
-                echo getenv('AWS_SECRET_ACCESS_KEY') . "<br>";
-                echo $img_name . "<br>";
-                // echo getenv('AWS_ACCESS_KEY_ID') . "<br>";
-                // echo getenv('AWS_ACCESS_KEY_ID') . "<br>";
-                // echo getenv('AWS_ACCESS_KEY_ID') . "<br>";
-                // echo getenv('AWS_ACCESS_KEY_ID') . "<br>";
+                echo $_ENV['AWS_ACCESS_KEY_ID'] . "<br>";
+                echo $_ENV['AWS_SECRET_ACCESS_KEY'] . "<br>";
                 die();
                 try {
                     $s3 = new S3Client([
                         'version' => 'latest',
                         'region'  => 'us-east-2',
                         'credentials' => [
-                            'key'    => getenv('AWS_ACCESS_KEY_ID'),
-                            'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
+                            'key'    => $_ENV['AWS_ACCESS_KEY_ID'],
+                            'secret' => $_ENV['AWS_SECRET_ACCESS_KEY'],
                         ],
                     ]);
 
