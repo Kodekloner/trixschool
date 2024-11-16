@@ -49,8 +49,8 @@ if (!function_exists('upload_to_s3')) {
                 'version' => 'latest',
                 'region'  => 'us-east-2',
                 'credentials' => [
-                    'key'    => getenv('AWS_ACCESS_KEY_ID'),
-                    'secret' => getenv('AWS_SECRET_ACCESS_KEY'),
+                    'key'    => $_ENV['AWS_ACCESS_KEY_ID'],
+                    'secret' => $_ENV['AWS_SECRET_ACCESS_KEY'],
                 ],
             ]);
 
