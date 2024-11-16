@@ -1530,9 +1530,7 @@ class Student extends Admin_Controller
                 $fileExtension = strtolower($fileInfo['extension']);
 
                 $contentType = isset($mimeTypes[$fileExtension]) ? $mimeTypes[$fileExtension] : 'application/octet-stream';
-                echo $_ENV['AWS_ACCESS_KEY_ID'] . "<br>";
-                echo $_ENV['AWS_SECRET_ACCESS_KEY'] . "<br>";
-                die();
+                
                 try {
                     $s3 = new S3Client([
                         'version' => 'latest',
