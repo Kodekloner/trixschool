@@ -67,8 +67,8 @@
   $domain = preg_replace('/\.(com\.ng|com|ng|org\.ng|org)$/i', '', $full_domain); // Remove common extensions
 
   if ($domain == 'joyfoundationacademy'){
-    // define('ENVIRONMENT', 'production');
-    define('ENVIRONMENT', 'development');
+    define('ENVIRONMENT', 'production');
+    // define('ENVIRONMENT', 'development');
   }else if ($domain == 'joyfoundationacademy') {
 	// define('ENVIRONMENT', 'production');
 	define('ENVIRONMENT', 'development');

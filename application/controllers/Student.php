@@ -1377,7 +1377,7 @@ class Student extends Admin_Controller
                 'note'              => $this->input->post('note'),
                 'is_active'         => 'yes',
             );
-            
+
             if ($this->sch_setting_detail->guardian_occupation) {
                 $data['guardian_occupation'] = $this->input->post('guardian_occupation');
             }
@@ -1530,6 +1530,14 @@ class Student extends Admin_Controller
                 $fileExtension = strtolower($fileInfo['extension']);
 
                 $contentType = isset($mimeTypes[$fileExtension]) ? $mimeTypes[$fileExtension] : 'application/octet-stream';
+                echo getenv('AWS_ACCESS_KEY_ID') . "<br>";
+                echo getenv('AWS_SECRET_ACCESS_KEY') . "<br>";
+                echo $img_name . "<br>";
+                // echo getenv('AWS_ACCESS_KEY_ID') . "<br>";
+                // echo getenv('AWS_ACCESS_KEY_ID') . "<br>";
+                // echo getenv('AWS_ACCESS_KEY_ID') . "<br>";
+                // echo getenv('AWS_ACCESS_KEY_ID') . "<br>";
+                die();
                 try {
                     $s3 = new S3Client([
                         'version' => 'latest',
