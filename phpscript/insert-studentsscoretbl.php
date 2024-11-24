@@ -9,8 +9,9 @@ include ('../database/config.php');
     $session = $_POST['session'];
     
     $term = $_POST['term'];
-    echo $classsection;
+
     $subjects = $_POST['subjects'];
+
     $sqlGetstudent_session = "SELECT * FROM `student_session` INNER JOIN students ON student_session.student_id=students.id WHERE session_id='$session' AND class_id = '$classid' AND section_id = '$classsectionactual'";
     
     $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
@@ -26,6 +27,8 @@ include ('../database/config.php');
             $queryGetscore = mysqli_query($link, $sqlGetscore);
             $rowGetscore = mysqli_fetch_assoc($queryGetscore);
             $countGetscore = mysqli_num_rows($queryGetscore);
+
+            echo "count: ". $countGetscore;
             
             if($countGetscore > 0)
             {
