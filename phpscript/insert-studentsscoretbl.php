@@ -37,8 +37,8 @@ include ('../database/config.php');
             else
             {
                
-                $sqlInsert =("INSERT INTO `score` (`StudentID`, `ClassID`, `SectionID`, `SubjectID`, `Session`, `Term`) 
-                VALUES ('$studentid','$classid','$classsectionactual','$subjects','$session','$term')");
+                $sqlInsert = "INSERT INTO `score` (`StudentID`, `ClassID`, `SectionID`, `SubjectID`, `Session`, `Term`) 
+                VALUES ('$studentid','$classid','$classsectionactual','$subjects','$session','$term')";
 
                 if(mysqli_query($link, $sqlInsert))
                 {
