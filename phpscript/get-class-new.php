@@ -69,6 +69,7 @@
             echo '<option value="0">Select Class</option>';
             if($rowstaffcheck['name'] == 'Teacher')
             {
+                echo '<option value="0">Teacher</option>';
                 //$sqlclasses = "SELECT DISTINCT(subject_timetable.class_id),class FROM `subject_timetable` INNER JOIN class_sections ON subject_timetable.class_id=class_sections.class_id INNER JOIN classes ON class_sections.class_id=classes.id INNER JOIN assigncatoclass ON classes.id=assigncatoclass.ClassID AND subject_timetable.staff_id = '$staffid' ORDER BY class";
                 $sqlclasses = "SELECT DISTINCT(subjecttables.class_id),class FROM `subjecttables` INNER JOIN class_sections ON subjecttables.class_id=class_sections.class_id INNER JOIN classes ON class_sections.class_id=classes.id INNER JOIN assigncatoclass ON classes.id=assigncatoclass.ClassID AND assigncatoclass.ResultType != 'british' AND subjecttables.staff_id = '$staffid' ORDER BY class";
 				
