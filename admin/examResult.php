@@ -240,7 +240,6 @@
     <script>
         $(document).ready(function() {
             var rolefirstold = '<?php echo $rolefirst; ?>';
-            console.log(rolefirstold);
             if (rolefirstold == 'parent') {
                 $('.pub-result').hide()
             }
@@ -264,7 +263,9 @@
             if (session != '' && session != '0') {
 
                 var dataString = 'rolefirst=' + rolefirst + '&staffid=' + staffid + '&session=' + session;
-
+                console.log("staff: " + rolefirst)
+                console.log("staffid: " + staffid)
+                console.log("session: " + session)
                 // alert(dataString);
                 $.ajax({
                     url: '../../../phpscript/get-class-new.php',
