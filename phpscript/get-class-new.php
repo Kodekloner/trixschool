@@ -85,12 +85,9 @@
                 $rowclasses = mysqli_fetch_assoc($resultclasses);
                 $row_cntclasses = mysqli_num_rows($resultclasses);
 
-                echo '<option value="0">' . $row_cntclasses . '</option>';
-
                 if($row_cntclasses > 0)
                 {
                     do{
-                        
                         echo'<option value="'.$rowclasses['class_id'].'">'.$rowclasses['class'].'</option>';
                         
                     }while($rowclasses = mysqli_fetch_assoc($resultclasses));
