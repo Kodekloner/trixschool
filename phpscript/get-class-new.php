@@ -73,10 +73,10 @@
                 $sqlclasses = "SELECT DISTINCT(subjecttables.class_id),class FROM `subjecttables` INNER JOIN class_sections ON subjecttables.class_id=class_sections.class_id INNER JOIN classes ON class_sections.class_id=classes.id INNER JOIN assigncatoclass ON classes.id=assigncatoclass.ClassID AND assigncatoclass.ResultType != 'british' AND subjecttables.staff_id = '$staffid' ORDER BY class";
 				
 		        $resultclasses = mysqli_query($link, $sqlclasses);
-                if (!$resultclasses) {
+                // if (!$resultclasses) {
                     // Echo the error message
-                    echo "Error: " . mysqli_error($link);
-                }
+                    echo '<option value="0">Error: ' . mysqli_error($link) . '</option>';
+                // }
                 $rowclasses = mysqli_fetch_assoc($resultclasses);
                 $row_cntclasses = mysqli_num_rows($resultclasses);
 
