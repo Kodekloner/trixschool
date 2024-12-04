@@ -75,8 +75,7 @@
                                 INNER JOIN class_sections ON subjecttables.class_id = class_sections.class_id 
                                 INNER JOIN classes ON class_sections.class_id = classes.id 
                                 INNER JOIN assigncatoclass ON classes.id = assigncatoclass.ClassID 
-                                WHERE assigncatoclass.ResultType != 'british' 
-                                AND subjecttables.staff_id = '$staffid' 
+                                WHERE subjecttables.staff_id = '$staffid' 
                                 ORDER BY class";
                                 
                 // $sqlclasses = "SELECT DISTINCT(subjecttables.class_id),class FROM `subjecttables` INNER JOIN class_sections ON subjecttables.class_id=class_sections.class_id INNER JOIN classes ON class_sections.class_id=classes.id INNER JOIN assigncatoclass ON classes.id=assigncatoclass.ClassID AND assigncatoclass.ResultType != 'british' AND subjecttables.staff_id = '$staffid' ORDER BY class";
