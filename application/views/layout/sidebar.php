@@ -1,12 +1,3 @@
-<br>
-<br>
-<br>
-<br>
-<?php echo base_url(); ?>admin/stuattendence
-<br>
-<?php echo base_url(); ?>admin/manualattendance.php
-<?php die(); ?>
-
 <aside class=" main-sidebar" id="alert2">
     <?php if ($this->rbac->hasPrivilege('student', 'can_view')) { ?>
         <form class="navbar-form navbar-left search-form2" role="search" action="<?php echo site_url('admin/admin/search'); ?>" method="POST">
