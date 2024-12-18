@@ -9112,10 +9112,10 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
 
          <script>
-            var decStubsubavg = <?php echo $decStubsubavg ; ?>
-            var gettotgrade = <?php echo $gettotgrade ; ?>
-            var sunhihscrun = <?php echo $sunhihscrun ; ?>
-            var sunlowscrun = <?php echo $sunlowscrun ; ?>
+            var decStubsubavg = <?php echo json_encode((float)$decStubsubavg ?? 0); ?>;
+            var gettotgrade = <?php echo json_encode((float)$gettotgrade ?? 0); ?>;
+            var sunhihscrun = <?php echo json_encode((float)$sunhihscrun ?? 0); ?>;
+            var sunlowscrun = <?php echo json_encode((float)$sunlowscrun ?? 0); ?>;
 
             console.log(decStubsubavg);
             console.log(gettotgrade);
