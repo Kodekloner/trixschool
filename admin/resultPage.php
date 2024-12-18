@@ -4316,8 +4316,7 @@
                                 ?>
                                         <div class="container-motto">
                                             <?php
-
-                                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
@@ -4334,7 +4333,7 @@
                                                 echo 'classid ' . $classid . '<br>';
                                                 echo 'classsectionactual ' . $classsectionactual . '<br>';
                                                 echo 'session ' . $session . '<br>';
-                                                die();
+                                                die('wrong');
 
                                                 $gettotscore = $rowgettotalgrade['average'];
 
