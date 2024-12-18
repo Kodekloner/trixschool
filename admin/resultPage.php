@@ -2909,7 +2909,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="col-8" style="padding-right: 0px">
-                                                    <div class="container-motto" style="margin-right: 2px;border:0px solid red; overflow-x: auto;">
+                                                    <div class="container-motto" style="margin-right: 2px;border:0px solid red;">
                                                         <div class="result table-responsive" style="margin: 10px;border:0px solid red;">
                                                              <!-- width:45%; -->
                                                             <table class="tab table-sm" style="width: 45%; table-layout: fixed; border:0px solid red;display:inline-block">
