@@ -2214,12 +2214,6 @@
                                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
 
                                                 $gettotgrade = floatval(round($rowgettotalgrade['average']/$row_cntgetsubscore, 2));
-                                                echo $row_cntgetsubscore;
-                                                echo 'studentid ' . $id . '<br>';
-                                                echo 'classid ' . $classid . '<br>';
-                                                echo 'classsectionactual ' . $classsectionactual . '<br>';
-                                                echo 'session ' . $session . '<br>';
-                                                die();
 
                                                 $gettotscore = $rowgettotalgrade['average'];
 
@@ -4327,13 +4321,6 @@
                                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
 
                                                 $gettotgrade = floatval(round($rowgettotalgrade['average']/$row_cntgetsubscore, 2));
-                                                echo $rowgettotalgrade['average'] . '1st <br>';
-                                                echo $row_cntgetsubscore;
-                                                echo 'studentid ' .$id . '<br>';
-                                                echo 'classid ' . $classid . '<br>';
-                                                echo 'classsectionactual ' . $classsectionactual . '<br>';
-                                                echo 'session ' . $session . '<br>';
-                                                die('wrong');
 
                                                 $gettotscore = $rowgettotalgrade['average'];
 
@@ -9124,16 +9111,6 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
 
          <script>
-            var decStubsubavg = <?php echo json_encode((float)$decStubsubavg ?? 0); ?>;
-            var gettotgrade = <?php echo json_encode((float)$gettotgrade ?? 0); ?>;
-            var sunhihscrun = <?php echo json_encode((float)$sunhihscrun ?? 0); ?>;
-            var sunlowscrun = <?php echo json_encode((float)$sunlowscrun ?? 0); ?>;
-
-            console.log(decStubsubavg);
-            console.log(gettotgrade);
-            console.log(sunhihscrun);
-            console.log(sunlowscrun);
-
             var ctx = document.getElementById("mysunChart");
             var chart = new Chart(ctx, {
                 responsive:"true",
