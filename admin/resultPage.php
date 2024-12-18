@@ -250,7 +250,7 @@
                                         <div class="container-motto">
                                             <?php
 
-                                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND SubjectID != '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND SubjectID != '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
@@ -565,7 +565,7 @@
                                                     $rowGetsub = mysqli_fetch_assoc($resultsub);
                                                     $row_cntsub = mysqli_num_rows($resultsub);
 
-                                                    $sqlgetscorecheck = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                                    $sqlgetscorecheck = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                     $resultgetscorecheck = mysqli_query($link, $sqlgetscorecheck);
                                                     $rowgetscorecheck = mysqli_fetch_assoc($resultgetscorecheck);
                                                     $row_cntgetscorecheck = mysqli_num_rows($resultgetscorecheck);
@@ -578,7 +578,7 @@
                                                             $subname = $rowGetsub['name'];
                                                             $subid = $rowGetsub['id'];
 
-                                                            $sqlgetscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND  StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                            $sqlgetscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND  StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                             $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                             $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                             $row_cntgetscore = mysqli_num_rows($resultgetscore);
@@ -2208,7 +2208,7 @@
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
 
-                                                $sqlgettotalgrade = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
+                                                $sqlgettotalgrade = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
                                                 $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                                 $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
@@ -2237,14 +2237,14 @@
 
                                                 $decStubsubavg = round($rowgettotclassscor['totalScore']/$totsubjectsALL,2);
 
-                                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
+                                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
                                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
                                                 $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
                                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
 
                                                 $sunhihscrun = round($rowsunnyhihhscoreuname['total'],2);
 
-                                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND SubjectID != 0 AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
+                                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND SubjectID != 0 AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
                                                 $resultsunnylowwscoreuname = mysqli_query($link, $sqlsunnylowwscoreuname);
                                                 $rowsunnylowwscoreuname = mysqli_fetch_assoc($resultsunnylowwscoreuname);
                                                 $row_cntsunnylowwscoreuname = mysqli_num_rows($resultsunnylowwscoreuname);
@@ -2501,26 +2501,26 @@
                                                                     $grade = $rowgetgradstuc['Grade'];
                                                                     $remark = $rowgetgradstuc['Remark'];
 
-                                                                    $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
+                                                                    $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
                                                                     $resultsunnyhihhscoreunamepersub = mysqli_query($link, $sqlsunnyhihhscoreunamepersub);
                                                                     $rowsunnyhihhscoreunamepersub = mysqli_fetch_assoc($resultsunnyhihhscoreunamepersub);
                                                                     $row_cntsunnyhihhscoreunamepersub = mysqli_num_rows($resultsunnyhihhscoreunamepersub);
 
                                                                     $sunhihscrunpersub = round($rowsunnyhihhscoreunamepersub['total']);
 
-                                                                    $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
+                                                                    $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
                                                                     $resultsunnylowwscoreunamepersub = mysqli_query($link, $sqlsunnylowwscoreunamepersub);
                                                                     $rowsunnylowwscoreunamepersub = mysqli_fetch_assoc($resultsunnylowwscoreunamepersub);
                                                                     $row_cntsunnylowwscoreunamepersub = mysqli_num_rows($resultsunnylowwscoreunamepersub);
 
                                                                     $sunlowscrunpersub = round($rowsunnylowwscoreunamepersub['total']);
 
-                                                                    $sqlgetscorepos = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam+ca1+ca2+ca3+ca4+ca5) AS total, UserRegNumberOrUsername FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND InstitutionID = '$institution' AND ClassOrDepartmentID = '$classid' AND Session = '$sunnyresultsession' AND CourseOrSubjectID= '$subid' GROUP BY UserRegNumberOrUsername ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.UserRegNumberOrUsername='$regno'";
+                                                                    $sqlgetscorepos = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(exam+ca1+ca2+ca3+ca4+ca5) AS total, UserRegNumberOrUsername FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND InstitutionID = '$institution' AND ClassOrDepartmentID = '$classid' AND Session = '$sunnyresultsession' AND CourseOrSubjectID= '$subid' GROUP BY UserRegNumberOrUsername ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.UserRegNumberOrUsername='$regno'";
                                                                     $resultgetscorepos = mysqli_query($link, $sqlgetscorepos);
                                                                     $rowgetscorepos = mysqli_fetch_assoc($resultgetscorepos);
                                                                     $row_cntgetscorepos = mysqli_num_rows($resultgetscorepos);
 
-                                                                    $sqlgetsubper = "SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND InstitutionID = '$institution' AND ClassOrDepartmentID = '$classid' AND CourseOrSubjectID = '$subid' AND Session = '$sunnyresultsession' AND TermOrSemester = '$sunnyrelterm' ORDER BY Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
+                                                                    $sqlgetsubper = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND InstitutionID = '$institution' AND ClassOrDepartmentID = '$classid' AND CourseOrSubjectID = '$subid' AND Session = '$sunnyresultsession' AND TermOrSemester = '$sunnyrelterm' ORDER BY exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
                                                                     $resultgetsubper = mysqli_query($link, $sqlgetsubper);
                                                                     $rowgetsubper = mysqli_fetch_assoc($resultgetsubper);
                                                                     $row_cntgetsubper = mysqli_num_rows($resultgetsubper);
@@ -4316,7 +4316,7 @@
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
 
-                                                $sqlgettotalgrade = "SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
+                                                $sqlgettotalgrade = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
                                                 $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                                 $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
@@ -4325,17 +4325,17 @@
 
                                                 $gettotscore = $rowgettotalgrade['average'];
 
-                                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetClasscount = mysqli_query($link, $sqlgetClasscount);
                                                 $rowgetClasscount = mysqli_fetch_assoc($resultgetClasscount);
                                                 $row_cntClasscount = mysqli_num_rows($resultgetClasscount);
 
-                                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscoreALL = mysqli_query($link, $sqlgetsubscoreALL);
                                                 $rowgetsubscoreALL = mysqli_fetch_assoc($resultgetsubscoreALL);
                                                 $row_cntgetsubscoreALL = mysqli_num_rows($resultgetsubscoreALL);
 
-                                                $sqlgettotclassscor = "SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' ORDER BY Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
+                                                $sqlgettotclassscor = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' ORDER BY exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
                                                 $resultgettotclassscor = mysqli_query($link, $sqlgettotclassscor);
                                                 $rowgettotclassscor = mysqli_fetch_assoc($resultgettotclassscor);
                                                 $row_cntgettotclassscor = mysqli_num_rows($resultgettotclassscor);
@@ -4345,21 +4345,21 @@
 
                                                 $decStubsubavg = round($rowgettotclassscor['totalScore']/$totsubjectsALL,2);
 
-                                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
+                                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
                                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
                                                 $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
                                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
 
                                                 $sunhihscrun = round($rowsunnyhihhscoreuname['total'],2);
 
-                                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
+                                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
                                                 $resultsunnylowwscoreuname = mysqli_query($link, $sqlsunnylowwscoreuname);
                                                 $rowsunnylowwscoreuname = mysqli_fetch_assoc($resultsunnylowwscoreuname);
                                                 $row_cntsunnylowwscoreuname = mysqli_num_rows($resultsunnylowwscoreuname);
 
                                                 $sunlowscrun = round($rowsunnylowwscoreuname['total'],2);
 
-                                                $sqlgetscoretotalscorpositon = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total, StudentID FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
+                                                $sqlgetscoretotalscorpositon = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total, StudentID FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
                                                 $resultgetscoretotalscorpositon = mysqli_query($link, $sqlgetscoretotalscorpositon);
                                                 $rowgetscoretotalscorpositon = mysqli_fetch_assoc($resultgetscoretotalscorpositon);
                                                 $row_cntgetscoretotalscorpositon = mysqli_num_rows($resultgetscoretotalscorpositon);
@@ -4619,7 +4619,7 @@
                                                                     $ca1 = 0;
                                                                 }
 
-                                                                $exam = $rowgetscore['Exam'];
+                                                                $exam = $rowgetscore['exam'];
 
                                                                 $total = $ca1 + $exam;
 
@@ -4635,26 +4635,26 @@
                                                                     $grade = $rowgetgradstuc['Grade'];
                                                                     $remark = $rowgetgradstuc['Remark'];
 
-                                                                    $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
+                                                                    $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
                                                                     $resultsunnyhihhscoreunamepersub = mysqli_query($link, $sqlsunnyhihhscoreunamepersub);
                                                                     $rowsunnyhihhscoreunamepersub = mysqli_fetch_assoc($resultsunnyhihhscoreunamepersub);
                                                                     $row_cntsunnyhihhscoreunamepersub = mysqli_num_rows($resultsunnyhihhscoreunamepersub);
 
                                                                     $sunhihscrunpersub = round($rowsunnyhihhscoreunamepersub['total']);
 
-                                                                    $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
+                                                                    $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
                                                                     $resultsunnylowwscoreunamepersub = mysqli_query($link, $sqlsunnylowwscoreunamepersub);
                                                                     $rowsunnylowwscoreunamepersub = mysqli_fetch_assoc($resultsunnylowwscoreunamepersub);
                                                                     $row_cntsunnylowwscoreunamepersub = mysqli_num_rows($resultsunnylowwscoreunamepersub);
 
                                                                     $sunlowscrunpersub = round($rowsunnylowwscoreunamepersub['total']);
 
-                                                                    $sqlgetscorepos = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total, StudentID FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
+                                                                    $sqlgetscorepos = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total, StudentID FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
                                                                     $resultgetscorepos = mysqli_query($link, $sqlgetscorepos);
                                                                     $rowgetscorepos = mysqli_fetch_assoc($resultgetscorepos);
                                                                     $row_cntgetscorepos = mysqli_num_rows($resultgetscorepos);
 
-                                                                    $sqlgetsubper = "SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND InstitutionID = '$institution' AND ClassOrDepartmentID = '$classid' AND CourseOrSubjectID = '$subid' AND Session = '$sunnyresultsession' AND TermOrSemester = '$sunnyrelterm' ORDER BY Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
+                                                                    $sqlgetsubper = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND InstitutionID = '$institution' AND ClassOrDepartmentID = '$classid' AND CourseOrSubjectID = '$subid' AND Session = '$sunnyresultsession' AND TermOrSemester = '$sunnyrelterm' ORDER BY exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
                                                                     $resultgetsubper = mysqli_query($link, $sqlgetsubper);
                                                                     $rowgetsubper = mysqli_fetch_assoc($resultgetsubper);
                                                                     $row_cntgetsubper = mysqli_num_rows($resultgetsubper);
@@ -5760,7 +5760,7 @@
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
 
-                                                $sqlgettotalgrade = "SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'";
+                                                $sqlgettotalgrade = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'";
                                                 $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                                 $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
@@ -5769,17 +5769,17 @@
 
                                                 $gettotscore = $rowgettotalgrade['average'];
 
-                                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
+                                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetClasscount = mysqli_query($link, $sqlgetClasscount);
                                                 $rowgetClasscount = mysqli_fetch_assoc($resultgetClasscount);
                                                 $row_cntClasscount = mysqli_num_rows($resultgetClasscount);
 
-                                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
+                                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscoreALL = mysqli_query($link, $sqlgetsubscoreALL);
                                                 $rowgetsubscoreALL = mysqli_fetch_assoc($resultgetsubscoreALL);
                                                 $row_cntgetsubscoreALL = mysqli_num_rows($resultgetsubscoreALL);
 
-                                                $sqlgettotclassscor = "SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' ORDER BY Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
+                                                $sqlgettotclassscor = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' ORDER BY exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
                                                 $resultgettotclassscor = mysqli_query($link, $sqlgettotclassscor);
                                                 $rowgettotclassscor = mysqli_fetch_assoc($resultgettotclassscor);
                                                 $row_cntgettotclassscor = mysqli_num_rows($resultgettotclassscor);
@@ -5789,14 +5789,14 @@
 
                                                 $decStubsubavg = round($rowgettotclassscor['totalScore']/$totsubjectsALL,2);
 
-                                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
+                                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
                                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
                                                 $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
                                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
 
                                                 $sunhihscrun = round($rowsunnyhihhscoreuname['total'],2);
 
-                                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
+                                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
                                                 $resultsunnylowwscoreuname = mysqli_query($link, $sqlsunnylowwscoreuname);
                                                 $rowsunnylowwscoreuname = mysqli_fetch_assoc($resultsunnylowwscoreuname);
                                                 $row_cntsunnylowwscoreuname = mysqli_num_rows($resultsunnylowwscoreuname);
@@ -5912,7 +5912,7 @@
                                                             $row_cntgetscore = mysqli_num_rows($resultgetscore);
 
 
-                                                            $sqlgetscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                            $sqlgetscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                             $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                             $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                             $row_cntgetscore = mysqli_num_rows($resultgetscore);
@@ -5920,7 +5920,7 @@
 
                                                             if($row_cntgetscore > 0)
                                                             {
-                                                                $sqlgetscoreCUMFirst = ("SELECT SUM(`Exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '1st' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                $sqlgetscoreCUMFirst = ("SELECT SUM(`exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '1st' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgetscoreCUMFirst = mysqli_query($link, $sqlgetscoreCUMFirst);
                                                                 $rowgetscoreCUMFirst = mysqli_fetch_assoc($resultgetscoreCUMFirst);
                                                                 $row_cntgetscoreCUMFirst = mysqli_num_rows($resultgetscoreCUMFirst);
@@ -5936,7 +5936,7 @@
                                                                     $totalCUMFirst = round($rowgetscoreCUMFirst['Total'], 2);
                                                                 }
 
-                                                                $sqlgetscoreCUMsec = ("SELECT SUM(`Exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '2nd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                $sqlgetscoreCUMsec = ("SELECT SUM(`exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '2nd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgetscoreCUMsec = mysqli_query($link, $sqlgetscoreCUMsec);
                                                                 $rowgetscoreCUMsec = mysqli_fetch_assoc($resultgetscoreCUMsec);
                                                                 $row_cntgetscoreCUMsec = mysqli_num_rows($resultgetscoreCUMsec);
@@ -5952,7 +5952,7 @@
                                                                     $totalCUMsec = round($rowgetscoreCUMsec['Total'], 2);
                                                                 }
 
-                                                                $sqlgetscoreCUMthr = ("SELECT SUM(`Exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '3rd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                $sqlgetscoreCUMthr = ("SELECT SUM(`exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '3rd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgetscoreCUMthr = mysqli_query($link, $sqlgetscoreCUMthr);
                                                                 $rowgetscoreCUMthr = mysqli_fetch_assoc($resultgetscoreCUMthr);
                                                                 $row_cntgetscoreCUMthr = mysqli_num_rows($resultgetscoreCUMthr);
@@ -5970,7 +5970,7 @@
 
                                                                 $total = $totalCUMFirst + $totalCUMsec + $totalCUMthr;
 
-                                                                $sqlgettermtodivide = ("SELECT DISTINCT(Term) AS newterm FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                $sqlgettermtodivide = ("SELECT DISTINCT(Term) AS newterm FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgettermtodivide = mysqli_query($link, $sqlgettermtodivide);
                                                                 $rowgettermtodivide = mysqli_fetch_assoc($resultgettermtodivide);
                                                                 $row_cntgettermtodivide = mysqli_num_rows($resultgettermtodivide);
@@ -5987,14 +5987,14 @@
                                                                     $grade = $rowgetgradstuc['Grade'];
                                                                     $remark = $rowgetgradstuc['Remark'];
 
-                                                                    $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
+                                                                    $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
                                                                     $resultsunnyhihhscoreunamepersub = mysqli_query($link, $sqlsunnyhihhscoreunamepersub);
                                                                     $rowsunnyhihhscoreunamepersub = mysqli_fetch_assoc($resultsunnyhihhscoreunamepersub);
                                                                     $row_cntsunnyhihhscoreunamepersub = mysqli_num_rows($resultsunnyhihhscoreunamepersub);
 
                                                                     $sunhihscrunpersub = round($rowsunnyhihhscoreunamepersub['total']);
 
-                                                                    $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
+                                                                    $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
                                                                     $resultsunnylowwscoreunamepersub = mysqli_query($link, $sqlsunnylowwscoreunamepersub);
                                                                     $rowsunnylowwscoreunamepersub = mysqli_fetch_assoc($resultsunnylowwscoreunamepersub);
                                                                     $row_cntsunnylowwscoreunamepersub = mysqli_num_rows($resultsunnylowwscoreunamepersub);
@@ -7473,12 +7473,12 @@
                                         <div class="container-motto">
                                             <?php
 
-                                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
+                                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
 
-                                                $sqlgettotalgrade = "SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'";
+                                                $sqlgettotalgrade = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'";
                                                 $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                                 $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
@@ -7487,17 +7487,17 @@
 
                                                 $gettotscore = $rowgettotalgrade['average'];
 
-                                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
+                                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetClasscount = mysqli_query($link, $sqlgetClasscount);
                                                 $rowgetClasscount = mysqli_fetch_assoc($resultgetClasscount);
                                                 $row_cntClasscount = mysqli_num_rows($resultgetClasscount);
 
-                                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
+                                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                                 $resultgetsubscoreALL = mysqli_query($link, $sqlgetsubscoreALL);
                                                 $rowgetsubscoreALL = mysqli_fetch_assoc($resultgetsubscoreALL);
                                                 $row_cntgetsubscoreALL = mysqli_num_rows($resultgetsubscoreALL);
 
-                                                $sqlgettotclassscor = "SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' ORDER BY Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
+                                                $sqlgettotclassscor = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' ORDER BY exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
                                                 $resultgettotclassscor = mysqli_query($link, $sqlgettotclassscor);
                                                 $rowgettotclassscor = mysqli_fetch_assoc($resultgettotclassscor);
                                                 $row_cntgettotclassscor = mysqli_num_rows($resultgettotclassscor);
@@ -7507,21 +7507,21 @@
 
                                                 $decStubsubavg = round($rowgettotclassscor['totalScore']/$totsubjectsALL,2);
 
-                                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
+                                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
                                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
                                                 $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
                                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
 
                                                 $sunhihscrun = round($rowsunnyhihhscoreuname['total'],2);
 
-                                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
+                                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
                                                 $resultsunnylowwscoreuname = mysqli_query($link, $sqlsunnylowwscoreuname);
                                                 $rowsunnylowwscoreuname = mysqli_fetch_assoc($resultsunnylowwscoreuname);
                                                 $row_cntsunnylowwscoreuname = mysqli_num_rows($resultsunnylowwscoreuname);
 
                                                 $sunlowscrun = round($rowsunnylowwscoreuname['total'],2);
 
-                                                $sqlgetscoretotalscorpositon = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total, StudentID FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
+                                                $sqlgetscoretotalscorpositon = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total, StudentID FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
                                                 $resultgetscoretotalscorpositon = mysqli_query($link, $sqlgetscoretotalscorpositon);
                                                 $rowgetscoretotalscorpositon = mysqli_fetch_assoc($resultgetscoretotalscorpositon);
                                                 $row_cntgetscoretotalscorpositon = mysqli_num_rows($resultgetscoretotalscorpositon);
@@ -7659,14 +7659,14 @@
                                                                 $row_cntgetscore = mysqli_num_rows($resultgetscore);
 
 
-                                                                $sqlgetscore = ("SELECT * FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                $sqlgetscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                 $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                                 $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                                 $row_cntgetscore = mysqli_num_rows($resultgetscore);
 
                                                                 if($row_cntgetscore > 0)
                                                                 {
-                                                                    $sqlgetscoreCUMFirst = ("SELECT SUM(`Exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '1st' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                    $sqlgetscoreCUMFirst = ("SELECT SUM(`exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '1st' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                     $resultgetscoreCUMFirst = mysqli_query($link, $sqlgetscoreCUMFirst);
                                                                     $rowgetscoreCUMFirst = mysqli_fetch_assoc($resultgetscoreCUMFirst);
                                                                     $row_cntgetscoreCUMFirst = mysqli_num_rows($resultgetscoreCUMFirst);
@@ -7682,7 +7682,7 @@
                                                                         $totalCUMFirst = round($rowgetscoreCUMFirst['Total'], 2);
                                                                     }
 
-                                                                    $sqlgetscoreCUMsec = ("SELECT SUM(`Exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '2nd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                    $sqlgetscoreCUMsec = ("SELECT SUM(`exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '2nd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                     $resultgetscoreCUMsec = mysqli_query($link, $sqlgetscoreCUMsec);
                                                                     $rowgetscoreCUMsec = mysqli_fetch_assoc($resultgetscoreCUMsec);
                                                                     $row_cntgetscoreCUMsec = mysqli_num_rows($resultgetscoreCUMsec);
@@ -7698,7 +7698,7 @@
                                                                         $totalCUMsec = round($rowgetscoreCUMsec['Total'], 2);
                                                                     }
 
-                                                                    $sqlgetscoreCUMthr = ("SELECT SUM(`Exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '3rd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                    $sqlgetscoreCUMthr = ("SELECT SUM(`exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '3rd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                     $resultgetscoreCUMthr = mysqli_query($link, $sqlgetscoreCUMthr);
                                                                     $rowgetscoreCUMthr = mysqli_fetch_assoc($resultgetscoreCUMthr);
                                                                     $row_cntgetscoreCUMthr = mysqli_num_rows($resultgetscoreCUMthr);
@@ -7716,7 +7716,7 @@
 
                                                                     $total = $totalCUMFirst + $totalCUMsec + $totalCUMthr;
 
-                                                                    $sqlgettermtodivide = ("SELECT DISTINCT(Term) AS newterm FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                                    $sqlgettermtodivide = ("SELECT DISTINCT(Term) AS newterm FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                                     $resultgettermtodivide = mysqli_query($link, $sqlgettermtodivide);
                                                                     $rowgettermtodivide = mysqli_fetch_assoc($resultgettermtodivide);
                                                                     $row_cntgettermtodivide = mysqli_num_rows($resultgettermtodivide);
@@ -7733,21 +7733,21 @@
                                                                         $grade = $rowgetgradstuc['Grade'];
                                                                         $remark = $rowgetgradstuc['Remark'];
 
-                                                                        $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
+                                                                        $sqlsunnyhihhscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total DESC LIMIT 1";
                                                                         $resultsunnyhihhscoreunamepersub = mysqli_query($link, $sqlsunnyhihhscoreunamepersub);
                                                                         $rowsunnyhihhscoreunamepersub = mysqli_fetch_assoc($resultsunnyhihhscoreunamepersub);
                                                                         $row_cntsunnyhihhscoreunamepersub = mysqli_num_rows($resultsunnyhihhscoreunamepersub);
 
                                                                         $sunhihscrunpersub = round($rowsunnyhihhscoreunamepersub['total']);
 
-                                                                        $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
+                                                                        $sqlsunnylowwscoreunamepersub = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID = '$subid' GROUP BY StudentID order by total ASC LIMIT 1";
                                                                         $resultsunnylowwscoreunamepersub = mysqli_query($link, $sqlsunnylowwscoreunamepersub);
                                                                         $rowsunnylowwscoreunamepersub = mysqli_fetch_assoc($resultsunnylowwscoreunamepersub);
                                                                         $row_cntsunnylowwscoreunamepersub = mysqli_num_rows($resultsunnylowwscoreunamepersub);
 
                                                                         $sunlowscrunpersub = round($rowsunnylowwscoreunamepersub['total']);
 
-                                                                        $sqlgetscorepos = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(Exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total, StudentID FROM `score` WHERE (`Exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
+                                                                        $sqlgetscorepos = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total, StudentID FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
                                                                         $resultgetscorepos = mysqli_query($link, $sqlgetscorepos);
                                                                         $rowgetscorepos = mysqli_fetch_assoc($resultgetscorepos);
                                                                         $row_cntgetscorepos = mysqli_num_rows($resultgetscorepos);
