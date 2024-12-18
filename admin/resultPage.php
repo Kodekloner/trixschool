@@ -828,7 +828,7 @@
                                         ?>
                                         <div align="center" class="summDD" >
                                                 <p>Total Score: <?php echo $gettotscore;?> </p>
-                                                <p>Average Score: <?php echo $gettotgrade;?> </p>
+                                                <p>Average Score: <?php echo $gettotgrade; die('1'); ?> </p>
                                                 <p>Class Average: <?php echo $decStubsubavg;?> </p>
                                                 <p>No. of Subjects: <?php echo $row_cntgetscorecheck;?></p>
                                         </div>
@@ -2893,7 +2893,7 @@
                                         ?>
                                         <div align="center" class="summDD" >
                                                 <p>Total Score: <?php echo $gettotscore;?> </p>
-                                                <p>Average Score: <?php echo $gettotgrade;?> </p>
+                                                <p>Average Score: <?php echo $gettotgrade; die('2'); ?> </p>
                                                 <p>Class Average: <?php echo $decStubsubavg;?> </p>
                                                 <p>No. of Subjects: <?php echo $row_cntgetscorecheck;?></p>
                                         </div>
@@ -5036,7 +5036,8 @@
                                         ?>
                                         <div align="center" class="summDD" >
                                                 <p>Total Score: <?php echo $gettotscore;?> </p>
-                                                <p>Average Score: <?php echo $gettotgrade;?> </p>
+                                                <p>Average Score: <?php echo $gettotgrade;
+                                    die('3'); ?> </p>
                                                 <p>Class Average: <?php echo $decStubsubavg;?> </p>
                                                 <p>No. of Subjects: <?php echo $row_cntgetscorecheck;?></p>
                                         </div>
@@ -6111,7 +6112,8 @@
                                         ?>
                                         <div align="center" class="summDD" >
                                                 <p>Total Score: <?php echo $gettotscore;?> </p>
-                                                <p>Average Score: <?php echo $gettotgrade;?> </p>
+                                                <p>Average Score: <?php echo $gettotgrade;
+                                    die('4'); ?> </p>
                                                 <p>Class Average: <?php echo $decStubsubavg;?> </p>
                                                 <p>No. of Subjects: <?php echo $row_cntgetscorecheck;?></p>
                                         </div>
@@ -7874,7 +7876,8 @@
                                         ?>
                                         <div align="center" class="summDD" >
                                                 <p>Total Score: <?php echo $gettotscore;?> </p>
-                                                <p>Average Score: <?php echo $gettotgrade;?> </p>
+                                                <p>Average Score: <?php echo $gettotgrade;
+                                    die('5'); ?> </p>
                                                 <p>Class Average: <?php echo $decStubsubavg;?> </p>
                                                 <p>No. of Subjects: <?php echo $row_cntgetscorecheck;?></p>
                                         </div>
