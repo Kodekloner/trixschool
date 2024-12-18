@@ -2214,6 +2214,8 @@
                                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
 
                                                 $gettotgrade = floatval(round($rowgettotalgrade['average']/$row_cntgetsubscore, 2));
+                                                echo $row_cntgetsubscore;
+                                                die();
 
                                                 $gettotscore = $rowgettotalgrade['average'];
 
@@ -4324,7 +4326,7 @@
                                                 $gettotgrade = floatval(round($rowgettotalgrade['average']/$row_cntgetsubscore, 2));
                                                 echo $rowgettotalgrade['average'] . '1st <br>';
                                                 echo $row_cntgetsubscore;
-                                                die();
+                                                // die();
 
                                                 $gettotscore = $rowgettotalgrade['average'];
 
