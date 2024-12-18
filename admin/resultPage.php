@@ -9112,6 +9112,15 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
 
          <script>
+            var decStubsubavg = <?php echo $decStubsubavg ; ?>
+            var gettotgrade = <?php echo $gettotgrade ; ?>
+            var sunhihscrun = <?php echo $sunhihscrun ; ?>
+            var sunlowscrun = <?php echo $sunlowscrun ; ?>
+
+            console.log(decStubsubavg);
+            console.log(gettotgrade);
+            console.log(sunhihscrun);
+            console.log(sunlowscrun);
 
             var ctx = document.getElementById("mysunChart");
             var chart = new Chart(ctx, {
