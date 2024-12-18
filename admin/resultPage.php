@@ -4322,7 +4322,9 @@
                                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
 
                                                 $gettotgrade = floatval(round($rowgettotalgrade['average']/$row_cntgetsubscore, 2));
-                                                die($gettotgrade);
+                                                echo $rowgettotalgrade['average'];
+                                                echo $row_cntgetsubscore;
+                                                die();
 
                                                 $gettotscore = $rowgettotalgrade['average'];
 
