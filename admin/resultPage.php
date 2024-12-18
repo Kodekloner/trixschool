@@ -2909,9 +2909,10 @@
                                                     </div>
                                                 </div>
                                                 <div class="col-8" style="padding-right: 0px">
-                                                    <div class="container-motto" style="margin-right: 2px;border:0px solid red;">
+                                                    <div class="container-motto" style="margin-right: 2px;border:0px solid red; overflow-x: auto;">
                                                         <div class="result table-responsive" style="margin: 10px;border:0px solid red;">
-                                                            <table class="tab table-sm" style="width:45%;border:0px solid red;display:inline-block">
+                                                             <!-- width:45%; -->
+                                                            <table class="tab table-sm" style="width: 100%; table-layout: fixed; border:0px solid red;display:inline-block">
                                                                 <tr>
                                                                     <th colspan="6" style="text-align: center;">AFFECTIVE DOMAIN </th>
                                                                 </tr>
@@ -3462,8 +3463,8 @@
                                                                     ?>
                                                                 </tbody>
                                                             </table>
-
-                                                            <table class="tab table-sm" style="width:22%;border:0px solid red;display:inline-block;position:relative;top:-70px;padding-left:20px">
+                                                            <!-- width:22%; -->
+                                                            <table class="tab table-sm" style="width: 100%; table-layout: fixed; border:0px solid red;display:inline-block;position:relative;top:-70px;padding-left:20px">
                                                                 <tr>
                                                                     <th colspan="6" style="text-align: center;">ATTENDANCE</th>
                                                                 </tr>
@@ -3490,8 +3491,8 @@
 
                                                                 </body>
                                                             </table>
-
-                                                            <table class="tab table-sm" style="width:30%;border:0px solid red;display:inline-block;position:relative;top:0px;padding-left:20px">
+                                                            <!-- width:30%; -->
+                                                            <table class="tab table-sm" style="width: 100%; table-layout: fixed; border:0px solid red;display:inline-block;position:relative;top:0px;padding-left:20px">
                                                                 <tr>
                                                                     <th colspan="4" style="text-align: center;">PSYCOMOTOR</th>
                                                                 </tr>
