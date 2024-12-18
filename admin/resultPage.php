@@ -2215,6 +2215,10 @@
 
                                                 $gettotgrade = floatval(round($rowgettotalgrade['average']/$row_cntgetsubscore, 2));
                                                 echo $row_cntgetsubscore;
+                                                echo 'studentid ' . $id . '<br>';
+                                                echo 'classid ' . $classid . '<br>';
+                                                echo 'classsectionactual ' . $classsectionactual . '<br>';
+                                                echo 'session ' . $session . '<br>';
                                                 die();
 
                                                 $gettotscore = $rowgettotalgrade['average'];
@@ -4326,7 +4330,11 @@
                                                 $gettotgrade = floatval(round($rowgettotalgrade['average']/$row_cntgetsubscore, 2));
                                                 echo $rowgettotalgrade['average'] . '1st <br>';
                                                 echo $row_cntgetsubscore;
-                                                // die();
+                                                echo 'studentid ' .$id . '<br>';
+                                                echo 'classid ' . $classid . '<br>';
+                                                echo 'classsectionactual ' . $classsectionactual . '<br>';
+                                                echo 'session ' . $session . '<br>';
+                                                die();
 
                                                 $gettotscore = $rowgettotalgrade['average'];
 
@@ -5041,8 +5049,7 @@
                                         ?>
                                         <div align="center" class="summDD" >
                                                 <p>Total Score: <?php echo $gettotscore;?> </p>
-                                                <p>Average Score: <?php echo $gettotgrade;
-                                    die('3'); ?> </p>
+                                                <p>Average Score: <?php echo $gettotgrade;?> </p>
                                                 <p>Class Average: <?php echo $decStubsubavg;?> </p>
                                                 <p>No. of Subjects: <?php echo $row_cntgetscorecheck;?></p>
                                         </div>
