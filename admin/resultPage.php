@@ -2587,9 +2587,9 @@ $studsection = $rowGetsections['section'];
                                         <div class="container-motto" style="margin-right: 2px;border:0px solid red;">
                                             <div class="result table-responsive" style="margin: 10px; display: flex; align-items: flex-start; gap: 20px; border: 0px solid red;">
 
-                                                <table class="tab table-sm" style="width: 45%; table-layout: fixed; border:0px solid red;">
+                                                <table class="tab table-sm" style="width: 37%; table-layout: fixed; border:0px solid red;">
                                                     <tr>
-                                                        <th colspan="6" style="text-align: center;">AFFECTIVE DOMAIN </th>
+                                                        <th colspan="4" style="text-align: center;">AFFECTIVE DOMAIN </th>
                                                     </tr>
                                                     <tbody>
                                                         <?php
@@ -3104,9 +3104,9 @@ $studsection = $rowGetsections['section'];
                                                         ?>
                                                     </tbody>
                                                 </table>
-                                                <table class="tab table-sm" style="width: 22%; table-layout: fixed; border:0px solid red;">
+                                                <table class="tab table-sm" style="width: 23%; table-layout: fixed; border:0px solid red;">
                                                     <tr>
-                                                        <th colspan="6" style="text-align: center;">ATTENDANCE</th>
+                                                        <th colspan="2" style="text-align: center;">ATTENDANCE</th>
                                                     </tr>
                                                     <tbody>
                                                         <tr>
@@ -3131,7 +3131,7 @@ $studsection = $rowGetsections['section'];
 
                                                     </tbody>
                                                 </table>
-                                                <table class="tab table-sm" style="width: 30%; table-layout: fixed; border:0px solid red;">
+                                                <table class="tab table-sm" style="width: 37%; table-layout: fixed; border:0px solid red;">
                                                     <tr>
                                                         <th colspan="4" style="text-align: center;">PSYCOMOTOR</th>
                                                     </tr>
