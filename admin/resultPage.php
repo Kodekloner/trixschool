@@ -72,6 +72,34 @@ include('../database/config.php');
         }
 
     }
+
+    .tab {
+        table-layout: auto;
+        /* Keeps column widths uniform */
+        word-wrap: break-word;
+        /* Breaks long text properly */
+        white-space: normal;
+        /* Allows wrapping at spaces */
+    }
+
+    .tab td,
+    .tab th {
+        padding: 4px 6px;
+        /* Reduces padding for a compact design */
+        text-align: center;
+        /* Centers content for better alignment */
+        vertical-align: middle;
+        /* Ensures content stays vertically aligned */
+        /* font-size: 14px; */
+        /* Adjusts font size for numbers */
+    }
+
+    .tab th {
+        text-align: left;
+        /* Aligns headers to the left for better readability */
+        font-weight: bold;
+        /* Keeps headers distinct */
+    }
 </style>
 <?php
 
@@ -2585,9 +2613,9 @@ $studsection = $rowGetsections['section'];
                                     </div>
                                     <div class="col-8" style="padding-right: 0px">
                                         <div class="container-motto" style="margin-right: 2px;border:0px solid red;">
-                                            <div class="result table-responsive" style="margin: 10px; display: flex; align-items: flex-start; gap: 20px; border: 0px solid red;">
+                                            <div class="result table-responsive" style="margin: 10px; display: flex; align-items: flex-start; gap: 5px; border: 0px solid red;">
 
-                                                <table class="tab table-sm" style="width: 37%; table-layout: fixed; border:0px solid red;">
+                                                <table class="tab table-sm" style="width: 37%; table-layout: auto; border:0px solid red;">
                                                     <tr>
                                                         <th colspan="4" style="text-align: center;">AFFECTIVE DOMAIN </th>
                                                     </tr>
@@ -3104,7 +3132,7 @@ $studsection = $rowGetsections['section'];
                                                         ?>
                                                     </tbody>
                                                 </table>
-                                                <table class="tab table-sm" style="width: 23%; table-layout: fixed; border:0px solid red;">
+                                                <table class="tab table-sm" style="width: 23%; table-layout: auto; border:0px solid red;">
                                                     <tr>
                                                         <th colspan="2" style="text-align: center;">ATTENDANCE</th>
                                                     </tr>
@@ -3131,7 +3159,7 @@ $studsection = $rowGetsections['section'];
 
                                                     </tbody>
                                                 </table>
-                                                <table class="tab table-sm" style="width: 37%; table-layout: fixed; border:0px solid red;">
+                                                <table class="tab table-sm" style="width: 37%; table-layout: auto; border:0px solid red;">
                                                     <tr>
                                                         <th colspan="4" style="text-align: center;">PSYCOMOTOR</th>
                                                     </tr>
