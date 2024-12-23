@@ -70,8 +70,8 @@
 	// define('ENVIRONMENT', 'production');
 	define('ENVIRONMENT', 'development');
 	} else {
-		define('ENVIRONMENT', 'production');
-		// define('ENVIRONMENT', 'development');
+		// define('ENVIRONMENT', 'production');
+		define('ENVIRONMENT', 'development');
 	}
 
 
