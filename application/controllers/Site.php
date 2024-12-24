@@ -130,13 +130,14 @@ class Site extends Public_Controller
                     print_r($session_data);
                     echo '</pre>';
 
-                    set_cookie('admin_session', $session_data, 7200);
+                    setcookie('admin_session', json_encode($session_data), time() + 7200, '/');
+
+                    // set_cookie('admin_session', $session_data, 7200);
 
                     if (isset($_COOKIE['admin_session'])) {
                         $session_data = json_decode($_COOKIE['admin_session'], true);
 
-                        // Check if decoding was successful
-                        if ($session_data) {
+                        if ($session_data && is_array($session_data)) {
                             echo '<pre>';
                             print_r($session_data); // Display session data
                             echo '</pre>';
