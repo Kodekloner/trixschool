@@ -128,23 +128,6 @@ class Site extends Public_Controller
                     // In your CodeIgniter controller (after a successful login)
                     setcookie('username', $logusername, time() + 7200, '/');
 
-                    if (isset($_COOKIE['username'])) {
-                        // $session_data = json_decode($_COOKIE['admin_session'], true);
-                        $session_data = $_COOKIE['username'];
-                        if ($session_data) {
-                            // echo '<pre>';
-                            // print_r($session_data); // Display session data
-                            // echo '</pre>';
-                            echo $session_data;
-                        } else {
-                            echo "Failed session data.";
-                        }
-                    } else {
-                        echo "Session cookie not found.";
-                    }
-
-                    die();
-
                     $role      = $this->customlib->getStaffRole();
                     $role_name = json_decode($role)->name;
                     $this->customlib->setUserLog($this->input->post('username'), $role_name);
