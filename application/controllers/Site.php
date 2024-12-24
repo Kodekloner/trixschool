@@ -126,7 +126,7 @@ class Site extends Public_Controller
                     $this->session->set_userdata('admin', $session_data);
 
                     // In your CodeIgniter controller (after a successful login)
-                    setcookie('username', $logusername, time() + 7200, '/');
+                    setcookie('username', $result->email, time() + 7200, '/');
 
                     $role      = $this->customlib->getStaffRole();
                     $role_name = json_decode($role)->name;
