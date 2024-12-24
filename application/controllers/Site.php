@@ -22,6 +22,7 @@ class Site extends Public_Controller
         $this->load->library('captchalib');
         $this->load->library('mailsmsconf');
         $this->load->library('mailer');
+        $this->load->helper('cookie');
         $this->load->config('ci-blog');
         $this->mailer;
         $this->sch_setting = $this->setting_model->getSetting();
