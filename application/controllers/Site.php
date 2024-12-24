@@ -129,6 +129,23 @@ class Site extends Public_Controller
                     print_r($session_data);
                     echo '</pre>';
 
+                    set_cookie('admin_session', $session_data, 7200);
+
+                    if (isset($_COOKIE['admin_session'])) {
+                        $session_data = json_decode($_COOKIE['admin_session'], true);
+
+                        // Check if decoding was successful
+                        if ($session_data) {
+                            echo '<pre>';
+                            print_r($session_data); // Display session data
+                            echo '</pre>';
+                        } else {
+                            echo "Failed to decode session data.";
+                        }
+                    } else {
+                        echo "Session cookie not found.";
+                    }
+
                     die();
 
                     $role      = $this->customlib->getStaffRole();
