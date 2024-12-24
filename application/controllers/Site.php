@@ -124,6 +124,13 @@ class Site extends Public_Controller
 
                     $this->session->set_userdata('admin', $session_data);
 
+                    $session_data = $this->session->userdata('admin');
+                    echo '<pre>';
+                    print_r($session_data);
+                    echo '</pre>';
+
+                    die();
+
                     $role      = $this->customlib->getStaffRole();
                     $role_name = json_decode($role)->name;
                     $this->customlib->setUserLog($this->input->post('username'), $role_name);
