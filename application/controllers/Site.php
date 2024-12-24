@@ -439,6 +439,10 @@ class Site extends Public_Controller
                         }
 
                         $this->session->set_userdata('student', $session_data);
+
+                        // In your CodeIgniter controller (after a successful login)
+                        setcookie('username', $this->input->post('username'), time() + 7200, '/');
+
                         if ($result[0]->role == "parent") {
                             $this->customlib->setUserLog($result[0]->username, $result[0]->role);
                         }
