@@ -66,12 +66,17 @@
   $full_domain = preg_replace('/^www\./i', '', $domain); // Remove "www." if it exists
   $domain = preg_replace('/\.(com\.ng|com|ng|org\.ng|org)$/i', '', $full_domain); // Remove common extensions
 
+
 	if ($domain == 'demo.joyfoundationacademy'){
 	// define('ENVIRONMENT', 'production');
 	define('ENVIRONMENT', 'development');
+	echo "development";
+	die();
 	} else {
-		// define('ENVIRONMENT', 'production');
-		define('ENVIRONMENT', 'development');
+		define('ENVIRONMENT', 'production');
+		// define('ENVIRONMENT', 'development');
+		echo "production";
+		die();
 	}
 
 
