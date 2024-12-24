@@ -22,6 +22,7 @@ class Site extends Public_Controller
         $this->load->library('captchalib');
         $this->load->library('mailsmsconf');
         $this->load->library('mailer');
+        $this->load->helper('cookie');
         $this->load->config('ci-blog');
         $this->mailer;
         $this->sch_setting = $this->setting_model->getSetting();
@@ -123,6 +124,9 @@ class Site extends Public_Controller
                     }
 
                     $this->session->set_userdata('admin', $session_data);
+
+                    // In your CodeIgniter controller (after a successful login)
+                    setcookie('username', $logusername, time() + 7200, '/');
 
                     $role      = $this->customlib->getStaffRole();
                     $role_name = json_decode($role)->name;
