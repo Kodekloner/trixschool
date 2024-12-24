@@ -125,31 +125,6 @@ class Site extends Public_Controller
 
                     $this->session->set_userdata('admin', $session_data);
 
-                    $session_data = $this->session->userdata('admin');
-                    echo '<pre>';
-                    print_r($session_data);
-                    echo '</pre>';
-
-                    setcookie('admin_session', json_encode($session_data), time() + 7200, '/');
-
-                    // set_cookie('admin_session', $session_data, 7200);
-
-                    if (isset($_COOKIE['admin_session'])) {
-                        $session_data = json_decode($_COOKIE['admin_session'], true);
-
-                        if ($session_data && is_array($session_data)) {
-                            echo '<pre>';
-                            print_r($session_data); // Display session data
-                            echo '</pre>';
-                        } else {
-                            echo "Failed to decode session data.";
-                        }
-                    } else {
-                        echo "Session cookie not found.";
-                    }
-
-                    die();
-
                     $role      = $this->customlib->getStaffRole();
                     $role_name = json_decode($role)->name;
                     $this->customlib->setUserLog($this->input->post('username'), $role_name);
