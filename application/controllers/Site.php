@@ -157,6 +157,8 @@ class Site extends Public_Controller
         $admin_session   = $this->session->userdata('admin');
         $student_session = $this->session->userdata('student');
         $this->auth->logout();
+        // Destroy cookies
+        setcookie('username', '', time() - 7200, '/');
         if ($admin_session) {
             redirect('site/login');
         } else if ($student_session) {
