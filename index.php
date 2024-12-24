@@ -71,10 +71,12 @@
 	// define('ENVIRONMENT', 'production');
 	define('ENVIRONMENT', 'development');
 	echo "development";
+	die();
 	} else {
 		define('ENVIRONMENT', 'production');
 		// define('ENVIRONMENT', 'development');
 		echo "production";
+		die();
 	}
 
 
