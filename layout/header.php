@@ -23,7 +23,7 @@
 	    else
 	    {
 	        echo '<div class="col-md-12 col-lg-2" align="right" style="padding-right:40px;">
-    	        <b><i class="fa fa-angle-double-left"></i><a href="'.$defRUl.'user/dashboard" style="text-decoration:underline;font-size:15;color:black;">Go Back</a></b>
+    	        <b><i class="fa fa-angle-double-left"></i><a href="'.$defRUl.'user/user/dashboard" style="text-decoration:underline;font-size:15;color:black;">Go Back</a></b>
     	    </div>';
 		
 	    }
