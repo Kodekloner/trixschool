@@ -286,16 +286,26 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             id: 'printDiv',
             name: 'frame1'
         });
-        console.log(`
+        var printHtml = `
         <html>
             <head>
-                <title></title>
+                <title>Print Preview</title>
             </head>
             <body>
                 ${data}
             </body>
         </html>
-        `);
+        `;
+
+        // console.log(printHtml);
+
+        // Open iframe content in a new tab
+        var blob = new Blob([printHtml], {
+            type: 'text/html'
+        });
+        var url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+
         $("body").append(frame1);
         var frameDoc = frame1[0].contentWindow ? frame1[0].contentWindow : frame1[0].contentDocument.document ? frame1[0].contentDocument.document : frame1[0].contentDocument;
         frameDoc.document.open();
