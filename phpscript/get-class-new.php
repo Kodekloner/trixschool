@@ -6,6 +6,12 @@
     $staffid = $_POST['staffid'];
     
     $session = $_POST['session'];
+
+    echo $rolefirst . '<br>';
+
+    echo $staffid . '<br>';
+
+    echo $session . '<br>';
     
     if($rolefirst == 'student')
     {
