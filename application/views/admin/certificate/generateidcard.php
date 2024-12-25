@@ -286,25 +286,6 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             id: 'printDiv',
             name: 'frame1'
         });
-        // var printHtml = `
-        // <html>
-        //     <head>
-        //         <title>Print Preview</title>
-        //     </head>
-        //     <body>
-        //         ${data}
-        //     </body>
-        // </html>
-        // `;
-
-        // console.log(printHtml);
-
-        // Open iframe content in a new tab
-        // var blob = new Blob([printHtml], {
-        //     type: 'text/html'
-        // });
-        // var url = URL.createObjectURL(blob);
-        // window.open(url, '_blank');
 
         $("body").append(frame1);
         var frameDoc = frame1[0].contentWindow ? frame1[0].contentWindow : frame1[0].contentDocument.document ? frame1[0].contentDocument.document : frame1[0].contentDocument;
@@ -314,7 +295,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
         frameDoc.document.write('<html>');
         frameDoc.document.write('<head>');
         frameDoc.document.write('<title></title>');
-        frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'backend/dist/css/idcard.css">');
+        // frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'backend/dist/css/idcard.css">');
 
         frameDoc.document.write('</head>');
         frameDoc.document.write('<body>');
