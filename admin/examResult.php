@@ -21,7 +21,6 @@
 
     <style type="text/css">
         .editbox {
-
             display: none
         }
 
@@ -263,7 +262,7 @@
             if (session != '' && session != '0') {
 
                 var dataString = 'rolefirst=' + rolefirst + '&staffid=' + staffid + '&session=' + session;
-                // alert(dataString);
+                alert(dataString);
                 $.ajax({
                     url: '../../../phpscript/get-class-new.php',
                     method: 'POST',
