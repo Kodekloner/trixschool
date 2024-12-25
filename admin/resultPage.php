@@ -1836,7 +1836,6 @@ $studsection = $rowGetsections['section'];
 
                                         $teacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
 
-
                                         $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$teacherid'");
                                         $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                         $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
@@ -1892,7 +1891,8 @@ $studsection = $rowGetsections['section'];
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                         if ($row_cntgetheadteachsignhead > 0) {
-                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                            // $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                            $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
                                         } else {
                                             $hedteachsignhead = '';
                                         }
@@ -3771,7 +3771,7 @@ $studsection = $rowGetsections['section'];
                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                             if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
                                             } else {
                                                 $hedteachsignhead = '';
                                             }
@@ -4629,7 +4629,7 @@ $studsection = $rowGetsections['section'];
                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                             if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
                                             } else {
                                                 $hedteachsignhead = '';
                                             }
@@ -5001,7 +5001,7 @@ $studsection = $rowGetsections['section'];
                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                             if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
                                             } else {
                                                 $hedteachsignhead = '';
                                             }
@@ -6592,7 +6592,7 @@ $studsection = $rowGetsections['section'];
                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                             if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
                                             } else {
                                                 $hedteachsignhead = '';
                                             }
@@ -8039,7 +8039,7 @@ $studsection = $rowGetsections['section'];
                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                             if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
                                             } else {
                                                 $hedteachsignhead = '';
                                             }

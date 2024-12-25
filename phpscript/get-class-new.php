@@ -6,12 +6,6 @@
     $staffid = $_POST['staffid'];
     
     $session = $_POST['session'];
-
-    echo $rolefirst . '<br>';
-
-    echo $staffid . '<br>';
-
-    echo $session . '<br>';
     
     if($rolefirst == 'student')
     {
@@ -89,7 +83,7 @@
 		        $resultclasses = mysqli_query($link, $sqlclasses);
                 $rowclasses = mysqli_fetch_assoc($resultclasses);
                 $row_cntclasses = mysqli_num_rows($resultclasses);
-                echo "count" . $row_cntclasses;
+                
                 if($row_cntclasses > 0)
                 {
                     do{
