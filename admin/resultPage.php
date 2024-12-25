@@ -1942,7 +1942,7 @@ $studsection = $rowGetsections['section'];
 
                                                 <div class="col-sm-2 col-md-2">
                                                     <div>
-                                                        <?php echo $hedteachsignhead; ?> 1
+                                                        <?php echo $hedteachsignhead; ?>
                                                     </div>
                                                 </div>
                                             </div>
@@ -3751,7 +3751,7 @@ $studsection = $rowGetsections['section'];
                                         if ($row_cntgetheadteachsignhead > 0) {
                                             $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
                                         } else {
-                                            $hedteachsignhead = '';
+                                            $hedteachsignhead = '1';
                                         }
                                     } else {
 
@@ -3773,12 +3773,12 @@ $studsection = $rowGetsections['section'];
                                             if ($row_cntgetheadteachsignhead > 0) {
                                                 $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
                                             } else {
-                                                $hedteachsignhead = '';
+                                                $hedteachsignhead = '2';
                                             }
                                         } else {
                                             $principalRemark = 'N/A';
 
-                                            $hedteachsignhead = '';
+                                            $hedteachsignhead = '3';
                                         }
                                     }
 
@@ -4691,7 +4691,7 @@ $studsection = $rowGetsections['section'];
 
                                                     <div class="col-sm-2 col-md-2">
                                                         <div>
-                                                            <?php echo $hedteachsignhead; ?> 3
+                                                            <?php echo $hedteachsignhead; ?>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -5063,7 +5063,7 @@ $studsection = $rowGetsections['section'];
 
                                                     <div class="col-sm-2 col-md-2">
                                                         <div>
-                                                            <?php echo $hedteachsignhead; ?> 4
+                                                            <?php echo $hedteachsignhead; ?>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -6642,7 +6642,7 @@ $studsection = $rowGetsections['section'];
 
                                                     <div class="col-sm-2 col-md-2">
                                                         <div>
-                                                            <?php echo $hedteachsignhead; ?> 5
+                                                            <?php echo $hedteachsignhead; ?>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -8101,7 +8101,7 @@ $studsection = $rowGetsections['section'];
 
                                                     <div class="col-sm-2 col-md-2">
                                                         <div>
-                                                            <?php echo $hedteachsignhead; ?> 6
+                                                            <?php echo $hedteachsignhead; ?>
                                                         </div>
                                                     </div>
                                                 </div>
