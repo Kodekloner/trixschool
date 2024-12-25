@@ -3765,6 +3765,8 @@ $studsection = $rowGetsections['section'];
 
                                             $headteacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
 
+                                            echo $headteacherid;
+                                            
                                             $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                             $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                             $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
