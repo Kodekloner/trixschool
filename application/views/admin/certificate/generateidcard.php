@@ -314,7 +314,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
         frameDoc.document.write('<html>');
         frameDoc.document.write('<head>');
         frameDoc.document.write('<title></title>');
-        // frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'backend/dist/css/idcard.css">');
+        frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'backend/dist/css/idcard.css">');
 
         frameDoc.document.write('</head>');
         frameDoc.document.write('<body>');
@@ -322,11 +322,16 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
         frameDoc.document.write('</body>');
         frameDoc.document.write('</html>');
         frameDoc.document.close();
-        setTimeout(function() {
-            document.getElementById('printDiv').contentWindow.focus();
-            document.getElementById('printDiv').contentWindow.print();
-            frame1.remove();
-        }, 5000);
+        frameDoc.onload = function() {
+            frameDoc.contentWindow.focus();
+            frameDoc.contentWindow.print();
+            document.body.removeChild(iframe);
+        };
+        // setTimeout(function() {
+        //     document.getElementById('printDiv').contentWindow.focus();
+        //     document.getElementById('printDiv').contentWindow.print();
+        //     frame1.remove();
+        // }, 500);
 
 
         return true;
