@@ -322,16 +322,12 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
         frameDoc.document.write('</body>');
         frameDoc.document.write('</html>');
         frameDoc.document.close();
-        frameDoc.onload = function() {
-            frameDoc.contentWindow.focus();
-            frameDoc.contentWindow.print();
-            document.body.removeChild(iframe);
-        };
-        // setTimeout(function() {
-        //     document.getElementById('printDiv').contentWindow.focus();
-        //     document.getElementById('printDiv').contentWindow.print();
-        //     frame1.remove();
-        // }, 500);
+        
+        setTimeout(function() {
+            document.getElementById('printDiv').contentWindow.focus();
+            document.getElementById('printDiv').contentWindow.print();
+            frame1.remove();
+        }, 500);
 
 
         return true;
