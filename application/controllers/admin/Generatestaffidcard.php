@@ -67,6 +67,5 @@ class Generatestaffidcard extends Admin_Controller
         $data['staffs'] = $this->Generatestaffidcard_model->getEmployee($staffid_arr, 1);
         $id_cards       = $this->load->view('admin/generatestaffidcard/generatemultiplestaffidcard', $data, true);
         echo $id_cards;
-        die();
     }
 }
