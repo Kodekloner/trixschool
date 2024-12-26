@@ -3765,8 +3765,6 @@ $studsection = $rowGetsections['section'];
 
                                             $headteacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
 
-                                            echo $headteacherid;
-                                            
                                             $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                             $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                             $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
@@ -3842,7 +3840,13 @@ $studsection = $rowGetsections['section'];
 
                                                     <div class="col-sm-2 col-md-2">
                                                         <div>
-                                                            <?php echo $hedteachsignhead; ?> 2
+                                                            <?php echo $hedteachsignhead; ?>
+                                                            <p>
+                                                                headteacherid: <?php echo $headteacherid; ?>
+                                                            </p>
+                                                            <p>
+                                                                gettograde: <?php echo $gettotgrade; ?>
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 </div>
