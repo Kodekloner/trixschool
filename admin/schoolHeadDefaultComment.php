@@ -85,7 +85,7 @@ include ('../database/config.php');
                                             {
                                                 do{
 
-                                                    echo'<option value="'.$rowstaff['staff_id'].'">'.$rowstaff['staff_surname'].' '.$rowstaff['staff_name'].'</option>';
+                                                    echo'<option value="'.$rowstaff['staff_id'].'">'.$rowstaff['staff_surname'].' here '.$rowstaff['staff_name'].'</option>';
 
                                                 }while($rowstaff = mysqli_fetch_assoc($resultstaff));
                                             }
