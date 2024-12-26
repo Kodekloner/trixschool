@@ -3845,7 +3845,8 @@ $studsection = $rowGetsections['section'];
                                                                 headteacherid: <?php echo $headteacherid; ?>
                                                             </p>
                                                             <p>
-                                                                gettograde: <?php echo $gettotgrade; ?>
+                                                                gettograde: <?php echo $gettotgrade;
+                                                                            print_r($rowgetteachremark); ?>
                                                             </p>
                                                         </div>
                                                     </div>
