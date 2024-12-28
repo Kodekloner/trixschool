@@ -590,6 +590,8 @@ class Student_model extends MY_Model
         $field_variable = implode(',', $field_var_array);
         $field_name = implode(',', $field_var_array_name);
 
+        echo $field_name . '1';
+
         if (($userdata["role_id"] == 2) && ($userdata["class_teacher"] == "yes")) {
             if (!empty($carray)) {
 
@@ -1912,6 +1914,8 @@ class Student_model extends MY_Model
 
         $field_variable = implode(',', $field_var_array);
         $field_name = implode(',', $field_var_array_name);
+
+        echo $field_name . '2';
 
         if ($class_id != null) {
             $this->datatables->where('student_session.class_id', $class_id);
