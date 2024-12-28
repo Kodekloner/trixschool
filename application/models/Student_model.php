@@ -574,8 +574,6 @@ class Student_model extends MY_Model
         $i             = 1;
         $custom_fields = $this->customfield_model->get_custom_fields('students', 1);
 
-        print_r($custom_fields);
-
         $field_var_array = array();
         $field_var_array_name = array();
         if (!empty($custom_fields)) {
