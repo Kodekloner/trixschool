@@ -3773,10 +3773,10 @@ $studsection = $rowGetsections['section'];
                                             if ($row_cntgetheadteachsignhead > 0) {
                                                 $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
                                             } else {
-                                                $hedteachsignhead = '2';
+                                                $hedteachsignhead = '';
                                             }
                                         } else {
-                                            $principalRemark = $gettotgrade . 'N/A';
+                                            $principalRemark = 'N/A';
 
                                             $hedteachsignhead = '';
                                         }
@@ -3845,8 +3845,7 @@ $studsection = $rowGetsections['section'];
                                                                 headteacherid: <?php echo $headteacherid; ?>
                                                             </p>
                                                             <p>
-                                                                gettograde: <?php echo $gettotgrade;
-                                                                            print_r($rowgetteachremark); ?>
+                                                                gettograde: <?php echo $gettotgrade; ?>
                                                             </p>
                                                         </div>
                                                     </div>
