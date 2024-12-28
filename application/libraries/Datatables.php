@@ -332,15 +332,11 @@ class Datatables
 
             $this->get_ordering();
             $this->get_filtering();
-            
-            echo 1;
 
+            echo $this->ci->db->last_query();
+            
             $total = $this->ci->db->count_all_results('', false);
 
-            echo 2;
-
-            die();
-            
             $sOutput['query_count'] = $this->ci->db->last_query();
             $iTotal                 = $iFilteredTotal                 = $total;
             //========================
