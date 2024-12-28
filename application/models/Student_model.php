@@ -1900,8 +1900,6 @@ class Student_model extends MY_Model
         $i = 1;
         $custom_fields   = $this->customfield_model->get_custom_fields('students', 1);
 
-        print_r($custom_fields);
-        
         $field_var_array = array();
         $field_var_array_name= array();
         if (!empty($custom_fields)) {
@@ -1915,14 +1913,24 @@ class Student_model extends MY_Model
             }
         }
 
-        $field_variable = implode(',', $field_var_array);
-        $field_name = implode(',', $field_var_array_name);
+        // $field_variable = implode(',', $field_var_array);
+        // $field_name = implode(',', $field_var_array_name);
+
+        // If custom fields are empty, avoid empty variable in orderable
+        $field_variable = !empty($field_var_array) ? implode(',', $field_var_array) : '';
+        $field_name = !empty($field_var_array_name) ? implode(',', $field_var_array_name) : '';
 
         if ($class_id != null) {
             $this->datatables->where('student_session.class_id', $class_id);
         }
         if ($section_id != null) {
             $this->datatables->where('student_session.section_id', $section_id);
+        }
+
+        $orderable_fields = 'students.admission_no,students.firstname,classes.class,students.father_name,students.dob,students.gender,categories.category,students.mobileno,';
+
+        if (!empty($field_name)) {
+            $orderable_fields .= ',' . $field_name;
         }
 
          $this->datatables
@@ -1934,7 +1942,7 @@ class Student_model extends MY_Model
             ->join('categories', 'students.category_id = categories.id', 'left')
             ->where('student_session.session_id', $this->current_session)
             ->where('students.is_active', "yes")
-            ->orderable('students.admission_no,students.firstname,classes.class,students.father_name,students.dob,students.gender,categories.category,students.mobileno,'.$field_name)
+            ->orderable($orderable_fields)
             ->from('students');
 
 
