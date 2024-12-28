@@ -574,8 +574,10 @@ class Student_model extends MY_Model
         $i             = 1;
         $custom_fields = $this->customfield_model->get_custom_fields('students', 1);
 
+        print_r($custom_fields);
+
         $field_var_array = array();
-        $field_var_array_name =array();
+        $field_var_array_name = array();
         if (!empty($custom_fields)) {
             foreach ($custom_fields as $custom_fields_key => $custom_fields_value) {
                 $tb_counter = "table_custom_" . $i;
@@ -589,8 +591,6 @@ class Student_model extends MY_Model
 
         $field_variable = implode(',', $field_var_array);
         $field_name = implode(',', $field_var_array_name);
-
-        echo $field_name . '1';
 
         if (($userdata["role_id"] == 2) && ($userdata["class_teacher"] == "yes")) {
             if (!empty($carray)) {
@@ -1914,8 +1914,6 @@ class Student_model extends MY_Model
 
         $field_variable = implode(',', $field_var_array);
         $field_name = implode(',', $field_var_array_name);
-
-        echo $field_name . '2';
 
         if ($class_id != null) {
             $this->datatables->where('student_session.class_id', $class_id);
