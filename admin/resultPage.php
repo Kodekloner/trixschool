@@ -3751,7 +3751,7 @@ $studsection = $rowGetsections['section'];
                                         if ($row_cntgetheadteachsignhead > 0) {
                                             $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
                                         } else {
-                                            $hedteachsignhead = '1';
+                                            $hedteachsignhead = '';
                                         }
                                     } else {
 
@@ -3776,9 +3776,9 @@ $studsection = $rowGetsections['section'];
                                                 $hedteachsignhead = '2';
                                             }
                                         } else {
-                                            $principalRemark = 'N/A';
+                                            $principalRemark = $gettotgrade . 'N/A';
 
-                                            $hedteachsignhead = '3';
+                                            $hedteachsignhead = '';
                                         }
                                     }
 
