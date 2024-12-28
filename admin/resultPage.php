@@ -3841,12 +3841,6 @@ $studsection = $rowGetsections['section'];
                                                     <div class="col-sm-2 col-md-2">
                                                         <div>
                                                             <?php echo $hedteachsignhead; ?>
-                                                            <p>
-                                                                headteacherid: <?php echo $headteacherid; ?>
-                                                            </p>
-                                                            <p>
-                                                                gettograde: <?php echo $gettotgrade; ?>
-                                                            </p>
                                                         </div>
                                                     </div>
                                                 </div>
