@@ -335,7 +335,7 @@ class Datatables
 
             // echo $this->ci->db->last_query();
             
-            $total = $this->ci->db->count_all_results('', true);
+            $total = $this->ci->db->count_all_results('', false);
 
             $sOutput['query_count'] = $this->ci->db->last_query();
             $iTotal                 = $iFilteredTotal                 = $total;
