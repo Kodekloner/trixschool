@@ -45,15 +45,34 @@ include('../database/config.php');
         }
     }
 
-    .tb-result-border td, .tb-result-border th {
-        border: 2px solid #000000; /* Adjusted border for this page only */
-    }
-
     @page {
         margin: 0;
     }
 
     @media print {
+
+        /* Define the page size and margins for printing */
+        @page {
+            size: A4 portrait; /* Change to landscape if needed */
+            margin: 10mm;      /* Adjust as necessary */
+        }
+        
+        /* Scale the printable container down to ensure it fits on one page */
+        #printable {
+            /* Adjust the scale value as needed based on your content size */
+            transform: scale(0.85);
+            transform-origin: top left;
+        }
+        
+        /* Prevent page breaks inside key containers */
+        .card, .table-responsive {
+            page-break-inside: avoid;
+        }
+        
+        /* Optionally, reduce the font size if needed */
+        body, .card {
+            font-size: 12px;
+        }
 
         canvas.sunygraph {
             min-height: 200px;
