@@ -10000,7 +10000,7 @@ pre {
     border-style: solid;
     border-color: black;
     margin-top: 1%;
-    border-width: 3px;
+    border-width: 2px;
     width: 100%;
     align-self: center;
 }
@@ -10024,8 +10024,8 @@ pre {
 
 .container-motto {
     border-style: solid;
-    border-color: darkgray;
-    border-width: thin;
+    border-color: black;
+    border-width: 3px;
     margin: 10px;
 }
 
@@ -10077,8 +10077,8 @@ pre {
 
 .summDD {
     border-style: solid;
-    border-color: darkgray;
-    border-width: thin;
+    border-color: black;
+    border-width: 3px;
     margin: 10px;
 }
 
@@ -10091,8 +10091,8 @@ pre {
 
 .performance {
     border-style: solid;
-    border-color: darkgray;
-    border-width: thin;
+    border-color: black;
+    border-width: 3px;
     margin: 10px;
 }
 
