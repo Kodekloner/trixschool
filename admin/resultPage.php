@@ -54,7 +54,7 @@ include('../database/config.php');
         /* Define the page size and margins for printing */
         @page {
             size: A4 portrait; /* Change to landscape if needed */
-            margin: 10mm;      /* Adjust as necessary */
+            margin: 2mm;      /* Adjust as necessary */
         }
         
         /* Scale the printable container down to ensure it fits on one page */
