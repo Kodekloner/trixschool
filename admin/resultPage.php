@@ -421,24 +421,24 @@ $studsection = $rowGetsections['section'];
                             ?>
                             <div class="row" style="margin: 10px;">
                                 <div class="col-4">
-                                    <h5 style="color: #000000;"> <b>NAME:</b> <?php echo $studname; ?></h5>
+                                    <h5 style="color: #000000;"> NAME: <b><?php echo $studname; ?></b></h5>
                                 </div>
                                 <div class="col-4">
-                                    <h5 style="color: #000000;"> <b>CLASS:</b> <?php echo $studclass . ' ' . $studsection; ?></h5>
+                                    <h5 style="color: #000000;"> CLASS: <b><?php echo $studclass . ' ' . $studsection; ?></b></h5>
                                 </div>
                                 <div class="col-4">
-                                    <h5 style="color: #000000;"> <b>GENDER:</b> <?php echo $studgender; ?></h5>
+                                    <h5 style="color: #000000;"> GENDER: <b><?php echo $studgender; ?></b></h5>
                                 </div>
                             </div>
 
                             <div class="row" style="margin: 10px;">
 
                                 <div class="col-4">
-                                    <h5 style="color: #000000;"> <b>TOTAL SCORE:</b> <?php echo $gettotgrade; ?></h5>
+                                    <h5 style="color: #000000;"> TOTAL SCORE: <b><?php echo $gettotgrade; ?></b></h5>
                                 </div>
 
                                 <div class="col-4">
-                                    <h5 style="color: #000000;"> <b>GRADE:</b> <?php echo $totscorgrade; ?></h5>
+                                    <h5 style="color: #000000;"> GRADE: <b><?php echo $totscorgrade; ?></b></h5>
                                 </div>
                             </div>
 
@@ -758,10 +758,10 @@ $studsection = $rowGetsections['section'];
                         }
                         ?>
                         <div align="center" class="summDD">
-                            <p>Total Score: <?php echo $gettotscore; ?> </p>
-                            <p>Average Score: <?php echo $gettotgrade; ?> </p>
-                            <p>Class Average: <?php echo $decStubsubavg; ?> </p>
-                            <p>No. of Subjects: <?php echo $row_cntgetscorecheck; ?></p>
+                            <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
+                            <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
+                            <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
+                            <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                         </div>
 
                         <div class="performance">
@@ -2099,30 +2099,30 @@ $studsection = $rowGetsections['section'];
                                 ?>
                                 <div class="row" style="margin: 5px;">
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>NAME:</b> <?php echo $studname; ?></h5>
+                                        <h5 style="color: #000000;"> NAME: <b><?php echo $studname; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>CLASS:</b> <?php echo $studclass . ' ' . $studsection; ?></h5>
+                                        <h5 style="color: #000000;"> CLASS: <b><?php echo $studclass . ' ' . $studsection; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>SEX:</b> <?php echo $studgender; ?></h5>
+                                        <h5 style="color: #000000;"> SEX: <b><?php echo $studgender; ?></b></h5>
                                     </div>
 
                                 </div>
 
                                 <div class="row" style="margin: 10px;">
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>OVERALL GRADE:</b> <?php echo $totscorgrade; ?></h5>
+                                        <h5 style="color: #000000;"> OVERALL GRADE: <b><?php echo $totscorgrade; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>HIGHEST IN CLASS AVG:</b> <?php echo $sunhihscrun; ?></h5>
+                                        <h5 style="color: #000000;"> HIGHEST IN CLASS AVG: <b><?php echo $sunhihscrun; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>LOWEST IN CLASS AVE:</b> <?php echo $sunlowscrun; ?></h5>
+                                        <h5 style="color: #000000;"> LOWEST IN CLASS AVE: <b><?php echo $sunlowscrun; ?></b></h5>
                                     </div>
 
                                 </div>
@@ -2614,10 +2614,10 @@ $studsection = $rowGetsections['section'];
                             }
                             ?>
                             <div align="center" class="summDD">
-                                <p>Total Score: <?php echo $gettotscore; ?> </p>
-                                <p>Average Score: <?php echo $gettotgrade; ?> </p>
-                                <p>Class Average: <?php echo $decStubsubavg; ?> </p>
-                                <p>No. of Subjects: <?php echo $row_cntgetscorecheck; ?></p>
+                                <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
+                                <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
+                                <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
+                                <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
 
@@ -4014,35 +4014,35 @@ $studsection = $rowGetsections['section'];
                                 ?>
                                 <div class="row" style="margin: 10px;">
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>NAME:</b> <?php echo $studname; ?></h5>
+                                        <h5 style="color: #000000;"> NAME: <b><?php echo $studname; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>CLASS:</b> <?php echo $studclass . ' ' . $studsection; ?></h5>
+                                        <h5 style="color: #000000;"> CLASS: <b><?php echo $studclass . ' ' . $studsection; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>SEX:</b> <?php echo $studgender; ?></h5>
+                                        <h5 style="color: #000000;"> SEX: <b><?php echo $studgender; ?></b></h5>
                                     </div>
                                 </div>
 
                                 <div class="row" style="margin: 10px;">
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>CLASS POSITION:</b> <?php
+                                        <h5 style="color: #000000;"> CLASS POSITION: <b><?php
                                                                                             echo addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
 
                                                                                             if ($gettotalscorpositon % 10 == 0) {
                                                                                                 echo "\n";
                                                                                             }
-                                                                                            ?> </h5>
+                                                                                            ?></b> </h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>HIGHEST IN CLASS AVE:</b> <?php echo $sunhihscrun; ?></h5>
+                                        <h5 style="color: #000000;"> HIGHEST IN CLASS AVE: <b><?php echo $sunhihscrun; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>LOWEST IN CLASS AVE:</b> <?php echo $sunlowscrun; ?></h5>
+                                        <h5 style="color: #000000;"> LOWEST IN CLASS AVE: <b><?php echo $sunlowscrun; ?></b></h5>
                                     </div>
 
                                 </div>
@@ -4541,10 +4541,10 @@ $studsection = $rowGetsections['section'];
                             }
                             ?>
                             <div align="center" class="summDD">
-                                <p>Total Score: <?php echo $gettotscore; ?> </p>
-                                <p>Average Score: <?php echo $gettotgrade; ?> </p>
-                                <p>Class Average: <?php echo $decStubsubavg; ?> </p>
-                                <p>No. of Subjects: <?php echo $row_cntgetscorecheck; ?></p>
+                                <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
+                                <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
+                                <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
+                                <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
                             <div class="performance">
@@ -4777,10 +4777,10 @@ $studsection = $rowGetsections['section'];
 
                                 <div class="row" style="margin: 10px; padding-left: 50px;">
                                     <div class="col-6">
-                                        <h5 style="color: #000000;"> <b>Name:</b> <?php echo $studname; ?></h5>
+                                        <h5 style="color: #000000;"> Name: <b><?php echo $studname; ?></b></h5>
                                     </div>
                                     <div class="col-6">
-                                        <h5 style="color: #000000;"> <b>Class:</b> <?php echo $studclass . ' ' . $studsection; ?></h5>
+                                        <h5 style="color: #000000;"> Class: <b><?php echo $studclass . ' ' . $studsection; ?></b></h5>
                                     </div>
                                 </div>
                                 <?php
@@ -4845,16 +4845,16 @@ $studsection = $rowGetsections['section'];
 
                                 <div class="row" style="margin: 10px; padding-left: 50px;">
                                     <div class="col-6">
-                                        <h5 style="color: #000000;"> <b>Days Present:</b> <?php echo $rowcountfixedpresent ?></h5>
+                                        <h5 style="color: #000000;"> Days Present: <b><?php echo $rowcountfixedpresent ?></b></h5>
                                     </div>
                                     <div class="col-6">
-                                        <h5 style="color: #000000;"> <b>Days School Opened:</b> <?php echo $rowcountfixedgennew; ?></h5>
+                                        <h5 style="color: #000000;"> Days School Opened: <b><?php echo $rowcountfixedgennew; ?></b></h5>
                                     </div>
                                 </div>
 
                                 <div class="row" style="margin: 10px; padding-left: 50px;">
                                     <div class="col-6">
-                                        <h5 style="color: #000000;"> <b>Days Absent:</b> <?php echo $rowcountfixedabsent; ?></h5>
+                                        <h5 style="color: #000000;"> Days Absent: <b><?php echo $rowcountfixedabsent; ?></b></h5>
                                     </div>
                                 </div>
                             </div>
@@ -5219,15 +5219,15 @@ $studsection = $rowGetsections['section'];
                                 ?>
                                 <div class="row" style="margin: 10px;">
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>NAME:</b> <?php echo $studname; ?></h5>
+                                        <h5 style="color: #000000;"> NAME: <b><?php echo $studname; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>CLASS:</b> <?php echo $studclass . ' ' . $studsection; ?></h5>
+                                        <h5 style="color: #000000;"> CLASS: <b><?php echo $studclass . ' ' . $studsection; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>SEX:</b> <?php echo $studgender; ?></h5>
+                                        <h5 style="color: #000000;"> SEX: <b><?php echo $studgender; ?></b></h5>
                                     </div>
 
 
@@ -5237,15 +5237,15 @@ $studsection = $rowGetsections['section'];
 
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>HIGHEST IN CLASS AVE:</b> <?php echo $sunhihscrun; ?></h5>
+                                        <h5 style="color: #000000;"> HIGHEST IN CLASS AVE: <b><?php echo $sunhihscrun; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>LOWEST IN CLASS AVE:</b> <?php echo $sunlowscrun; ?></h5>
+                                        <h5 style="color: #000000;"> LOWEST IN CLASS AVE: <b><?php echo $sunlowscrun; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>OVERALL GRADE:</b> <?php echo $totscorgrade; ?></h5>
+                                        <h5 style="color: #000000;"> OVERALL GRADE: <b><?php echo $totscorgrade; ?></b></h5>
                                     </div>
                                 </div>
 
@@ -5457,10 +5457,10 @@ $studsection = $rowGetsections['section'];
                             }
                             ?>
                             <div align="center" class="summDD">
-                                <p>Total Score: <?php echo $gettotscore; ?> </p>
-                                <p>Average Score: <?php echo $gettotgrade; ?> </p>
-                                <p>Class Average: <?php echo $decStubsubavg; ?> </p>
-                                <p>No. of Subjects: <?php echo $row_cntgetscorecheck; ?></p>
+                                <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
+                                <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
+                                <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
+                                <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
                             <div class="performance">
@@ -6810,15 +6810,15 @@ $studsection = $rowGetsections['section'];
 
                                 <div class="row" style="margin: 10px;">
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>NAME:</b> <?php echo $studname; ?></h5>
+                                        <h5 style="color: #000000;"> NAME: <b><?php echo $studname; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>CLASS:</b> <?php echo $studclass . ' ' . $studsection; ?></h5>
+                                        <h5 style="color: #000000;"> CLASS: <b><?php echo $studclass . ' ' . $studsection; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>SEX:</b> <?php echo $studgender; ?></h5>
+                                        <h5 style="color: #000000;"> SEX: <b><?php echo $studgender; ?></b></h5>
                                     </div>
 
 
@@ -6828,21 +6828,21 @@ $studsection = $rowGetsections['section'];
 
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>CLASS POSITION:</b> <?php
+                                        <h5 style="color: #000000;"> CLASS POSITION: <b><?php
                                                                                             echo addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
 
                                                                                             if ($gettotalscorpositon % 10 == 0) {
                                                                                                 echo "\n";
                                                                                             }
-                                                                                            ?> </h5>
+                                                                                            ?></b> </h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>HIGHEST IN CLASS AVE:</b> <?php echo $sunhihscrun; ?></h5>
+                                        <h5 style="color: #000000;"> HIGHEST IN CLASS AVE: <b><?php echo $sunhihscrun; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>LOWEST IN CLASS AVE:</b> <?php echo $sunlowscrun; ?></h5>
+                                        <h5 style="color: #000000;"> LOWEST IN CLASS AVE: <b><?php echo $sunlowscrun; ?></b></h5>
                                     </div>
 
                                 </div>
@@ -7069,10 +7069,10 @@ $studsection = $rowGetsections['section'];
                             }
                             ?>
                             <div align="center" class="summDD">
-                                <p>Total Score: <?php echo $gettotscore; ?> </p>
-                                <p>Average Score: <?php echo $gettotgrade; ?> </p>
-                                <p>Class Average: <?php echo $decStubsubavg; ?> </p>
-                                <p>No. of Subjects: <?php echo $row_cntgetscorecheck; ?></p>
+                                <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?></span> </p>
+                                <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?></span> </p>
+                                <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?></span> </p>
+                                <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
                             <div class="performance">
