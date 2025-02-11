@@ -50,30 +50,37 @@ include('../database/config.php');
     }
 
     @media print {
-
-        /* Define the page size and margins for printing */
-        /* @page {
-            size: A4 portrait; /* Change to landscape if needed */
-            margin: 2mm;      /* Adjust as necessary
-        } */
         
         /* Scale the printable container down to ensure it fits on one page */
-        /* #printable {
-            /* Adjust the scale value as needed based on your content size */
+        #printable.resize-for-print {
             /* transform: scale(0.80);
-            transform-origin: top left;
+            transform-origin: top left; */
             width: 1080px;
-        } */
-        
-        /* Prevent page breaks inside key containers */
-        /* .card, .table-responsive {
-            page-break-inside: avoid;
-        } */
-        
-        /* Optionally, reduce the font size if needed */
-        /* body, .card {
+        }
+
+        /* Apply padding adjustments for compact display */
+        #printable.resize-for-print .tab td,
+        #printable.resize-for-print .tab th {
+            padding: 0.2rem;
+        }
+
+        /* Adjust font sizes for printing */
+        #printable.resize-for-print body,
+        #printable.resize-for-print .card {
             font-size: 13px;
-        } */
+        }
+
+        /* Prevent page breaks inside cards and tables */
+        #printable.resize-for-print .card,
+        #printable.resize-for-print .table-responsive {
+            page-break-inside: avoid;
+        }
+
+        /* Page setup for A4 size */
+        @page { 
+            size: A4 portrait;  /* Change to landscape if needed */
+            margin: 2mm;        /* Adjust margins as necessary */
+        }
 
         canvas.sunygraph {
             min-height: 200px;
@@ -8264,6 +8271,35 @@ $studsection = $rowGetsections['section'];
                 }
             }
         });
+    </script>
+
+    <script>
+        function adjustPrintLayout() {
+            const printable = document.getElementById('printable');
+            const usableA4Height = 1047; // Usable height in pixels for A4 portrait
+
+            if (!printable) {
+                console.error("Printable element not found.");
+                return;
+            }
+
+            const printableHeight = printable.scrollHeight;
+
+            if (printableHeight > usableA4Height) {
+                // Add a class that triggers scaling in the print media query
+                printable.classList.add('resize-for-print');
+            } else {
+                // No need to resize if it fits within one page
+                printable.classList.remove('resize-for-print');
+            }
+
+            console.log(`Printable height: ${printableHeight}px`);
+        }
+
+        // Run the function after the content is loaded
+        window.onload = adjustPrintLayout;
+        window.onresize = adjustPrintLayout; // Optional: recheck if the window is resized
+
     </script>
 
 
