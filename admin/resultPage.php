@@ -45,7 +45,7 @@ include('../database/config.php');
         }
     }
 
-    .table-bordered td, .table-bordered th {
+    .tb-result-border td, .tb-result-border th {
         border: 2px solid #000000; /* Adjusted border for this page only */
     }
 
@@ -490,7 +490,7 @@ $studsection = $rowGetsections['section'];
                             }
 
                             ?>
-                            <table class="table-bordered tab table-sm">
+                            <table class="table-bordered tab table-sm tb-result-border">
 
                                 <tr>
                                     <th>SUBJECT(s)</th>
@@ -2144,7 +2144,7 @@ $studsection = $rowGetsections['section'];
                                 }
 
                                 ?>
-                                <table class="table-bordered tab table-sm" style="width:98%;">
+                                <table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
 
                                     <tr>
                                         <th>SUBJECT(s)</th>
@@ -4064,7 +4064,7 @@ $studsection = $rowGetsections['section'];
                                 }
 
                                 ?>
-                                <table class="table-bordered tab table-sm" style="width:98%;">
+                                <table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
 
                                     <tr>
                                         <th>SUBJECT(s)</th>
@@ -4837,7 +4837,7 @@ $studsection = $rowGetsections['section'];
                             </div>
 
                             <div class="result table-responsive" style="margin: 10px;">
-                                <table class="table-bordered tab table-sm" style="width:98%;">
+                                <table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
 
                                     <tr style="text-align: center;font-size:16px;font-weight:bolder">
                                         <th style="width: 20%; height:45px; background-color:yellow;">Subject(s)</th>
@@ -5231,7 +5231,7 @@ $studsection = $rowGetsections['section'];
 
                             <div class="result table-responsive" style="margin: 10px;">
 
-                                <table class="table-bordered tab table-sm">
+                                <table class="table-bordered tab table-sm tb-result-border">
 
                                     <tr>
                                         <th>SUBJECT(s)</th>
@@ -6829,7 +6829,7 @@ $studsection = $rowGetsections['section'];
 
                             <div class="result table-responsive" style="margin: 10px;">
 
-                                <table class="table-bordered tab table-sm">
+                                <table class="table-bordered tab table-sm tb-result-border">
 
                                     <tr>
                                         <th>SUBJECT(s)</th>

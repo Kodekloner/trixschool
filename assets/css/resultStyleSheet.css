@@ -3670,6 +3670,11 @@ table th {
     border: 0px
 }
 
+.tb-result-border td,
+.tb-result-border th {
+    border: 2px solid #000000;
+}
+
 .color-table.primary-table thead th {
     background-color: #5c4ac7;
     color: #ffffff
