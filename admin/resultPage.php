@@ -8276,7 +8276,7 @@ $studsection = $rowGetsections['section'];
     <script>
         function adjustPrintLayout() {
             const printable = document.getElementById('printable');
-            const usableA4Height = 1047; // Usable height in pixels for A4 portrait
+            const usableA4Height = 1547; // Usable height in pixels for A4 portrait
 
             if (!printable) {
                 console.error("Printable element not found.");
