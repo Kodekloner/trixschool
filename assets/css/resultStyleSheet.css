@@ -10032,6 +10032,7 @@ pre {
     border-color: black;
     border-width: 3px;
     margin: 10px;
+    margin-bottom: 5px;
 }
 
 
@@ -10072,7 +10073,6 @@ pre {
 }
 
 .result .tab th {
-    padding-left: 7px;
     font-weight: 600;
 }
 

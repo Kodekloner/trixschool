@@ -96,7 +96,7 @@ include('../database/config.php');
 
     .tab td,
     .tab th {
-        padding: 4px 6px;
+        padding: 0.2rem;
         /* Reduces padding for a compact design */
         text-align: center;
         /* Centers content for better alignment */
@@ -438,10 +438,10 @@ $studsection = $rowGetsections['section'];
                         </div>
 
                         <div align="center">
-                            <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE</h5>
+                            <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                         </div>
 
-                        <div class="result table-responsive" style="margin: 10px;">
+                        <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
                             <?php
 
                             $sqlrelset = ("SELECT * FROM `resultsetting` INNER JOIN assigncatoclass ON resultsetting.ResultSettingID=assigncatoclass.ResultSettingID WHERE ClassID = '$classid'");
@@ -768,7 +768,7 @@ $studsection = $rowGetsections['section'];
                                 </div>
                                 <div class="col-4" style="padding-right: 0px">
                                     <div class="container-motto" style="margin-right: 2px;">
-                                        <div class="result table-responsive" style="margin: 10px;">
+                                        <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
                                             <table class="tab table-sm" style="width:98%;border:0px solid black;">
                                                 <tr>
                                                     <th colspan="4" style="text-align: center;">AFFECTIVE DOMAIN</th>
@@ -1291,7 +1291,7 @@ $studsection = $rowGetsections['section'];
                                 </div>
                                 <div class="col-4" style="padding-left: 0px">
                                     <div class="container-motto" style="margin-left: 2px;">
-                                        <div class="result table-responsive" style="margin: 10px;">
+                                        <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
                                             <table class="tab table-sm" style="width:98%;">
                                                 <tr>
                                                     <th colspan="4" style="text-align: center;">PSYCOMOTOR</th>
@@ -2124,10 +2124,10 @@ $studsection = $rowGetsections['section'];
                             </div>
 
                             <div align="center">
-                                <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE</h5>
+                                <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px;">
+                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
                                 <?php
 
                                 $sqlrelset = ("SELECT * FROM `resultsetting` INNER JOIN assigncatoclass ON resultsetting.ResultSettingID=assigncatoclass.ResultSettingID WHERE ClassID = '$classid'");
@@ -4044,10 +4044,10 @@ $studsection = $rowGetsections['section'];
                             </div>
 
                             <div align="center">
-                                <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE </h5>
+                                <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE </h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px;">
+                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
                                 <?php
 
                                 $sqlrelset = ("SELECT * FROM `resultsetting` INNER JOIN assigncatoclass ON resultsetting.ResultSettingID=assigncatoclass.ResultSettingID WHERE ClassID = '$classid'");
@@ -4853,10 +4853,10 @@ $studsection = $rowGetsections['section'];
                             </div>
 
                             <div align="center">
-                                <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE</h5>
+                                <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px;">
+                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
                                 <table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
 
                                     <tr style="text-align: center;font-size:16px;font-weight:bolder">
@@ -5246,10 +5246,10 @@ $studsection = $rowGetsections['section'];
                             </div>
 
                             <div align="center">
-                                <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE</h5>
+                                <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px;">
+                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
 
                                 <table class="table-bordered tab table-sm tb-result-border">
 
@@ -5467,7 +5467,7 @@ $studsection = $rowGetsections['section'];
                                     </div>
                                     <div class="col-4" style="padding-right: 0px">
                                         <div class="container-motto" style="margin-right: 2px;">
-                                            <div class="result table-responsive" style="margin: 10px;">
+                                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
                                                 <table class="tab table-sm" style="width:98%;">
                                                     <tr>
                                                         <th colspan="4" style="text-align: center;">AFFECTIVE DOMAIN </th>
@@ -5990,7 +5990,7 @@ $studsection = $rowGetsections['section'];
                                     </div>
                                     <div class="col-4" style="padding-left: 0px">
                                         <div class="container-motto" style="margin-left: 2px;">
-                                            <div class="result table-responsive" style="margin: 10px;">
+                                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
                                                 <table class="tab table-sm" style="width:98%;">
                                                     <tr>
                                                         <th colspan="4" style="text-align: center;">PSYCOMOTOR</th>
@@ -6844,10 +6844,10 @@ $studsection = $rowGetsections['section'];
                             </div>
 
                             <div align="center">
-                                <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE</h5>
+                                <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px;">
+                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
 
                                 <table class="table-bordered tab table-sm tb-result-border">
 
