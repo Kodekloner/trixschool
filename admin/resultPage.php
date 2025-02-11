@@ -77,10 +77,10 @@ include('../database/config.php');
         }
 
         /* Page setup for A4 size */
-        @page { 
+        /* @page { 
             size: A4 portrait;  /* Change to landscape if needed */
-            margin: 2mm;        /* Adjust margins as necessary */
-        }
+            margin: 2mm;        /* Adjust margins as necessary 
+        } */
 
         canvas.sunygraph {
             min-height: 200px;
