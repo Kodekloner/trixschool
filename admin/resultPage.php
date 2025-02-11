@@ -54,7 +54,7 @@ include('../database/config.php');
         /* Define the page size and margins for printing */
         @page {
             size: A4 portrait; /* Change to landscape if needed */
-            margin: 5mm;      /* Adjust as necessary */
+            margin: 2mm;      /* Adjust as necessary */
         }
         
         /* Scale the printable container down to ensure it fits on one page */
@@ -62,7 +62,7 @@ include('../database/config.php');
             /* Adjust the scale value as needed based on your content size */
             /* transform: scale(0.80);
             transform-origin: top left; */
-            width: 1000px;
+            width: 1080px;
         }
         
         /* Prevent page breaks inside key containers */
@@ -72,7 +72,7 @@ include('../database/config.php');
         
         /* Optionally, reduce the font size if needed */
         body, .card {
-            font-size: 12px;
+            font-size: 13px;
         }
 
         canvas.sunygraph {
