@@ -220,7 +220,7 @@ $studsection = $rowGetsections['section'];
         </div>
 
 
-        <div class="card" id="printable" style="overflow-x:scroll">
+        <div class="card" id="printable">
 
             <div class="card-body" style="color: black;">
 
