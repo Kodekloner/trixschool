@@ -45,7 +45,7 @@ include('../database/config.php');
         }
     }
 
-    .table-bordered th {
+    .table-bordered td, .table-bordered th {
         border: 2px solid #000000; /* Adjusted border for this page only */
     }
 
