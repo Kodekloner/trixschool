@@ -10000,7 +10000,7 @@ pre {
     border-style: solid;
     border-color: black;
     margin-top: 1%;
-    border-width: thin;
+    border-width: 3px;
     width: 100%;
     align-self: center;
 }
