@@ -52,28 +52,28 @@ include('../database/config.php');
     @media print {
 
         /* Define the page size and margins for printing */
-        @page {
+        /* @page {
             size: A4 portrait; /* Change to landscape if needed */
-            margin: 2mm;      /* Adjust as necessary */
-        }
+            margin: 2mm;      /* Adjust as necessary
+        } */
         
         /* Scale the printable container down to ensure it fits on one page */
-        #printable {
+        /* #printable {
             /* Adjust the scale value as needed based on your content size */
             /* transform: scale(0.80);
-            transform-origin: top left; */
+            transform-origin: top left;
             width: 1080px;
-        }
+        } */
         
         /* Prevent page breaks inside key containers */
-        .card, .table-responsive {
+        /* .card, .table-responsive {
             page-break-inside: avoid;
-        }
+        } */
         
         /* Optionally, reduce the font size if needed */
-        body, .card {
+        /* body, .card {
             font-size: 13px;
-        }
+        } */
 
         canvas.sunygraph {
             min-height: 200px;
@@ -96,7 +96,7 @@ include('../database/config.php');
 
     .tab td,
     .tab th {
-        padding: 0.2rem;
+        padding: 4px 6px;
         /* Reduces padding for a compact design */
         text-align: center;
         /* Centers content for better alignment */

@@ -10073,6 +10073,7 @@ pre {
 }
 
 .result .tab th {
+    padding-left: 7px;
     font-weight: 600;
 }
 
