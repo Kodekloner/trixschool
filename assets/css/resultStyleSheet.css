@@ -10203,7 +10203,7 @@ table.rotate-table-grid {
 .rotate-table-grid tr,
 .rotate-table-grid td,
 .rotate-table-grid th {
-    border: 1px solid #ddd;
+    border: 1.5px solid #000;
     position: relative;
     padding: 15px;
 }
