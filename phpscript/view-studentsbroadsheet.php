@@ -186,15 +186,6 @@
                                     'remark'        => $remark
                                 ];
 
-                                // // Set averageScore, defaulting to 0 if not set
-                                // $averageScore = $rowgetscoreAVG['Total'] ?? 0;
-
-                                // // Store student details along with the average score
-                                // $studentsData[] = [
-                                //     'student'      => $rowGetstudent_session,
-                                //     'averageScore' => $averageScore
-                                // ];
-
                             }while($rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session));
                         }
 
@@ -230,107 +221,6 @@
                             echo '<td>' . $data['grade'] . '</td>';
                             echo '<td>' . $data['remark'] . '</td>';
                             echo '</tr>';
-                                
-                                // $sqlsubscore = ("SELECT subjects.name AS name, subjects.id as id FROM `subject_group_class_sections` INNER JOIN subject_group_subjects ON subject_group_class_sections.subject_group_id=subject_group_subjects.subject_group_id INNER JOIN subjects ON subject_group_subjects.subject_id=subjects.id WHERE subject_group_class_sections.class_section_id = '$classsection' AND subject_group_class_sections.session_id='$session' AND subject_group_subjects.session_id='$session' ORDER BY name ASC");
-                                // $resultsubscore = mysqli_query($link, $sqlsubscore);
-                                // $rowGetsubscore = mysqli_fetch_assoc($resultsubscore);
-                                // $row_cntsubscore = mysqli_num_rows($resultsubscore);
-        
-                                // if($row_cntsubscore > 0)
-                                // {
-        
-                                //     do{
-                                        
-                                //         $subid = $rowGetsubscore['id'];
-                                        
-                                //         $sqlgetscore = ("SELECT SUM(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
-                                //         $resultgetscore = mysqli_query($link, $sqlgetscore);
-                                //         $rowgetscore = mysqli_fetch_assoc($resultgetscore);
-                                //         $row_cntgetscore = mysqli_num_rows($resultgetscore);
-
-
-                                //         if($rowgetscore['Total'] != 0 && $rowgetscore['Total'] != NULL && $rowgetscore['Total'] != '')
-                                //         {
-                                //             echo '<td>'.$rowgetscore['Total'].'</td>';
-                                //         }
-                                //         else
-                                //         {
-                                //             echo '<td>0</td>';
-                                //         }
-                                        
-                                //     }while($rowGetsubscore = mysqli_fetch_assoc($resultsubscore));
-                                    
-                                //     $sqlgetscoretotal = ("SELECT SUM(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
-                                //     $resultgetscoretotal = mysqli_query($link, $sqlgetscoretotal);
-                                //     $rowgetscoretotal = mysqli_fetch_assoc($resultgetscoretotal);
-                                //     $row_cntgetscoretotal = mysqli_num_rows($resultgetscoretotal);
-
-
-                                //     if($rowgetscoretotal['Total'] != 0 && $rowgetscoretotal['Total'] != NULL && $rowgetscoretotal['Total'] != '')
-                                //     {
-                                //         echo '<td>'.$rowgetscoretotal['Total'].'</td>';
-                                //     }
-                                //     else
-                                //     {
-                                //         echo '<td>0</td>';
-                                //     }
-                                    
-                                    
-                                //     $sqlgetscoreAVG = ("SELECT AVG(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
-                                //     $resultgetscoreAVG = mysqli_query($link, $sqlgetscoreAVG);
-                                //     $rowgetscoreAVG = mysqli_fetch_assoc($resultgetscoreAVG);
-                                //     $row_cntgetscoreAVG = mysqli_num_rows($resultgetscoreAVG);
-
-
-                                //     if($rowgetscoreAVG['Total'] != 0 && $rowgetscoreAVG['Total'] != NULL && $rowgetscoreAVG['Total'] != '')
-                                //     {
-                                //         $total = $rowgetscoreAVG['Total'];
-                                //         echo '<td>'.$rowgetscoreAVG['Total'].'</td>';
-                                        
-                                //         $sqlgetgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $total >= RangeStart AND $total <= RangeEnd AND ClassID = '$classid'");
-                                //         $resultgetgradstuc = mysqli_query($link, $sqlgetgradstuc);
-                                //         $rowgetgradstuc = mysqli_fetch_assoc($resultgetgradstuc);
-                                //         $row_cntgetgradstuc = mysqli_num_rows($resultgetgradstuc);
-
-                                //         if($row_cntgetgradstuc > 0)
-                                //         {
-                                //             $grade = $rowgetgradstuc['Grade'];
-                                //             $remark = $rowgetgradstuc['Remark'];
-                                        
-                                //             echo '<td>'.$grade.'</td>';
-                                            
-                                //             echo '<td>'.$remark.'</td>';
-                                //         }
-                                //         else
-                                //         {
-                                //             echo '<td>NA</td>';
-                                            
-                                //             echo '<td>NA</td>';
-                                //         }
-                                //     }
-                                //     else
-                                //     {
-                                //         echo '<td>0</td>';
-                                        
-                                //         echo '<td>NA</td>';
-                                            
-                                //         echo '<td>NA</td>';
-                                //     }
-            
-                                // }
-                                // else
-                                // {
-                                //     echo '<td>NA</td>';
-                                //     echo '<td>0</td>';
-                                        
-                                //     echo '<td>NA</td>';
-                                        
-                                //     echo '<td>NA</td>';
-                                // }
-                                
-                            // echo '</tr>';
-                        
-                
                         }
                         if (empty($studentsData)) {
                             echo '<tr><td colspan="10">No students found.</td></tr>';
