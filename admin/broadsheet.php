@@ -34,6 +34,7 @@
             /* Hide everything except the content we want to print */
             body * {
                 visibility: hidden;
+                background: rgb(236, 234, 234);
             }
 
             /* Show only the container and its contents */
@@ -101,15 +102,6 @@
 
         @page {
             margin: 0;
-        }
-
-        .container.rel,
-        .table-responsive,
-        .rotate-table-grid,
-        tr,
-        td,
-        th {
-            background-color: white !important;
         }
     </style>
 </head>
