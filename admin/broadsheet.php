@@ -271,7 +271,10 @@
                                 </div>
                                 <div class="col-sm-2 col-md-2 col-xs-2 col-lg-2">
                                     <div>
-                                        <a href="" style="color: #000000; font-weight: 600;" onclick="window.print()"><i class="fa fa-print"></i> Print</a>
+                                        <a href="javascript:void(0)" style="color: #000000; font-weight: 600;" onclick="window.print(); return false;">
+                                            <i class="fa fa-print"></i> Print
+                                        </a>
+                                        <!-- <a href="" style="color: #000000; font-weight: 600;" onclick="window.print()"><i class="fa fa-print"></i> Print</a> -->
                                     </div>
                                 </div>
                             </div>
