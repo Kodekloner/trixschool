@@ -10136,16 +10136,16 @@ pre {
 /* Watermark Logo */
 .watermark-logo {
     position: absolute;
-    top: 50%;
+    top: 40%;
     left: 50%;
     transform: translate(-50%, -50%); /* Center the logo */
-    width: 300px;  /* Adjust size as needed */
-    height: 300px;
+    width: 500px;  /* Adjust size as needed */
+    height: 500px;
     background-repeat: no-repeat;
     background-position: center;
     background-size: contain;
-    opacity: 0.1; /* Make it transparent */
-    z-index: -1; /* Send behind content */
+    opacity: 0.2; /* Make it transparent */
+    z-index: 1; /* Send behind content */
     pointer-events: none; /* Prevent interaction */
 }
 
