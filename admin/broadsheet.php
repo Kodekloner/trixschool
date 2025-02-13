@@ -80,17 +80,17 @@
             }
 
             /* Position and scale the container */
-            /* .container.rel { */
-            /* position: relative !important; */
-            /* Changed from absolute to allow pagination */
-            /* left: 0; */
-            /* top: 0; */
-            /* width: 137%; */
-            /* Inverse of scale to maintain content width */
-            /* padding: 0; */
-            /* transform: scale(0.73); */
-            /* transform-origin: top left; */
-            /* } */
+            .container.rel {
+                position: relative !important;
+                /* Changed from absolute to allow pagination */
+                left: 0;
+                top: 0;
+                width: 137%;
+                /* Inverse of scale to maintain content width */
+                padding: 0;
+                transform: scale(0.73);
+                transform-origin: top left;
+            }
 
             /* Table responsive wrapper */
             .table-responsive {
