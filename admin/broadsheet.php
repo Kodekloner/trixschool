@@ -31,8 +31,13 @@
                 margin: 5mm;
             }
 
+            .img-fluid {
+                width: 60%;
+            }
+
             .container {
-                min-width: 3387px !important;
+                min-width: 1395px !important;
+                max-width: 1395px;
             }
 
             /* Reset body */
@@ -68,31 +73,15 @@
             }
 
             .container.rel {
-                display: inline-block !important;
+                display: block !important;
                 /* Allow centering via text-align */
                 width: 100% !important;
                 /* Your desired width */
                 margin: 0;
                 /* Remove extra margins */
-                transform: scale(0.95);
-                transform-origin: top center;
+                /* transform: scale(0.95); */
+                /* transform-origin: top center; */
             }
-
-            /* Position and scale the container */
-            /* .container.rel {
-                position: relative !important;
-                left: 0;
-                top: 0;
-                width: 137%;
-                padding: 0;
-                margin: 0 auto; */
-            /* Center the container horizontally */
-            /* transform: scale(0.72); */
-            /* transform-origin: top center; */
-            /* Scale from the center instead of left */
-            /* visibility: visible;
-                background-color: white !important;
-            } */
 
             /* Table responsive wrapper */
             .table-responsive {
@@ -106,6 +95,14 @@
                 width: 100%;
                 border-collapse: collapse;
                 page-break-inside: auto;
+            }
+
+            .rotate-table-grid tr,
+            .rotate-table-grid td,
+            .rotate-table-grid th {
+                border: 1.5px solid #000;
+                position: relative;
+                padding: 10px;
             }
 
             /* Row handling */
