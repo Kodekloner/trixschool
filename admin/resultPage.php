@@ -1960,9 +1960,9 @@ $studsection = $rowGetsections['section'];
                                                 </div>
 
                                                 <div class="col-sm-2 col-md-2 signature-container">
-                                                    <div align="center">
-                                                        <?php echo $hedteachsign; ?>
-                                                    </div>
+                                                    <!-- <div align="center"> -->
+                                                    <?php echo $hedteachsign; ?>
+                                                    <!-- </div> -->
                                                 </div>
                                             </div>
 
@@ -1974,9 +1974,9 @@ $studsection = $rowGetsections['section'];
                                                 </div>
 
                                                 <div class="col-sm-2 col-md-2 signature-container">
-                                                    <div>
-                                                        <?php echo $hedteachsignhead; ?>
-                                                    </div>
+                                                    <!-- <div> -->
+                                                    <?php echo $hedteachsignhead; ?>
+                                                    <!-- </div> -->
                                                 </div>
                                             </div>
 
@@ -3858,9 +3858,9 @@ $studsection = $rowGetsections['section'];
                                                     </div>
 
                                                     <div class="col-sm-2 col-md-2 signature-container">
-                                                        <div align="center">
-                                                            <?php echo $hedteachsign; ?>
-                                                        </div>
+                                                        <!-- <div align="center"> -->
+                                                        <?php echo $hedteachsign; ?>
+                                                        <!-- </div> -->
                                                     </div>
                                                 </div>
 
@@ -3872,9 +3872,9 @@ $studsection = $rowGetsections['section'];
                                                     </div>
 
                                                     <div class="col-sm-2 col-md-2 signature-container">
-                                                        <div>
-                                                            <?php echo $hedteachsignhead; ?>
-                                                        </div>
+                                                        <!-- <div> -->
+                                                        <?php echo $hedteachsignhead; ?>
+                                                        <!-- </div> -->
                                                     </div>
                                                 </div>
                                                 <div class="row">
@@ -4709,9 +4709,9 @@ $studsection = $rowGetsections['section'];
                                                     </div>
 
                                                     <div class="col-sm-2 col-md-2 signature-container">
-                                                        <div align="center">
-                                                            <?php echo $hedteachsign; ?>
-                                                        </div>
+                                                        <!-- <div align="center"> -->
+                                                        <?php echo $hedteachsign; ?>
+                                                        <!-- </div> -->
                                                     </div>
                                                 </div>
 
@@ -4723,9 +4723,9 @@ $studsection = $rowGetsections['section'];
                                                     </div>
 
                                                     <div class="col-sm-2 col-md-2 signature-container">
-                                                        <div>
-                                                            <?php echo $hedteachsignhead; ?>
-                                                        </div>
+                                                        <!-- <div> -->
+                                                        <?php echo $hedteachsignhead; ?>
+                                                        <!-- </div> -->
                                                     </div>
                                                 </div>
                                                 <div class="row">
@@ -5081,9 +5081,9 @@ $studsection = $rowGetsections['section'];
                                                     </div>
 
                                                     <div class="col-sm-2 col-md-2 signature-container">
-                                                        <div align="center">
-                                                            <?php echo $hedteachsign; ?>
-                                                        </div>
+                                                        <!-- <div align="center"> -->
+                                                        <?php echo $hedteachsign; ?>
+                                                        <!-- </div> -->
                                                     </div>
                                                 </div>
 
@@ -5095,9 +5095,9 @@ $studsection = $rowGetsections['section'];
                                                     </div>
 
                                                     <div class="col-sm-2 col-md-2 signature-container">
-                                                        <div>
-                                                            <?php echo $hedteachsignhead; ?>
-                                                        </div>
+                                                        <!-- <div> -->
+                                                        <?php echo $hedteachsignhead; ?>
+                                                        <!-- </div> -->
                                                     </div>
                                                 </div>
                                                 <div class="row">
@@ -6660,9 +6660,9 @@ $studsection = $rowGetsections['section'];
                                                     </div>
 
                                                     <div class="col-sm-2 col-md-2 signature-container">
-                                                        <div align="center">
-                                                            <?php echo $hedteachsign; ?>
-                                                        </div>
+                                                        <!-- <div align="center"> -->
+                                                        <?php echo $hedteachsign; ?>
+                                                        <!-- </div> -->
                                                     </div>
                                                 </div>
 
@@ -6674,9 +6674,9 @@ $studsection = $rowGetsections['section'];
                                                     </div>
 
                                                     <div class="col-sm-2 col-md-2 signature-container">
-                                                        <div>
-                                                            <?php echo $hedteachsignhead; ?>
-                                                        </div>
+                                                        <!-- <div> -->
+                                                        <?php echo $hedteachsignhead; ?>
+                                                        <!-- </div> -->
                                                     </div>
                                                 </div>
                                                 <div class="row">
@@ -8119,9 +8119,9 @@ $studsection = $rowGetsections['section'];
                                                     </div>
 
                                                     <div class="col-sm-2 col-md-2 signature-container">
-                                                        <div align="center">
-                                                            <?php echo $hedteachsign; ?>
-                                                        </div>
+                                                        <!-- <div align="center"> -->
+                                                        <?php echo $hedteachsign; ?>
+                                                        <!-- </div> -->
                                                     </div>
                                                 </div>
 
@@ -8133,9 +8133,9 @@ $studsection = $rowGetsections['section'];
                                                     </div>
 
                                                     <div class="col-sm-2 col-md-2 signature-container">
-                                                        <div>
-                                                            <?php echo $hedteachsignhead; ?>
-                                                        </div>
+                                                        <!-- <div> -->
+                                                        <?php echo $hedteachsignhead; ?>
+                                                        <!-- </div> -->
                                                     </div>
                                                 </div>
                                                 <div class="row">
