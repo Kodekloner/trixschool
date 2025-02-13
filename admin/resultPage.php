@@ -122,7 +122,7 @@ include('../database/config.php');
     }
 
     .signature-container {
-        height: 62px;
+        height: 56px;
         width: 100%;
         /* Optionally, use position: relative; if you need it for layout */
     }
