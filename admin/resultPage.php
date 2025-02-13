@@ -120,6 +120,19 @@ include('../database/config.php');
         font-weight: bold;
         /* Keeps headers distinct */
     }
+
+    .signature-container {
+        height: 62px;
+        width: 100%;
+        /* Optionally, use position: relative; if you need it for layout */
+    }
+
+    .signature-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        /* Ensures the entire image is visible without distortion */
+    }
 </style>
 <?php
 
@@ -1841,7 +1854,7 @@ $studsection = $rowGetsections['section'];
 
 
                                     if ($row_cntgetheadteachsign > 0) {
-                                        $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                        $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid signature-img">';
                                     } else {
                                         $hedteachsign = '';
                                     }
@@ -1864,7 +1877,7 @@ $studsection = $rowGetsections['section'];
 
 
                                         if ($row_cntgetheadteachsign > 0) {
-                                            $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                            $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid signature-img">';
                                         } else {
                                             $hedteachsign = '';
                                         }
@@ -1890,7 +1903,7 @@ $studsection = $rowGetsections['section'];
                                     $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                     if ($row_cntgetheadteachsignhead > 0) {
-                                        $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                        $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
                                     } else {
                                         $hedteachsignhead = '';
                                     }
@@ -1912,8 +1925,7 @@ $studsection = $rowGetsections['section'];
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                         if ($row_cntgetheadteachsignhead > 0) {
-                                            // $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
-                                            $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                            $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
                                         } else {
                                             $hedteachsignhead = '';
                                         }
@@ -1947,7 +1959,7 @@ $studsection = $rowGetsections['section'];
                                                     </div>
                                                 </div>
 
-                                                <div class="col-sm-2 col-md-2">
+                                                <div class="col-sm-2 col-md-2 signature-container">
                                                     <div align="center">
                                                         <?php echo $hedteachsign; ?>
                                                     </div>
@@ -1961,7 +1973,7 @@ $studsection = $rowGetsections['section'];
                                                     </div>
                                                 </div>
 
-                                                <div class="col-sm-2 col-md-2">
+                                                <div class="col-sm-2 col-md-2 signature-container">
                                                     <div>
                                                         <?php echo $hedteachsignhead; ?>
                                                     </div>
@@ -3720,7 +3732,7 @@ $studsection = $rowGetsections['section'];
 
 
                                         if ($row_cntgetheadteachsign > 0) {
-                                            $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                            $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid signature-img">';
                                         } else {
                                             $hedteachsign = '';
                                         }
@@ -3744,7 +3756,7 @@ $studsection = $rowGetsections['section'];
 
 
                                             if ($row_cntgetheadteachsign > 0) {
-                                                $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                                $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid signature-img">';
                                             } else {
                                                 $hedteachsign = '';
                                             }
@@ -3770,7 +3782,7 @@ $studsection = $rowGetsections['section'];
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                         if ($row_cntgetheadteachsignhead > 0) {
-                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
                                         } else {
                                             $hedteachsignhead = '';
                                         }
@@ -3792,7 +3804,7 @@ $studsection = $rowGetsections['section'];
                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                             if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
                                             } else {
                                                 $hedteachsignhead = '';
                                             }
@@ -3845,7 +3857,7 @@ $studsection = $rowGetsections['section'];
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-sm-2 col-md-2">
+                                                    <div class="col-sm-2 col-md-2 signature-container">
                                                         <div align="center">
                                                             <?php echo $hedteachsign; ?>
                                                         </div>
@@ -3859,7 +3871,7 @@ $studsection = $rowGetsections['section'];
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-sm-2 col-md-2">
+                                                    <div class="col-sm-2 col-md-2 signature-container">
                                                         <div>
                                                             <?php echo $hedteachsignhead; ?>
                                                         </div>
@@ -4578,7 +4590,7 @@ $studsection = $rowGetsections['section'];
 
 
                                         if ($row_cntgetheadteachsign > 0) {
-                                            $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                            $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid signature-img">';
                                         } else {
                                             $hedteachsign = '';
                                         }
@@ -4602,7 +4614,7 @@ $studsection = $rowGetsections['section'];
 
 
                                             if ($row_cntgetheadteachsign > 0) {
-                                                $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                                $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid signature-img">';
                                             } else {
                                                 $hedteachsign = '';
                                             }
@@ -4628,7 +4640,7 @@ $studsection = $rowGetsections['section'];
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                         if ($row_cntgetheadteachsignhead > 0) {
-                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
                                         } else {
                                             $hedteachsignhead = '';
                                         }
@@ -4650,7 +4662,7 @@ $studsection = $rowGetsections['section'];
                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                             if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
                                             } else {
                                                 $hedteachsignhead = '';
                                             }
@@ -4696,7 +4708,7 @@ $studsection = $rowGetsections['section'];
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-sm-2 col-md-2">
+                                                    <div class="col-sm-2 col-md-2 signature-container">
                                                         <div align="center">
                                                             <?php echo $hedteachsign; ?>
                                                         </div>
@@ -4710,7 +4722,7 @@ $studsection = $rowGetsections['section'];
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-sm-2 col-md-2">
+                                                    <div class="col-sm-2 col-md-2 signature-container">
                                                         <div>
                                                             <?php echo $hedteachsignhead; ?>
                                                         </div>
@@ -4950,7 +4962,7 @@ $studsection = $rowGetsections['section'];
 
 
                                         if ($row_cntgetheadteachsign > 0) {
-                                            $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                            $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid signature-img">';
                                         } else {
                                             $hedteachsign = '';
                                         }
@@ -4974,7 +4986,7 @@ $studsection = $rowGetsections['section'];
 
 
                                             if ($row_cntgetheadteachsign > 0) {
-                                                $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                                $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid signature-img">';
                                             } else {
                                                 $hedteachsign = '';
                                             }
@@ -5000,7 +5012,7 @@ $studsection = $rowGetsections['section'];
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                         if ($row_cntgetheadteachsignhead > 0) {
-                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
                                         } else {
                                             $hedteachsignhead = '';
                                         }
@@ -5022,7 +5034,7 @@ $studsection = $rowGetsections['section'];
                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                             if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
                                             } else {
                                                 $hedteachsignhead = '';
                                             }
@@ -5068,7 +5080,7 @@ $studsection = $rowGetsections['section'];
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-sm-2 col-md-2">
+                                                    <div class="col-sm-2 col-md-2 signature-container">
                                                         <div align="center">
                                                             <?php echo $hedteachsign; ?>
                                                         </div>
@@ -5082,7 +5094,7 @@ $studsection = $rowGetsections['section'];
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-sm-2 col-md-2">
+                                                    <div class="col-sm-2 col-md-2 signature-container">
                                                         <div>
                                                             <?php echo $hedteachsignhead; ?>
                                                         </div>
@@ -6541,7 +6553,7 @@ $studsection = $rowGetsections['section'];
 
 
                                         if ($row_cntgetheadteachsign > 0) {
-                                            $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                            $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid signature-img">';
                                         } else {
                                             $hedteachsign = '';
                                         }
@@ -6565,7 +6577,7 @@ $studsection = $rowGetsections['section'];
 
 
                                             if ($row_cntgetheadteachsign > 0) {
-                                                $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                                $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid signature-img">';
                                             } else {
                                                 $hedteachsign = '';
                                             }
@@ -6591,7 +6603,7 @@ $studsection = $rowGetsections['section'];
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                         if ($row_cntgetheadteachsignhead > 0) {
-                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
                                         } else {
                                             $hedteachsignhead = '';
                                         }
@@ -6613,7 +6625,7 @@ $studsection = $rowGetsections['section'];
                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                             if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
                                             } else {
                                                 $hedteachsignhead = '';
                                             }
@@ -6647,7 +6659,7 @@ $studsection = $rowGetsections['section'];
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-sm-2 col-md-2">
+                                                    <div class="col-sm-2 col-md-2 signature-container">
                                                         <div align="center">
                                                             <?php echo $hedteachsign; ?>
                                                         </div>
@@ -6661,7 +6673,7 @@ $studsection = $rowGetsections['section'];
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-sm-2 col-md-2">
+                                                    <div class="col-sm-2 col-md-2 signature-container">
                                                         <div>
                                                             <?php echo $hedteachsignhead; ?>
                                                         </div>
@@ -7988,7 +8000,7 @@ $studsection = $rowGetsections['section'];
 
 
                                         if ($row_cntgetheadteachsign > 0) {
-                                            $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                            $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid signature-img">';
                                         } else {
                                             $hedteachsign = '';
                                         }
@@ -8012,7 +8024,7 @@ $studsection = $rowGetsections['section'];
 
 
                                             if ($row_cntgetheadteachsign > 0) {
-                                                $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                                $hedteachsign = '<img src="../img/signature/' . $rowgetheadteachsign['Signature'] . '" align="center" class="img-fluid signature-img">';
                                             } else {
                                                 $hedteachsign = '';
                                             }
@@ -8038,7 +8050,7 @@ $studsection = $rowGetsections['section'];
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                         if ($row_cntgetheadteachsignhead > 0) {
-                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 70%;">';
+                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
                                         } else {
                                             $hedteachsignhead = '';
                                         }
@@ -8060,7 +8072,7 @@ $studsection = $rowGetsections['section'];
                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                             if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
                                             } else {
                                                 $hedteachsignhead = '';
                                             }
@@ -8106,7 +8118,7 @@ $studsection = $rowGetsections['section'];
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-sm-2 col-md-2">
+                                                    <div class="col-sm-2 col-md-2 signature-container">
                                                         <div align="center">
                                                             <?php echo $hedteachsign; ?>
                                                         </div>
@@ -8120,7 +8132,7 @@ $studsection = $rowGetsections['section'];
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-sm-2 col-md-2">
+                                                    <div class="col-sm-2 col-md-2 signature-container">
                                                         <div>
                                                             <?php echo $hedteachsignhead; ?>
                                                         </div>
