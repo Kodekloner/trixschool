@@ -102,6 +102,15 @@
         @page {
             margin: 0;
         }
+
+        .container.rel,
+        .table-responsive,
+        .rotate-table-grid,
+        tr,
+        td,
+        th {
+            background-color: white !important;
+        }
     </style>
 </head>
 
