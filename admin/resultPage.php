@@ -51,6 +51,10 @@ include('../database/config.php');
 
     @media print {
 
+        .container-fluid {
+            max-height: 1582px;
+        }
+
         /* Scale the printable container down to ensure it fits on one page */
         #printable.resize-for-print {
             /* transform: scale(0.80);
@@ -246,7 +250,7 @@ $studsection = $rowGetsections['section'];
 ?>
 
 <body style="background: rgb(236, 234, 234);">
-    <div class="container-fluid" style="">
+    <div class="container-fluid">
 
         <div class="row" id="non-printable" style="margin-top: 20px;">
             <div class="col-md-10 ">
@@ -267,7 +271,6 @@ $studsection = $rowGetsections['section'];
             <div class="card-body" style="color: black;">
 
                 <div class="rel">
-
 
                     <div class="row">
                         <div class="col">
@@ -3900,36 +3903,36 @@ $studsection = $rowGetsections['section'];
                             </div>
                             <?php
                             /*
-                                            if($term == '3rd')
-                                            {
+                            if($term == '3rd')
+                            {
 
-                                                $sessionnew = $session + 1;
+                                $sessionnew = $session + 1;
 
-                                                $sqlstudent_session = ("SELECT * FROM `student_session` WHERE `session_id`='$sessionnew' AND student_id = '$id'");
+                                $sqlstudent_session = ("SELECT * FROM `student_session` WHERE `session_id`='$sessionnew' AND student_id = '$id'");
 
-                                                $resultstudent_session = mysqli_query($link, $sqlstudent_session);
-                                                $getstudent_session = mysqli_fetch_assoc($resultstudent_session);
-                                                $sqlrow_cntstudent_session = mysqli_num_rows($resultstudent_session);
+                                $resultstudent_session = mysqli_query($link, $sqlstudent_session);
+                                $getstudent_session = mysqli_fetch_assoc($resultstudent_session);
+                                $sqlrow_cntstudent_session = mysqli_num_rows($resultstudent_session);
 
-                                                if($sqlrow_cntstudent_session > 0)
-                                                {
-                                                    echo '<center>
-                                                        <p class="promoted">PROMOTED TO THE NEXT CLASS</p>
-                                                    </center>';
-                                                }
-                                                else
-                                                {
-                                                    echo '<center>
-                                                        <p class="promoted">NOT PROMOTED TO THE NEXT CLASS</p>
-                                                    </center>';
-                                                }
+                                if($sqlrow_cntstudent_session > 0)
+                                {
+                                    echo '<center>
+                                        <p class="promoted">PROMOTED TO THE NEXT CLASS</p>
+                                    </center>';
+                                }
+                                else
+                                {
+                                    echo '<center>
+                                        <p class="promoted">NOT PROMOTED TO THE NEXT CLASS</p>
+                                    </center>';
+                                }
 
-                                            }
-                                            else
-                                            {
+                            }
+                            else
+                            {
 
-                                            }
-                                            */
+                            }
+                            */
                             ?>
 
                         <?php
@@ -4571,6 +4574,1075 @@ $studsection = $rowGetsections['section'];
                                         </div>
                                     </div>
 
+                                    <div class="col-8" style="padding-right: 0px">
+                                        <div class="container-motto" style="margin-right: 20px;border:0px solid red;">
+                                            <div class="result" style="margin: 10px; display: flex; align-items: flex-start; gap: 20px; border: 0px solid red;">
+                                                <table class="tab table-sm" style="width: 37%; table-layout: auto; border:0px solid red;">
+                                                    <tr>
+                                                        <th colspan="4" style="text-align: center;">AFFECTIVE DOMAIN </th>
+                                                    </tr>
+                                                    <tbody>
+                                                        <?php
+
+                                                        $sqlrelset = ("SELECT * FROM `affective_domain_settings` INNER JOIN assignsaftoclass ON affective_domain_settings.id=assignsaftoclass.AffectiveDomainSettingsId WHERE ClassID = '$classid'");
+                                                        $resultrelset = mysqli_query($link, $sqlrelset);
+                                                        $rowGetrelset = mysqli_fetch_assoc($resultrelset);
+                                                        $row_cntrelset = mysqli_num_rows($resultrelset);
+
+                                                        if ($row_cntrelset > 0) {
+                                                            $sqlgetscore = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND term = '$term' AND sectionid = '$classsectionactual'");
+                                                            $resultgetscore = mysqli_query($link, $sqlgetscore);
+                                                            $rowgetscore = mysqli_fetch_assoc($resultgetscore);
+                                                            $row_cntgetscore = mysqli_num_rows($resultgetscore);
+
+                                                            if ($row_cntgetscore > 0) {
+                                                                if ($rowGetrelset['NumberofAD'] == '1') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['AD1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain1"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofAD'] == '2') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['AD1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain1"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain2"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofAD'] == '3') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['AD1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain1"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain2"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain3"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofAD'] == '4') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['AD1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain1"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain2"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain3"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain4"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofAD'] == '5') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['AD1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain1"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain2"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain3"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain4"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain5"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofAD'] == '6') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['AD1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain1"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain2"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain3"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain4"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain5"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain6"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofAD'] == '7') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['AD1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain7"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain2"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain3"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain4"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain5"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain6"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofAD'] == '8') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['AD1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain7"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain2"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD8Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain8"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain3"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain4"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain5"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain6"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofAD'] == '9') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['AD1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain7"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain2"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD8Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain8"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain3"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD9Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain9"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain4"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain5"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain6"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofAD'] == '10') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['AD1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain7"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain2"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD8Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain8"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain3"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD9Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain9"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain4"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD10Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain10"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain5"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain6"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofAD'] == '11') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['AD1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain7"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain2"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD8Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain8"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain3"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD9Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain9"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain4"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD10Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain10"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain5"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD11Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain11"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain6"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofAD'] == '12') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['AD1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain7"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain2"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD8Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain8"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain3"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD9Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain9"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain4"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD10Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain10"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain5"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD11Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain11"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain6"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD12Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain12"] . '</td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofAD'] == '13') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['AD1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD8Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain8"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain2"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD9Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain9"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain3"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD10Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain10"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain4"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD11Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain11"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain5"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD12Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain12"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain6"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD13Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain13"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain7"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofAD'] == '14') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['AD1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD8Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain8"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain2"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD9Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain9"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain3"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD10Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain10"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain4"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD11Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain11"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain5"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD12Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain12"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain6"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD13Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain13"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain7"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD14Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain14"] . '</td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofAD'] == '15') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['AD1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD9Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain9"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain2"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD10Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain10"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain3"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD11Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain11"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain4"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD12Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain12"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain5"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD13Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain13"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain6"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD14Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain14"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain7"] . '</td>
+                                                                                        <th>' . $rowGetrelset['AD15Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain15"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['AD8Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["domain8"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } else {
+                                                                }
+                                                            } else {
+                                                                echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
+                                                            }
+                                                        }
+                                                        ?>
+                                                    </tbody>
+                                                </table>
+                                                <table class="tab table-sm" style="width: 18%; table-layout: auto; border:0px solid red;">
+                                                    <tr>
+                                                        <th colspan="2" style="text-align: center;">ATTENDANCE</th>
+                                                    </tr>
+                                                    <tbody>
+                                                        <tr>
+                                                            <th>TOTAL DAYS</th>
+                                                            <td> <?php echo $rowcountfixedgennew; ?></td>
+                                                        </tr>
+
+                                                        <tr>
+                                                            <th>PRESENT</th>
+                                                            <td><?php echo $rowcountfixedpresent; ?></td>
+                                                        </tr>
+
+                                                        <tr>
+                                                            <th>ABSENT</th>
+                                                            <td><?php echo $rowcountfixedabsent; ?></td>
+                                                        </tr>
+
+                                                        <tr>
+                                                            <th>LATE</th>
+                                                            <td><?php echo $rowcountfixedlate; ?></td>
+                                                        </tr>
+
+                                                    </tbody>
+                                                </table>
+                                                <table class="tab table-sm" style="width: 37%; table-layout: auto; border:0px solid red;">
+                                                    <tr>
+                                                        <th colspan="4" style="text-align: center;">PSYCOMOTOR</th>
+                                                    </tr>
+                                                    <tbody>
+                                                        <?php
+
+                                                        $sqlrelset = ("SELECT * FROM `psycomotor_settings` INNER JOIN assignspsycomotortoclass ON psycomotor_settings.id=assignspsycomotortoclass.PsycomotorSettingsId WHERE ClassID = '$classid'");
+                                                        $resultrelset = mysqli_query($link, $sqlrelset);
+                                                        $rowGetrelset = mysqli_fetch_assoc($resultrelset);
+                                                        $row_cntrelset = mysqli_num_rows($resultrelset);
+
+                                                        if ($row_cntrelset > 0) {
+                                                            $sqlgetscore = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND term = '$term' AND sectionid = '$classsectionactual'");
+                                                            $resultgetscore = mysqli_query($link, $sqlgetscore);
+                                                            $rowgetscore = mysqli_fetch_assoc($resultgetscore);
+                                                            $row_cntgetscore = mysqli_num_rows($resultgetscore);
+
+                                                            if ($row_cntgetscore > 0) {
+                                                                if ($rowGetrelset['NumberofP'] == '1') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['P1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor1"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofP'] == '2') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['P1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor1"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor2"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofP'] == '3') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['P1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor1"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor2"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor3"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofP'] == '4') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['P1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor1"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor2"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor3"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor4"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofP'] == '5') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['P1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor1"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor2"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor3"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor4"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor5"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofP'] == '6') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['P1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor1"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor2"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor3"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor4"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor5"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor6"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofP'] == '7') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['P1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor7"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor2"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor3"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor4"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor5"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor6"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofP'] == '8') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['P1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor7"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor2"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P8Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor8"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor3"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor4"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor5"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor6"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofP'] == '9') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['P1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor7"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor2"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P8Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor8"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor3"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P9Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor9"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor4"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor5"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor6"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofP'] == '10') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['P1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor7"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor2"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P8Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor8"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor3"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P9Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor9"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor4"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P10Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor10"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor5"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor6"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofP'] == '11') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['P1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor7"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor2"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P8Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor8"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor3"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P9Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor9"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor4"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P10Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor10"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor5"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P11Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor11"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor6"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofP'] == '12') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['P1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor7"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor2"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P8Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor8"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor3"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P9Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor9"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor4"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P10Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor10"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor5"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P11Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor11"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor6"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P12Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor12"] . '</td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofP'] == '13') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['P1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P8Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor8"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor2"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P9Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor9"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor3"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P10Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor10"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor4"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P11Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor11"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor5"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P12Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor12"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor6"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P13Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor13"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor7"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofP'] == '14') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['P1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P8Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor8"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor2"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P9Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor9"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor3"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P10Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor10"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor4"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P11Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor11"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor5"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P12Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor12"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor6"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P13Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor13"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor7"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P14Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor14"] . '</td>
+                                                                                    </tr>';
+                                                                } elseif ($rowGetrelset['NumberofP'] == '15') {
+                                                                    echo '<tr>
+                                                                                        <th>' . $rowGetrelset['P1Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor1"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P9Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor9"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P2Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor2"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P10Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor10"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P3Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor3"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P11Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor11"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P4Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor4"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P12Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor12"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P5Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor5"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P13Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor13"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P6Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor6"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P14Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor14"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P7Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor7"] . '</td>
+                                                                                        <th>' . $rowGetrelset['P15Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor15"] . '</td>
+                                                                                    </tr>
+                                                                                    <tr>
+                                                                                        <th>' . $rowGetrelset['P8Title'] . '</th>
+                                                                                        <td>' . $rowgetscore["psycomotor8"] . '</td>
+                                                                                        <td></td>
+                                                                                        <td></td>
+                                                                                    </tr>';
+                                                                } else {
+                                                                }
+                                                            } else {
+                                                                echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
+                                                            }
+                                                        }
+                                                        ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+
+
                                     <?php
 
                                     $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `remark` != ''");
@@ -4583,7 +5655,7 @@ $studsection = $rowGetsections['section'];
 
                                         $teacherid = $fetchfixedremark['StaffID'];
 
-                                        $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$hedteachid'");
+                                        $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = $teacherid");
                                         $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                         $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                         $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
@@ -4697,9 +5769,16 @@ $studsection = $rowGetsections['section'];
                                         $resumdate = 'N/A';
                                     }
                                     ?>
-                                    <div class="col-8">
 
-                                        <div class="container-motto">
+                                </div>
+                                <p style="text-align:center;margin-top:-10px"><b>SCALE: Excellent 05, Good 04, Fair 03, Poor 02, None 01</b></p>
+                            </div>
+
+                            <div class="performance">
+                                <div class="row">
+                                    <div class="col-12">
+
+                                        <div class="container-motto" style="border:0px solid black">
                                             <div style="margin: 20px;">
                                                 <div class="row">
                                                     <div class="col-sm-10 col-md-10">
@@ -4734,7 +5813,7 @@ $studsection = $rowGetsections['section'];
                                                             <p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate; ?></b></p>
                                                             <?php
                                                             if ($next_fee > 0) {
-                                                                echo '<p style="text-align: center;"><b style="font-weight:600;">NEXT TERM FEE: N' . $next_fee . '</b></p>';
+                                                                echo '<p style="text-align: center;"><b style="font-weight:600;">NEXT TERM FEEs: N' . $next_fee . '</b></p>';
                                                             }
                                                             ?>
 
@@ -6254,8 +7333,7 @@ $studsection = $rowGetsections['section'];
                                                                                         <th>' . $rowGetrelset['P3Title'] . '</th>
                                                                                         <td>' . $rowgetscore["psycomotor3"] . '</td>
                                                                                         <th>' . $rowGetrelset['P9Title'] . '</th>
-                                                                                        <td>' . $rowgetscore["psycomotor9"] . '</td
->
+                                                                                        <td>' . $rowgetscore["psycomotor9"] . '</td>
                                                                                     </tr>
                                                                                     <tr>
                                                                                         <th>' . $rowGetrelset['P4Title'] . '</th>
@@ -8200,8 +9278,6 @@ $studsection = $rowGetsections['section'];
             </div>
 
         </div>
-
-
 
     </div>
 
