@@ -42,31 +42,44 @@
                 visibility: hidden;
             }
 
-            /* .container.rel {
-                visibility: visible;
+            .print-wrapper {
+                width: 100%;
+                text-align: center;
                 background-color: white !important;
-            } */
+                /* Centers inline-block children */
+            }
 
             .container.rel * {
                 visibility: visible;
                 background-color: transparent !important;
             }
 
-            /* Position and scale the container */
             .container.rel {
+                display: inline-block !important;
+                /* Allow centering via text-align */
+                width: 137% !important;
+                /* Your desired width */
+                margin: 0;
+                /* Remove extra margins */
+                transform: scale(0.73);
+                transform-origin: top center;
+            }
+
+            /* Position and scale the container */
+            /* .container.rel {
                 position: relative !important;
                 left: 0;
                 top: 0;
                 width: 137%;
                 padding: 0;
-                margin: 0 auto;
-                /* Center the container horizontally */
-                transform: scale(0.72);
-                transform-origin: top center;
-                /* Scale from the center instead of left */
-                visibility: visible;
+                margin: 0 auto; */
+            /* Center the container horizontally */
+            /* transform: scale(0.72); */
+            /* transform-origin: top center; */
+            /* Scale from the center instead of left */
+            /* visibility: visible;
                 background-color: white !important;
-            }
+            } */
 
             /* Table responsive wrapper */
             .table-responsive {
@@ -253,27 +266,27 @@
                                 </div>
                             </div>
 
+                            <div class="print-wrapper">
+                                <div class="container rel">
+                                    <div class="row">
+                                        <div class="col-sm-3 col-md-3 col-xs-3 col-lg-3">
+                                            <div style="margin-top: 60px; margin-left: 10px;">
+                                                <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $rowsch_settings['app_logo']; ?>" class="img-fluid" alt="..." style="width: 80%;">
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-9 col-md-9 col-xs-9 col-lg-9">
+                                            <p class="schname"><?php echo $rowsch_settings['name']; ?></p>
+                                            <p class="schloc" style="color: rgb(185, 7, 7);"><?php echo $rowsch_settings['address']; ?>.</p>
+                                            <p style="text-align: center; font-weight: bold; font-size: 30px; margin-top: -10px; color: #333636;">BROAD SHEET</p>
 
-                            <div class="container rel">
-                                <div class="row">
-                                    <div class="col-sm-3 col-md-3 col-xs-3 col-lg-3">
-                                        <div style="margin-top: 60px; margin-left: 10px;">
-                                            <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $rowsch_settings['app_logo']; ?>" class="img-fluid" alt="..." style="width: 80%;">
                                         </div>
                                     </div>
-                                    <div class="col-sm-9 col-md-9 col-xs-9 col-lg-9">
-                                        <p class="schname"><?php echo $rowsch_settings['name']; ?></p>
-                                        <p class="schloc" style="color: rgb(185, 7, 7);"><?php echo $rowsch_settings['address']; ?>.</p>
-                                        <p style="text-align: center; font-weight: bold; font-size: 30px; margin-top: -10px; color: #333636;">BROAD SHEET</p>
 
+                                    <div class="result table-responsive" style="margin-bottom: 20px;" id="tbl_data">
+                                        Please filter to view broad sheet
                                     </div>
                                 </div>
-
-                                <div class="result table-responsive" style="margin-bottom: 20px;" id="tbl_data">
-                                    Please filter to view broad sheet
-                                </div>
                             </div>
-
                         </div>
 
                     </div>
