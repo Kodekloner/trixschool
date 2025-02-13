@@ -34,7 +34,6 @@
             /* Hide everything except the content we want to print */
             body * {
                 visibility: hidden;
-                background: rgb(236, 234, 234);
             }
 
             /* Show only the container and its contents */
