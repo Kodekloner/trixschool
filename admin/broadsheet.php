@@ -37,11 +37,6 @@
                 padding: 0;
             }
 
-            /* Hide everything except the content we want to print */
-            body * {
-                visibility: hidden;
-            }
-
             .print-wrapper {
                 width: 100%;
                 text-align: center;
