@@ -25,32 +25,24 @@
     <style>
         @media print {
 
-            /* Set A4 landscape with zero margins to maximize space */
+            /* Reset any existing page margins */
             @page {
                 size: A4 landscape;
-                margin: 5mm;
+                margin: 10mm;
             }
 
-            /* Reset body */
-            body {
-                margin: 0;
-                padding: 0;
-                background: white;
-            }
-
-            /* Hide everything except what we want to print */
+            /* Hide everything except the content we want to print */
             body * {
                 visibility: hidden;
             }
 
-            /* Show and style container content */
+            /* Show only the container and its contents */
             .container.rel,
             .container.rel * {
                 visibility: visible;
-                background-color: white !important;
             }
 
-            /* Position container */
+            /* Position the container at the top of the page */
             .container.rel {
                 position: absolute;
                 left: 0;
@@ -58,78 +50,48 @@
                 width: 100%;
                 padding: 0;
                 margin: 0;
-                background: white;
             }
 
-            /* Make table responsive */
+            /* Ensure table fits within page */
             .table-responsive {
                 overflow: visible;
                 width: 100%;
-                background: white;
             }
 
-            /* Adjust table layout */
+            /* Adjust table for better print layout */
             .rotate-table-grid {
                 width: 100%;
                 border-collapse: collapse;
                 page-break-inside: auto;
-                font-size: 8px;
-                /* Reduce font size to fit more content */
-                background: white;
             }
 
-            /* Handle table rows */
+            /* Handle row breaks */
             tr {
                 page-break-inside: avoid;
                 page-break-after: auto;
-                background: white;
             }
 
-            /* Ensure headers repeat on each page */
+            /* Ensure headers appear on each page */
             thead {
                 display: table-header-group;
             }
 
+            /* Prevent orphaned table footers */
             tfoot {
                 display: table-footer-group;
             }
 
-            /* Style table cells */
-            td,
-            th {
-                padding: 2px 3px;
-                border: 1px solid #000;
-                background-color: white !important;
-                color: black !important;
-            }
-
-            /* Hide print button */
+            /* Hide print button when printing */
             .fa-print,
             a[onclick="window.print()"] {
                 display: none;
             }
 
-            /* Adjust school header for better fit */
-            .schname {
-                font-size: 24px !important;
-                margin-bottom: 5px !important;
-            }
-
-            .schloc {
-                font-size: 12px !important;
-                margin-bottom: 5px !important;
-            }
-
-            /* Scale the content to fit A4 landscape */
-            .container.rel {
-                transform: scale(0.9);
-                transform-origin: top left;
-            }
-
-            /* Force background colors */
-            * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
+            /* Adjust cell padding for better print layout */
+            td,
+            th {
+                padding: 4px;
+                font-size: 11px;
             }
 
             .noprint {
