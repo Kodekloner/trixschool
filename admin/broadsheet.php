@@ -25,10 +25,17 @@
     <style>
         @media print {
 
-            /* Reset any existing page margins */
+            /* Set A4 landscape with margins */
             @page {
                 size: A4 landscape;
                 margin: 10mm;
+            }
+
+            /* Reset body */
+            body {
+                margin: 0;
+                padding: 0;
+                background: white;
             }
 
             /* Hide everything except the content we want to print */
@@ -36,62 +43,75 @@
                 visibility: hidden;
             }
 
-            /* Show only the container and its contents */
+            /* Show container contents and handle scaling */
             .container.rel,
             .container.rel * {
                 visibility: visible;
+                background-color: white !important;
             }
 
-            /* Position the container at the top of the page */
+            /* Position and scale the container */
             .container.rel {
-                position: absolute;
+                position: relative !important;
+                /* Changed from absolute to allow pagination */
                 left: 0;
                 top: 0;
-                width: 100%;
+                width: 137%;
+                /* Inverse of scale to maintain content width */
                 padding: 0;
                 margin: 0;
+                transform: scale(0.73);
+                transform-origin: top left;
             }
 
-            /* Ensure table fits within page */
+            /* Table responsive wrapper */
             .table-responsive {
                 overflow: visible;
                 width: 100%;
+                background: white;
             }
 
-            /* Adjust table for better print layout */
+            /* Table settings */
             .rotate-table-grid {
                 width: 100%;
                 border-collapse: collapse;
                 page-break-inside: auto;
             }
 
-            /* Handle row breaks */
+            /* Row handling */
             tr {
                 page-break-inside: avoid;
                 page-break-after: auto;
             }
 
-            /* Ensure headers appear on each page */
+            /* Headers on each page */
             thead {
                 display: table-header-group;
             }
 
-            /* Prevent orphaned table footers */
             tfoot {
                 display: table-footer-group;
             }
 
-            /* Hide print button when printing */
-            .fa-print,
-            a[onclick="window.print()"] {
-                display: none;
-            }
-
-            /* Adjust cell padding for better print layout */
+            /* Cell styling */
             td,
             th {
                 padding: 4px;
                 font-size: 11px;
+                background-color: white !important;
+            }
+
+            /* Hide print button and other non-printable elements */
+            .fa-print,
+            a[onclick="window.print()"],
+            .noprint {
+                display: none;
+            }
+
+            /* Force background colors */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
 
             .noprint {
