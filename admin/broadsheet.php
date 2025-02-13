@@ -35,7 +35,6 @@
             body {
                 margin: 0;
                 padding: 0;
-                background: white;
             }
 
             /* Hide everything except the content we want to print */
@@ -43,11 +42,14 @@
                 visibility: hidden;
             }
 
-            /* Show container contents and handle scaling */
-            .container.rel,
-            .container.rel * {
+            .container.rel {
                 visibility: visible;
                 background-color: white !important;
+            }
+
+            .container.rel * {
+                visibility: visible;
+                background-color: transparent !important;
             }
 
             /* Position and scale the container */
@@ -98,7 +100,6 @@
             th {
                 padding: 4px;
                 font-size: 11px;
-                background-color: white !important;
             }
 
             /* Hide print button and other non-printable elements */
@@ -106,12 +107,6 @@
             a[onclick="window.print()"],
             .noprint {
                 display: none;
-            }
-
-            /* Force background colors */
-            * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
             }
 
             .noprint {
