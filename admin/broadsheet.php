@@ -42,54 +42,30 @@
                 visibility: hidden;
             }
 
-            .container.rel {
+            /* .container.rel {
                 visibility: visible;
                 background-color: white !important;
-                width: 100%;
-                margin: 0 auto;
-            }
+            } */
 
             .container.rel * {
                 visibility: visible;
                 background-color: transparent !important;
             }
 
-            /* For the header row (first row), remove floats and center its contents */
-            .container.rel .row:first-of-type {
-                text-align: center;
-            }
-
-            .container.rel .row:first-of-type [class*="col-"] {
-                float: none !important;
-                display: inline-block;
-                vertical-align: top;
-                /* Allow columns to auto-size based on content */
-                width: auto;
-            }
-
-            /* Remove any inline left margin from the logo container */
-            .container.rel .col-sm-3>div {
-                margin-left: 0 !important;
-            }
-
-            /* Ensure the table container is full width and centered */
-            .result.table-responsive {
-                width: 100%;
-                margin: 20px auto;
-                /* adjust vertical spacing as needed */
-            }
-
             /* Position and scale the container */
             .container.rel {
                 position: relative !important;
-                /* Changed from absolute to allow pagination */
                 left: 0;
                 top: 0;
                 width: 137%;
-                /* Inverse of scale to maintain content width */
                 padding: 0;
-                transform: scale(0.73);
-                transform-origin: top left;
+                margin: 0 auto;
+                /* Center the container horizontally */
+                transform: scale(0.72);
+                transform-origin: top center;
+                /* Scale from the center instead of left */
+                visibility: visible;
+                background-color: white !important;
             }
 
             /* Table responsive wrapper */
