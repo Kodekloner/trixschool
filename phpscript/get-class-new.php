@@ -63,7 +63,7 @@
         $resultstaffcheck = mysqli_query($link, $sqlstaffcheck);
         $rowstaffcheck = mysqli_fetch_assoc($resultstaffcheck);
         $row_cntstaffcheck = mysqli_num_rows($resultstaffcheck);
-        
+
         if($row_cntstaffcheck > 0)
         {
             echo '<option value="0">Select Class</option>';
@@ -83,7 +83,7 @@
 		        $resultclasses = mysqli_query($link, $sqlclasses);
                 $rowclasses = mysqli_fetch_assoc($resultclasses);
                 $row_cntclasses = mysqli_num_rows($resultclasses);
-
+                
                 if($row_cntclasses > 0)
                 {
                     do{

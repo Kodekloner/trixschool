@@ -21,7 +21,6 @@
 
     <style type="text/css">
         .editbox {
-
             display: none
         }
 

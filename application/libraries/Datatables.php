@@ -333,6 +333,8 @@ class Datatables
             $this->get_ordering();
             $this->get_filtering();
 
+            // echo $this->ci->db->last_query();
+            
             $total = $this->ci->db->count_all_results('', false);
 
             $sOutput['query_count'] = $this->ci->db->last_query();

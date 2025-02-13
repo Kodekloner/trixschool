@@ -45,23 +45,43 @@ include('../database/config.php');
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
     @page {
         margin: 0;
     }
 
     @media print {
+
+        /* Scale the printable container down to ensure it fits on one page */
+        #printable.resize-for-print {
+            /* transform: scale(0.80);
+            transform-origin: top left; */
+            width: 1080px;
+        }
+
+        /* Apply padding adjustments for compact display */
+        #printable.resize-for-print .tab td,
+        #printable.resize-for-print .tab th {
+            padding: 0.2rem;
+        }
+
+        /* Adjust font sizes for printing */
+        #printable.resize-for-print body,
+        #printable.resize-for-print .card {
+            font-size: 13px;
+        }
+
+        /* Prevent page breaks inside cards and tables */
+        #printable.resize-for-print .card,
+        #printable.resize-for-print .table-responsive {
+            page-break-inside: avoid;
+        }
+
+        /* Page setup for A4 size */
+        /* @page { 
+            size: A4 portrait;  /* Change to landscape if needed */
+        margin: 2mm;
+        /* Adjust margins as necessary 
+        } */
 
         canvas.sunygraph {
             min-height: 200px;
@@ -228,7 +248,8 @@ $studsection = $rowGetsections['section'];
         </div>
 
 
-        <div class="card" id="printable" style="overflow-x:scroll">
+        <div class="card" id="printable">
+            <div class="watermark-logo" style="background-image: url('https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $rowsch_settings['app_logo']; ?>');"></div>
 
             <div class="card-body" style="color: black;">
 
@@ -402,34 +423,34 @@ $studsection = $rowGetsections['section'];
                             ?>
                             <div class="row" style="margin: 10px;">
                                 <div class="col-4">
-                                    <h5 style="color: #000000;"> <b>NAME:</b> <?php echo $studname; ?></h5>
+                                    <h5 style="color: #000000;"> NAME: <b><?php echo $studname; ?></b></h5>
                                 </div>
                                 <div class="col-4">
-                                    <h5 style="color: #000000;"> <b>CLASS:</b> <?php echo $studclass . ' ' . $studsection; ?></h5>
+                                    <h5 style="color: #000000;"> CLASS: <b><?php echo $studclass . ' ' . $studsection; ?></b></h5>
                                 </div>
                                 <div class="col-4">
-                                    <h5 style="color: #000000;"> <b>GENDER:</b> <?php echo $studgender; ?></h5>
+                                    <h5 style="color: #000000;"> GENDER: <b><?php echo $studgender; ?></b></h5>
                                 </div>
                             </div>
 
                             <div class="row" style="margin: 10px;">
 
                                 <div class="col-4">
-                                    <h5 style="color: #000000;"> <b>TOTAL SCORE:</b> <?php echo $gettotgrade; ?></h5>
+                                    <h5 style="color: #000000;"> TOTAL SCORE: <b><?php echo $gettotgrade; ?></b></h5>
                                 </div>
 
                                 <div class="col-4">
-                                    <h5 style="color: #000000;"> <b>GRADE:</b> <?php echo $totscorgrade; ?></h5>
+                                    <h5 style="color: #000000;"> GRADE: <b><?php echo $totscorgrade; ?></b></h5>
                                 </div>
                             </div>
 
                         </div>
 
                         <div align="center">
-                            <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE</h5>
+                            <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                         </div>
 
-                        <div class="result table-responsive" style="margin: 10px;">
+                        <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
                             <?php
 
                             $sqlrelset = ("SELECT * FROM `resultsetting` INNER JOIN assigncatoclass ON resultsetting.ResultSettingID=assigncatoclass.ResultSettingID WHERE ClassID = '$classid'");
@@ -498,7 +519,7 @@ $studsection = $rowGetsections['section'];
                             }
 
                             ?>
-                            <table class="table-bordered tab table-sm">
+                            <table class="table-bordered tab table-sm tb-result-border">
 
                                 <tr>
                                     <th>SUBJECT(s)</th>
@@ -739,10 +760,10 @@ $studsection = $rowGetsections['section'];
                         }
                         ?>
                         <div align="center" class="summDD">
-                            <p>Total Score: <?php echo $gettotscore; ?> </p>
-                            <p>Average Score: <?php echo $gettotgrade; ?> </p>
-                            <p>Class Average: <?php echo $decStubsubavg; ?> </p>
-                            <p>No. of Subjects: <?php echo $row_cntgetscorecheck; ?></p>
+                            <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
+                            <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
+                            <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
+                            <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                         </div>
 
                         <div class="performance">
@@ -756,7 +777,7 @@ $studsection = $rowGetsections['section'];
                                 </div>
                                 <div class="col-4" style="padding-right: 0px">
                                     <div class="container-motto" style="margin-right: 2px;">
-                                        <div class="result table-responsive" style="margin: 10px;">
+                                        <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
                                             <table class="tab table-sm" style="width:98%;border:0px solid black;">
                                                 <tr>
                                                     <th colspan="4" style="text-align: center;">AFFECTIVE DOMAIN</th>
@@ -1279,7 +1300,7 @@ $studsection = $rowGetsections['section'];
                                 </div>
                                 <div class="col-4" style="padding-left: 0px">
                                     <div class="container-motto" style="margin-left: 2px;">
-                                        <div class="result table-responsive" style="margin: 10px;">
+                                        <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
                                             <table class="tab table-sm" style="width:98%;">
                                                 <tr>
                                                     <th colspan="4" style="text-align: center;">PSYCOMOTOR</th>
@@ -1836,7 +1857,6 @@ $studsection = $rowGetsections['section'];
 
                                         $teacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
 
-
                                         $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$teacherid'");
                                         $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                         $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
@@ -1892,7 +1912,8 @@ $studsection = $rowGetsections['section'];
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                         if ($row_cntgetheadteachsignhead > 0) {
-                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                            // $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                            $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
                                         } else {
                                             $hedteachsignhead = '';
                                         }
@@ -2080,30 +2101,30 @@ $studsection = $rowGetsections['section'];
                                 ?>
                                 <div class="row" style="margin: 5px;">
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>NAME:</b> <?php echo $studname; ?></h5>
+                                        <h5 style="color: #000000;"> NAME: <b><?php echo $studname; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>CLASS:</b> <?php echo $studclass . ' ' . $studsection; ?></h5>
+                                        <h5 style="color: #000000;"> CLASS: <b><?php echo $studclass . ' ' . $studsection; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>SEX:</b> <?php echo $studgender; ?></h5>
+                                        <h5 style="color: #000000;"> SEX: <b><?php echo $studgender; ?></b></h5>
                                     </div>
 
                                 </div>
 
                                 <div class="row" style="margin: 10px;">
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>OVERALL GRADE:</b> <?php echo $totscorgrade; ?></h5>
+                                        <h5 style="color: #000000;"> OVERALL GRADE: <b><?php echo $totscorgrade; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>HIGHEST IN CLASS AVG:</b> <?php echo $sunhihscrun; ?></h5>
+                                        <h5 style="color: #000000;"> HIGHEST IN CLASS AVG: <b><?php echo $sunhihscrun; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>LOWEST IN CLASS AVE:</b> <?php echo $sunlowscrun; ?></h5>
+                                        <h5 style="color: #000000;"> LOWEST IN CLASS AVE: <b><?php echo $sunlowscrun; ?></b></h5>
                                     </div>
 
                                 </div>
@@ -2112,10 +2133,10 @@ $studsection = $rowGetsections['section'];
                             </div>
 
                             <div align="center">
-                                <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE</h5>
+                                <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px;">
+                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
                                 <?php
 
                                 $sqlrelset = ("SELECT * FROM `resultsetting` INNER JOIN assigncatoclass ON resultsetting.ResultSettingID=assigncatoclass.ResultSettingID WHERE ClassID = '$classid'");
@@ -2152,7 +2173,7 @@ $studsection = $rowGetsections['section'];
                                 }
 
                                 ?>
-                                <table class="table-bordered tab table-sm" style="width:98%;">
+                                <table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
 
                                     <tr>
                                         <th>SUBJECT(s)</th>
@@ -2595,10 +2616,10 @@ $studsection = $rowGetsections['section'];
                             }
                             ?>
                             <div align="center" class="summDD">
-                                <p>Total Score: <?php echo $gettotscore; ?> </p>
-                                <p>Average Score: <?php echo $gettotgrade; ?> </p>
-                                <p>Class Average: <?php echo $decStubsubavg; ?> </p>
-                                <p>No. of Subjects: <?php echo $row_cntgetscorecheck; ?></p>
+                                <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
+                                <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
+                                <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
+                                <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
 
@@ -3771,7 +3792,7 @@ $studsection = $rowGetsections['section'];
                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                             if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
                                             } else {
                                                 $hedteachsignhead = '';
                                             }
@@ -3995,35 +4016,35 @@ $studsection = $rowGetsections['section'];
                                 ?>
                                 <div class="row" style="margin: 10px;">
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>NAME:</b> <?php echo $studname; ?></h5>
+                                        <h5 style="color: #000000;"> NAME: <b><?php echo $studname; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>CLASS:</b> <?php echo $studclass . ' ' . $studsection; ?></h5>
+                                        <h5 style="color: #000000;"> CLASS: <b><?php echo $studclass . ' ' . $studsection; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>SEX:</b> <?php echo $studgender; ?></h5>
+                                        <h5 style="color: #000000;"> SEX: <b><?php echo $studgender; ?></b></h5>
                                     </div>
                                 </div>
 
                                 <div class="row" style="margin: 10px;">
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>CLASS POSITION:</b> <?php
-                                                                                            echo addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
+                                        <h5 style="color: #000000;"> CLASS POSITION: <b><?php
+                                                                                        echo addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
 
-                                                                                            if ($gettotalscorpositon % 10 == 0) {
-                                                                                                echo "\n";
-                                                                                            }
-                                                                                            ?> </h5>
+                                                                                        if ($gettotalscorpositon % 10 == 0) {
+                                                                                            echo "\n";
+                                                                                        }
+                                                                                        ?></b> </h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>HIGHEST IN CLASS AVE:</b> <?php echo $sunhihscrun; ?></h5>
+                                        <h5 style="color: #000000;"> HIGHEST IN CLASS AVE: <b><?php echo $sunhihscrun; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>LOWEST IN CLASS AVE:</b> <?php echo $sunlowscrun; ?></h5>
+                                        <h5 style="color: #000000;"> LOWEST IN CLASS AVE: <b><?php echo $sunlowscrun; ?></b></h5>
                                     </div>
 
                                 </div>
@@ -4032,10 +4053,10 @@ $studsection = $rowGetsections['section'];
                             </div>
 
                             <div align="center">
-                                <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE </h5>
+                                <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE </h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px;">
+                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
                                 <?php
 
                                 $sqlrelset = ("SELECT * FROM `resultsetting` INNER JOIN assigncatoclass ON resultsetting.ResultSettingID=assigncatoclass.ResultSettingID WHERE ClassID = '$classid'");
@@ -4072,7 +4093,7 @@ $studsection = $rowGetsections['section'];
                                 }
 
                                 ?>
-                                <table class="table-bordered tab table-sm" style="width:98%;">
+                                <table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
 
                                     <tr>
                                         <th>SUBJECT(s)</th>
@@ -4522,10 +4543,10 @@ $studsection = $rowGetsections['section'];
                             }
                             ?>
                             <div align="center" class="summDD">
-                                <p>Total Score: <?php echo $gettotscore; ?> </p>
-                                <p>Average Score: <?php echo $gettotgrade; ?> </p>
-                                <p>Class Average: <?php echo $decStubsubavg; ?> </p>
-                                <p>No. of Subjects: <?php echo $row_cntgetscorecheck; ?></p>
+                                <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
+                                <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
+                                <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
+                                <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
                             <div class="performance">
@@ -4629,7 +4650,7 @@ $studsection = $rowGetsections['section'];
                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                             if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
                                             } else {
                                                 $hedteachsignhead = '';
                                             }
@@ -4758,10 +4779,10 @@ $studsection = $rowGetsections['section'];
 
                                 <div class="row" style="margin: 10px; padding-left: 50px;">
                                     <div class="col-6">
-                                        <h5 style="color: #000000;"> <b>Name:</b> <?php echo $studname; ?></h5>
+                                        <h5 style="color: #000000;"> Name: <b><?php echo $studname; ?></b></h5>
                                     </div>
                                     <div class="col-6">
-                                        <h5 style="color: #000000;"> <b>Class:</b> <?php echo $studclass . ' ' . $studsection; ?></h5>
+                                        <h5 style="color: #000000;"> Class: <b><?php echo $studclass . ' ' . $studsection; ?></b></h5>
                                     </div>
                                 </div>
                                 <?php
@@ -4826,26 +4847,26 @@ $studsection = $rowGetsections['section'];
 
                                 <div class="row" style="margin: 10px; padding-left: 50px;">
                                     <div class="col-6">
-                                        <h5 style="color: #000000;"> <b>Days Present:</b> <?php echo $rowcountfixedpresent ?></h5>
+                                        <h5 style="color: #000000;"> Days Present: <b><?php echo $rowcountfixedpresent ?></b></h5>
                                     </div>
                                     <div class="col-6">
-                                        <h5 style="color: #000000;"> <b>Days School Opened:</b> <?php echo $rowcountfixedgennew; ?></h5>
+                                        <h5 style="color: #000000;"> Days School Opened: <b><?php echo $rowcountfixedgennew; ?></b></h5>
                                     </div>
                                 </div>
 
                                 <div class="row" style="margin: 10px; padding-left: 50px;">
                                     <div class="col-6">
-                                        <h5 style="color: #000000;"> <b>Days Absent:</b> <?php echo $rowcountfixedabsent; ?></h5>
+                                        <h5 style="color: #000000;"> Days Absent: <b><?php echo $rowcountfixedabsent; ?></b></h5>
                                     </div>
                                 </div>
                             </div>
 
                             <div align="center">
-                                <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE</h5>
+                                <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px;">
-                                <table class="table-bordered tab table-sm" style="width:98%;">
+                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
+                                <table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
 
                                     <tr style="text-align: center;font-size:16px;font-weight:bolder">
                                         <th style="width: 20%; height:45px; background-color:yellow;">Subject(s)</th>
@@ -5001,7 +5022,7 @@ $studsection = $rowGetsections['section'];
                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                             if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
                                             } else {
                                                 $hedteachsignhead = '';
                                             }
@@ -5200,15 +5221,15 @@ $studsection = $rowGetsections['section'];
                                 ?>
                                 <div class="row" style="margin: 10px;">
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>NAME:</b> <?php echo $studname; ?></h5>
+                                        <h5 style="color: #000000;"> NAME: <b><?php echo $studname; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>CLASS:</b> <?php echo $studclass . ' ' . $studsection; ?></h5>
+                                        <h5 style="color: #000000;"> CLASS: <b><?php echo $studclass . ' ' . $studsection; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>SEX:</b> <?php echo $studgender; ?></h5>
+                                        <h5 style="color: #000000;"> SEX: <b><?php echo $studgender; ?></b></h5>
                                     </div>
 
 
@@ -5218,15 +5239,15 @@ $studsection = $rowGetsections['section'];
 
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>HIGHEST IN CLASS AVE:</b> <?php echo $sunhihscrun; ?></h5>
+                                        <h5 style="color: #000000;"> HIGHEST IN CLASS AVE: <b><?php echo $sunhihscrun; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>LOWEST IN CLASS AVE:</b> <?php echo $sunlowscrun; ?></h5>
+                                        <h5 style="color: #000000;"> LOWEST IN CLASS AVE: <b><?php echo $sunlowscrun; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>OVERALL GRADE:</b> <?php echo $totscorgrade; ?></h5>
+                                        <h5 style="color: #000000;"> OVERALL GRADE: <b><?php echo $totscorgrade; ?></b></h5>
                                     </div>
                                 </div>
 
@@ -5234,12 +5255,12 @@ $studsection = $rowGetsections['section'];
                             </div>
 
                             <div align="center">
-                                <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE</h5>
+                                <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px;">
+                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
 
-                                <table class="table-bordered tab table-sm">
+                                <table class="table-bordered tab table-sm tb-result-border">
 
                                     <tr>
                                         <th>SUBJECT(s)</th>
@@ -5438,10 +5459,10 @@ $studsection = $rowGetsections['section'];
                             }
                             ?>
                             <div align="center" class="summDD">
-                                <p>Total Score: <?php echo $gettotscore; ?> </p>
-                                <p>Average Score: <?php echo $gettotgrade; ?> </p>
-                                <p>Class Average: <?php echo $decStubsubavg; ?> </p>
-                                <p>No. of Subjects: <?php echo $row_cntgetscorecheck; ?></p>
+                                <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
+                                <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
+                                <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
+                                <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
                             <div class="performance">
@@ -5455,7 +5476,7 @@ $studsection = $rowGetsections['section'];
                                     </div>
                                     <div class="col-4" style="padding-right: 0px">
                                         <div class="container-motto" style="margin-right: 2px;">
-                                            <div class="result table-responsive" style="margin: 10px;">
+                                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
                                                 <table class="tab table-sm" style="width:98%;">
                                                     <tr>
                                                         <th colspan="4" style="text-align: center;">AFFECTIVE DOMAIN </th>
@@ -5978,7 +5999,7 @@ $studsection = $rowGetsections['section'];
                                     </div>
                                     <div class="col-4" style="padding-left: 0px">
                                         <div class="container-motto" style="margin-left: 2px;">
-                                            <div class="result table-responsive" style="margin: 10px;">
+                                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
                                                 <table class="tab table-sm" style="width:98%;">
                                                     <tr>
                                                         <th colspan="4" style="text-align: center;">PSYCOMOTOR</th>
@@ -6592,7 +6613,7 @@ $studsection = $rowGetsections['section'];
                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                             if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
                                             } else {
                                                 $hedteachsignhead = '';
                                             }
@@ -6791,15 +6812,15 @@ $studsection = $rowGetsections['section'];
 
                                 <div class="row" style="margin: 10px;">
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>NAME:</b> <?php echo $studname; ?></h5>
+                                        <h5 style="color: #000000;"> NAME: <b><?php echo $studname; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>CLASS:</b> <?php echo $studclass . ' ' . $studsection; ?></h5>
+                                        <h5 style="color: #000000;"> CLASS: <b><?php echo $studclass . ' ' . $studsection; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>SEX:</b> <?php echo $studgender; ?></h5>
+                                        <h5 style="color: #000000;"> SEX: <b><?php echo $studgender; ?></b></h5>
                                     </div>
 
 
@@ -6809,21 +6830,21 @@ $studsection = $rowGetsections['section'];
 
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>CLASS POSITION:</b> <?php
-                                                                                            echo addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
+                                        <h5 style="color: #000000;"> CLASS POSITION: <b><?php
+                                                                                        echo addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
 
-                                                                                            if ($gettotalscorpositon % 10 == 0) {
-                                                                                                echo "\n";
-                                                                                            }
-                                                                                            ?> </h5>
+                                                                                        if ($gettotalscorpositon % 10 == 0) {
+                                                                                            echo "\n";
+                                                                                        }
+                                                                                        ?></b> </h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>HIGHEST IN CLASS AVE:</b> <?php echo $sunhihscrun; ?></h5>
+                                        <h5 style="color: #000000;"> HIGHEST IN CLASS AVE: <b><?php echo $sunhihscrun; ?></b></h5>
                                     </div>
 
                                     <div class="col-4">
-                                        <h5 style="color: #000000;"> <b>LOWEST IN CLASS AVE:</b> <?php echo $sunlowscrun; ?></h5>
+                                        <h5 style="color: #000000;"> LOWEST IN CLASS AVE: <b><?php echo $sunlowscrun; ?></b></h5>
                                     </div>
 
                                 </div>
@@ -6832,12 +6853,12 @@ $studsection = $rowGetsections['section'];
                             </div>
 
                             <div align="center">
-                                <h5 style="font-size: 23px; font-weight: 800; color: #000000;">ACADEMIC PERFORMANCE</h5>
+                                <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px;">
+                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
 
-                                <table class="table-bordered tab table-sm">
+                                <table class="table-bordered tab table-sm tb-result-border">
 
                                     <tr>
                                         <th>SUBJECT(s)</th>
@@ -7050,10 +7071,10 @@ $studsection = $rowGetsections['section'];
                             }
                             ?>
                             <div align="center" class="summDD">
-                                <p>Total Score: <?php echo $gettotscore; ?> </p>
-                                <p>Average Score: <?php echo $gettotgrade; ?> </p>
-                                <p>Class Average: <?php echo $decStubsubavg; ?> </p>
-                                <p>No. of Subjects: <?php echo $row_cntgetscorecheck; ?></p>
+                                <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?></span> </p>
+                                <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?></span> </p>
+                                <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?></span> </p>
+                                <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
                             <div class="performance">
@@ -8039,7 +8060,7 @@ $studsection = $rowGetsections['section'];
                                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
 
                                             if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
+                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid" style="width: 80%;">';
                                             } else {
                                                 $hedteachsignhead = '';
                                             }
@@ -8252,6 +8273,34 @@ $studsection = $rowGetsections['section'];
                 }
             }
         });
+    </script>
+
+    <script>
+        function adjustPrintLayout() {
+            const printable = document.getElementById('printable');
+            const usableA4Height = 1547; // Usable height in pixels for A4 portrait
+
+            if (!printable) {
+                console.error("Printable element not found.");
+                return;
+            }
+
+            const printableHeight = printable.scrollHeight;
+
+            if (printableHeight > usableA4Height) {
+                // Add a class that triggers scaling in the print media query
+                printable.classList.add('resize-for-print');
+            } else {
+                // No need to resize if it fits within one page
+                printable.classList.remove('resize-for-print');
+            }
+
+            console.log(`Printable height: ${printableHeight}px`);
+        }
+
+        // Run the function after the content is loaded
+        window.onload = adjustPrintLayout;
+        window.onresize = adjustPrintLayout; // Optional: recheck if the window is resized
     </script>
 
 
