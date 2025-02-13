@@ -50,7 +50,7 @@ include('../database/config.php');
     }
 
     @media print {
-        
+
         /* Scale the printable container down to ensure it fits on one page */
         #printable.resize-for-print {
             /* transform: scale(0.80);
@@ -79,7 +79,8 @@ include('../database/config.php');
         /* Page setup for A4 size */
         /* @page { 
             size: A4 portrait;  /* Change to landscape if needed */
-            margin: 2mm;        /* Adjust margins as necessary 
+        margin: 2mm;
+        /* Adjust margins as necessary 
         } */
 
         canvas.sunygraph {
@@ -248,6 +249,7 @@ $studsection = $rowGetsections['section'];
 
 
         <div class="card" id="printable">
+            <div class="watermark-logo" style="background-image: url('https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $rowsch_settings['app_logo']; ?>');"></div>
 
             <div class="card-body" style="color: black;">
 
@@ -4029,12 +4031,12 @@ $studsection = $rowGetsections['section'];
                                 <div class="row" style="margin: 10px;">
                                     <div class="col-4">
                                         <h5 style="color: #000000;"> CLASS POSITION: <b><?php
-                                                                                            echo addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
+                                                                                        echo addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
 
-                                                                                            if ($gettotalscorpositon % 10 == 0) {
-                                                                                                echo "\n";
-                                                                                            }
-                                                                                            ?></b> </h5>
+                                                                                        if ($gettotalscorpositon % 10 == 0) {
+                                                                                            echo "\n";
+                                                                                        }
+                                                                                        ?></b> </h5>
                                     </div>
 
                                     <div class="col-4">
@@ -6829,12 +6831,12 @@ $studsection = $rowGetsections['section'];
 
                                     <div class="col-4">
                                         <h5 style="color: #000000;"> CLASS POSITION: <b><?php
-                                                                                            echo addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
+                                                                                        echo addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
 
-                                                                                            if ($gettotalscorpositon % 10 == 0) {
-                                                                                                echo "\n";
-                                                                                            }
-                                                                                            ?></b> </h5>
+                                                                                        if ($gettotalscorpositon % 10 == 0) {
+                                                                                            echo "\n";
+                                                                                        }
+                                                                                        ?></b> </h5>
                                     </div>
 
                                     <div class="col-4">
@@ -8299,7 +8301,6 @@ $studsection = $rowGetsections['section'];
         // Run the function after the content is loaded
         window.onload = adjustPrintLayout;
         window.onresize = adjustPrintLayout; // Optional: recheck if the window is resized
-
     </script>
 
 
