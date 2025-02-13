@@ -51,6 +51,10 @@ include('../database/config.php');
 
     @media print {
 
+        .container-fluid {
+            max-height: 1582px;
+        }
+
         /* Scale the printable container down to ensure it fits on one page */
         #printable.resize-for-print {
             /* transform: scale(0.80);
