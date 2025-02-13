@@ -70,11 +70,11 @@
             .container.rel {
                 display: inline-block !important;
                 /* Allow centering via text-align */
-                width: 137% !important;
+                width: 100% !important;
                 /* Your desired width */
                 margin: 0;
                 /* Remove extra margins */
-                transform: scale(0.73);
+                transform: scale(0.95);
                 transform-origin: top center;
             }
 
