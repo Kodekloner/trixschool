@@ -7,6 +7,11 @@ $staffid = $_POST['staffid'];
 
 $rolefirst = $_POST['rolefirst'];
 
+echo $classid . ".";
+echo $staffid . ".";
+echo $rolefirst . ".";
+die();
+
 $sqlstaffcheck = "SELECT * FROM `staff_roles` INNER JOIN roles ON staff_roles.role_id=roles.id WHERE staff_roles.staff_id='$staffid'";
 $resultstaffcheck = mysqli_query($link, $sqlstaffcheck);
 $rowstaffcheck = mysqli_fetch_assoc($resultstaffcheck);
@@ -19,8 +24,7 @@ if ($row_cntstaffcheck > 0) {
         $resultclasses = mysqli_query($link, $sqlclasses);
         $rowclasses = mysqli_fetch_assoc($resultclasses);
         $row_cntclasses = mysqli_num_rows($resultclasses);
-        echo $row_cntclasses;
-        die();
+
         if ($row_cntclasses > 0) {
             do {
 
