@@ -11,8 +11,7 @@ $sqlstaffcheck = "SELECT * FROM `staff_roles` INNER JOIN roles ON staff_roles.ro
 $resultstaffcheck = mysqli_query($link, $sqlstaffcheck);
 $rowstaffcheck = mysqli_fetch_assoc($resultstaffcheck);
 $row_cntstaffcheck = mysqli_num_rows($resultstaffcheck);
-echo $row_cntstaffcheck;
-die();
+
 if ($row_cntstaffcheck > 0) {
     echo '<option value="0">Select Section</option>';
     if ($rowstaffcheck['name'] == 'Teacher') {
@@ -20,7 +19,8 @@ if ($row_cntstaffcheck > 0) {
         $resultclasses = mysqli_query($link, $sqlclasses);
         $rowclasses = mysqli_fetch_assoc($resultclasses);
         $row_cntclasses = mysqli_num_rows($resultclasses);
-
+        echo $row_cntclasses;
+        die();
         if ($row_cntclasses > 0) {
             do {
 
