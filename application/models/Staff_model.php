@@ -37,7 +37,6 @@ class Staff_model extends MY_Model
         $this->db->order_by('staff.id');
         $query = $this->db->get();
         return $query->result_array();
-
     }
 
     public function getTodayDayAttendance()
@@ -171,7 +170,6 @@ class Staff_model extends MY_Model
             $action    = "Update";
             $record_id = $id = $data['id'];
             $this->log($message, $record_id, $action);
-
         } else {
             $this->db->insert('staff', $data);
             $id        = $this->db->insert_id();
@@ -179,7 +177,6 @@ class Staff_model extends MY_Model
             $action    = "Insert";
             $record_id = $id;
             $this->log($message, $record_id, $action);
-
         }
         //======================Code End==============================
 
@@ -190,7 +187,6 @@ class Staff_model extends MY_Model
             # Something went wrong.
             $this->db->trans_rollback();
             return false;
-
         } else {
             return $id;
         }
@@ -216,7 +212,6 @@ class Staff_model extends MY_Model
             # Something went wrong.
             $this->db->trans_rollback();
             return false;
-
         } else {
             //return $return_value;
         }
@@ -244,39 +239,51 @@ class Staff_model extends MY_Model
 
     public function batchInsert($data, $roles = array(), $leave_array = array(), $data_setting = array())
     {
-
+        // Start a database transaction
         $this->db->trans_start();
-        $this->db->trans_strict(false);
+        $this->db->trans_strict(false); // Allows the transaction to complete even if some errors occur
 
+        // Insert the main staff record into the "staff" table
         $this->db->insert('staff', $data);
+        // Retrieve the auto-generated ID for the inserted staff record
         $staff_id          = $this->db->insert_id();
+
+        // Associate the newly generated staff ID with the roles data
         $roles['staff_id'] = $staff_id;
+        // Insert the role into the "staff_roles" table using batch insert
         $this->db->insert_batch('staff_roles', array($roles));
+        // If data_setting is provided, check conditions and update settings accordingly
         if (!empty($data_setting)) {
             if ($data_setting['staffid_auto_insert']) {
                 if ($data_setting['staffid_update_status'] == 0) {
                     $data_setting['staffid_update_status'] = 1;
+                    // Update settings using the setting_model
                     $this->setting_model->add($data_setting);
                 }
             }
         }
 
+        // If leave details are provided, assign the staff ID to each leave record
         if (!empty($leave_array)) {
             foreach ($leave_array as $key => $value) {
                 $leave_array[$key]['staff_id'] = $staff_id;
             }
 
+            // Batch insert the leave details into "staff_leave_details" table
             $this->db->insert_batch('staff_leave_details', $leave_array);
         }
+        // Complete the transaction (this doesn't commit yet, it only ends the transaction block)
         $this->db->trans_complete();
 
+        // Check the status of the transaction
         if ($this->db->trans_status() === false) {
-
+            // If any error occurred, roll back all changes
             $this->db->trans_rollback();
             return false;
         } else {
-
+            // If all queries succeeded, commit the transaction
             $this->db->trans_commit();
+            // Return the inserted staff ID for further reference
             return $staff_id;
         }
     }
@@ -315,7 +322,6 @@ class Staff_model extends MY_Model
             $this->db->trans_commit();
             return $staff_id;
         }
-
     }
 
     public function add_staff_leave_details($data2)
@@ -381,12 +387,10 @@ class Staff_model extends MY_Model
         if ($this->check_data_exists($name, $id, $staff_id)) {
             $this->form_validation->set_message('username_check', 'Record already exists');
             return false;
-
         } else {
 
             return true;
         }
-
     }
 
     public function check_data_exists($name, $id, $staff_id)
@@ -549,28 +553,28 @@ class Staff_model extends MY_Model
             }
         }
 
-       
+
         $field_var = count($field_k_array) > 0 ? "," . implode(',', $field_k_array) : "";
-       
+
         $this->db->select("staff.*,staff_designation.designation,department.department_name as department,roles.name as user_type" . $field_var)->from('staff');
         $this->db->join('staff_designation', "staff_designation.id = staff.designation", "left");
         $this->db->join('staff_roles', "staff_roles.staff_id = staff.id", "left");
         $this->db->join('roles', "roles.id = staff_roles.role_id", "left");
-        $this->db->join('department', "department.id = staff.department", "left");       
+        $this->db->join('department', "department.id = staff.department", "left");
 
         if ($class_id != "") {
             $this->db->join('class_teacher', 'staff.id=class_teacher.staff_id', 'left');
             $this->db->or_where('class_teacher.class_id', $student_current_class->class_id);
         }
-        $this->db->where("staff.is_active", $active);  
-        if($role != ""){
-        $this->db->where("roles.id", $role);
-          }   
+        $this->db->where("staff.is_active", $active);
+        if ($role != "") {
+            $this->db->where("roles.id", $role);
+        }
         $query = $this->db->get();
 
         return $query->result_array();
     }
-    
+
     public function getEmployeeByRoleID($role, $active = 1)
     {
 
@@ -622,10 +626,7 @@ class Staff_model extends MY_Model
         return $query->row_array();
     }
 
-    public function get_stafflang($id)
-    {
-
-    }
+    public function get_stafflang($id) {}
 
     public function searchFullText($searchterm, $active)
     {
@@ -637,16 +638,16 @@ class Staff_model extends MY_Model
         if (!empty($custom_fields)) {
             foreach ($custom_fields as $custom_fields_key => $custom_fields_value) {
                 $tb_counter = "table_custom_" . $i;
-                array_push($field_k_array, '`table_custom_' . $i . '`.`field_value` as `' . $custom_fields_value->name . '`');               
+                array_push($field_k_array, '`table_custom_' . $i . '`.`field_value` as `' . $custom_fields_value->name . '`');
                 $join_array .= " LEFT JOIN `custom_field_values` as `" . $tb_counter . "` ON `staff`.`id` = `" . $tb_counter . "`.`belong_table_id` AND `" . $tb_counter . "`.`custom_field_id` = " . $custom_fields_value->id;
 
                 $i++;
             }
         }
-       
+
         $field_var = count($field_k_array) > 0 ? "," . implode(',', $field_k_array) : "";
 
-        $query = "SELECT `staff`.*, `staff_designation`.`designation` as `designation`, `department`.`department_name` as `department`,`roles`.`name` as user_type " . $field_var . "  FROM `staff` " . $join_array . " LEFT JOIN `staff_designation` ON `staff_designation`.`id` = `staff`.`designation` LEFT JOIN `staff_roles` ON `staff_roles`.`staff_id` = `staff`.`id` LEFT JOIN `roles` ON `staff_roles`.`role_id` = `roles`.`id` LEFT JOIN `department` ON `department`.`id` = `staff`.`department` WHERE  `staff`.`is_active` = '$active' and (CONCAT(`staff`.`name`,' ',`staff`.`surname`) LIKE '%".$this->db->escape_like_str($searchterm)."%' ESCAPE '!' OR `staff`.`surname` LIKE '%".$this->db->escape_like_str($searchterm)."%' ESCAPE '!' OR `staff`.`employee_id` LIKE '%".$this->db->escape_like_str($searchterm)."%' ESCAPE '!' OR `staff`.`local_address` LIKE '%".$this->db->escape_like_str($searchterm)."%' ESCAPE '!'  OR `staff`.`contact_no` LIKE '%".$this->db->escape_like_str($searchterm)."%' ESCAPE '!' OR `staff`.`email` LIKE '%".$this->db->escape_like_str($searchterm)."%' ESCAPE '!' OR `roles`.`name` LIKE '%".$this->db->escape_like_str($searchterm)."' ESCAPE '!')";
+        $query = "SELECT `staff`.*, `staff_designation`.`designation` as `designation`, `department`.`department_name` as `department`,`roles`.`name` as user_type " . $field_var . "  FROM `staff` " . $join_array . " LEFT JOIN `staff_designation` ON `staff_designation`.`id` = `staff`.`designation` LEFT JOIN `staff_roles` ON `staff_roles`.`staff_id` = `staff`.`id` LEFT JOIN `roles` ON `staff_roles`.`role_id` = `roles`.`id` LEFT JOIN `department` ON `department`.`id` = `staff`.`department` WHERE  `staff`.`is_active` = '$active' and (CONCAT(`staff`.`name`,' ',`staff`.`surname`) LIKE '%" . $this->db->escape_like_str($searchterm) . "%' ESCAPE '!' OR `staff`.`surname` LIKE '%" . $this->db->escape_like_str($searchterm) . "%' ESCAPE '!' OR `staff`.`employee_id` LIKE '%" . $this->db->escape_like_str($searchterm) . "%' ESCAPE '!' OR `staff`.`local_address` LIKE '%" . $this->db->escape_like_str($searchterm) . "%' ESCAPE '!'  OR `staff`.`contact_no` LIKE '%" . $this->db->escape_like_str($searchterm) . "%' ESCAPE '!' OR `staff`.`email` LIKE '%" . $this->db->escape_like_str($searchterm) . "%' ESCAPE '!' OR `roles`.`name` LIKE '%" . $this->db->escape_like_str($searchterm) . "' ESCAPE '!')";
 
         $query = $this->db->query($query);
         return $query->result_array();
@@ -734,7 +735,6 @@ class Staff_model extends MY_Model
         } else {
             $this->db->trans_commit();
         }
-
     }
 
     public function enablestaff($id)
@@ -823,7 +823,6 @@ class Staff_model extends MY_Model
         } else {
             return false;
         }
-
     }
 
     public function lastRecord()
@@ -851,7 +850,6 @@ class Staff_model extends MY_Model
             # Something went wrong.
             $this->db->trans_rollback();
             return false;
-
         } else {
             //return $return_value;
         }
@@ -936,7 +934,7 @@ class Staff_model extends MY_Model
                 $i++;
             }
         }
-      
+
         $field_var = count($field_k_array) > 0 ? "," . implode(',', $field_k_array) : "";
 
         $query = "SELECT `staff`.*, `staff_designation`.`designation` as `designation`, `department`.`department_name` as `department`,`roles`.`name` as user_type " . $field_var . ",GROUP_CONCAT(leave_type_id,'@',alloted_leave) as leaves  FROM `staff` " . $join_array . " LEFT JOIN `staff_designation` ON `staff_designation`.`id` = `staff`.`designation` LEFT JOIN `staff_roles` ON `staff_roles`.`staff_id` = `staff`.`id` LEFT JOIN `roles` ON `staff_roles`.`role_id` = `roles`.`id` LEFT JOIN `department` ON `department`.`id` = `staff`.`department` left join staff_leave_details ON staff_leave_details.staff_id=staff.id WHERE 1  " . $condition . " group by staff.id";
@@ -949,7 +947,5 @@ class Staff_model extends MY_Model
     public function inventry_staff()
     {
         return $this->db->select("CONCAT_WS(' ',staff.name,staff.surname) as name,staff.employee_id")->from('staff')->where('staff.is_active', 1)->get()->result_array();
-
     }
-
 }
