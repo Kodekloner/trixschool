@@ -7,11 +7,6 @@ $staffid = $_POST['staffid'];
 
 $rolefirst = $_POST['rolefirst'];
 
-echo $classid . ".";
-echo $staffid . ".";
-echo $rolefirst . ".";
-die();
-
 $sqlstaffcheck = "SELECT * FROM `staff_roles` INNER JOIN roles ON staff_roles.role_id=roles.id WHERE staff_roles.staff_id='$staffid'";
 $resultstaffcheck = mysqli_query($link, $sqlstaffcheck);
 $rowstaffcheck = mysqli_fetch_assoc($resultstaffcheck);
@@ -20,10 +15,16 @@ $row_cntstaffcheck = mysqli_num_rows($resultstaffcheck);
 if ($row_cntstaffcheck > 0) {
     echo '<option value="0">Select Section</option>';
     if ($rowstaffcheck['name'] == 'Teacher') {
-        $sqlclasses = "SELECT DISTINCT(class_sections.section_id) AS actual_section_id, section FROM `subjecttables` INNER JOIN class_sections ON subjecttables.section_id=class_sections.section_id INNER JOIN sections ON class_sections.section_id=sections.id WHERE subjecttables.staff_id = '$staffid' AND subjecttables.class_id = '$classid'";
+
+        $sqlclasses = "SELECT DISTINCT(class_teacher.section_id) AS actual_section_id, section FROM `class_teacher` INNER JOIN sections ON class_teacher.section_id=sections.id WHERE class_teacher.staff_id = '$staffid' AND class_teacher.class_id = '$classid'";
         $resultclasses = mysqli_query($link, $sqlclasses);
         $rowclasses = mysqli_fetch_assoc($resultclasses);
         $row_cntclasses = mysqli_num_rows($resultclasses);
+
+        // $sqlclasses = "SELECT DISTINCT(class_sections.section_id) AS actual_section_id, section FROM `subjecttables` INNER JOIN class_sections ON subjecttables.section_id=class_sections.section_id INNER JOIN sections ON class_sections.section_id=sections.id WHERE subjecttables.staff_id = '$staffid' AND subjecttables.class_id = '$classid'";
+        // $resultclasses = mysqli_query($link, $sqlclasses);
+        // $rowclasses = mysqli_fetch_assoc($resultclasses);
+        // $row_cntclasses = mysqli_num_rows($resultclasses);
 
         if ($row_cntclasses > 0) {
             do {
