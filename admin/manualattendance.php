@@ -152,7 +152,7 @@
                                                         $ids_string = implode(',', $ids);
 
                                                         $sql2 = "SELECT * FROM classes WHERE id IN ($ids_string)";
-                                                        $result2 = mysqli_query($mysqli, $sql2);
+                                                        $result2 = mysqli_query($link, $sql2);
 
                                                         if ($result2) {
                                                             do {
