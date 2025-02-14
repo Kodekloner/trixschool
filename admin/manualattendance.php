@@ -155,10 +155,9 @@
                                                         $result2 = mysqli_query($link, $sql2);
 
                                                         if ($result2) {
-                                                            do {
-
+                                                            while ($rowclasses = mysqli_fetch_assoc($result2)) {
                                                                 echo '<option value="' . $rowclasses['id'] . '">' . $rowclasses['class'] . '</option>';
-                                                            } while ($rowclasses = mysqli_fetch_assoc($result2));
+                                                            }
 
                                                             // while ($row = mysqli_fetch_assoc($result2)) {
                                                             //     $data[] = $row;
