@@ -108,19 +108,64 @@
 
                                             if ($row_cntstaffcheck > 0) {
                                                 if ($rowstaffcheck['name'] == 'Teacher') {
-                                                    $sqlclasses = "SELECT DISTINCT(subjecttables.class_id),class FROM `subjecttables` INNER JOIN class_sections ON subjecttables.class_id=class_sections.class_id INNER JOIN classes ON class_sections.class_id=classes.id INNER JOIN assigncatoclass ON classes.id=assigncatoclass.ClassID AND subjecttables.staff_id = '$id' ORDER BY class";
-                                                    $resultclasses = mysqli_query($link, $sqlclasses);
-                                                    $rowclasses = mysqli_fetch_assoc($resultclasses);
-                                                    $row_cntclasses = mysqli_num_rows($resultclasses);
 
-                                                    if ($row_cntclasses > 0) {
-                                                        do {
+                                                    // Escape the $staff_id to prevent SQL injection
+                                                    $staff_id = mysqli_real_escape_string($link, $id);
 
-                                                            echo '<option value="' . $rowclasses['class_id'] . '">' . $rowclasses['class'] . '</option>';
-                                                        } while ($rowclasses = mysqli_fetch_assoc($resultclasses));
-                                                    } else {
-                                                        echo '<option value="0">No Records Found</option>';
+                                                    // 1. Query to get a concatenated list of class IDs for the given staff member
+                                                    $sql1 = "SELECT GROUP_CONCAT(ct.class_id) AS c 
+                                                            FROM class_teacher ct 
+                                                            WHERE ct.staff_id = '$staff_id' 
+                                                            GROUP BY ct.staff_id";
+
+                                                    // Execute the query
+                                                    $result1 = mysqli_query($link, $sql1);
+
+                                                    // Initialize variable to store the concatenated class IDs
+                                                    $class_ides = '';
+                                                    if ($result1) {
+                                                        $row1 = mysqli_fetch_assoc($result1);
+                                                        if ($row1 && !empty($row1['c'])) {
+                                                            $class_ides = $row1['c'];
+                                                        }
                                                     }
+
+                                                    // 2. Clean up the class IDs: split the string into an array, remove empty values,
+                                                    // and then join them back into a clean comma-separated string.
+                                                    $ides11 = array();
+                                                    $ides1 = '';
+                                                    if (!empty($class_ides)) {
+                                                        $ides = explode(',', $class_ides);
+                                                        foreach ($ides as $value) {
+                                                            if (trim($value) !== '') {
+                                                                $ides11[] = $value;
+                                                            }
+                                                        }
+                                                        $ides1 = implode(',', $ides11);
+                                                    }
+
+                                                    // 3. If there are valid class IDs, query the 'classes' table to get the class details.
+                                                    $data = array();
+                                                    if (!empty($ides1)) {
+                                                        // Convert IDs to integers for safety and rebuild the string
+                                                        $ids = array_map('intval', explode(',', $ides1));
+                                                        $ids_string = implode(',', $ids);
+
+                                                        $sql2 = "SELECT * FROM classes WHERE id IN ($ids_string)";
+                                                        $result2 = mysqli_query($link, $sql2);
+
+                                                        if ($result2) {
+                                                            while ($rowclasses = mysqli_fetch_assoc($result2)) {
+                                                                echo '<option value="' . $rowclasses['id'] . '">' . $rowclasses['class'] . '</option>';
+                                                            }
+                                                        } else {
+                                                            echo '<option value="0">No Records Found</option>';
+                                                        }
+                                                    }
+                                                    // $sqlclasses = "SELECT DISTINCT(subjecttables.class_id),class FROM `subjecttables` INNER JOIN class_sections ON subjecttables.class_id=class_sections.class_id INNER JOIN classes ON class_sections.class_id=classes.id INNER JOIN assigncatoclass ON classes.id=assigncatoclass.ClassID AND subjecttables.staff_id = '$id' ORDER BY class";
+                                                    // $resultclasses = mysqli_query($link, $sqlclasses);
+                                                    // $rowclasses = mysqli_fetch_assoc($resultclasses);
+                                                    // $row_cntclasses = mysqli_num_rows($resultclasses);
                                                 } else {
                                                     $sqlclasses = "SELECT * FROM `classes` INNER JOIN assigncatoclass ON classes.id=assigncatoclass.ClassID ORDER BY class";
                                                     $resultclasses = mysqli_query($link, $sqlclasses);

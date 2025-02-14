@@ -158,10 +158,6 @@
                                                             while ($rowclasses = mysqli_fetch_assoc($result2)) {
                                                                 echo '<option value="' . $rowclasses['id'] . '">' . $rowclasses['class'] . '</option>';
                                                             }
-
-                                                            // while ($row = mysqli_fetch_assoc($result2)) {
-                                                            //     $data[] = $row;
-                                                            // }
                                                         } else {
                                                             echo '<option value="0">No Records Found</option>';
                                                         }
@@ -170,15 +166,6 @@
                                                     // $resultclasses = mysqli_query($link, $sqlclasses);
                                                     // $rowclasses = mysqli_fetch_assoc($resultclasses);
                                                     // $row_cntclasses = mysqli_num_rows($resultclasses);
-
-                                                    // if ($row_cntclasses > 0) {
-                                                    //     do {
-
-                                                    //         echo '<option value="' . $rowclasses['class_id'] . '">' . $rowclasses['class'] . '</option>';
-                                                    //     } while ($rowclasses = mysqli_fetch_assoc($resultclasses));
-                                                    // } else {
-                                                    //     echo '<option value="0">No Records Found</option>';
-                                                    // }
                                                 } else {
                                                     $sqlclasses = "SELECT * FROM `classes` INNER JOIN assigncatoclass ON classes.id=assigncatoclass.ClassID ORDER BY class";
                                                     $resultclasses = mysqli_query($link, $sqlclasses);
