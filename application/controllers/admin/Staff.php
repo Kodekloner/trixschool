@@ -225,13 +225,12 @@ class Staff extends Admin_Controller
                 $att_dates        = $year . "-" . $datemonth . "-" . sprintf("%02d", $n);
                 $date_array[]     = $att_dates;
                 $staff_attendence = $this->staffattendancemodel->searchStaffattendance($att_dates, $id, false);
-				if(!empty($staff_attendence)){
-					if ($staff_attendence['att_type'] != "") {
-                    $attendence_count[$staff_attendence['att_type']][] = 1;
-					}
-				}else{
-
-				}
+                if (!empty($staff_attendence)) {
+                    if ($staff_attendence['att_type'] != "") {
+                        $attendence_count[$staff_attendence['att_type']][] = 1;
+                    }
+                } else {
+                }
                 $res[$att_dates] = $staff_attendence;
             }
         }
@@ -357,7 +356,7 @@ class Staff extends Admin_Controller
                     $att_dates          = $year . "-" . $datemonth . "-" . sprintf("%02d", $n);
 
                     $date_array[]    = $att_dates;
-					$res[$att_dates] = $this->staffattendancemodel->searchStaffattendance($att_dates, $id);
+                    $res[$att_dates] = $this->staffattendancemodel->searchStaffattendance($att_dates, $id);
                 }
             }
             $date    = $year . "-" . $startMonth;
@@ -419,7 +418,11 @@ class Staff extends Admin_Controller
         $this->form_validation->set_rules('third_doc', $this->lang->line('image'), 'callback_handle_third_upload');
         $this->form_validation->set_rules('fourth_doc', $this->lang->line('image'), 'callback_handle_fourth_upload');
         $this->form_validation->set_rules(
-            'email', $this->lang->line('email'), array('required', 'valid_email',
+            'email',
+            $this->lang->line('email'),
+            array(
+                'required',
+                'valid_email',
                 array('check_exists', array($this->staff_model, 'valid_email_id')),
             )
         );
@@ -501,7 +504,8 @@ class Staff extends Admin_Controller
             if (isset($surname)) {
 
                 $data_insert['surname'] = $surname;
-            }if (isset($department)) {
+            }
+            if (isset($department)) {
 
                 $data_insert['department'] = $department;
             }
@@ -647,7 +651,7 @@ class Staff extends Admin_Controller
                 }
             }
             $role_array = array('role_id' => $this->input->post('role'), 'staff_id' => 0);
-//==========================
+            //==========================
             $insert                                = true;
             $data_setting                          = array();
             $data_setting['id']                    = $this->sch_setting_detail->id;
@@ -691,11 +695,10 @@ class Staff extends Admin_Controller
                     $fileInfo = pathinfo($_FILES["file"]["name"]);
                     $img_name = $insert_id . '.' . $fileInfo['extension'];
                     $upload_result = upload_to_s3($_FILES["file"]["tmp_name"], $fileInfo, $img_name, "uploads/staff_images/");
-                    if ($upload_result['success'])
-                    {
-                      $new_image_name = $upload_result['new_image_name'];
-                      $data_img = array('id' => $staff_id, 'image' => $new_image_name);
-                      $this->staff_model->add($data_img);
+                    if ($upload_result['success']) {
+                        $new_image_name = $upload_result['new_image_name'];
+                        $data_img = array('id' => $staff_id, 'image' => $new_image_name);
+                        $this->staff_model->add($data_img);
                     }
                 }
 
@@ -1064,7 +1067,11 @@ class Staff extends Admin_Controller
         }
 
         $this->form_validation->set_rules(
-            'email', $this->lang->line('email'), array('required', 'valid_email',
+            'email',
+            $this->lang->line('email'),
+            array(
+                'required',
+                'valid_email',
                 array('check_exists', array($this->staff_model, 'valid_email_id')),
             )
         );
@@ -1198,14 +1205,16 @@ class Staff extends Admin_Controller
 
                     if (!empty($altid[$i])) {
 
-                        $data2 = array('staff_id' => $id,
+                        $data2 = array(
+                            'staff_id' => $id,
                             'leave_type_id'           => $leave_type[$i],
                             'id'                      => $altid[$i],
                             'alloted_leave'           => $alloted_leave[$i],
                         );
                     } else {
 
-                        $data2 = array('staff_id' => $id,
+                        $data2 = array(
+                            'staff_id' => $id,
                             'leave_type_id'           => $leave_type[$i],
                             'alloted_leave'           => $alloted_leave[$i],
                         );
@@ -1220,11 +1229,10 @@ class Staff extends Admin_Controller
                 $fileInfo = pathinfo($_FILES["file"]["name"]);
                 $img_name = $id . '.' . $fileInfo['extension'];
                 $upload_result = upload_to_s3($_FILES["file"]["tmp_name"], $fileInfo, $img_name, "uploads/staff_images/");
-                if ($upload_result['success'])
-                {
-                  $new_image_name = $upload_result['new_image_name'];
-                  $data_img = array('id' => $id, 'image' => $new_image_name);
-                  $this->staff_model->add($data_img);
+                if ($upload_result['success']) {
+                    $new_image_name = $upload_result['new_image_name'];
+                    $data_img = array('id' => $id, 'image' => $new_image_name);
+                    $this->staff_model->add($data_img);
                 }
             }
 
@@ -1638,7 +1646,8 @@ class Staff extends Admin_Controller
         $error = "";
         if (isset($_FILES["file"]) && !empty($_FILES['file']['name'])) {
             $allowedExts = array('csv');
-            $mimes       = array('text/csv',
+            $mimes       = array(
+                'text/csv',
                 'text/plain',
                 'application/csv',
                 'text/comma-separated-values',
@@ -1647,7 +1656,8 @@ class Staff extends Admin_Controller
                 'application/vnd.msexcel',
                 'text/anytext',
                 'application/octet-stream',
-                'application/txt');
+                'application/txt'
+            );
             $temp      = explode(".", $_FILES["file"]["name"]);
             $extension = end($temp);
             if ($_FILES["file"]["error"] > 0) {
@@ -1708,5 +1718,4 @@ class Staff extends Admin_Controller
         $this->staff_model->rating_remove($id);
         redirect('admin/staff/rating');
     }
-
 }
