@@ -537,7 +537,6 @@
                 // alert(dataString);
                 $.ajax({
                     url: '../../../phpscript/get-class-section-other.php',
-                    // url: '../../../phpscript/affectivedomain/get-class-section-other-af.php',
                     method: 'POST',
                     data: dataString,
 

@@ -537,7 +537,6 @@
                 // alert(dataString);
                 $.ajax({
                     url: '../../../phpscript/get-class-section-other.php',
-                    // url: '../../../phpscript/psycomotor/get-class-section-other-p.php',
                     method: 'POST',
                     data: dataString,
 

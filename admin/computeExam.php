@@ -488,7 +488,6 @@
                 // alert(dataString);
                 $.ajax({
                     url: '../../../phpscript/get-class-section-compute-result.php',
-                    // url: '../../../phpscript/get-class-section-other.php',
                     method: 'POST',
                     data: dataString,
 
