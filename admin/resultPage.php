@@ -80,13 +80,6 @@ include('../database/config.php');
             page-break-inside: avoid;
         }
 
-        /* Page setup for A4 size */
-        /* @page { 
-            size: A4 portrait;  /* Change to landscape if needed */
-        margin: 2mm;
-        /* Adjust margins as necessary 
-        } */
-
         canvas.sunygraph {
             min-height: 200px;
             max-width: 98%;
