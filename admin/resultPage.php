@@ -80,13 +80,6 @@ include('../database/config.php');
             page-break-inside: avoid;
         }
 
-        /* Page setup for A4 size */
-        /* @page { 
-            size: A4 portrait;  /* Change to landscape if needed */
-        margin: 2mm;
-        /* Adjust margins as necessary 
-        } */
-
         canvas.sunygraph {
             min-height: 200px;
             max-width: 98%;
@@ -266,7 +259,7 @@ $studsection = $rowGetsections['section'];
 
 
         <div class="card" id="printable">
-            <div class="watermark-logo" style="background-image: url('https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $rowsch_settings['app_logo']; ?>');"></div>
+            <img class="watermark-logo" src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $rowsch_settings['app_logo']; ?>">
 
             <div class="card-body" style="color: black;">
 
