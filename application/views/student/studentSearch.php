@@ -262,7 +262,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             var div_data = '<option value=""><?php echo $this->lang->line('select'); ?></option>';
             $.ajax({
                 type: "GET",
-                url: base_url + "sections/getByClass",
+                url: base_url + "sections/getClassTeacherSection",
                 data: {
                     'class_id': class_id
                 },
