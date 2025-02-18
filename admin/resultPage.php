@@ -259,7 +259,7 @@ $studsection = $rowGetsections['section'];
 
 
         <div class="card" id="printable">
-            <div class="watermark-logo" style="background-image: url('https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $rowsch_settings['app_logo']; ?>');"></div>
+            <img class="watermark-logo" style="background-image: url('https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $rowsch_settings['app_logo']; ?>');" />
 
             <div class="card-body" style="color: black;">
 
