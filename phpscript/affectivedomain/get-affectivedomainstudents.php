@@ -9,12 +9,10 @@ $session = $_POST['session'];
 
 $term = $_POST['term'];
 
-$sqlGetclass_sections = "SELECT * FROM `class_sections` WHERE `id`='$classsectionactual'";
+$sqlGetclass_sections = "SELECT * FROM `class_sections` WHERE `section_id`='$classsectionactual'";
 $queryGetclass_sections = mysqli_query($link, $sqlGetclass_sections);
 $rowGetclass_sections = mysqli_fetch_assoc($queryGetclass_sections);
 $countGetclass_sections = mysqli_num_rows($queryGetclass_sections);
-
-echo $classsectionactual . '...';
 
 if ($countGetclass_sections > 0) {
 
