@@ -10,15 +10,6 @@ $session = $_POST['session'];
 
 $term = $_POST['term'];
 
-// $sqlGetclass_sections = "SELECT * FROM `class_sections` WHERE `id`='$classsection'";
-// $queryGetclass_sections = mysqli_query($link, $sqlGetclass_sections);
-// $rowGetclass_sections = mysqli_fetch_assoc($queryGetclass_sections);
-// $countGetclass_sections = mysqli_num_rows($queryGetclass_sections);
-
-// if($countGetclass_sections > 0){
-
-//     $sectionnew = $rowGetclass_sections['section_id'];
-
 $sqlGetstudent_session = "SELECT * FROM `student_session` INNER JOIN students ON student_session.student_id=students.id WHERE session_id='$session' AND class_id = '$classid' AND section_id = '$classsection'";
 
 $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
@@ -48,4 +39,3 @@ if ($countGetstudent_session > 0) {
 } else {
     echo "Error: " . $sqlGetstudent_session . "<br>" . mysqli_error($link);
 }
-// }

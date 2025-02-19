@@ -9,17 +9,6 @@ $session = $_POST['session'];
 
 $term = $_POST['term'];
 
-// $sqlGetclass_sections = "SELECT * FROM `class_sections` WHERE `id`='$classsectionactual'";
-// $queryGetclass_sections = mysqli_query($link, $sqlGetclass_sections);
-// $rowGetclass_sections = mysqli_fetch_assoc($queryGetclass_sections);
-// $countGetclass_sections = mysqli_num_rows($queryGetclass_sections);
-
-// if($countGetclass_sections > 0){
-
-//     $sectionnew = $rowGetclass_sections['section_id'];
-
-//     $class_id = $rowGetclass_sections['class_id'];
-
 $sqlGetGradingSystem = "SELECT * FROM `assignspsycomotortoclass` INNER JOIN psycomotor_settings ON assignspsycomotortoclass.PsycomotorSettingsId=psycomotor_settings.id WHERE assignspsycomotortoclass.ClassID='$classid'";
 $queryGetGradingSystem = mysqli_query($link, $sqlGetGradingSystem);
 $rowGetGradingSystem = mysqli_fetch_assoc($queryGetGradingSystem);
@@ -1068,8 +1057,3 @@ if ($countGetGradingSystem > 0) {
 } else {
     echo 'No Psycomotor has been set for this class';
 }
-// }
-// else
-// {
-//     echo 'Class Section Not Found';
-// }

@@ -9,17 +9,6 @@ $session = $_POST['session'];
 
 $term = $_POST['term'];
 
-// $sqlGetclass_sections = "SELECT * FROM `class_sections` WHERE `section_id`='$classsectionactual'";
-// $queryGetclass_sections = mysqli_query($link, $sqlGetclass_sections);
-// $rowGetclass_sections = mysqli_fetch_assoc($queryGetclass_sections);
-// $countGetclass_sections = mysqli_num_rows($queryGetclass_sections);
-
-// if ($countGetclass_sections > 0) {
-
-//     $sectionnew = $rowGetclass_sections['section_id'];
-
-//     $class_id = $rowGetclass_sections['class_id'];
-
 $sqlGetGradingSystem = "SELECT * FROM `assignsaftoclass` INNER JOIN affective_domain_settings ON assignsaftoclass.AffectiveDomainSettingsId=affective_domain_settings.id WHERE assignsaftoclass.ClassID='$classid'";
 $queryGetGradingSystem = mysqli_query($link, $sqlGetGradingSystem);
 $rowGetGradingSystem = mysqli_fetch_assoc($queryGetGradingSystem);
@@ -1068,6 +1057,3 @@ if ($countGetGradingSystem > 0) {
 } else {
     echo 'No Affective Domain has been set for this class';
 }
-// } else {
-//     echo 'Class Section Not Found';
-// }
