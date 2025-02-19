@@ -20,7 +20,7 @@ $term = $_POST['term'];
 
 //     $class_id = $rowGetclass_sections['class_id'];
 
-$sqlGetGradingSystem = "SELECT * FROM `assignspsycomotortoclass` INNER JOIN psycomotor_settings ON assignspsycomotortoclass.PsycomotorSettingsId=psycomotor_settings.id WHERE assignspsycomotortoclass.ClassID='$class_id'";
+$sqlGetGradingSystem = "SELECT * FROM `assignspsycomotortoclass` INNER JOIN psycomotor_settings ON assignspsycomotortoclass.PsycomotorSettingsId=psycomotor_settings.id WHERE assignspsycomotortoclass.ClassID='$classid'";
 $queryGetGradingSystem = mysqli_query($link, $sqlGetGradingSystem);
 $rowGetGradingSystem = mysqli_fetch_assoc($queryGetGradingSystem);
 $countGetGradingSystem = mysqli_num_rows($queryGetGradingSystem);

@@ -20,7 +20,7 @@ $term = $_POST['term'];
 
 //     $class_id = $rowGetclass_sections['class_id'];
 
-$sqlGetGradingSystem = "SELECT * FROM `assignsaftoclass` INNER JOIN affective_domain_settings ON assignsaftoclass.AffectiveDomainSettingsId=affective_domain_settings.id WHERE assignsaftoclass.ClassID='$class_id'";
+$sqlGetGradingSystem = "SELECT * FROM `assignsaftoclass` INNER JOIN affective_domain_settings ON assignsaftoclass.AffectiveDomainSettingsId=affective_domain_settings.id WHERE assignsaftoclass.ClassID='$classid'";
 $queryGetGradingSystem = mysqli_query($link, $sqlGetGradingSystem);
 $rowGetGradingSystem = mysqli_fetch_assoc($queryGetGradingSystem);
 $countGetGradingSystem = mysqli_num_rows($queryGetGradingSystem);
