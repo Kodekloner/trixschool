@@ -2036,7 +2036,7 @@ $studsection = $rowGetsections['section'];
 
                     } elseif ($reltypemain == 'termly') {
 
-                        if ($reltype == 'alphabetic') {
+                        if ($reltype == 'numeric') {
                         ?>
                             <div class="container-motto">
                                 <?php
@@ -3929,7 +3929,7 @@ $studsection = $rowGetsections['section'];
                             ?>
 
                         <?php
-                        } elseif ($reltype == 'numeric') {
+                        } elseif ($reltype == 'alphabetic') {
                         ?>
                             <div class="container-motto">
                                 <?php
