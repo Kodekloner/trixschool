@@ -105,7 +105,7 @@ if ($countGetclass_sections > 0) {
 
     $studentsData = []; // Array to store all student data
 
-    $sqlGetstudent_session = "SELECT DISTINCT StudentID,lastname,middlename,firstname,admission_no FROM `score`INNER JOIN students ON score.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND Term = '$term'";
+    $sqlGetstudent_session = "SELECT DISTINCT StudentID,lastname,middlename,firstname,admission_no FROM `score`INNER JOIN students ON score.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND Term = '$term' AND students.is_active = 'yes'";
     $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
     $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
     $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
