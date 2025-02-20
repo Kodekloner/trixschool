@@ -2075,8 +2075,31 @@ $studsection = $rowGetsections['section'];
 
                                 $decStubsubavg = round($rowgettotclassscor['totalScore'] / $totsubjectsALL, 2);
 
-                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
+                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total_score, COUNT(ID) AS count_records, SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
+
+                                // Check if there are results
+                                if (mysqli_num_rows($resultsunnyhihhscoreuname) > 0) {
+                                    echo "<table border='1'>
+            <tr>
+                <th>Student ID</th>
+                <th>Total Score</th>
+                <th>Count of Records</th>
+            </tr>";
+
+                                    // Fetch and display results
+                                    while ($row = mysqli_fetch_assoc($resultsunnyhihhscoreuname)) {
+                                        echo "<tr>
+                <td>" . $row["StudentID"] . "</td>
+                <td>" . $row["total_score"] . "</td>
+                <td>" . $row["count_records"] . "</td>
+              </tr>";
+                                    }
+                                    echo "</table>";
+                                } else {
+                                    echo "No results found.";
+                                }
+                                die();
                                 $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
 
