@@ -4207,9 +4207,6 @@ $studsection = $rowGetsections['section'];
                                         $rowGetsub = mysqli_fetch_assoc($resultsub);
                                         $row_cntsub = mysqli_num_rows($resultsub);
 
-                                        echo $row_cntsub;
-                                        die();
-
                                         $sqlgetscorecheck = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                         $resultgetscorecheck = mysqli_query($link, $sqlgetscorecheck);
                                         $rowgetscorecheck = mysqli_fetch_assoc($resultgetscorecheck);
@@ -4229,17 +4226,17 @@ $studsection = $rowGetsections['section'];
                                                 $subname = $rowGetsub['name'];
                                                 $subid = $rowGetsub['id'];
 
-                                                $sqlgetscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
-                                                $resultgetscore = mysqli_query($link, $sqlgetscore);
-                                                $rowgetscore = mysqli_fetch_assoc($resultgetscore);
-                                                $row_cntgetscore = mysqli_num_rows($resultgetscore);
+                                                // $sqlgetscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                                                // $resultgetscore = mysqli_query($link, $sqlgetscore);
+                                                // $rowgetscore = mysqli_fetch_assoc($resultgetscore);
+                                                // $row_cntgetscore = mysqli_num_rows($resultgetscore);
 
 
                                                 $sqlgetscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                 $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                 $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                 $row_cntgetscore = mysqli_num_rows($resultgetscore);
-
+                                                echo $row_cntgetscore . ', ';
 
                                                 if ($row_cntgetscore > 0) {
 
@@ -4564,6 +4561,7 @@ $studsection = $rowGetsections['section'];
                                                 } else {
                                                 }
                                             } while ($rowGetsub = mysqli_fetch_assoc($resultsub));
+                                            die();
                                         } else {
                                             echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
                                         }
