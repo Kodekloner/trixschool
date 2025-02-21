@@ -3991,7 +3991,7 @@ $studsection = $rowGetsections['section'];
                                 AND score.SubjectID != 0
                                 AND score.SectionID = '$classsectionactual'
                                 GROUP BY score.StudentID
-                                ORDER BY avgScore ASC
+                                ORDER BY avgScore DESC
                                 LIMIT 1";
 
                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
