@@ -3967,12 +3967,38 @@ $studsection = $rowGetsections['section'];
 
                                 $decStubsubavg = round($rowgettotclassscor['totalScore'] / $totsubjectsALL, 2);
 
-                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(score.StudentID), SUM(score.exam + score.ca1 + score.ca2 + score.ca3 + score.ca4 + score.ca5 + score.ca6 + score.ca7 + score.ca8 + score.ca9 + score.ca10), COUNT(score.ID), SUM(score.exam + score.ca1 + score.ca2 + score.ca3 + score.ca4 + score.ca5 + score.ca6 + score.ca7 + score.ca8 + score.ca9 + score.ca10) / COUNT(score.ID) AS total FROM score INNER JOIN students ON score.StudentID = students.id WHERE (`score.exam` !='0' OR `score.ca1` !='0' OR `score.ca2` !='0' OR `score.ca3` !='0' OR `score.ca4` !='0' OR `score.ca5` !='0' OR `score.ca6` !='0' OR `score.ca7` !='0' OR `score.ca8` !='0' OR `score.ca9` !='0' OR `score.ca10` !='0') AND score.ClassID = '$classid' AND score.Session = '$session' AND score.Term = '$term' AND score.SubjectID != 0 AND students.is_active = 'yes' AND score.SectionID = '$classsectionactual' GROUP BY score.StudentID order by total DESC LIMIT 1";
+                                // $sqlsunnyhihhscoreuname = "SELECT DISTINCT(score.StudentID), SUM(score.exam + score.ca1 + score.ca2 + score.ca3 + score.ca4 + score.ca5 + score.ca6 + score.ca7 + score.ca8 + score.ca9 + score.ca10), COUNT(score.ID), SUM(score.exam + score.ca1 + score.ca2 + score.ca3 + score.ca4 + score.ca5 + score.ca6 + score.ca7 + score.ca8 + score.ca9 + score.ca10) / COUNT(score.ID) AS total FROM score INNER JOIN students ON score.StudentID = students.id WHERE (`score.exam` !='0' OR `score.ca1` !='0' OR `score.ca2` !='0' OR `score.ca3` !='0' OR `score.ca4` !='0' OR `score.ca5` !='0' OR `score.ca6` !='0' OR `score.ca7` !='0' OR `score.ca8` !='0' OR `score.ca9` !='0' OR `score.ca10` !='0') AND score.ClassID = '$classid' AND score.Session = '$session' AND score.Term = '$term' AND score.SubjectID != 0 AND students.is_active = 'yes' AND score.SectionID = '$classsectionactual' GROUP BY score.StudentID order by total DESC LIMIT 1";
+                                // $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
+                                // $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
+                                // $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
+
+                                // $sunhihscrun = round($rowsunnyhihhscoreuname['total'], 2);
+
+                                $sqlsunnyhihhscoreuname = "SELECT s.StudentID,
+                                    SUM(score.exam + score.ca1 + score.ca2 + score.ca3 + score.ca4 + 
+                                        score.ca5 + score.ca6 + score.ca7 + score.ca8 + score.ca9 + score.ca10) AS total,
+                                    COUNT(score.ID) AS cnt,
+                                    SUM(score.exam + score.ca1 + score.ca2 + score.ca3 + score.ca4 + 
+                                        score.ca5 + score.ca6 + score.ca7 + score.ca8 + score.ca9 + score.ca10) / COUNT(score.ID) AS avgScore
+                                FROM score
+                                JOIN students s ON score.StudentID = s.id AND s.is_active = 'yes'
+                                WHERE (score.exam != 0 OR score.ca1 != 0 OR score.ca2 != 0 OR score.ca3 != 0 OR 
+                                    score.ca4 != 0 OR score.ca5 != 0 OR score.ca6 != 0 OR score.ca7 != 0 OR 
+                                    score.ca8 != 0 OR score.ca9 != 0 OR score.ca10 != 0)
+                                AND score.ClassID = '$classid'
+                                AND score.Session = '$session'
+                                AND score.Term = '$term'
+                                AND score.SubjectID != 0
+                                AND score.SectionID = '$classsectionactual'
+                                GROUP BY s.StudentID
+                                ORDER BY avgScore ASC
+                                LIMIT 1";
+
                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
                                 $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
 
-                                $sunhihscrun = round($rowsunnyhihhscoreuname['total'], 2);
+                                $sunhihscrun = round($rowsunnyhihhscoreuname['avgScore'], 2);
 
                                 $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10), COUNT(ID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score JOIN students ON score.StudentID = students.id WHERE students.is_active = 'yes' AND (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
                                 $resultsunnylowwscoreuname = mysqli_query($link, $sqlsunnylowwscoreuname);
