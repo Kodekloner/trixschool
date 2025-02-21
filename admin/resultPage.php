@@ -3974,14 +3974,14 @@ $studsection = $rowGetsections['section'];
 
                                 // $sunhihscrun = round($rowsunnyhihhscoreuname['total'], 2);
 
-                                $sqlsunnyhihhscoreuname = "SELECT s.StudentID,
+                                $sqlsunnyhihhscoreuname = "SELECT score.StudentID,
                                     SUM(score.exam + score.ca1 + score.ca2 + score.ca3 + score.ca4 + 
                                         score.ca5 + score.ca6 + score.ca7 + score.ca8 + score.ca9 + score.ca10) AS total,
                                     COUNT(score.ID) AS cnt,
                                     SUM(score.exam + score.ca1 + score.ca2 + score.ca3 + score.ca4 + 
                                         score.ca5 + score.ca6 + score.ca7 + score.ca8 + score.ca9 + score.ca10) / COUNT(score.ID) AS avgScore
                                 FROM score
-                                -- JOIN students s ON score.StudentID = s.id AND s.is_active = 'yes'
+                                JOIN students s ON score.StudentID = s.id AND s.is_active = 'yes'
                                 WHERE (score.exam != 0 OR score.ca1 != 0 OR score.ca2 != 0 OR score.ca3 != 0 OR 
                                     score.ca4 != 0 OR score.ca5 != 0 OR score.ca6 != 0 OR score.ca7 != 0 OR 
                                     score.ca8 != 0 OR score.ca9 != 0 OR score.ca10 != 0)
@@ -3990,7 +3990,7 @@ $studsection = $rowGetsections['section'];
                                 AND score.Term = '$term'
                                 AND score.SubjectID != 0
                                 AND score.SectionID = '$classsectionactual'
-                                GROUP BY s.StudentID
+                                GROUP BY score.StudentID
                                 ORDER BY avgScore ASC
                                 LIMIT 1";
 
