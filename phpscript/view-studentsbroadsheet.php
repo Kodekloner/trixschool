@@ -59,10 +59,10 @@ if ($countGetclass_sections > 0) {
                               
                     <tr>
                         <th colspan="2" style="width: 100px;">    
-                            <p style="color: black; margin-top: 20px; font-size: 10px; margin-left: -5px;"><b>SESSION: ' . $rowGetsessions['session'] . '</b></p>
-                            <p style="color: black; margin-left: -5px; font-size: 10px;"><b>TERM: ' . $term . '</b></p>
-                            <p style="color: black; margin-left: -5px; font-size: 10px;"><b>CLASS: ' . $rowGetclasses['class'] . ' ' . $rowGetsection['section'] . '</b></p>
-                            <p style="color: black; margin-left: -5px; font-size: 10px;"><b>FORM TEACHER: ' . $teacherRemark . '</b></p>
+                            <p style="color: black; margin-top: 20px; margin-left: -5px;"><b>SESSION: ' . $rowGetsessions['session'] . '</b></p>
+                            <p style="color: black; margin-left: -5px;"><b>TERM: ' . $term . '</b></p>
+                            <p style="color: black; margin-left: -5px;"><b>CLASS: ' . $rowGetclasses['class'] . ' ' . $rowGetsection['section'] . '</b></p>
+                            <p style="color: black; margin-left: -5px;"><b>FORM TEACHER: ' . $teacherRemark . '</b></p>
                         </th>';
 
     $subjectList = [];
