@@ -23,6 +23,10 @@ $queryGetclasses = mysqli_query($link, $sqlGetclasses);
 $rowGetclasses = mysqli_fetch_assoc($queryGetclasses);
 $countGetclasses = mysqli_num_rows($queryGetclasses);
 
+$sqlGetsection = "SELECT * FROM `sections` WHERE `id`='$classsectionactual'";
+$queryGetsection = mysqli_query($link, $sqlGetsection);
+$rowGetsection = mysqli_fetch_assoc($queryGetsection);
+
 $sqlGetsessions = "SELECT * FROM `sessions` WHERE `id`='$session'";
 $queryGetsessions = mysqli_query($link, $sqlGetsessions);
 $rowGetsessions = mysqli_fetch_assoc($queryGetsessions);
@@ -57,7 +61,7 @@ if ($countGetclass_sections > 0) {
                         <th colspan="2" style="width: 100px;">    
                             <p style="color: black; margin-top: 20px; font-size: 10px; margin-left: -5px;"><b>SESSION: ' . $rowGetsessions['session'] . '</b></p>
                             <p style="color: black; margin-left: -5px; font-size: 10px;"><b>TERM: ' . $term . '</b></p>
-                            <p style="color: black; margin-left: -5px; font-size: 10px;"><b>CLASS: ' . $rowGetclasses['class'] . ' ' . $rowGetclasses['section'] . '</b></p>
+                            <p style="color: black; margin-left: -5px; font-size: 10px;"><b>CLASS: ' . $rowGetclasses['class'] . ' ' . $rowGetsection['section'] . '</b></p>
                             <p style="color: black; margin-left: -5px; font-size: 10px;"><b>FORM TEACHER: ' . $teacherRemark . '</b></p>
                         </th>';
 
