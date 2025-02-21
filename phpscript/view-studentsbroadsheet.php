@@ -78,7 +78,7 @@ if ($countGetclass_sections > 0) {
             $subjectList[] = $rowGetsub;
             $subname = $rowGetsub['name'];
 
-            echo '<th style="white-space: normal; word-wrap: break-word;"><span><b>' . $subname . '</b></span></th>';
+            echo '<th><span><b>' . $subname . '</b></span></th>';
         } while ($rowGetsub = mysqli_fetch_assoc($resultsub));
     } else {
         echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
