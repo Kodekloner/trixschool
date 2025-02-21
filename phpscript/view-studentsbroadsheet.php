@@ -144,12 +144,12 @@ if ($countGetclass_sections > 0) {
             // Get grade and remark based on the average score
             if ($averageScore != 0) {
                 $sqlgetgradstuc = "SELECT * 
-                                                    FROM `gradingstructure` 
-                                                    INNER JOIN assigngradingtclass 
-                                                        ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle 
-                                                    WHERE $averageScore >= RangeStart 
-                                                        AND $averageScore <= RangeEnd 
-                                                        AND ClassID = '$classid'";
+                FROM `gradingstructure` 
+                INNER JOIN assigngradingtclass 
+                    ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle 
+                WHERE $averageScore >= RangeStart 
+                    AND $averageScore <= RangeEnd 
+                    AND ClassID = '$classid'";
                 $resultgetgradstuc = mysqli_query($link, $sqlgetgradstuc);
                 $rowgetgradstuc = mysqli_fetch_assoc($resultgetgradstuc);
                 if ($rowgetgradstuc) {
