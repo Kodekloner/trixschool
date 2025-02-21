@@ -3971,8 +3971,6 @@ $studsection = $rowGetsections['section'];
                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
                                 $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
-                                echo $rowsunnyhihhscoreuname['total'];
-                                die();
 
                                 $sunhihscrun = round($rowsunnyhihhscoreuname['total'], 2);
 
