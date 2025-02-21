@@ -4236,7 +4236,6 @@ $studsection = $rowGetsections['section'];
                                                 $resultgetscore = mysqli_query($link, $sqlgetscore);
                                                 $rowgetscore = mysqli_fetch_assoc($resultgetscore);
                                                 $row_cntgetscore = mysqli_num_rows($resultgetscore);
-                                                echo $row_cntgetscore . ', ';
 
                                                 if ($row_cntgetscore > 0) {
 
@@ -4561,7 +4560,6 @@ $studsection = $rowGetsections['section'];
                                                 } else {
                                                 }
                                             } while ($rowGetsub = mysqli_fetch_assoc($resultsub));
-                                            die();
                                         } else {
                                             echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
                                         }
