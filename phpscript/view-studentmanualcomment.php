@@ -65,7 +65,7 @@ if ($reltype == 'british') {
                 <tbody>';
         $cnt = 1;
 
-        $sqlGetstudent_session = "SELECT DISTINCT StudentID,lastname,middlename,firstname,admission_no FROM `britishresult` INNER JOIN students ON britishresult.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND Term = '$term'";
+        $sqlGetstudent_session = "SELECT DISTINCT StudentID,lastname,middlename,firstname,admission_no, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name FROM `britishresult` INNER JOIN students ON britishresult.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND Term = '$term' AND students.is_active = 'yes' ORDER BY full_name ASC";
         $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
         $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
         $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
@@ -126,7 +126,7 @@ if ($reltype == 'british') {
                 <tbody>';
         $cnt = 1;
 
-        $sqlGetstudent_session = "SELECT DISTINCT StudentID,lastname,middlename,firstname,admission_no FROM `score`INNER JOIN students ON score.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND Term = '$term' AND students.is_active = 'yes'";
+        $sqlGetstudent_session = "SELECT DISTINCT StudentID,lastname,middlename,firstname,admission_no, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name FROM `score`INNER JOIN students ON score.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND Term = '$term' AND students.is_active = 'yes' ORDER BY full_name ASC";
         $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
         $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
         $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
