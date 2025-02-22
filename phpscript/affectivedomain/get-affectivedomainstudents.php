@@ -63,7 +63,7 @@ if ($countGetGradingSystem > 0) {
                 <tbody>';
     $cnt = 1;
 
-    $sqlGetstudent_session = "SELECT * FROM `students` INNER JOIN affective_domain_score ON students.id=affective_domain_score.studentid AND affective_domain_score.session='$session' AND affective_domain_score.classid = '$classid' AND affective_domain_score.sectionid = '$classsectionactual' AND affective_domain_score.term = '$term'";
+    $sqlGetstudent_session = "SELECT *, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name FROM `students` INNER JOIN affective_domain_score ON students.id=affective_domain_score.studentid AND affective_domain_score.session='$session' AND affective_domain_score.classid = '$classid' AND affective_domain_score.sectionid = '$classsectionactual' AND affective_domain_score.term = '$term' AND students.is_active = 'yes' ORDER BY full_name ASC";
     $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
     $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
     $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);

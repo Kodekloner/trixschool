@@ -8,7 +8,7 @@ $session = $_POST['session'];
 
 $term = $_POST['term'];
 
-$sqlGetstudent_session = "SELECT * FROM `student_session` INNER JOIN students ON student_session.student_id=students.id WHERE session_id='$session' AND class_id = '$classid' AND section_id = '$classsection'";
+$sqlGetstudent_session = "SELECT *, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name FROM `student_session` INNER JOIN students ON student_session.student_id=students.id WHERE session_id='$session' AND class_id = '$classid' AND section_id = '$classsection' AND students.is_active = 'yes' ORDER BY full_name ASC";
 
 $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
 $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);

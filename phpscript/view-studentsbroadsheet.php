@@ -23,6 +23,10 @@ $queryGetclasses = mysqli_query($link, $sqlGetclasses);
 $rowGetclasses = mysqli_fetch_assoc($queryGetclasses);
 $countGetclasses = mysqli_num_rows($queryGetclasses);
 
+$sqlGetsection = "SELECT * FROM `sections` WHERE `id`='$classsectionactual'";
+$queryGetsection = mysqli_query($link, $sqlGetsection);
+$rowGetsection = mysqli_fetch_assoc($queryGetsection);
+
 $sqlGetsessions = "SELECT * FROM `sessions` WHERE `id`='$session'";
 $queryGetsessions = mysqli_query($link, $sqlGetsessions);
 $rowGetsessions = mysqli_fetch_assoc($queryGetsessions);
@@ -55,10 +59,10 @@ if ($countGetclass_sections > 0) {
                               
                     <tr>
                         <th colspan="2" style="width: 100px;">    
-                            <p style="color: black; margin-top: 20px; font-size: 10px; margin-left: -5px;"><b>SESSION: ' . $rowGetsessions['session'] . '</b></p>
-                            <p style="color: black; margin-left: -5px; font-size: 10px;"><b>TERM: ' . $term . '</b></p>
-                            <p style="color: black; margin-left: -5px; font-size: 10px;"><b>CLASS: ' . $rowGetclasses['class'] . '</b></p>
-                            <p style="color: black; margin-left: -5px; font-size: 10px;"><b>FORM TEACHER: ' . $teacherRemark . '</b></p>
+                            <p style="color: black; margin-top: 20px; margin-left: -5px;"><b>SESSION: ' . $rowGetsessions['session'] . '</b></p>
+                            <p style="color: black; margin-left: -5px;"><b>TERM: ' . $term . '</b></p>
+                            <p style="color: black; margin-left: -5px;"><b>CLASS: ' . $rowGetclasses['class'] . ' ' . $rowGetsection['section'] . '</b></p>
+                            <p style="color: black; margin-left: -5px;"><b>FORM TEACHER: ' . $teacherRemark . '</b></p>
                         </th>';
 
     $subjectList = [];
@@ -105,7 +109,7 @@ if ($countGetclass_sections > 0) {
 
     $studentsData = []; // Array to store all student data
 
-    $sqlGetstudent_session = "SELECT DISTINCT StudentID,lastname,middlename,firstname,admission_no FROM `score`INNER JOIN students ON score.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND Term = '$term'";
+    $sqlGetstudent_session = "SELECT DISTINCT StudentID,lastname,middlename,firstname,admission_no FROM `score`INNER JOIN students ON score.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND Term = '$term' AND students.is_active = 'yes'";
     $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
     $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
     $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
@@ -123,20 +127,20 @@ if ($countGetclass_sections > 0) {
 
                 $subid = $subject['id'];
 
-                $sqlgetscore = ("SELECT SUM(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
+                $sqlgetscore = ("SELECT SUM(`exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                 $resultgetscore = mysqli_query($link, $sqlgetscore);
                 $rowgetscore = mysqli_fetch_assoc($resultgetscore);
-                $subjectScore = (!empty($rowgetscore['Total'])) ? $rowgetscore['Total'] : 0;
+                $subjectScore = (!empty($rowgetscore['Total'])) ? $rowgetscore['Total'] : "-";
                 $subjectScores[] = $subjectScore;
                 // $row_cntgetscore = mysqli_num_rows($resultgetscore);
             }
 
-            $sqlgetscoretotal = ("SELECT SUM(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+            $sqlgetscoretotal = ("SELECT SUM(`exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual'");
             $resultgetscoretotal = mysqli_query($link, $sqlgetscoretotal);
             $rowgetscoretotal = mysqli_fetch_assoc($resultgetscoretotal);
             $totalScore = (!empty($rowgetscoretotal['Total'])) ? $rowgetscoretotal['Total'] : 0;
 
-            $sqlgetscoreAVG = ("SELECT AVG(`Exam` + `CA1` + `CA2` + `CA3` + `CA4` + `CA5` + `CA6` + `CA7` + `CA8` + `CA9` + `CA10`) AS Total FROM `score` WHERE (`Exam` !='0' OR `CA1` !='0' OR `CA2` !='0' OR `CA3` !='0' OR `CA4` !='0' OR `CA5` !='0' OR `CA6` !='0' OR `CA7` !='0' OR `CA8` !='0' OR `CA9` !='0' OR `CA10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+            $sqlgetscoreAVG = ("SELECT AVG(`exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual'");
             $resultgetscoreAVG = mysqli_query($link, $sqlgetscoreAVG);
             $rowgetscoreAVG = mysqli_fetch_assoc($resultgetscoreAVG);
             $averageScore = (!empty($rowgetscoreAVG['Total'])) ? $rowgetscoreAVG['Total'] : 0;
@@ -144,12 +148,12 @@ if ($countGetclass_sections > 0) {
             // Get grade and remark based on the average score
             if ($averageScore != 0) {
                 $sqlgetgradstuc = "SELECT * 
-                                                    FROM `gradingstructure` 
-                                                    INNER JOIN assigngradingtclass 
-                                                        ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle 
-                                                    WHERE $averageScore >= RangeStart 
-                                                        AND $averageScore <= RangeEnd 
-                                                        AND ClassID = '$classid'";
+                FROM `gradingstructure` 
+                INNER JOIN assigngradingtclass 
+                    ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle 
+                WHERE $averageScore >= RangeStart 
+                    AND $averageScore <= RangeEnd 
+                    AND ClassID = '$classid'";
                 $resultgetgradstuc = mysqli_query($link, $sqlgetgradstuc);
                 $rowgetgradstuc = mysqli_fetch_assoc($resultgetgradstuc);
                 if ($rowgetgradstuc) {
