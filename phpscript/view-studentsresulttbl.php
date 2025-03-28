@@ -126,7 +126,7 @@ if ($rolefirst == 'student' || $rolefirst == 'parent') {
                     echo '</tr>';
                 } while ($rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session));
             } else {
-                echo '<tr><td>No Records Found' . $staffid . '</td></tr>';
+                echo '<tr><td>No Records Found' . $staffid . ' ' . $session . ' ' . $classid . ' ' . $sectionnew . ' ' . $term . '</td></tr>';
             }
 
             echo '</tbody>
