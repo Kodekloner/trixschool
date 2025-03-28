@@ -289,9 +289,10 @@
 
             var rolefirstold = '<?php echo $rolefirst; ?>';
             var staffid = "<?php echo $id; ?>";
+            console.log(rolefirstold);
             if (rolefirstold == 'parent') {
                 var staffid = localStorage.getItem('kidid');
-
+                console.log(staffid);
             }
 
             var rolefirst = '<?php echo $rolefirst; ?>';
