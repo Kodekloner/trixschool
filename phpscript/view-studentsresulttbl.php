@@ -94,7 +94,24 @@ if ($rolefirst == 'student' || $rolefirst == 'parent') {
                 if ($reltype == 'cummulative') {
                     $sqlGetstudent_session = "SELECT DISTINCT StudentID,lastname,middlename,firstname,admission_no, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) FROM `score` INNER JOIN students ON score.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND score.StudentID='$staffid' AND students.is_active = 'yes' ORDER BY full_name ASC";
                 } else {
-                    $sqlGetstudent_session = "SELECT DISTINCT StudentID,lastname,middlename,firstname,admission_no, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) FROM `score` INNER JOIN students ON score.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND Term = '$term' AND score.StudentID='$staffid' AND students.is_active = 'yes' ORDER BY full_name ASC";
+                    $sqlGetstudent_session = "SELECT DISTINCT 
+                            StudentID, 
+                            lastname, 
+                            middlename, 
+                            firstname, 
+                            admission_no, 
+                            CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name 
+                          FROM `score` 
+                          INNER JOIN students ON score.StudentID = students.id 
+                          WHERE 
+                            `Session` = '$session' 
+                            AND ClassID = '$classid' 
+                            AND SectionID = '$sectionnew' 
+                            AND Term = '$term' 
+                            AND score.StudentID = '$staffid' 
+                            AND students.is_active = 'yes' 
+                          ORDER BY full_name ASC";
+                    // $sqlGetstudent_session = "SELECT DISTINCT StudentID,lastname,middlename,firstname,admission_no, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) FROM `score` INNER JOIN students ON score.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND Term = '$term' AND score.StudentID='$staffid' AND students.is_active = 'yes' ORDER BY full_name ASC";
                 }
             }
 
@@ -126,7 +143,7 @@ if ($rolefirst == 'student' || $rolefirst == 'parent') {
                     echo '</tr>';
                 } while ($rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session));
             } else {
-                echo '<tr><td>No Records Found' . $staffid . '</td></tr>';
+                echo '<tr><td>No Records Found</td></tr>';
             }
 
             echo '</tbody>
