@@ -342,7 +342,6 @@
             var staffid = "<?php echo $id; ?>";
             if (rolefirstold == 'parent') {
                 var staffid = localStorage.getItem('kidid');
-
             }
 
             var rolefirst = '<?php echo $rolefirst; ?>';
