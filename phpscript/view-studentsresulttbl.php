@@ -15,6 +15,8 @@ $rolefirst = $_POST['rolefirst'];
 
 $staffid = $_POST['staffid'];
 
+echo $staffid;
+
 $reldate = date('Y-m-d');
 
 $sqlGetassigncatoclass = "SELECT * FROM `assigncatoclass` WHERE `ClassID`='$classid'";
@@ -30,6 +32,7 @@ if ($rolefirst == 'parent') {
     $student_id_sql = "SELECT student_id FROM student_session WHERE id = '$staffid'";
     $student_id_sql_2 = mysqli_query($link, $student_id_sql);
     $staffid = mysqli_fetch_assoc($student_id_sql_2)['student_id'];
+    echo $staffid;
 }
 
 if ($rolefirst == 'student' || $rolefirst == 'parent') {
