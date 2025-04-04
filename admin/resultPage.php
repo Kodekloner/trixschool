@@ -2256,7 +2256,7 @@ $studsection = $rowGetsections['section'];
 
                                         if ($row_cntgetscorecheck > 0) {
                                             echo "student_id: ". $id . ", ClassID: " . $classid . ", Session: " . $session. ", Term: " . $term . ", SectionID: " . $classsectionactual;
-                                            die;
+//                                            die;
                                             // $sqlgetgadingmeth = ("SELECT * FROM `classordepartment` WHERE InstitutionID = '$institution' AND FacultyOrSchoolID='$facultyID' AND ClassOrDepartmentID = '$classid'");
                                             // $resultgetgadingmeth = mysqli_query($link, $sqlgetgadingmeth);
                                             // $rowgetgadingmeth = mysqli_fetch_assoc($resultgetgadingmeth);
