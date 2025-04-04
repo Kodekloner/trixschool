@@ -691,7 +691,7 @@ $studsection = $rowGetsections['section'];
                                                 }
 
                                                 echo '<tr>
-                                                                            <th>' . $subname . '</th>';
+                                                                            <th> 2' . $subname . '</th>';
                                                 echo $ca1table . $ca2table . $ca3table . $ca4table . $ca5table . $ca6table . $ca7table . $ca8table . $ca9table . $ca10table;
                                                 echo '
 
@@ -2355,7 +2355,7 @@ $studsection = $rowGetsections['section'];
                                                     }
 
                                                     echo '<tr>
-                                                                    <th>' . $subname . '</th>';
+                                                                    <th> 3' . $subname . '</th>';
                                                     if ($rowGetrelset['NumberOfCA'] == '1') {
                                                         echo '<td>
                                                                                 ' . $rowgetscore["ca1"] . '
@@ -4312,7 +4312,7 @@ $studsection = $rowGetsections['section'];
                                                     }
 
                                                     echo '<tr>
-                                                                    <th>' . $subname . '</th>';
+                                                                    <th> 1' . $subname . '</th>';
                                                     if ($rowGetrelset['NumberOfCA'] == '1') {
                                                         echo '<td>
                                                                                 ' . $rowgetscore["ca1"] . '
