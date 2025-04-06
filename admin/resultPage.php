@@ -2079,17 +2079,50 @@ $studsection = $rowGetsections['section'];
 
                                 $gettotscore = $rowgettotalgrade['average'];
 
-                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND SubjectID != '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND SubjectID IN (
+        SELECT subjects.id 
+        FROM `subject_group_class_sections` 
+        INNER JOIN subject_group_subjects 
+            ON subject_group_class_sections.subject_group_id = subject_group_subjects.subject_group_id 
+        INNER JOIN subjects 
+            ON subject_group_subjects.subject_id = subjects.id 
+        WHERE 
+            subject_group_class_sections.class_section_id = '$classsection' 
+            AND subject_group_class_sections.session_id = '$session' 
+            AND subject_group_subjects.session_id = '$session'
+    ) AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                 $resultgetClasscount = mysqli_query($link, $sqlgetClasscount);
                                 $rowgetClasscount = mysqli_fetch_assoc($resultgetClasscount);
                                 $row_cntClasscount = mysqli_num_rows($resultgetClasscount);
 
-                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SubjectID != '0' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SubjectID IN (
+        SELECT subjects.id 
+        FROM `subject_group_class_sections` 
+        INNER JOIN subject_group_subjects 
+            ON subject_group_class_sections.subject_group_id = subject_group_subjects.subject_group_id 
+        INNER JOIN subjects 
+            ON subject_group_subjects.subject_id = subjects.id 
+        WHERE 
+            subject_group_class_sections.class_section_id = '$classsection' 
+            AND subject_group_class_sections.session_id = '$session' 
+            AND subject_group_subjects.session_id = '$session'
+    ) AND Term = '$term' AND SectionID = '$classsectionactual'");
                                 $resultgetsubscoreALL = mysqli_query($link, $sqlgetsubscoreALL);
                                 $rowgetsubscoreALL = mysqli_fetch_assoc($resultgetsubscoreALL);
                                 $row_cntgetsubscoreALL = mysqli_num_rows($resultgetsubscoreALL);
 
-                                $sqlgettotclassscor = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual' ORDER BY exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
+                                $sqlgettotclassscor = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID IN (
+        SELECT subjects.id 
+        FROM `subject_group_class_sections` 
+        INNER JOIN subject_group_subjects 
+            ON subject_group_class_sections.subject_group_id = subject_group_subjects.subject_group_id 
+        INNER JOIN subjects 
+            ON subject_group_subjects.subject_id = subjects.id 
+        WHERE 
+            subject_group_class_sections.class_section_id = '$classsection' 
+            AND subject_group_class_sections.session_id = '$session' 
+            AND subject_group_subjects.session_id = '$session'
+    ) AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual' ORDER BY exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
                                 $resultgettotclassscor = mysqli_query($link, $sqlgettotclassscor);
                                 $rowgettotclassscor = mysqli_fetch_assoc($resultgettotclassscor);
                                 $row_cntgettotclassscor = mysqli_num_rows($resultgettotclassscor);
