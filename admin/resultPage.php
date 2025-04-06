@@ -2041,7 +2041,19 @@ $studsection = $rowGetsections['section'];
                             <div class="container-motto">
                                 <?php
 
-                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID IN (
+                                                        SELECT subjects.id 
+                                                        FROM `subject_group_class_sections` 
+                                                        INNER JOIN subject_group_subjects 
+                                                            ON subject_group_class_sections.subject_group_id = subject_group_subjects.subject_group_id 
+                                                        INNER JOIN subjects 
+                                                            ON subject_group_subjects.subject_id = subjects.id 
+                                                        WHERE 
+                                                            subject_group_class_sections.class_section_id = '$classsection' 
+                                                            AND subject_group_class_sections.session_id = '$session' 
+                                                            AND subject_group_subjects.session_id = '$session'
+                                                    ) 
+                                                    AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
