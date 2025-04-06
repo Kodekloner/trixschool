@@ -2041,12 +2041,36 @@ $studsection = $rowGetsections['section'];
                             <div class="container-motto">
                                 <?php
 
-                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID IN (
+                                                        SELECT subjects.id 
+                                                        FROM `subject_group_class_sections` 
+                                                        INNER JOIN subject_group_subjects 
+                                                            ON subject_group_class_sections.subject_group_id = subject_group_subjects.subject_group_id 
+                                                        INNER JOIN subjects 
+                                                            ON subject_group_subjects.subject_id = subjects.id 
+                                                        WHERE 
+                                                            subject_group_class_sections.class_section_id = '$classsection' 
+                                                            AND subject_group_class_sections.session_id = '$session' 
+                                                            AND subject_group_subjects.session_id = '$session'
+                                                    ) 
+                                                    AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
 
-                                $sqlgettotalgrade = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
+                                $sqlgettotalgrade = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID IN (
+                                                        SELECT subjects.id 
+                                                        FROM `subject_group_class_sections` 
+                                                        INNER JOIN subject_group_subjects 
+                                                            ON subject_group_class_sections.subject_group_id = subject_group_subjects.subject_group_id 
+                                                        INNER JOIN subjects 
+                                                            ON subject_group_subjects.subject_id = subjects.id 
+                                                        WHERE 
+                                                            subject_group_class_sections.class_section_id = '$classsection' 
+                                                            AND subject_group_class_sections.session_id = '$session' 
+                                                            AND subject_group_subjects.session_id = '$session'
+                                                    ) 
+                                                    AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
                                 $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                 $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
@@ -2055,17 +2079,50 @@ $studsection = $rowGetsections['section'];
 
                                 $gettotscore = $rowgettotalgrade['average'];
 
-                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND SubjectID != '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND SubjectID IN (
+        SELECT subjects.id 
+        FROM `subject_group_class_sections` 
+        INNER JOIN subject_group_subjects 
+            ON subject_group_class_sections.subject_group_id = subject_group_subjects.subject_group_id 
+        INNER JOIN subjects 
+            ON subject_group_subjects.subject_id = subjects.id 
+        WHERE 
+            subject_group_class_sections.class_section_id = '$classsection' 
+            AND subject_group_class_sections.session_id = '$session' 
+            AND subject_group_subjects.session_id = '$session'
+    ) AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                 $resultgetClasscount = mysqli_query($link, $sqlgetClasscount);
                                 $rowgetClasscount = mysqli_fetch_assoc($resultgetClasscount);
                                 $row_cntClasscount = mysqli_num_rows($resultgetClasscount);
 
-                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SubjectID != '0' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                $sqlgetsubscoreALL = ("SELECT DISTINCT(SubjectID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SubjectID IN (
+        SELECT subjects.id 
+        FROM `subject_group_class_sections` 
+        INNER JOIN subject_group_subjects 
+            ON subject_group_class_sections.subject_group_id = subject_group_subjects.subject_group_id 
+        INNER JOIN subjects 
+            ON subject_group_subjects.subject_id = subjects.id 
+        WHERE 
+            subject_group_class_sections.class_section_id = '$classsection' 
+            AND subject_group_class_sections.session_id = '$session' 
+            AND subject_group_subjects.session_id = '$session'
+    ) AND Term = '$term' AND SectionID = '$classsectionactual'");
                                 $resultgetsubscoreALL = mysqli_query($link, $sqlgetsubscoreALL);
                                 $rowgetsubscoreALL = mysqli_fetch_assoc($resultgetsubscoreALL);
                                 $row_cntgetsubscoreALL = mysqli_num_rows($resultgetsubscoreALL);
 
-                                $sqlgettotclassscor = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual' ORDER BY exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
+                                $sqlgettotclassscor = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID IN (
+        SELECT subjects.id 
+        FROM `subject_group_class_sections` 
+        INNER JOIN subject_group_subjects 
+            ON subject_group_class_sections.subject_group_id = subject_group_subjects.subject_group_id 
+        INNER JOIN subjects 
+            ON subject_group_subjects.subject_id = subjects.id 
+        WHERE 
+            subject_group_class_sections.class_section_id = '$classsection' 
+            AND subject_group_class_sections.session_id = '$session' 
+            AND subject_group_subjects.session_id = '$session'
+    ) AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SubjectID != 0 AND SectionID = '$classsectionactual' ORDER BY exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
                                 $resultgettotclassscor = mysqli_query($link, $sqlgettotclassscor);
                                 $rowgettotclassscor = mysqli_fetch_assoc($resultgettotclassscor);
                                 $row_cntgettotclassscor = mysqli_num_rows($resultgettotclassscor);
@@ -2249,13 +2306,24 @@ $studsection = $rowGetsections['section'];
                                         $rowGetsub = mysqli_fetch_assoc($resultsub);
                                         $row_cntsub = mysqli_num_rows($resultsub);
 
-                                        $sqlgetscorecheck = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
+                                        $sqlgetscorecheck = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID IN (
+                                                                SELECT subjects.id 
+                                                                FROM `subject_group_class_sections` 
+                                                                INNER JOIN subject_group_subjects 
+                                                                    ON subject_group_class_sections.subject_group_id = subject_group_subjects.subject_group_id 
+                                                                INNER JOIN subjects 
+                                                                    ON subject_group_subjects.subject_id = subjects.id 
+                                                                WHERE 
+                                                                    subject_group_class_sections.class_section_id = '$classsection' 
+                                                                    AND subject_group_class_sections.session_id = '$session' 
+                                                                    AND subject_group_subjects.session_id = '$session'
+                                                            ) 
+                                                            AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                         $resultgetscorecheck = mysqli_query($link, $sqlgetscorecheck);
                                         $rowgetscorecheck = mysqli_fetch_assoc($resultgetscorecheck);
                                         $row_cntgetscorecheck = mysqli_num_rows($resultgetscorecheck);
 
                                         if ($row_cntgetscorecheck > 0) {
-
                                             // $sqlgetgadingmeth = ("SELECT * FROM `classordepartment` WHERE InstitutionID = '$institution' AND FacultyOrSchoolID='$facultyID' AND ClassOrDepartmentID = '$classid'");
                                             // $resultgetgadingmeth = mysqli_query($link, $sqlgetgadingmeth);
                                             // $rowgetgadingmeth = mysqli_fetch_assoc($resultgetgadingmeth);
@@ -4068,7 +4136,7 @@ $studsection = $rowGetsections['section'];
                                 {
                                     if (!in_array(($num % 100), array(11, 12, 13))) {
                                         switch ($num % 10) {
-                                                // Handle 1st, 2nd, 3rd
+                                            // Handle 1st, 2nd, 3rd
                                             case 1:
                                                 return $num . 'st';
                                             case 2:
@@ -7937,7 +8005,7 @@ $studsection = $rowGetsections['section'];
                                 {
                                     if (!in_array(($num % 100), array(11, 12, 13))) {
                                         switch ($num % 10) {
-                                                // Handle 1st, 2nd, 3rd
+                                            // Handle 1st, 2nd, 3rd
                                             case 1:
                                                 return $num . 'st';
                                             case 2:
