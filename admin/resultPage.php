@@ -691,7 +691,7 @@ $studsection = $rowGetsections['section'];
                                                 }
 
                                                 echo '<tr>
-                                                                            <th> 2' . $subname . '</th>';
+                                                                            <th>' . $subname . '</th>';
                                                 echo $ca1table . $ca2table . $ca3table . $ca4table . $ca5table . $ca6table . $ca7table . $ca8table . $ca9table . $ca10table;
                                                 echo '
 
@@ -772,7 +772,7 @@ $studsection = $rowGetsections['section'];
                             <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
                             <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
                             <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
-                            <p>No. of Subjects: <span style="font-weight:600;">1 <?php echo $row_cntgetscorecheck; ?></span></p>
+                            <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                         </div>
 
                         <div class="performance">
@@ -2046,7 +2046,19 @@ $studsection = $rowGetsections['section'];
                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
 
-                                $sqlgettotalgrade = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
+                                $sqlgettotalgrade = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID IN (
+                                                        SELECT subjects.id 
+                                                        FROM `subject_group_class_sections` 
+                                                        INNER JOIN subject_group_subjects 
+                                                            ON subject_group_class_sections.subject_group_id = subject_group_subjects.subject_group_id 
+                                                        INNER JOIN subjects 
+                                                            ON subject_group_subjects.subject_id = subjects.id 
+                                                        WHERE 
+                                                            subject_group_class_sections.class_section_id = '$classsection' 
+                                                            AND subject_group_class_sections.session_id = '$session' 
+                                                            AND subject_group_subjects.session_id = '$session'
+                                                    ) 
+                                                    AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'";
                                 $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                 $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
@@ -2255,8 +2267,8 @@ $studsection = $rowGetsections['section'];
                                         $row_cntgetscorecheck = mysqli_num_rows($resultgetscorecheck);
 
                                         if ($row_cntgetscorecheck > 0) {
-                                            echo "student_id: ". $id . ", ClassID: " . $classid . ", Session: " . $session. ", Term: " . $term . ", SectionID: " . $classsectionactual;
-//                                            die;
+                                            echo "student_id: " . $id . ", ClassID: " . $classid . ", Session: " . $session . ", Term: " . $term . ", SectionID: " . $classsectionactual;
+                                            //                                            die;
                                             // $sqlgetgadingmeth = ("SELECT * FROM `classordepartment` WHERE InstitutionID = '$institution' AND FacultyOrSchoolID='$facultyID' AND ClassOrDepartmentID = '$classid'");
                                             // $resultgetgadingmeth = mysqli_query($link, $sqlgetgadingmeth);
                                             // $rowgetgadingmeth = mysqli_fetch_assoc($resultgetgadingmeth);
@@ -4069,7 +4081,7 @@ $studsection = $rowGetsections['section'];
                                 {
                                     if (!in_array(($num % 100), array(11, 12, 13))) {
                                         switch ($num % 10) {
-                                                // Handle 1st, 2nd, 3rd
+                                            // Handle 1st, 2nd, 3rd
                                             case 1:
                                                 return $num . 'st';
                                             case 2:
@@ -4312,7 +4324,7 @@ $studsection = $rowGetsections['section'];
                                                     }
 
                                                     echo '<tr>
-                                                                    <th> 1' . $subname . '</th>';
+                                                                    <th>' . $subname . '</th>';
                                                     if ($rowGetrelset['NumberOfCA'] == '1') {
                                                         echo '<td>
                                                                                 ' . $rowgetscore["ca1"] . '
@@ -4630,7 +4642,7 @@ $studsection = $rowGetsections['section'];
                                 <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
                                 <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
                                 <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
-                                <p>No. of Subjects: <span style="font-weight:600;">3 <?php echo $row_cntgetscorecheck; ?></span></p>
+                                <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
                             <div class="performance">
@@ -6622,7 +6634,7 @@ $studsection = $rowGetsections['section'];
                                 <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
                                 <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
                                 <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
-                                <p>No. of Subjects: <span style="font-weight:600;">4 <?php echo $row_cntgetscorecheck; ?></span></p>
+                                <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
                             <div class="performance">
@@ -7938,7 +7950,7 @@ $studsection = $rowGetsections['section'];
                                 {
                                     if (!in_array(($num % 100), array(11, 12, 13))) {
                                         switch ($num % 10) {
-                                                // Handle 1st, 2nd, 3rd
+                                            // Handle 1st, 2nd, 3rd
                                             case 1:
                                                 return $num . 'st';
                                             case 2:
@@ -8233,7 +8245,7 @@ $studsection = $rowGetsections['section'];
                                 <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?></span> </p>
                                 <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?></span> </p>
                                 <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?></span> </p>
-                                <p>No. of Subjects: <span style="font-weight:600;">5 <?php echo $row_cntgetscorecheck; ?></span></p>
+                                <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
                             <div class="performance">
