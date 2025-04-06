@@ -2324,8 +2324,6 @@ $studsection = $rowGetsections['section'];
                                         $row_cntgetscorecheck = mysqli_num_rows($resultgetscorecheck);
 
                                         if ($row_cntgetscorecheck > 0) {
-                                            echo "student_id: " . $id . ", ClassID: " . $classid . ", Session: " . $session . ", Term: " . $term . ", SectionID: " . $classsectionactual;
-                                            //                                            die;
                                             // $sqlgetgadingmeth = ("SELECT * FROM `classordepartment` WHERE InstitutionID = '$institution' AND FacultyOrSchoolID='$facultyID' AND ClassOrDepartmentID = '$classid'");
                                             // $resultgetgadingmeth = mysqli_query($link, $sqlgetgadingmeth);
                                             // $rowgetgadingmeth = mysqli_fetch_assoc($resultgetgadingmeth);
@@ -2424,7 +2422,7 @@ $studsection = $rowGetsections['section'];
                                                     }
 
                                                     echo '<tr>
-                                                                    <th> 3' . $subname . '</th>';
+                                                                    <th>' . $subname . '</th>';
                                                     if ($rowGetrelset['NumberOfCA'] == '1') {
                                                         echo '<td>
                                                                                 ' . $rowgetscore["ca1"] . '
@@ -2735,7 +2733,7 @@ $studsection = $rowGetsections['section'];
                                 <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
                                 <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
                                 <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
-                                <p>No. of Subjects: <span style="font-weight:600;">2 <?php echo $row_cntgetscorecheck; ?></span></p>
+                                <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
 
