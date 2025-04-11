@@ -4196,7 +4196,7 @@ $studsection = $rowGetsections['section'];
                                 <div class="row" style="margin: 10px;">
                                     <div class="col-4">
                                         <h5 style="color: #000000;"> CLASS POSITION: <b><?php
-                                                                                        echo "1" . addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
+                                                                                        echo addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
 
                                                                                         if ($gettotalscorpositon % 10 == 0) {
                                                                                             echo "\n";
