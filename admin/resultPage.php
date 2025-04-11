@@ -4125,7 +4125,20 @@ $studsection = $rowGetsections['section'];
 
                                 $sunlowscrun = round($rowsunnylowwscoreuname['avgScore'], 2);
 
-                                $sqlgetscoretotalscorpositon = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total, StudentID FROM `score` JOIN students ON score.StudentID = students.id WHERE students.is_active = 'yes' AND (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
+                                $sqlgetscoretotalscorpositon = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total, StudentID FROM `score` JOIN students ON score.StudentID = students.id WHERE students.is_active = 'yes' AND (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID IN 
+                                                                (
+                                                                    SELECT subjects.id 
+                                                                    FROM `subject_group_class_sections` 
+                                                                    INNER JOIN subject_group_subjects 
+                                                                        ON subject_group_class_sections.subject_group_id = subject_group_subjects.subject_group_id 
+                                                                    INNER JOIN subjects 
+                                                                        ON subject_group_subjects.subject_id = subjects.id 
+                                                                    WHERE 
+                                                                        subject_group_class_sections.class_section_id = '$classsection' 
+                                                                        AND subject_group_class_sections.session_id = '$session' 
+                                                                        AND subject_group_subjects.session_id = '$session'
+                                                                )
+                                                                GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
                                 $resultgetscoretotalscorpositon = mysqli_query($link, $sqlgetscoretotalscorpositon);
                                 $rowgetscoretotalscorpositon = mysqli_fetch_assoc($resultgetscoretotalscorpositon);
                                 $row_cntgetscoretotalscorpositon = mysqli_num_rows($resultgetscoretotalscorpositon);
@@ -8057,7 +8070,7 @@ $studsection = $rowGetsections['section'];
 
                                     <div class="col-4">
                                         <h5 style="color: #000000;"> CLASS POSITION: <b><?php
-                                                                                        echo "2" . addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
+                                                                                        echo addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
 
                                                                                         if ($gettotalscorpositon % 10 == 0) {
                                                                                             echo "\n";
