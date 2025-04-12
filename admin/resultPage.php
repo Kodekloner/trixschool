@@ -8274,7 +8274,7 @@ $studsection = $rowGetsections['section'];
                                                                         <td>' . $total . '</td>
                                                                         <td>' . $subavg . '</td>
                                                                         <td>';
-                                                    echo "1" . addOrdinalNumberSuffix($getscorpos) . "\t";
+                                                    echo addOrdinalNumberSuffix($getscorpos) . "\t";
 
                                                     if ($getscorpos % 10 == 0) {
                                                         echo "\n";
