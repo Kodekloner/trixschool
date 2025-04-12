@@ -4274,7 +4274,7 @@ $studsection = $rowGetsections['section'];
                                         <?php echo $ca10test; ?>
                                         <th>Exam</th>
                                         <th>Total</th>
-                                        <th>Grade</th>
+                                        <th>Position</th>
                                         <th>Lowest in Class</th>
                                         <th>Highest in Class</th>
                                         <th>Remark</th>
