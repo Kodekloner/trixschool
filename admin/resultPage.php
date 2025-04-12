@@ -4387,7 +4387,37 @@ $studsection = $rowGetsections['section'];
 
                                                         $getsco = round($rowgetscorepos['total'], 2);
 
-                                                        $getscorpos = $rowgetscorepos['n'];
+                                                        $sqlgetsubscorepos = "
+                                                            SELECT * FROM (
+                                                                SELECT 
+                                                                    *,
+                                                                    @n := IF(@prevSubject = SubjectID, @n + 1, 1) AS n,
+                                                                    @prevSubject := SubjectID
+                                                                FROM (
+                                                                    SELECT 
+                                                                        SubjectID,
+                                                                        StudentID,
+                                                                        SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total
+                                                                    FROM `score`
+                                                                    WHERE 
+                                                                        (exam != '0' OR ca1 != '0' OR ca2 != '0' OR ca3 != '0' OR ca4 != '0' OR ca5 != '0' OR ca6 != '0' OR ca7 != '0' OR ca8 != '0' OR ca9 != '0' OR ca10 != '0')
+                                                                        AND ClassID = '$classid'
+                                                                        AND Session = '$session'
+                                                                        AND Term = '$term'
+                                                                        AND SectionID = '$classsectionactual'
+                                                                    GROUP BY StudentID, SubjectID
+                                                                    ORDER BY SubjectID, total DESC
+                                                                ) AS sunny,
+                                                                (SELECT @n := 0, @prevSubject := '') AS m
+                                                            ) AS sunito
+                                                            WHERE sunito.StudentID = '$id'
+                                                            AND sunito.SubjectID = '$subid'
+                                                        ";
+
+                                                        $subscorepos = mysqli_query($link, $sqlgetsubscorepos);
+                                                        $rowsubscorepos = mysqli_fetch_assoc($subscorepos);
+
+                                                        $getscorpos = $rowsubscorepos['n'];
                                                     } else {
                                                     }
 
@@ -4628,7 +4658,7 @@ $studsection = $rowGetsections['section'];
                                                                     <td>' . $exam . '</td>
                                                                     <td>' . $total . '</td>
                                                                     <td>';
-                                                    echo "2" . addOrdinalNumberSuffix($getscorpos) . "\t";
+                                                    echo addOrdinalNumberSuffix($getscorpos) . "\t";
 
                                                     if ($getscorpos % 10 == 0) {
                                                         echo "\n";
