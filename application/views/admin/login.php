@@ -60,7 +60,7 @@
                                     </div>
 
                                     <div class="form-bottom">
-                                        <h3 class="font-white bolds"><?php echo $this->lang->line('admin_login'); ?></h3>
+					<h3 class="font-white bolds"><?php echo $this->lang->line('admin_login'); ?></h3>
                                         <?php
                                         if (isset($error_message)) {
                                             echo "<div class='alert alert-danger'>" . $error_message . "</div>";
