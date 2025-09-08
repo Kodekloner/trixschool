@@ -3,13 +3,16 @@
 if (!defined('BASEPATH'))
     exit('No direct script access allowed');
 
-class Print_headerfooter extends Admin_Controller {
+class Print_headerfooter extends Admin_Controller
+{
 
-    function __construct() {
+    function __construct()
+    {
         parent::__construct();
     }
 
-    public function index() {
+    public function index()
+    {
         $this->session->set_userdata('top_menu', 'System Settings');
         $this->session->set_userdata('sub_menu', 'admin/print_headerfooter');
         $data['title'] = 'SMS Config List';
@@ -19,7 +22,8 @@ class Print_headerfooter extends Admin_Controller {
         $this->load->view('layout/footer', $data);
     }
 
-    public function edit() {
+    public function edit()
+    {
         $message = "";
         if (isset($_POST['type'])) {
             $is_required = $this->setting_model->check_haederimage($_POST['type']);
@@ -27,11 +31,10 @@ class Print_headerfooter extends Admin_Controller {
             if ($_POST['type'] == 'staff_payslip') {
                 $this->form_validation->set_rules('message', $this->lang->line('message'), 'required|trim|xss_clean');
                 $message = 'message';
-            }else if ($_POST['type'] == 'online_admission_receipt') {
+            } else if ($_POST['type'] == 'online_admission_receipt') {
                 $this->form_validation->set_rules('admission_message', $this->lang->line('message'), 'required|trim|xss_clean');
                 $message = 'admission_message';
-            }
-             else {
+            } else {
                 $this->form_validation->set_rules('message1', $this->lang->line('message'), 'required|trim|xss_clean');
                 $message = 'message1';
             }
@@ -39,71 +42,118 @@ class Print_headerfooter extends Admin_Controller {
 
         if ($this->form_validation->run() == FALSE) {
 
-        } else {
-            $id = $this->input->post('id');
-            // echo json_encode($array);
-
-            if (isset($_FILES["header_image"]) && !empty($_FILES['header_image']['name'])) {
-                $fileInfo = pathinfo($_FILES["header_image"]["name"]);
-                $file_path = $_FILES["header_image"]["tmp_name"];
-                $img_name = 'header_image.' . $fileInfo['extension'];
-
-                if ($_POST['type'] == 'student_receipt') {
-                    // $path = $this->setting_model->unlink_receiptheader();
-                    // $path1 = "uploads/print_headerfooter/student_receipt/" . $path;
-                    // $url = FCPATH . $path1;
-                    // if (file_exists($url)) {
-                    //     unlink($url);
-                    // }
-                    // move_uploaded_file($_FILES["header_image"]["tmp_name"], "./uploads/print_headerfooter/student_receipt/" . $img_name);
-                    $upload_result = upload_to_s3($file_path, $fileInfo, $img_name, 'uploads/print_headerfooter/student_receipt/');
-                }
-                else if($_POST['type'] == 'online_admission_receipt') {
-                    // $path = $this->setting_model->unlink_onlinereceiptheader();
-                    // $path1 = "uploads/print_headerfooter/online_admission_receipt/" . $path;
-                    // $url = FCPATH . $path1;
-                    // if (file_exists($url)) {
-                    //     unlink($url);
-                    // }
-                    // move_uploaded_file($_FILES["header_image"]["tmp_name"], "./uploads/print_headerfooter/online_admission_receipt/" . $img_name);
-                    $upload_result = upload_to_s3($file_path, $fileInfo, $img_name, 'uploads/print_headerfooter/online_admission_receipt/');
-                }
-                else {
-
-                    // $path = $this->setting_model->unlink_payslipheader();
-                    // $path1 = "uploads/print_headerfooter/staff_payslip/" . $path;
-                    // $url = FCPATH . $path1;
-                    // if (file_exists($url)) {
-                    //     unlink($url);
-                    // }
-                    // move_uploaded_file($_FILES["header_image"]["tmp_name"], "./uploads/print_headerfooter/staff_payslip/" . $img_name);
-                    $upload_result = upload_to_s3($file_path, $fileInfo, $img_name, 'uploads/print_headerfooter/staff_payslip/');
-                }
-
-                if ($upload_result['success']) {
-                    // Save the S3 key in the database
-                    // $data_record = array('id' => $id, 'image' => $upload_result['s3_key']);
-                    // $this->setting_model->add($data_record);
-
-                    $data = array('print_type' => $_POST['type'], 'header_image' => $upload_result['s3_key'], 'footer_content' => $_POST[$message], 'created_by' => $this->customlib->getStaffID());
-                    $this->setting_model->add_printheader($data);
-
-                    // $array = array('success' => true, 'error' => '', 'message' => 'File uploaded successfully.');
-                } else {
-                    $this->session->set_flashdata('msg', '<div class="alert alert-danger text-left">' . $upload_result['error'] . '</div>');
-                    // $array = array('success' => false, 'error' => $upload_result['error'], 'message' => 'Upload failed.');
-                }
-            }
-
-            $data = array('print_type' => $_POST['type'], 'footer_content' => $_POST[$message], 'created_by' => $this->customlib->getStaffID());
-            $this->setting_model->add_printheader($data);
-            $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
+            // Validation failed, redirect back with errors
+            $this->session->set_flashdata('msg', '<div class="alert alert-danger text-left">' . validation_errors() . '</div>');
+            redirect('admin/print_headerfooter');
+            return;
         }
 
-       redirect('admin/print_headerfooter');
+        // Prepare base data
+        $data = array(
+            'print_type' => $this->input->post('type'),
+            'footer_content' => $this->input->post($message),
+            'created_by' => $this->customlib->getStaffID()
+        );
+
+        // Handle file upload if present
+        if (isset($_FILES["header_image"]) && !empty($_FILES['header_image']['name'])) {
+            $fileInfo = pathinfo($_FILES["header_image"]["name"]);
+            $file_path = $_FILES["header_image"]["tmp_name"];
+            $img_name = 'header_image.' . $fileInfo['extension'];
+
+            // Determine the S3 folder based on type
+            $s3_folder = '';
+            if ($_POST['type'] == 'student_receipt') {
+                $s3_folder = 'uploads/print_headerfooter/student_receipt/';
+            } else if ($_POST['type'] == 'online_admission_receipt') {
+                $s3_folder = 'uploads/print_headerfooter/online_admission_receipt/';
+            } else {
+                $s3_folder = 'uploads/print_headerfooter/staff_payslip/';
+            }
+
+            // Upload to S3 - note the parameter order matches the function definition
+            $upload_result = upload_to_s3($file_path, $fileInfo, $img_name, $s3_folder);
+
+            if ($upload_result['success']) {
+                $data['header_image'] = $upload_result['s3_key'];
+            } else {
+                $this->session->set_flashdata('msg', '<div class="alert alert-danger text-left">' . $upload_result['error'] . '</div>');
+                redirect('admin/print_headerfooter');
+                return;
+            }
+        }
+
+        // Update database
+        $this->setting_model->add_printheader($data);
+        $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
+        redirect('admin/print_headerfooter');
+
+        //     } else {
+        //         $id = $this->input->post('id');
+        //         // echo json_encode($array);
+
+        //         if (isset($_FILES["header_image"]) && !empty($_FILES['header_image']['name'])) {
+        //             $fileInfo = pathinfo($_FILES["header_image"]["name"]);
+        //             $file_path = $_FILES["header_image"]["tmp_name"];
+        //             $img_name = 'header_image.' . $fileInfo['extension'];
+
+        //             if ($_POST['type'] == 'student_receipt') {
+        //                 // $path = $this->setting_model->unlink_receiptheader();
+        //                 // $path1 = "uploads/print_headerfooter/student_receipt/" . $path;
+        //                 // $url = FCPATH . $path1;
+        //                 // if (file_exists($url)) {
+        //                 //     unlink($url);
+        //                 // }
+        //                 // move_uploaded_file($_FILES["header_image"]["tmp_name"], "./uploads/print_headerfooter/student_receipt/" . $img_name);
+        //                 $upload_result = upload_to_s3($file_path, $fileInfo, $img_name, 'uploads/print_headerfooter/student_receipt/');
+        //             }
+        //             else if($_POST['type'] == 'online_admission_receipt') {
+        //                 // $path = $this->setting_model->unlink_onlinereceiptheader();
+        //                 // $path1 = "uploads/print_headerfooter/online_admission_receipt/" . $path;
+        //                 // $url = FCPATH . $path1;
+        //                 // if (file_exists($url)) {
+        //                 //     unlink($url);
+        //                 // }
+        //                 // move_uploaded_file($_FILES["header_image"]["tmp_name"], "./uploads/print_headerfooter/online_admission_receipt/" . $img_name);
+        //                 $upload_result = upload_to_s3($file_path, $fileInfo, $img_name, 'uploads/print_headerfooter/online_admission_receipt/');
+        //             }
+        //             else {
+
+        //                 // $path = $this->setting_model->unlink_payslipheader();
+        //                 // $path1 = "uploads/print_headerfooter/staff_payslip/" . $path;
+        //                 // $url = FCPATH . $path1;
+        //                 // if (file_exists($url)) {
+        //                 //     unlink($url);
+        //                 // }
+        //                 // move_uploaded_file($_FILES["header_image"]["tmp_name"], "./uploads/print_headerfooter/staff_payslip/" . $img_name);
+        //                 $upload_result = upload_to_s3($file_path, $fileInfo, $img_name, 'uploads/print_headerfooter/staff_payslip/');
+        //             }
+
+        //             if ($upload_result['success']) {
+        //                 // Save the S3 key in the database
+        //                 // $data_record = array('id' => $id, 'image' => $upload_result['s3_key']);
+        //                 // $this->setting_model->add($data_record);
+
+        //                 $data = array('print_type' => $_POST['type'], 'header_image' => $upload_result['s3_key'], 'footer_content' => $_POST[$message], 'created_by' => $this->customlib->getStaffID());
+        //                 $this->setting_model->add_printheader($data);
+
+        //                 // $array = array('success' => true, 'error' => '', 'message' => 'File uploaded successfully.');
+        //             } else {
+        //                 $this->session->set_flashdata('msg', '<div class="alert alert-danger text-left">' . $upload_result['error'] . '</div>');
+        //                 // $array = array('success' => false, 'error' => $upload_result['error'], 'message' => 'Upload failed.');
+        //             }
+        //         }
+
+        //         // $data = array('print_type' => $_POST['type'], 'footer_content' => $_POST[$message], 'created_by' => $this->customlib->getStaffID());
+        //         // $this->setting_model->add_printheader($data);
+        //         // $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
+        //     }
+
+        //    redirect('admin/print_headerfooter');
     }
 
-    public function handle_upload($str, $is_required) {
+    public function handle_upload($str, $is_required)
+    {
 
         $image_validate = $this->config->item('image_validate');
         $result = $this->filetype_model->get();
@@ -146,5 +196,4 @@ class Print_headerfooter extends Admin_Controller {
             }
         }
     }
-
 }
