@@ -1314,61 +1314,15 @@ class Student extends Admin_Controller
             $student_id      = $this->input->post('student_id');
             $student         = $this->student_model->get($student_id);
             // $sibling_id      = $this->input->post('sibling_id');
-            $sibling_ids = $this->input->post('sibling_ids');
+            $sibling_ids      = $this->input->post('sibling_ids');
             $siblings_counts = $this->input->post('siblings_counts');
-            $siblings = $this->student_model->getMySiblings($student['parent_id'], $student_id);
-            $total_siblings = count($siblings);
+            $siblings        = $this->student_model->getMySiblings($student['parent_id'], $student_id);
+            $total_siblings  = count($siblings);
             $class_id        = $this->input->post('class_id');
             $section_id      = $this->input->post('section_id');
             $hostel_room_id  = $this->input->post('hostel_room_id');
             $fees_discount   = $this->input->post('fees_discount');
             $vehroute_id     = $this->input->post('vehroute_id');
-
-
-            // Handle multiple siblings and parent assignment
-            if (!empty($sibling_ids)) {
-                $sibling_ids_array = explode(',', $sibling_ids);
-                if (!empty($sibling_ids_array)) {
-                    $first_sibling_id = $sibling_ids_array[0];
-                    $student_sibling = $this->student_model->get($first_sibling_id);
-                    if ($student_sibling) {
-                        // Join to the first sibling's parent
-                        $update_student = array(
-                            'id'        => $student_id,
-                            'parent_id' => $student_sibling['parent_id'],
-                        );
-                        $this->student_model->add($update_student);
-                    }
-                }
-            } else if (empty($sibling_ids) && $total_siblings > 0) {
-                // No siblings selected but previously had siblings - create new parent
-                $parent_password = $this->role->get_random_password($chars_min = 6, $chars_max = 6, $use_upper_case = false, $include_numbers = true, $include_special_chars = false);
-
-                $data_parent_login = array(
-                    'username' => $this->parent_login_prefix . $student_id . "_1",
-                    'password' => $parent_password,
-                    'user_id'  => "",
-                    'role'     => 'parent',
-                );
-
-                $update_student = array(
-                    'id'        => $student_id,
-                    'parent_id' => 0,
-                );
-                $ins_id = $this->user_model->addNewParent($data_parent_login, $update_student);
-            }
-            // If no siblings and no previous siblings, no action needed
-
-            // Convert multiple sibling IDs to single sibling ID for backward compatibility
-            $sibling_id = 0;
-            if (!empty($sibling_ids)) {
-                $sibling_ids_array = explode(',', $sibling_ids);
-                if (!empty($sibling_ids_array)) {
-                    $sibling_id = $sibling_ids_array[0]; // Use first sibling for parent assignment
-                }
-            }
-
-
             if (empty($vehroute_id)) {
                 $vehroute_id = 0;
             }

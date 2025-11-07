@@ -27,8 +27,8 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                     <?php } ?>
                                     <?php echo $this->customlib->getCSRF(); ?>
                                     <input type="hidden" name="student_id" value="<?php echo set_value('id', $student['id']); ?>">
-                                    <input type="hidden" name="sibling_names" value="" id="sibling_names_next">
-                                    <input type="hidden" name="sibling_ids" value="" id="sibling_ids">
+                                    <input type="hidden" name="sibling_name" value="<?php echo set_value('sibling_name', 0); ?>" id="sibling_name_next">
+                                    <input type="hidden" name="sibling_id" value="<?php echo set_value('sibling_id', 0); ?>" id="sibling_id">
                                     <div class="row">
                                         <?php if (!$adm_auto_insert) { ?>
                                             <div class="col-md-3">
@@ -319,16 +319,8 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                                     <button type="button" class="btn btn-sm btn-primary mysiblings anchorbtn"><i class="fa fa-plus"></i> <?php echo $this->lang->line('add'); ?> <?php echo $this->lang->line('sibling'); ?></button>
                                                 </div>
                                                 <div class="col-lg-7 col-md-6 col-sm-9 col-xs-7">
-                                                    <div class="pt6 overflowtextdot" id="sibling_names_display">
-                                                        <?php
-                                                        if (!empty($siblings)) {
-                                                            foreach ($siblings as $sibling) {
-                                                                echo '<span class="label label-success" style="display: block; margin-bottom: 5px;">' .
-                                                                    $this->customlib->getFullname($sibling->firstname, $sibling->middlename, $sibling->lastname, $sch_setting->middlename, $sch_setting->lastname) .
-                                                                    '</span>';
-                                                            }
-                                                        }
-                                                        ?>
+                                                    <div class="pt6 overflowtextdot">
+                                                        <span id="sibling_name" class="label label-success"><?php echo set_value('sibling_name'); ?></span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -352,13 +344,17 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                     <div class="box-tools sibbtnposition">
                                         <button type="button" class="btn btn-primary btn-sm remove_sibling"><?php echo $this->lang->line('remove'); ?> <?php echo $this->lang->line('sibling'); ?>
                                         </button>
+
                                     </div>
+
 
                                     <div class="around10">
                                         <div class="row">
                                             <input type="hidden" name="siblings_counts" class="siblings_counts" value="<?php echo $siblings_counts; ?>">
                                             <?php
-                                            if (!empty($siblings)) {
+                                            if (empty($siblings)) {
+                                            } else {
+
                                                 foreach ($siblings as $sibling_key => $sibling_value) {
                                             ?>
                                                     <div class="col-xs-12 col-sm-6 col-md-4 sib_div" id="sib_div_<?php echo $sibling_value->id ?>" data-sibling_id="<?php echo $sibling_value->id ?>">
@@ -366,21 +362,30 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                                             <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $sibling_value->image ?>" alt="" class="" />
                                                             <div class="withsiblings-content">
                                                                 <h5><a href="#"><?php echo $this->customlib->getFullname($sibling_value->firstname, $sibling_value->middlename, $sibling_value->lastname, $sch_setting->middlename, $sch_setting->lastname) ?></a></h5>
+
                                                                 <p>
                                                                     <b><?php echo $this->lang->line('admission_no'); ?></b>:<?php echo $sibling_value->admission_no; ?><br />
                                                                     <b><?php echo $this->lang->line('class'); ?></b>:<?php echo $sibling_value->class; ?><br />
                                                                     <b><?php echo $this->lang->line('section'); ?></b>:<?php echo $sibling_value->section; ?>
+
                                                                 </p>
+
+                                                                <!-- Split button -->
+
                                                             </div>
+
                                                         </div>
                                                     </div>
+
                                             <?php
                                                 }
                                             }
                                             ?>
+
                                         </div>
                                     </div>
                                 </div>
+
                             <?php
                             }
                             ?>
@@ -819,6 +824,199 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
 </section>
 </div>
 
+<script type="text/javascript">
+    $(document).ready(function() {
+        var date_format = '<?php echo $result = strtr($this->customlib->getSchoolDateFormat(), ['d' => 'dd', 'm' => 'mm', 'Y' => 'yyyy']) ?>';
+        var class_id = $('#class_id').val();
+        var section_id = '<?php echo set_value('section_id', $student['section_id']) ?>';
+        var hostel_id = $('#hostel_id').val();
+        var hostel_room_id = '<?php echo set_value('hostel_room_id', $student['hostel_room_id']) ?>';
+        getHostel(hostel_id, hostel_room_id);
+        getSectionByClass(class_id, section_id, 'section_id');
+
+        $(document).on('change', '#class_id', function(e) {
+            $('#section_id').html("");
+            var class_id = $(this).val();
+            getSectionByClass(class_id, 0, 'section_id');
+        });
+
+        $(document).on('click', '#sibiling_class_id', function() {
+            var class_id = $(this).val();
+            getSectionByClass(class_id, 0, 'sibiling_section_id');
+        });
+
+        $("#btnreset").click(function() {
+            $("#form1")[0].reset();
+        });
+
+        $(document).on('change', '#hostel_id', function(e) {
+            var hostel_id = $(this).val();
+            getHostel(hostel_id, 0);
+
+        });
+
+        $(document).on('change', '#sibiling_section_id', function(e) {
+            getStudentsByClassAndSection();
+        });
+
+        function getStudentsByClassAndSection() {
+            $('#sibiling_student_id').html("");
+            var class_id = $('#sibiling_class_id').val();
+            var section_id = $('#sibiling_section_id').val();
+            var current_student_id = $('.current_student_id').val();
+            var div_data = '<option value=""><?php echo $this->lang->line('select'); ?></option>';
+
+            $.ajax({
+                type: "GET",
+                url: baseurl + "student/getByClassAndSectionExcludeMe",
+                data: {
+                    'class_id': class_id,
+                    'section_id': section_id,
+                    'current_student_id': current_student_id
+                },
+                dataType: "json",
+                beforeSend: function() {
+                    $('#sibiling_student_id').addClass('dropdownloading');
+                },
+                success: function(data) {
+                    $.each(data, function(i, obj) {
+                        var sel = "";
+                        if (section_id == obj.section_id) {
+                            sel = "selected=selected";
+                        }
+
+                        if (obj.roll_no == null) {
+
+                            div_data += "<option value=" + obj.id + ">" + obj.full_name + "</option>";
+
+
+                        } else {
+                            div_data += "<option value=" + obj.id + ">" + obj.full_name + " (" + obj.roll_no + ") " + "</option>";
+                        }
+                    });
+                    $('#sibiling_student_id').append(div_data);
+                },
+                complete: function() {
+                    $('#sibiling_student_id').removeClass('dropdownloading');
+                }
+            });
+
+        }
+
+
+
+
+
+        function getSectionByClass(class_id, section_id, select_control) {
+            if (class_id != "") {
+                $('#' + select_control).html("");
+                var base_url = '<?php echo base_url() ?>';
+                var div_data = '<option value=""><?php echo $this->lang->line('select'); ?></option>';
+                $.ajax({
+                    type: "GET",
+                    url: base_url + "sections/getByClass",
+                    data: {
+                        'class_id': class_id
+                    },
+                    dataType: "json",
+                    beforeSend: function() {
+                        $('#' + select_control).addClass('dropdownloading');
+                    },
+                    success: function(data) {
+                        $.each(data, function(i, obj) {
+                            var sel = "";
+                            if (section_id == obj.section_id) {
+                                sel = "selected";
+                            }
+                            div_data += "<option value=" + obj.section_id + " " + sel + ">" + obj.section + "</option>";
+                        });
+                        $('#' + select_control).append(div_data);
+                    },
+                    complete: function() {
+                        $('#' + select_control).removeClass('dropdownloading');
+                    }
+                });
+            }
+        }
+
+
+        function getHostel(hostel_id, hostel_room_id) {
+            if (hostel_room_id == "") {
+                hostel_room_id = 0;
+            }
+
+            if (hostel_id != "") {
+
+                $('#hostel_room_id').html("");
+
+
+                var div_data = '<option value=""><?php echo $this->lang->line('select'); ?></option>';
+                $.ajax({
+                    type: "GET",
+                    url: baseurl + "admin/hostelroom/getRoom",
+                    data: {
+                        'hostel_id': hostel_id
+                    },
+                    dataType: "json",
+                    beforeSend: function() {
+                        $('#hostel_room_id').addClass('dropdownloading');
+                    },
+                    success: function(data) {
+                        $.each(data, function(i, obj) {
+                            var sel = "";
+                            if (hostel_room_id == obj.id) {
+                                sel = "selected";
+                            }
+
+                            div_data += "<option value=" + obj.id + " " + sel + ">" + obj.room_no + " (" + obj.room_type + ")" + "</option>";
+
+                        });
+                        $('#hostel_room_id').append(div_data);
+                    },
+                    complete: function() {
+                        $('#hostel_room_id').removeClass('dropdownloading');
+                    }
+                });
+            }
+        }
+
+    });
+
+    function auto_fill_guardian_address() {
+        if ($("#autofill_current_address").is(':checked')) {
+            $('#current_address').val($('#guardian_address').val());
+        }
+    }
+
+    function auto_fill_address() {
+        if ($("#autofill_address").is(':checked')) {
+            $('#permanent_address').val($('#current_address').val());
+        }
+    }
+    $('input:radio[name="guardian_is"]').change(
+        function() {
+            if ($(this).is(':checked')) {
+                var value = $(this).val();
+                if (value == "father") {
+                    $('#guardian_name').val($('#father_name').val());
+                    $('#guardian_phone').val($('#father_phone').val());
+                    $('#guardian_occupation').val($('#father_occupation').val());
+                    $('#guardian_relation').val("Father")
+                } else if (value == "mother") {
+                    $('#guardian_name').val($('#mother_name').val());
+                    $('#guardian_phone').val($('#mother_phone').val());
+                    $('#guardian_occupation').val($('#mother_occupation').val());
+                    $('#guardian_relation').val("Mother")
+                } else {
+                    $('#guardian_name').val("");
+                    $('#guardian_phone').val("");
+                    $('#guardian_occupation').val("");
+                    $('#guardian_relation').val("")
+                }
+            }
+        });
+</script>
+
 
 <div class="modal" id="mySiblingModal">
     <div class="modal-dialog">
@@ -860,16 +1058,18 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                     <select id="sibiling_section_id" name="sibiling_section_id" class="form-control">
                                         <option value=""><?php echo $this->lang->line('select'); ?></option>
                                     </select>
+
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label for="inputPassword3" class="col-sm-2 control-label"><?php echo $this->lang->line('student'); ?>
                                 </label>
+
                                 <div class="col-sm-10">
-                                    <select id="sibiling_student_id" name="sibiling_student_id[]" class="form-control" multiple="multiple" style="height: 150px;">
+                                    <select id="sibiling_student_id" name="sibiling_student_id" class="form-control">
                                         <option value=""><?php echo $this->lang->line('select'); ?></option>
                                     </select>
-                                    <small class="text-muted"><?php echo $this->lang->line('hold_ctrl_key_to_select_multiple'); ?></small>
+
                                 </div>
                             </div>
                         </div>
@@ -877,7 +1077,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                 </div>
             </div>
             <div class="modal-footer" style="clear: both;">
-                <button type="button" class="btn btn-primary btn-sm add_sibling" id="load" data-loading-text="<i class='fa fa-circle-o-notch fa-spin'></i> Processing"><i class="fa fa-user"></i> <?php echo $this->lang->line('add'); ?> <?php echo $this->lang->line('sibling'); ?></button>
+                <button type="button" class="btn btn-primary btn-sm add_sibling" id="load" data-loading-text="<i class='fa fa-circle-o-notch fa-spin'></i> Processing"><i class="fa fa-user"></i> <?php echo $this->lang->line('add'); ?></button>
             </div>
         </div>
     </div>
@@ -906,256 +1106,100 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
 </div>
 
 <script type="text/javascript">
-    $(document).ready(function() {
-        var date_format = '<?php echo $result = strtr($this->customlib->getSchoolDateFormat(), ['d' => 'dd', 'm' => 'mm', 'Y' => 'yyyy']) ?>';
-        var class_id = $('#class_id').val();
-        var section_id = '<?php echo set_value('section_id', $student['section_id']) ?>';
-        var hostel_id = $('#hostel_id').val();
-        var hostel_room_id = '<?php echo set_value('hostel_room_id', $student['hostel_room_id']) ?>';
+    $('#deleteModal').on('shown.bs.modal', function() {
+        console.log("srer");
+        $(".del_modal_title").html("<?php echo $this->lang->line('delete_confirm') ?>");
+        $(".del_modal_body").html("<p><?php echo $this->lang->line('are_you_sure_you_want_to_remove_sibling'); ?></p>");
+    })
 
-        getHostel(hostel_id, hostel_room_id);
-        getSectionByClass(class_id, section_id, 'section_id');
+    $(document).on('click', '.remove_sibling', function() {
+        $('#deleteModal').modal('show');
+    });
 
-        // Initialize sibling arrays
-        var selectedSiblings = [];
-        var selectedSiblingNames = [];
 
-        <?php if (!empty($siblings)): ?>
-            <?php foreach ($siblings as $sibling): ?>
-                selectedSiblings.push(<?php echo $sibling->id; ?>);
-                selectedSiblingNames.push("<?php echo $this->customlib->getFullname($sibling->firstname, $sibling->middlename, $sibling->lastname, $sch_setting->middlename, $sch_setting->lastname); ?>");
-            <?php endforeach; ?>
-            updateSiblingDisplay();
-        <?php endif; ?>
 
-        $(document).on('change', '#class_id', function(e) {
-            $('#section_id').html("");
-            var class_id = $(this).val();
-            getSectionByClass(class_id, 0, 'section_id');
-        });
+    $(document).on('click', '.add_sibling', function() {
+        var student_id = $('#sibiling_student_id').val();
+        if (student_id.length == '') {
+            $('.sibling_msg').html("<div class='alert alert-danger text-center'> <?php echo $this->lang->line('no_student_selected'); ?> </div>");
 
-        $(document).on('click', '#sibiling_class_id', function() {
-            var class_id = $(this).val();
-            getSectionByClass(class_id, 0, 'sibiling_section_id');
-        });
-
-        $("#btnreset").click(function() {
-            $("#form1")[0].reset();
-        });
-
-        $(document).on('change', '#hostel_id', function(e) {
-            var hostel_id = $(this).val();
-            getHostel(hostel_id, 0);
-        });
-
-        $(document).on('change', '#sibiling_section_id', function(e) {
-            getStudentsByClassAndSection();
-        });
-
-        function getStudentsByClassAndSection() {
-            $('#sibiling_student_id').html("");
-            var class_id = $('#sibiling_class_id').val();
-            var section_id = $('#sibiling_section_id').val();
-            var current_student_id = $('.current_student_id').val();
-            var div_data = '<option value=""><?php echo $this->lang->line('select'); ?></option>';
+        } else {
+            var $this = $(this);
 
             $.ajax({
                 type: "GET",
-                url: baseurl + "student/getByClassAndSectionExcludeMe",
+                url: baseurl + "student/getStudentRecordByID",
                 data: {
-                    'class_id': class_id,
-                    'section_id': section_id,
-                    'current_student_id': current_student_id
+                    'student_id': student_id
                 },
                 dataType: "json",
                 beforeSend: function() {
-                    $('#sibiling_student_id').addClass('dropdownloading');
+                    $this.button('loading');
                 },
                 success: function(data) {
-                    $.each(data, function(i, obj) {
-                        var sel = "";
-                        if (section_id == obj.section_id) {
-                            sel = "selected=selected";
-                        }
-
-                        // Check if student is already selected
-                        var isSelected = selectedSiblings.includes(obj.id.toString()) ? 'selected' : '';
-
-                        if (obj.roll_no == null) {
-                            div_data += "<option value='" + obj.id + "' " + isSelected + ">" + obj.full_name + "</option>";
-                        } else {
-                            div_data += "<option value='" + obj.id + "' " + isSelected + ">" + obj.full_name + " (" + obj.roll_no + ") " + "</option>";
-                        }
-                    });
-                    $('#sibiling_student_id').append(div_data);
+                    console.log(data);
+                    // addSiblingToDisplay(data, student_id);
+                    $('#mySiblingModal').modal('hide');
+                    $('#sibling_name').text("Sibling: " + data.full_name);
+                    $('#sibling_name_next').val(data.firstname + " " + data.lastname);
+                    $('#sibling_id').val(student_id);
+                    $('#father_name').val(data.father_name);
+                    $('#father_phone').val(data.father_phone);
+                    $('#father_occupation').val(data.father_occupation);
+                    $('#mother_name').val(data.mother_name);
+                    $('#mother_phone').val(data.mother_phone);
+                    $('#mother_occupation').val(data.mother_occupation);
+                    $('#guardian_name').val(data.guardian_name);
+                    $('#guardian_relation').val(data.guardian_relation);
+                    $('#guardian_address').val(data.guardian_address);
+                    $('#guardian_phone').val(data.guardian_phone);
+                    $('#state').val(data.state);
+                    $('#city').val(data.city);
+                    $('#pincode').val(data.pincode);
+                    $('#current_address').val(data.current_address);
+                    $('#permanent_address').val(data.permanent_address);
+                    $('#guardian_occupation').val(data.guardian_occupation);
+                    $("input[name=guardian_is][value='" + data.guardian_is + "']").prop("checked", true);
+                    $('#mySiblingModal').modal('hide');
                 },
                 complete: function() {
-                    $('#sibiling_student_id').removeClass('dropdownloading');
+                    $this.button('reset');
                 }
             });
+
         }
 
-        function getSectionByClass(class_id, section_id, select_control) {
-            if (class_id != "") {
-                $('#' + select_control).html("");
-                var base_url = '<?php echo base_url() ?>';
-                var div_data = '<option value=""><?php echo $this->lang->line('select'); ?></option>';
-                $.ajax({
-                    type: "GET",
-                    url: base_url + "sections/getByClass",
-                    data: {
-                        'class_id': class_id
-                    },
-                    dataType: "json",
-                    beforeSend: function() {
-                        $('#' + select_control).addClass('dropdownloading');
-                    },
-                    success: function(data) {
-                        $.each(data, function(i, obj) {
-                            var sel = "";
-                            if (section_id == obj.section_id) {
-                                sel = "selected";
-                            }
-                            div_data += "<option value=" + obj.section_id + " " + sel + ">" + obj.section + "</option>";
-                        });
-                        $('#' + select_control).append(div_data);
-                    },
-                    complete: function() {
-                        $('#' + select_control).removeClass('dropdownloading');
-                    }
-                });
-            }
-        }
+    });
 
-        function getHostel(hostel_id, hostel_room_id) {
-            if (hostel_room_id == "") {
-                hostel_room_id = 0;
-            }
+    $(document).on('click', '.mysiblings', function() {
+        $('#mySiblingModal').modal('show');
 
-            if (hostel_id != "") {
-                $('#hostel_room_id').html("");
-                var div_data = '<option value=""><?php echo $this->lang->line('select'); ?></option>';
-                $.ajax({
-                    type: "GET",
-                    url: baseurl + "admin/hostelroom/getRoom",
-                    data: {
-                        'hostel_id': hostel_id
-                    },
-                    dataType: "json",
-                    beforeSend: function() {
-                        $('#hostel_room_id').addClass('dropdownloading');
-                    },
-                    success: function(data) {
-                        $.each(data, function(i, obj) {
-                            var sel = "";
-                            if (hostel_room_id == obj.id) {
-                                sel = "selected";
-                            }
-                            div_data += "<option value=" + obj.id + " " + sel + ">" + obj.room_no + " (" + obj.room_type + ")" + "</option>";
-                        });
-                        $('#hostel_room_id').append(div_data);
-                    },
-                    complete: function() {
-                        $('#hostel_room_id').removeClass('dropdownloading');
-                    }
-                });
-            }
-        }
+    });
 
-        // Update sibling display
-        function updateSiblingDisplay() {
-            $('#sibling_names_display').html('');
-            $('#sibling_ids').val(selectedSiblings.join(','));
-            $('#sibling_names_next').val(selectedSiblingNames.join(', '));
 
-            selectedSiblingNames.forEach(function(name) {
-                $('#sibling_names_display').append('<span class="label label-success" style="display: block; margin-bottom: 5px;">' + name + '</span>');
-            });
-        }
 
-        // Add sibling functionality
-        $(document).on('click', '.add_sibling', function() {
-            var selectedStudents = $('#sibiling_student_id').val();
+    $('#mySiblingModal').on('shown.bs.modal', function() {
+        $('.sibling_msg').html("");
+        $('.modal_sibling_title').html('<b>' + "<?php echo $this->lang->line('sibling'); ?>" + '</b>');
+        $('.current_student_id').val($("input[name='student_id']").val());
+        if ($('.siblings_counts').length && $('.siblings_counts').val().length) {
+            var msg = "";
+            msg += "<div class='alert alert-danger text-center'>";
+            msg += "Please remove previous siblings";
+            msg += "</div>";
+            $('.sibling_msg').html(msg);
 
-            if (!selectedStudents || selectedStudents.length === 0) {
-                $('.sibling_msg').html("<div class='alert alert-danger text-center'> <?php echo $this->lang->line('no_student_selected'); ?> </div>");
-                return;
-            }
-
-            var $this = $(this);
-            var processed = 0;
-            var total = selectedStudents.length;
-
-            selectedStudents.forEach(function(studentId) {
-                // Check if already added
-                if (selectedSiblings.includes(studentId.toString())) {
-                    processed++;
-                    if (processed === total) {
-                        $this.button('reset');
-                        $('#mySiblingModal').modal('hide');
-                    }
-                    return;
-                }
-
-                $.ajax({
-                    type: "GET",
-                    url: baseurl + "student/getStudentRecordByID",
-                    data: {
-                        'student_id': studentId
-                    },
-                    dataType: "json",
-                    success: function(data) {
-                        selectedSiblings.push(studentId.toString());
-                        selectedSiblingNames.push(data.full_name);
-                        processed++;
-
-                        if (processed === total) {
-                            updateSiblingDisplay();
-                            $this.button('reset');
-                            $('#mySiblingModal').modal('hide');
-                        }
-                    },
-                    error: function() {
-                        processed++;
-                        if (processed === total) {
-                            $this.button('reset');
-                            $('#mySiblingModal').modal('hide');
-                        }
-                    }
-                });
-            });
-        });
-
-        // Remove all siblings
-        $(document).on('click', '.remove_sibling', function() {
-            $('#deleteModal').modal('show');
-        });
-
-        $(document).on('click', '.delete_confirm', function() {
-            selectedSiblings = [];
-            selectedSiblingNames = [];
-            updateSiblingDisplay();
-            $('.sibling_div').remove();
-            $('#deleteModal').modal('hide');
-        });
-
-        $(document).on('click', '.mysiblings', function() {
-            $('#mySiblingModal').modal('show');
-        });
-
-        $('#mySiblingModal').on('shown.bs.modal', function() {
-            $('.sibling_msg').html("");
-            $('.modal_sibling_title').html('<b>' + "<?php echo $this->lang->line('sibling'); ?>" + '</b>');
-            $('.current_student_id').val($("input[name='student_id']").val());
-
-            // Always show the modal content
+            $(".sibling_content, .modal-footer", this).css("display", "none");
+        } else {
             $(".sibling_content, .modal-footer", this).css("display", "block");
+        }
 
-            // Refresh student list
-            getStudentsByClassAndSection();
-        });
+    });
 
-        // Initialize modals
+
+
+    $(document).ready(function() {
+
         $('#mySiblingModal').modal({
             backdrop: 'static',
             keyboard: false,
@@ -1167,42 +1211,26 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             keyboard: false,
             show: false
         });
-    });
 
-    function auto_fill_guardian_address() {
-        if ($("#autofill_current_address").is(':checked')) {
-            $('#current_address').val($('#guardian_address').val());
-        }
-    }
-
-    function auto_fill_address() {
-        if ($("#autofill_address").is(':checked')) {
-            $('#permanent_address').val($('#current_address').val());
-        }
-    }
-
-    $('input:radio[name="guardian_is"]').change(
-        function() {
-            if ($(this).is(':checked')) {
-                var value = $(this).val();
-                if (value == "father") {
-                    $('#guardian_name').val($('#father_name').val());
-                    $('#guardian_phone').val($('#father_phone').val());
-                    $('#guardian_occupation').val($('#father_occupation').val());
-                    $('#guardian_relation').val("Father")
-                } else if (value == "mother") {
-                    $('#guardian_name').val($('#mother_name').val());
-                    $('#guardian_phone').val($('#mother_phone').val());
-                    $('#guardian_occupation').val($('#mother_occupation').val());
-                    $('#guardian_relation').val("Mother")
-                } else {
-                    $('#guardian_name').val("");
-                    $('#guardian_phone').val("");
-                    $('#guardian_occupation').val("");
-                    $('#guardian_relation').val("")
-                }
-            }
+        $(document).on('click', '.delete_confirm', function() {
+            $('#deleteModal').modal('hide');
+            $('.sibling_div').remove();
         });
+
+        // $(document).on('click', '.delete_confirm', function() {
+        //     var siblingId = $('.hd_input').val(); // Get the sibling ID to remove
+        //     $('#sib_div_' + siblingId).remove(); // Remove from display
+        //     $('#deleteModal').modal('hide');
+
+        //     // Update counts and display
+        //     $('.siblings_counts').val($('.sib_div').length);
+        //     $('#sibling_name').text("Siblings: " + ($('.sib_div').length) + " added");
+        // });
+
+
+    });
 </script>
+
+
 
 <script type="text/javascript" src="<?php echo base_url(); ?>backend/dist/js/savemode.js"></script>
