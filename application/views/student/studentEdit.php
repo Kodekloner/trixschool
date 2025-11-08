@@ -863,13 +863,12 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="inputPassword3" class="col-sm-2 control-label"><?php echo $this->lang->line('student'); ?>
-                                </label>
+                                <label for="inputPassword3" class="col-sm-2 control-label"><?php echo $this->lang->line('student'); ?></label>
                                 <div class="col-sm-10">
-                                    <select id="sibiling_student_id" name="sibiling_student_id[]" class="form-control" multiple="multiple" style="height: 150px;">
-                                        <option value=""><?php echo $this->lang->line('select'); ?></option>
-                                    </select>
-                                    <small class="text-muted"><?php echo $this->lang->line('hold_ctrl_key_to_select_multiple'); ?></small>
+                                    <div id="sibiling_student_list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                                        <div class="text-muted text-center"><?php echo $this->lang->line('select_class_and_section_first'); ?></div>
+                                    </div>
+                                    <small class="text-muted"><?php echo $this->lang->line('click_to_select_multiple_students'); ?></small>
                                 </div>
                             </div>
                         </div>
@@ -953,11 +952,14 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
         });
 
         function getStudentsByClassAndSection() {
-            $('#sibiling_student_id').html("");
             var class_id = $('#sibiling_class_id').val();
             var section_id = $('#sibiling_section_id').val();
             var current_student_id = $('.current_student_id').val();
-            var div_data = '<option value=""><?php echo $this->lang->line('select'); ?></option>';
+
+            if (!class_id || !section_id) {
+                $('#sibiling_student_list').html('<div class="text-muted text-center"><?php echo $this->lang->line('select_class_and_section_first'); ?></div>');
+                return;
+            }
 
             $.ajax({
                 type: "GET",
@@ -969,28 +971,34 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                 },
                 dataType: "json",
                 beforeSend: function() {
-                    $('#sibiling_student_id').addClass('dropdownloading');
+                    $('#sibiling_student_list').html('<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading...</div>');
                 },
                 success: function(data) {
+                    if (data.length === 0) {
+                        $('#sibiling_student_list').html('<div class="text-muted text-center"><?php echo $this->lang->line('no_students_found'); ?></div>');
+                        return;
+                    }
+
+                    var html = '';
                     $.each(data, function(i, obj) {
-                        var sel = "";
-                        if (section_id == obj.section_id) {
-                            sel = "selected=selected";
+                        var displayName = obj.full_name;
+                        if (obj.roll_no != null) {
+                            displayName += ' (' + obj.roll_no + ')';
                         }
 
                         // Check if student is already selected
-                        var isSelected = selectedSiblings.includes(obj.id.toString()) ? 'selected' : '';
+                        var isChecked = selectedSiblings.includes(obj.id.toString()) ? 'checked' : '';
 
-                        if (obj.roll_no == null) {
-                            div_data += "<option value='" + obj.id + "' " + isSelected + ">" + obj.full_name + "</option>";
-                        } else {
-                            div_data += "<option value='" + obj.id + "' " + isSelected + ">" + obj.full_name + " (" + obj.roll_no + ") " + "</option>";
-                        }
+                        html += '<div class="checkbox">';
+                        html += '<label>';
+                        html += '<input type="checkbox" name="sibiling_student_id[]" value="' + obj.id + '" ' + isChecked + '> ' + displayName;
+                        html += '</label>';
+                        html += '</div>';
                     });
-                    $('#sibiling_student_id').append(div_data);
+                    $('#sibiling_student_list').html(html);
                 },
-                complete: function() {
-                    $('#sibiling_student_id').removeClass('dropdownloading');
+                error: function() {
+                    $('#sibiling_student_list').html('<div class="text-danger text-center"><?php echo $this->lang->line('error_loading_students'); ?></div>');
                 }
             });
         }
