@@ -1331,13 +1331,30 @@ class Student extends Admin_Controller
                 if (!empty($sibling_ids_array)) {
                     $first_sibling_id = $sibling_ids_array[0];
                     $student_sibling = $this->student_model->get($first_sibling_id);
+
                     if ($student_sibling) {
-                        // Join to the first sibling's parent
+                        $common_parent_id = $student_sibling['parent_id'];
+
+                        // Update current student to use the common parent
                         $update_student = array(
                             'id'        => $student_id,
-                            'parent_id' => $student_sibling['parent_id'],
+                            'parent_id' => $common_parent_id,
                         );
                         $this->student_model->add($update_student);
+
+                        // Update ALL selected siblings to use the same common parent
+                        foreach ($sibling_ids_array as $sibling_id_to_update) {
+                            // Skip the first one since we already have its parent
+                            if ($sibling_id_to_update == $first_sibling_id) {
+                                continue;
+                            }
+
+                            $update_sibling = array(
+                                'id'        => $sibling_id_to_update,
+                                'parent_id' => $common_parent_id,
+                            );
+                            $this->student_model->add($update_sibling);
+                        }
                     }
                 }
             } else if (empty($sibling_ids) && $total_siblings > 0) {
@@ -1357,16 +1374,15 @@ class Student extends Admin_Controller
                 );
                 $ins_id = $this->user_model->addNewParent($data_parent_login, $update_student);
             }
-            // If no siblings and no previous siblings, no action needed
 
             // Convert multiple sibling IDs to single sibling ID for backward compatibility
-            $sibling_id = 0;
-            if (!empty($sibling_ids)) {
-                $sibling_ids_array = explode(',', $sibling_ids);
-                if (!empty($sibling_ids_array)) {
-                    $sibling_id = $sibling_ids_array[0]; // Use first sibling for parent assignment
-                }
-            }
+            // $sibling_id = 0;
+            // if (!empty($sibling_ids)) {
+            //     $sibling_ids_array = explode(',', $sibling_ids);
+            //     if (!empty($sibling_ids_array)) {
+            //         $sibling_id = $sibling_ids_array[0]; // Use first sibling for parent assignment
+            //     }
+            // }
 
 
             if (empty($vehroute_id)) {
@@ -1639,34 +1655,34 @@ class Student extends Admin_Controller
                 }
             }
 
-            if (isset($siblings_counts) && ($total_siblings == $siblings_counts)) {
-                //if there is no change in sibling
-            } else if (!isset($siblings_counts) && $sibling_id == 0 && $total_siblings > 0) {
-                // add for new parent
-                $parent_password = $this->role->get_random_password($chars_min = 6, $chars_max = 6, $use_upper_case = false, $include_numbers = true, $include_special_chars = false);
+            // if (isset($siblings_counts) && ($total_siblings == $siblings_counts)) {
+            //     //if there is no change in sibling
+            // } else if (!isset($siblings_counts) && $sibling_id == 0 && $total_siblings > 0) {
+            //     // add for new parent
+            //     $parent_password = $this->role->get_random_password($chars_min = 6, $chars_max = 6, $use_upper_case = false, $include_numbers = true, $include_special_chars = false);
 
-                $data_parent_login = array(
-                    'username' => $this->parent_login_prefix . $student_id . "_1",
-                    'password' => $parent_password,
-                    'user_id'  => "",
-                    'role'     => 'parent',
-                );
+            //     $data_parent_login = array(
+            //         'username' => $this->parent_login_prefix . $student_id . "_1",
+            //         'password' => $parent_password,
+            //         'user_id'  => "",
+            //         'role'     => 'parent',
+            //     );
 
-                $update_student = array(
-                    'id'        => $student_id,
-                    'parent_id' => 0,
-                );
-                $ins_id = $this->user_model->addNewParent($data_parent_login, $update_student);
-            } else if ($sibling_id != 0) {
-                //join to student with new parent
-                $student_sibling = $this->student_model->get($sibling_id);
-                $update_student  = array(
-                    'id'        => $student_id,
-                    'parent_id' => $student_sibling['parent_id'],
-                );
-                $student_sibling = $this->student_model->add($update_student);
-            } else {
-            }
+            //     $update_student = array(
+            //         'id'        => $student_id,
+            //         'parent_id' => 0,
+            //     );
+            //     $ins_id = $this->user_model->addNewParent($data_parent_login, $update_student);
+            // } else if ($sibling_id != 0) {
+            //     //join to student with new parent
+            //     $student_sibling = $this->student_model->get($sibling_id);
+            //     $update_student  = array(
+            //         'id'        => $student_id,
+            //         'parent_id' => $student_sibling['parent_id'],
+            //     );
+            //     $student_sibling = $this->student_model->add($update_student);
+            // } else {
+            // }
 
             $this->session->set_flashdata('msg', '<div student="alert alert-success text-left">' . $this->lang->line('update_message') . '</div>');
             redirect('student/search');
