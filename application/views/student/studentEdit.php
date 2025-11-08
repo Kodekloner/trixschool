@@ -866,7 +866,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                 <label for="inputPassword3" class="col-sm-2 control-label"><?php echo $this->lang->line('student'); ?></label>
                                 <div class="col-sm-10">
                                     <div id="sibiling_student_list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
-                                        <div class="text-muted text-center"><?php echo $this->lang->line('select_class_and_section_first'); ?></div>
+                                        <div class="text-muted text-center">Select class and section first</div>
                                     </div>
                                     <small class="text-muted"><?php echo $this->lang->line('click_to_select_multiple_students'); ?></small>
                                 </div>
@@ -957,7 +957,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             var current_student_id = $('.current_student_id').val();
 
             if (!class_id || !section_id) {
-                $('#sibiling_student_list').html('<div class="text-muted text-center"><?php echo $this->lang->line('select_class_and_section_first'); ?></div>');
+                $('#sibiling_student_list').html('<div class="text-muted text-center">Select class and section first</div>');
                 return;
             }
 
@@ -1081,16 +1081,21 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             });
         }
 
-        // Add sibling functionality
+        // Add sibling functionality - FIXED VERSION
         $(document).on('click', '.add_sibling', function() {
-            var selectedStudents = $('#sibiling_student_id').val();
+            // Get all checked student checkboxes
+            var selectedStudents = [];
+            $('input[name="sibiling_student_id[]"]:checked').each(function() {
+                selectedStudents.push($(this).val());
+            });
 
-            if (!selectedStudents || selectedStudents.length === 0) {
+            if (selectedStudents.length === 0) {
                 $('.sibling_msg').html("<div class='alert alert-danger text-center'> <?php echo $this->lang->line('no_student_selected'); ?> </div>");
                 return;
             }
 
             var $this = $(this);
+            $this.button('loading');
             var processed = 0;
             var total = selectedStudents.length;
 
@@ -1121,6 +1126,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                             updateSiblingDisplay();
                             $this.button('reset');
                             $('#mySiblingModal').modal('hide');
+                            $('.sibling_msg').html(""); // Clear any previous messages
                         }
                     },
                     error: function() {
@@ -1151,16 +1157,29 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             $('#mySiblingModal').modal('show');
         });
 
+        // $('#mySiblingModal').on('shown.bs.modal', function() {
+        //     $('.sibling_msg').html("");
+        //     $('.modal_sibling_title').html('<b>' + "<?php echo $this->lang->line('sibling'); ?>" + '</b>');
+        //     $('.current_student_id').val($("input[name='student_id']").val());
+
+        //     // Always show the modal content
+        //     $(".sibling_content, .modal-footer", this).css("display", "block");
+
+        //     // Refresh student list
+        //     getStudentsByClassAndSection();
+        // });
+
         $('#mySiblingModal').on('shown.bs.modal', function() {
-            $('.sibling_msg').html("");
+            $('.sibling_msg').html(""); // Clear messages
             $('.modal_sibling_title').html('<b>' + "<?php echo $this->lang->line('sibling'); ?>" + '</b>');
             $('.current_student_id').val($("input[name='student_id']").val());
 
-            // Always show the modal content
-            $(".sibling_content, .modal-footer", this).css("display", "block");
+            // Reset form elements
+            $('#sibiling_class_id').val('');
+            $('#sibiling_section_id').html('<option value=""><?php echo $this->lang->line('select'); ?></option>');
+            $('#sibiling_student_list').html('<div class="text-muted text-center">Select class and section first</div>');
 
-            // Refresh student list
-            getStudentsByClassAndSection();
+            $(".sibling_content, .modal-footer", this).css("display", "block");
         });
 
         // Initialize modals
