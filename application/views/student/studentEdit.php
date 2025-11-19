@@ -1142,6 +1142,9 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
 
         // Remove all siblings
         $(document).on('click', '.remove_sibling', function() {
+            // Set the modal title and body content
+            $('.del_modal_title').html('<b><?php echo $this->lang->line("remove_sibling"); ?></b>');
+            $('.del_modal_body').html('<p><?php echo $this->lang->line('are_you_sure_you_want_to_remove_sibling'); ?></p>');
             $('#deleteModal').modal('show');
         });
 
@@ -1231,16 +1234,6 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             }
         }
     );
-
-    // Check if there's a success message
-    var successAlert = $('.label-success');
-    if (successAlert.length) {
-        setTimeout(function() {
-            successAlert.fadeOut('slow', function() {
-                $(this).remove();
-            });
-        }, 5000); // 5000ms = 5 seconds
-    }
 </script>
 
 <script type="text/javascript" src="<?php echo base_url(); ?>backend/dist/js/savemode.js"></script>
