@@ -1229,7 +1229,18 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                     $('#guardian_relation').val("")
                 }
             }
-        });
+        }
+    );
+
+    // Check if there's a success message
+    var successAlert = $('.alert-success');
+    if (successAlert.length) {
+        setTimeout(function() {
+            successAlert.fadeOut('slow', function() {
+                $(this).remove();
+            });
+        }, 5000); // 5000ms = 5 seconds
+    }
 </script>
 
 <script type="text/javascript" src="<?php echo base_url(); ?>backend/dist/js/savemode.js"></script>
