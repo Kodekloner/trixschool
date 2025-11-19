@@ -323,7 +323,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                                         <?php
                                                         if (!empty($siblings)) {
                                                             foreach ($siblings as $sibling) {
-                                                                echo '<span class="label label-success" style="display: block; margin-bottom: 5px;">' .
+                                                                echo '<span class="label label-success" style="display: none; margin-bottom: 5px;">' .
                                                                     $this->customlib->getFullname($sibling->firstname, $sibling->middlename, $sibling->lastname, $sch_setting->middlename, $sch_setting->lastname) .
                                                                     '</span>';
                                                             }
