@@ -1233,7 +1233,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
     );
 
     // Check if there's a success message
-    var successAlert = $('.alert-success');
+    var successAlert = $('.label-success');
     if (successAlert.length) {
         setTimeout(function() {
             successAlert.fadeOut('slow', function() {
