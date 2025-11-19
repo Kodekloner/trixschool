@@ -924,7 +924,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                 selectedSiblings.push(<?php echo $sibling->id; ?>);
                 selectedSiblingNames.push("<?php echo $this->customlib->getFullname($sibling->firstname, $sibling->middlename, $sibling->lastname, $sch_setting->middlename, $sch_setting->lastname); ?>");
             <?php endforeach; ?>
-            updateSiblingDisplay();
+            // updateSiblingDisplay();
         <?php endif; ?>
 
         $(document).on('change', '#class_id', function(e) {
