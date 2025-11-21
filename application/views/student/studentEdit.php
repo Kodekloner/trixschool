@@ -887,16 +887,16 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                <h4 class="modal-title del_modal_title"><?php echo $this->lang->line('remove_siblings'); ?></h4>
+                <h4 class="modal-title del_modal_title">Remove Siblings</h4>
             </div>
             <div class="modal-body del_modal_body">
-                <p><?php echo $this->lang->line('select_siblings_to_remove'); ?>:</p>
+                <p>select siblings to remove :</p>
                 <div id="siblings_to_remove_list" style="max-height: 300px; overflow-y: auto;">
                     <!-- Sibling checkboxes will be populated here -->
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-sm btn-primary delete_confirm"><?php echo $this->lang->line('remove_selected'); ?></button>
+                <button type="button" class="btn btn-sm btn-primary delete_confirm">remove selected</button>
                 <button type="button" class="btn btn-sm btn-default" data-dismiss="modal"><?php echo $this->lang->line('cancel'); ?></button>
             </div>
         </div>
