@@ -885,6 +885,27 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
 <div class="modal" id="deleteModal">
     <div class="modal-dialog">
         <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h4 class="modal-title del_modal_title"><?php echo $this->lang->line('remove_siblings'); ?></h4>
+            </div>
+            <div class="modal-body del_modal_body">
+                <p><?php echo $this->lang->line('select_siblings_to_remove'); ?>:</p>
+                <div id="siblings_to_remove_list" style="max-height: 300px; overflow-y: auto;">
+                    <!-- Sibling checkboxes will be populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-primary delete_confirm"><?php echo $this->lang->line('remove_selected'); ?></button>
+                <button type="button" class="btn btn-sm btn-default" data-dismiss="modal"><?php echo $this->lang->line('cancel'); ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- <div class="modal" id="deleteModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
 
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
@@ -902,7 +923,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             </div>
         </div>
     </div>
-</div>
+</div> -->
 
 <script type="text/javascript">
     $(document).ready(function() {
@@ -1140,21 +1161,89 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             });
         });
 
-        // Remove all siblings
+        // Remove siblings functionality - shows modal with sibling selection
         $(document).on('click', '.remove_sibling', function() {
-            // Set the modal title and body content
-            $('.del_modal_title').html('<b><?php echo $this->lang->line("remove_sibling"); ?></b>');
-            $('.del_modal_body').html('<p><?php echo $this->lang->line('are_you_sure_you_want_to_remove_sibling'); ?></p>');
+            populateSiblingsToRemoveModal();
             $('#deleteModal').modal('show');
         });
 
+        // Populate the delete modal with sibling checkboxes
+        function populateSiblingsToRemoveModal() {
+            var siblingsList = $('#siblings_to_remove_list');
+            siblingsList.html('');
+
+            if (selectedSiblings.length === 0) {
+                siblingsList.html('<div class="alert alert-warning text-center"><?php echo $this->lang->line("no_siblings_to_remove"); ?></div>');
+                $('.delete_confirm').prop('disabled', true);
+                return;
+            }
+
+            $('.delete_confirm').prop('disabled', false);
+
+            // Create checkboxes for each sibling
+            for (var i = 0; i < selectedSiblings.length; i++) {
+                var siblingId = selectedSiblings[i];
+                var siblingName = selectedSiblingNames[i];
+
+                var checkboxHtml = '<div class="checkbox">';
+                checkboxHtml += '<label>';
+                checkboxHtml += '<input type="checkbox" name="siblings_to_remove[]" value="' + siblingId + '" checked> ';
+                checkboxHtml += siblingName;
+                checkboxHtml += '</label>';
+                checkboxHtml += '</div>';
+
+                siblingsList.append(checkboxHtml);
+            }
+        }
+
+        // Remove selected siblings when confirm button is clicked
         $(document).on('click', '.delete_confirm', function() {
-            selectedSiblings = [];
-            selectedSiblingNames = [];
+            var siblingsToRemove = [];
+            var siblingsToRemoveNames = [];
+
+            // Get all checked sibling checkboxes
+            $('input[name="siblings_to_remove[]"]:checked').each(function() {
+                siblingsToRemove.push($(this).val());
+                // Find the corresponding name
+                var index = selectedSiblings.indexOf($(this).val());
+                if (index !== -1) {
+                    siblingsToRemoveNames.push(selectedSiblingNames[index]);
+                }
+            });
+
+            if (siblingsToRemove.length === 0) {
+                alert('<?php echo "please select at least one sibling to remove"; ?>');
+                return;
+            }
+
+            // Remove from arrays
+            siblingsToRemove.forEach(function(siblingId) {
+                var index = selectedSiblings.indexOf(siblingId);
+                if (index !== -1) {
+                    selectedSiblings.splice(index, 1);
+                    selectedSiblingNames.splice(index, 1);
+                }
+            });
+
+            // Update display
             updateSiblingDisplay();
-            $('.sibling_div').remove();
+
+            // Hide modal
             $('#deleteModal').modal('hide');
+
+            // Show success message
+            showSiblingRemovalSuccess(siblingsToRemoveNames);
         });
+
+        // Function to show success message after removal
+        function showSiblingRemovalSuccess(removedNames) {
+            // You can implement a toast notification or alert here
+            if (removedNames.length > 0) {
+                var message = '<?php echo "successfully removed siblings"; ?>: ' + removedNames.join(', ');
+                // Using a simple alert for now - you might want to use a better notification system
+                alert(message);
+            }
+        }
 
         $(document).on('click', '.mysiblings', function() {
             $('#mySiblingModal').modal('show');
