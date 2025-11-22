@@ -1173,7 +1173,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             siblingsList.html('');
 
             if (selectedSiblings.length === 0) {
-                siblingsList.html('<div class="alert alert-warning text-center"><?php echo $this->lang->line("no_siblings_to_remove"); ?></div>');
+                siblingsList.html('<div class="alert alert-warning text-center">no siblings to remove</div>');
                 $('.delete_confirm').prop('disabled', true);
                 return;
             }
@@ -1226,7 +1226,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             });
 
             // Update display
-            updateSiblingDisplay();
+            // updateSiblingDisplay();
 
             // Hide modal
             $('#deleteModal').modal('hide');

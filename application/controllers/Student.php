@@ -1325,6 +1325,10 @@ class Student extends Admin_Controller
             $vehroute_id     = $this->input->post('vehroute_id');
 
 
+            // Handle sibling removal first
+            $this->handleSiblingRemoval($student_id, $sibling_ids, $siblings);
+
+
             // Handle multiple siblings and parent assignment
             if (!empty($sibling_ids)) {
                 $sibling_ids_array = explode(',', $sibling_ids);
@@ -1359,20 +1363,22 @@ class Student extends Admin_Controller
                 }
             } else if (empty($sibling_ids) && $total_siblings > 0) {
                 // No siblings selected but previously had siblings - create new parent
-                $parent_password = $this->role->get_random_password($chars_min = 6, $chars_max = 6, $use_upper_case = false, $include_numbers = true, $include_special_chars = false);
+                $this->createNewParentForStudent($student_id);
 
-                $data_parent_login = array(
-                    'username' => $this->parent_login_prefix . $student_id . "_1",
-                    'password' => $parent_password,
-                    'user_id'  => "",
-                    'role'     => 'parent',
-                );
+                // $parent_password = $this->role->get_random_password($chars_min = 6, $chars_max = 6, $use_upper_case = false, $include_numbers = true, $include_special_chars = false);
 
-                $update_student = array(
-                    'id'        => $student_id,
-                    'parent_id' => 0,
-                );
-                $ins_id = $this->user_model->addNewParent($data_parent_login, $update_student);
+                // $data_parent_login = array(
+                //     'username' => $this->parent_login_prefix . $student_id . "_1",
+                //     'password' => $parent_password,
+                //     'user_id'  => "",
+                //     'role'     => 'parent',
+                // );
+
+                // $update_student = array(
+                //     'id'        => $student_id,
+                //     'parent_id' => 0,
+                // );
+                // $ins_id = $this->user_model->addNewParent($data_parent_login, $update_student);
             }
 
             // Convert multiple sibling IDs to single sibling ID for backward compatibility
@@ -2494,5 +2500,51 @@ class Student extends Admin_Controller
         $data['sch_setting']  = $this->sch_setting_detail;
         $page                 = $this->load->view('reports/_getStudentByClassSection', $data, true);
         echo json_encode(array('status' => 1, 'page' => $page));
+    }
+
+    /**
+     * Handle sibling removal by creating new parents for removed siblings
+     */
+    private function handleSiblingRemoval($student_id, $new_sibling_ids, $current_siblings)
+    {
+        $current_sibling_ids = array();
+        foreach ($current_siblings as $sibling) {
+            $current_sibling_ids[] = $sibling->id;
+        }
+
+        $new_sibling_ids_array = array();
+        if (!empty($new_sibling_ids)) {
+            $new_sibling_ids_array = explode(',', $new_sibling_ids);
+        }
+
+        // Find siblings that were removed
+        $removed_siblings = array_diff($current_sibling_ids, $new_sibling_ids_array);
+
+        foreach ($removed_siblings as $removed_sibling_id) {
+            // Create a new parent for the removed sibling
+            $this->createNewParentForStudent($removed_sibling_id);
+        }
+    }
+
+
+    /**
+     * Create a new parent for a student
+     */
+    private function createNewParentForStudent($student_id)
+    {
+        $parent_password = $this->role->get_random_password($chars_min = 6, $chars_max = 6, $use_upper_case = false, $include_numbers = true, $include_special_chars = false);
+
+        $data_parent_login = array(
+            'username' => $this->parent_login_prefix . $student_id . "_1",
+            'password' => $parent_password,
+            'user_id'  => "",
+            'role'     => 'parent',
+        );
+
+        $update_student = array(
+            'id'        => $student_id,
+            'parent_id' => 0, // This will be updated by addNewParent to the new parent's ID
+        );
+        return $this->user_model->addNewParent($data_parent_login, $update_student);
     }
 }
