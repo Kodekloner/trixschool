@@ -1154,6 +1154,27 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             });
         }
 
+        // Remove single sibling
+        $(document).on('click', '.remove-single-sibling', function() {
+            var siblingId = $(this).data('sibling-id');
+            var siblingName = $(this).data('sibling-name');
+
+            if (confirm('<?php echo "Are you sure you want to remove"; ?> ' + siblingName + '?')) {
+                // Remove from arrays
+                var index = selectedSiblings.indexOf(siblingId.toString());
+                if (index !== -1) {
+                    selectedSiblings.splice(index, 1);
+                    selectedSiblingNames.splice(index, 1);
+                }
+
+                // Update display
+                updateSiblingDisplay();
+
+                // Show success message
+                alert('<?php echo "Successfully removed sibling"; ?>: ' + siblingName);
+            }
+        });
+
         // Add sibling functionality - FIXED VERSION
         $(document).on('click', '.add_sibling', function() {
             // Get all checked student checkboxes
