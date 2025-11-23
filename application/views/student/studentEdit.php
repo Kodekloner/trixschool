@@ -371,6 +371,12 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                                                     <b><?php echo $this->lang->line('class'); ?></b>:<?php echo $sibling_value->class; ?><br />
                                                                     <b><?php echo $this->lang->line('section'); ?></b>:<?php echo $sibling_value->section; ?>
                                                                 </p>
+                                                                <button type="button" class="btn btn-xs btn-danger remove-single-sibling"
+                                                                    data-sibling-id="<?php echo $sibling_value->id ?>"
+                                                                    data-sibling-name="<?php echo htmlspecialchars($sibling_fullname) ?>"
+                                                                    style="margin-top: 10px;">
+                                                                    <i class="fa fa-times"></i> <?php echo $this->lang->line('remove'); ?>
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     </div>
