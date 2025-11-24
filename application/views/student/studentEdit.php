@@ -1156,52 +1156,28 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             });
         }
 
-        // Remove single sibling
-        // $(document).on('click', '.remove-single-sibling', function() {
-        //     var siblingId = $(this).data('sibling-id');
-        //     var siblingName = $(this).data('sibling-name');
-
-        //     if (confirm('<?php //echo "Are you sure you want to remove"; 
-                            ?> ' + siblingName + '?')) {
-        //         // Remove from arrays
-        //         var index = selectedSiblings.indexOf(siblingId.toString());
-        //         if (index !== -1) {
-        //             selectedSiblings.splice(index, 1);
-        //             selectedSiblingNames.splice(index, 1);
-        //         }
-
-        //         // Update display
-        //         updateSiblingDisplay();
-
-        //         // Show success message
-        //         alert('<?php //echo "Successfully removed sibling"; 
-                            ?>: ' + siblingName);
-        //     }
-        // });
-
         // Remove single sibling via AJAX
         $(document).on('click', '.remove-single-sibling', function() {
             var siblingId = $(this).data('sibling-id');
             var siblingName = $(this).data('sibling-name');
-            var studentId = $("input[name='student_id']").val();
-            var currentStudentId = '<?php echo $student["id"]; ?>';
 
             if (confirm('Are you sure you want to remove ' + siblingName + ' as a sibling?')) {
                 var $button = $(this);
                 $button.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Removing...');
 
+                // Use the same endpoint but with single sibling
                 $.ajax({
                     type: "POST",
-                    url: baseurl + "student/remove_sibling_ajax",
+                    url: baseurl + "student/remove_multiple_siblings_ajax",
                     data: {
-                        'student_id': studentId,
-                        'sibling_id': siblingId,
-                        'current_student_id': currentStudentId,
+                        'student_id': $("input[name='student_id']").val(),
+                        'sibling_ids': siblingId,
+                        'current_student_id': '<?php echo $student["id"]; ?>',
                         '<?php echo $this->security->get_csrf_token_name(); ?>': '<?php echo $this->security->get_csrf_hash(); ?>'
                     },
                     dataType: "json",
                     success: function(response) {
-                        if (response.status == 'success') {
+                        if (response.status == 'success' || response.status == 'partial') {
                             // Remove sibling card from UI
                             $('#sib_div_' + siblingId).remove();
 

@@ -1324,11 +1324,6 @@ class Student extends Admin_Controller
             $fees_discount   = $this->input->post('fees_discount');
             $vehroute_id     = $this->input->post('vehroute_id');
 
-
-            // Handle sibling removal first
-            $this->handleSiblingRemoval($student_id, $sibling_ids, $siblings);
-
-
             // Handle multiple siblings and parent assignment
             if (!empty($sibling_ids)) {
                 $sibling_ids_array = explode(',', $sibling_ids);
@@ -2676,30 +2671,6 @@ class Student extends Admin_Controller
         $data['sch_setting']  = $this->sch_setting_detail;
         $page                 = $this->load->view('reports/_getStudentByClassSection', $data, true);
         echo json_encode(array('status' => 1, 'page' => $page));
-    }
-
-    /**
-     * Handle sibling removal by creating new parents for removed siblings
-     */
-    private function handleSiblingRemoval($student_id, $new_sibling_ids, $current_siblings)
-    {
-        $current_sibling_ids = array();
-        foreach ($current_siblings as $sibling) {
-            $current_sibling_ids[] = $sibling->id;
-        }
-
-        $new_sibling_ids_array = array();
-        if (!empty($new_sibling_ids)) {
-            $new_sibling_ids_array = explode(',', $new_sibling_ids);
-        }
-
-        // Find siblings that were removed
-        $removed_siblings = array_diff($current_sibling_ids, $new_sibling_ids_array);
-
-        foreach ($removed_siblings as $removed_sibling_id) {
-            // Create a new parent for the removed sibling
-            $this->createNewParentForStudent($removed_sibling_id);
-        }
     }
 
 
