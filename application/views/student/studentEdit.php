@@ -911,28 +911,6 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
     </div>
 </div>
 
-<!-- <div class="modal" id="deleteModal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                <h4 class="modal-title del_modal_title"></h4>
-            </div>
-            <div class="modal-hidden">
-                <input type="hidden" name="id" value="0" class="hd_input">
-            </div>
-            <div class="modal-body del_modal_body">
-
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-sm btn-primary delete_confirm"><?php echo $this->lang->line('confirm'); ?></button>
-                <button type="button" class="btn btn-sm btn-default" data-dismiss="modal"><?php echo $this->lang->line('cancel'); ?></button>
-            </div>
-        </div>
-    </div>
-</div> -->
-
 <script type="text/javascript">
     $(document).ready(function() {
         var date_format = '<?php echo $result = strtr($this->customlib->getSchoolDateFormat(), ['d' => 'dd', 'm' => 'mm', 'Y' => 'yyyy']) ?>';
@@ -1099,7 +1077,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             }
         }
 
-        // Update sibling display
+        // Update sibling display function
         function updateSiblingDisplay() {
             // Update hidden inputs
             $('#sibling_ids').val(selectedSiblings.join(','));
@@ -1108,51 +1086,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             // Update the small display names
             $('#sibling_names_display').html('');
             selectedSiblingNames.forEach(function(name) {
-                $('#sibling_names_display').append('<span class="label label-success" style="display: block; margin-bottom: 5px;">' + name + '</span>');
-            });
-
-            // Update the visual sibling cards - THIS IS THE KEY FIX
-            updateSiblingCards();
-        }
-
-        // Update the visual sibling cards
-        function updateSiblingCards() {
-            var siblingContainer = $('.sibling_div .row');
-            siblingContainer.html('');
-
-            if (selectedSiblings.length === 0) {
-                // If no siblings left, remove the entire sibling section
-                $('.sibling_div').remove();
-                return;
-            }
-
-            // Rebuild sibling cards based on current selectedSiblings array
-            selectedSiblings.forEach(function(siblingId, index) {
-                var siblingName = selectedSiblingNames[index];
-
-                // In a real scenario, you'd need to store more sibling data
-                // For now, we'll create a basic card. You might want to store additional data
-                // in your selectedSiblings array or fetch it when needed
-                var siblingCard = `
-                    <div class="col-xs-12 col-sm-6 col-md-4 sib_div" id="sib_div_${siblingId}" data-sibling_id="${siblingId}">
-                        <div class="withsiblings">
-                            <img src="#" alt="${siblingName}" class="" />
-                            <div class="withsiblings-content">
-                                <h5><a href="#">${siblingName}</a></h5>
-                                <p>
-                                    <b><?php echo $this->lang->line('admission_no'); ?></b>: [Loading...]<br />
-                                    <b><?php echo $this->lang->line('class'); ?></b>: [Loading...]<br />
-                                    <b><?php echo $this->lang->line('section'); ?></b>: [Loading...]
-                                </p>
-                                <button type="button" class="btn btn-xs btn-danger remove-single-sibling" data-sibling-id="${siblingId}" data-sibling-name="${siblingName}">
-                                    <i class="fa fa-times"></i> <?php echo $this->lang->line('remove'); ?>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                siblingContainer.append(siblingCard);
+                $('#sibling_names_display').append('<span class="label label-success" style="display: inline-block; margin: 2px 5px 2px 0; padding: 5px;">' + name + '</span>');
             });
         }
 
@@ -1305,45 +1239,6 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                 siblingsList.append(checkboxHtml);
             }
         }
-
-        // Remove selected siblings when confirm button is clicked
-        // $(document).on('click', '.delete_confirm', function() {
-        //     var siblingsToRemove = [];
-        //     var siblingsToRemoveNames = [];
-
-        //     // Get all checked sibling checkboxes
-        //     $('input[name="siblings_to_remove[]"]:checked').each(function() {
-        //         siblingsToRemove.push($(this).val());
-        //         // Find the corresponding name
-        //         var index = selectedSiblings.indexOf($(this).val());
-        //         if (index !== -1) {
-        //             siblingsToRemoveNames.push(selectedSiblingNames[index]);
-        //         }
-        //     });
-
-        //     if (siblingsToRemove.length === 0) {
-        //         alert('<?php echo "please select at least one sibling to remove"; ?>');
-        //         return;
-        //     }
-
-        //     // Remove from arrays
-        //     siblingsToRemove.forEach(function(siblingId) {
-        //         var index = selectedSiblings.indexOf(siblingId);
-        //         if (index !== -1) {
-        //             selectedSiblings.splice(index, 1);
-        //             selectedSiblingNames.splice(index, 1);
-        //         }
-        //     });
-
-        //     // Update display
-        //     updateSiblingDisplay();
-
-        //     // Hide modal
-        //     $('#deleteModal').modal('hide');
-
-        //     // Show success message
-        //     showSiblingRemovalSuccess(siblingsToRemoveNames);
-        // });
 
         // Remove selected siblings when confirm button is clicked via AJAX
         $(document).on('click', '#remove-siblings-btn', function() {
