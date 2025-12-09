@@ -1324,7 +1324,6 @@ class Student extends Admin_Controller
             $fees_discount   = $this->input->post('fees_discount');
             $vehroute_id     = $this->input->post('vehroute_id');
 
-
             // Handle multiple siblings and parent assignment
             if (!empty($sibling_ids)) {
                 $sibling_ids_array = explode(',', $sibling_ids);
@@ -1359,20 +1358,22 @@ class Student extends Admin_Controller
                 }
             } else if (empty($sibling_ids) && $total_siblings > 0) {
                 // No siblings selected but previously had siblings - create new parent
-                $parent_password = $this->role->get_random_password($chars_min = 6, $chars_max = 6, $use_upper_case = false, $include_numbers = true, $include_special_chars = false);
+                $this->createNewParentForStudent($student_id);
 
-                $data_parent_login = array(
-                    'username' => $this->parent_login_prefix . $student_id . "_1",
-                    'password' => $parent_password,
-                    'user_id'  => "",
-                    'role'     => 'parent',
-                );
+                // $parent_password = $this->role->get_random_password($chars_min = 6, $chars_max = 6, $use_upper_case = false, $include_numbers = true, $include_special_chars = false);
 
-                $update_student = array(
-                    'id'        => $student_id,
-                    'parent_id' => 0,
-                );
-                $ins_id = $this->user_model->addNewParent($data_parent_login, $update_student);
+                // $data_parent_login = array(
+                //     'username' => $this->parent_login_prefix . $student_id . "_1",
+                //     'password' => $parent_password,
+                //     'user_id'  => "",
+                //     'role'     => 'parent',
+                // );
+
+                // $update_student = array(
+                //     'id'        => $student_id,
+                //     'parent_id' => 0,
+                // );
+                // $ins_id = $this->user_model->addNewParent($data_parent_login, $update_student);
             }
 
             // Convert multiple sibling IDs to single sibling ID for backward compatibility
@@ -1688,6 +1689,182 @@ class Student extends Admin_Controller
             redirect('student/search');
         }
     }
+
+    public function remove_sibling_ajax()
+    {
+        if (!$this->input->is_ajax_request()) {
+            exit('No direct script access allowed');
+        }
+
+        $this->form_validation->set_rules('student_id', 'Student ID', 'trim|required|xss_clean');
+        $this->form_validation->set_rules('sibling_id', 'Sibling ID', 'trim|required|xss_clean');
+        $this->form_validation->set_rules('current_student_id', 'Current Student ID', 'trim|required|xss_clean');
+
+        if ($this->form_validation->run() == false) {
+            echo json_encode(array('status' => 'error', 'message' => 'Invalid input data'));
+            return;
+        }
+
+        $student_id = $this->input->post('student_id');
+        $sibling_id = $this->input->post('sibling_id');
+        $current_student_id = $this->input->post('current_student_id');
+
+        // Get current student data
+        $current_student = $this->student_model->get($current_student_id);
+
+        if (!$current_student) {
+            echo json_encode(array('status' => 'error', 'message' => 'Student not found'));
+            return;
+        }
+
+        // Get sibling data
+        $sibling = $this->student_model->get($sibling_id);
+
+        if (!$sibling) {
+            echo json_encode(array('status' => 'error', 'message' => 'Sibling not found'));
+            return;
+        }
+
+        // Check if they are actually siblings (same parent)
+        if ($current_student['parent_id'] != $sibling['parent_id']) {
+            echo json_encode(array('status' => 'error', 'message' => 'These students are not siblings'));
+            return;
+        }
+
+        // Create a new parent for the removed sibling
+        $new_parent_id = $this->createNewParentForStudent($sibling_id);
+
+        if ($new_parent_id) {
+            // Log the activity
+            $this->timeline_model->add(array(
+                'student_id' => $current_student_id,
+                'title' => 'Sibling Removed',
+                'description' => 'Sibling ' . $this->customlib->getFullName($sibling['firstname'], $sibling['middlename'], $sibling['lastname'], $this->sch_setting_detail->middlename, $this->sch_setting_detail->lastname) . ' was removed',
+                'date' => date('Y-m-d H:i:s')
+            ));
+
+            echo json_encode(array(
+                'status' => 'success',
+                'message' => 'Sibling removed successfully'
+            ));
+        } else {
+            echo json_encode(array('status' => 'error', 'message' => 'Failed to remove sibling'));
+        }
+    }
+
+    public function remove_multiple_siblings_ajax()
+    {
+        if (!$this->input->is_ajax_request()) {
+            exit('No direct script access allowed');
+        }
+
+        $this->form_validation->set_rules('student_id', 'Student ID', 'trim|required|xss_clean');
+        $this->form_validation->set_rules('sibling_ids', 'Sibling IDs', 'trim|required|xss_clean');
+        $this->form_validation->set_rules('current_student_id', 'Current Student ID', 'trim|required|xss_clean');
+
+        if ($this->form_validation->run() == false) {
+            echo json_encode(array('status' => 'error', 'message' => 'Invalid input data'));
+            return;
+        }
+
+        $student_id = $this->input->post('student_id');
+        $sibling_ids = $this->input->post('sibling_ids');
+        $current_student_id = $this->input->post('current_student_id');
+
+        // Get current student data
+        $current_student = $this->student_model->get($current_student_id);
+
+        if (!$current_student) {
+            echo json_encode(array('status' => 'error', 'message' => 'Student not found'));
+            return;
+        }
+
+        $sibling_ids_array = explode(',', $sibling_ids);
+        $removed_siblings = array();
+        $errors = array();
+
+        foreach ($sibling_ids_array as $sibling_id) {
+            // Get sibling data
+            $sibling = $this->student_model->get($sibling_id);
+
+            if (!$sibling) {
+                $errors[] = "Sibling ID $sibling_id not found";
+                continue;
+            }
+
+            // Check if they are actually siblings (same parent)
+            if ($current_student['parent_id'] != $sibling['parent_id']) {
+                $errors[] = "Student " . $this->customlib->getFullName($sibling['firstname'], $sibling['middlename'], $sibling['lastname'], $this->sch_setting_detail->middlename, $this->sch_setting_detail->lastname) . " is not a sibling";
+                continue;
+            }
+
+            // Create a new parent for the removed sibling
+            $new_parent_id = $this->createNewParentForStudent($sibling_id);
+
+            if ($new_parent_id) {
+                $removed_siblings[] = $sibling['id'];
+
+                // Log the activity
+                $this->timeline_model->add(array(
+                    'student_id' => $current_student_id,
+                    'title' => 'Sibling Removed',
+                    'description' => 'Sibling ' . $this->customlib->getFullName($sibling['firstname'], $sibling['middlename'], $sibling['lastname'], $this->sch_setting_detail->middlename, $this->sch_setting_detail->lastname) . ' was removed',
+                    'date' => date('Y-m-d H:i:s')
+                ));
+            } else {
+                $errors[] = "Failed to remove sibling: " . $this->customlib->getFullName($sibling['firstname'], $sibling['middlename'], $sibling['lastname'], $this->sch_setting_detail->middlename, $this->sch_setting_detail->lastname);
+            }
+        }
+
+        if (!empty($errors)) {
+            echo json_encode(array(
+                'status' => 'partial',
+                'message' => 'Some siblings could not be removed: ' . implode(', ', $errors),
+                'removed_count' => count($removed_siblings)
+            ));
+        } else if (count($removed_siblings) > 0) {
+            echo json_encode(array(
+                'status' => 'success',
+                'message' => 'Successfully removed ' . count($removed_siblings) . ' sibling(s)',
+                'removed_count' => count($removed_siblings)
+            ));
+        } else {
+            echo json_encode(array('status' => 'error', 'message' => 'No siblings were removed'));
+        }
+    }
+
+    // /**
+    //  * Create a new parent for a student when they are removed as a sibling
+    //  */
+    // private function createNewParentForStudent($student_id)
+    // {
+    //     $parent_password = $this->role->get_random_password($chars_min = 6, $chars_max = 6, $use_upper_case = false, $include_numbers = true, $include_special_chars = false);
+
+    //     $data_parent_login = array(
+    //         'username' => $this->parent_login_prefix . $student_id,
+    //         'password' => $parent_password,
+    //         'user_id' => $student_id,
+    //         'role' => 'parent',
+    //     );
+
+    //     $this->db->trans_start();
+
+    //     // Insert new parent user
+    //     $this->db->insert('users', $data_parent_login);
+    //     $new_parent_id = $this->db->insert_id();
+
+    //     // Update student with new parent_id
+    //     $this->db->where('id', $student_id);
+    //     $this->db->update('students', array('parent_id' => $new_parent_id));
+
+    //     $this->db->trans_complete();
+
+    //     if ($this->db->trans_status() === FALSE) {
+    //         return false;
+    //     }
+
+    //     return $new_parent_id;
+    // }
 
     public function bulkdelete()
     {
@@ -2494,5 +2671,27 @@ class Student extends Admin_Controller
         $data['sch_setting']  = $this->sch_setting_detail;
         $page                 = $this->load->view('reports/_getStudentByClassSection', $data, true);
         echo json_encode(array('status' => 1, 'page' => $page));
+    }
+
+
+    /**
+     * Create a new parent for a student
+     */
+    private function createNewParentForStudent($student_id)
+    {
+        $parent_password = $this->role->get_random_password($chars_min = 6, $chars_max = 6, $use_upper_case = false, $include_numbers = true, $include_special_chars = false);
+
+        $data_parent_login = array(
+            'username' => $this->parent_login_prefix . $student_id . "_1",
+            'password' => $parent_password,
+            'user_id'  => "",
+            'role'     => 'parent',
+        );
+
+        $update_student = array(
+            'id'        => $student_id,
+            'parent_id' => 0, // This will be updated by addNewParent to the new parent's ID
+        );
+        return $this->user_model->addNewParent($data_parent_login, $update_student);
     }
 }

@@ -323,7 +323,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                                         <?php
                                                         if (!empty($siblings)) {
                                                             foreach ($siblings as $sibling) {
-                                                                echo '<span class="label label-success" style="display: block; margin-bottom: 5px;">' .
+                                                                echo '<span class="label label-success" style="display: none; margin-bottom: 5px;">' .
                                                                     $this->customlib->getFullname($sibling->firstname, $sibling->middlename, $sibling->lastname, $sch_setting->middlename, $sch_setting->lastname) .
                                                                     '</span>';
                                                             }
@@ -367,10 +367,16 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                                             <div class="withsiblings-content">
                                                                 <h5><a href="#"><?php echo $this->customlib->getFullname($sibling_value->firstname, $sibling_value->middlename, $sibling_value->lastname, $sch_setting->middlename, $sch_setting->lastname) ?></a></h5>
                                                                 <p>
-                                                                    <b><?php echo $this->lang->line('admission_no'); ?></b>:<?php echo $sibling_value->admission_no; ?><br />
-                                                                    <b><?php echo $this->lang->line('class'); ?></b>:<?php echo $sibling_value->class; ?><br />
-                                                                    <b><?php echo $this->lang->line('section'); ?></b>:<?php echo $sibling_value->section; ?>
+                                                                    <b><?php echo $this->lang->line('admission_no'); ?></b>: <?php echo $sibling_value->admission_no; ?><br />
+                                                                    <b><?php echo $this->lang->line('class'); ?></b>: <?php echo $sibling_value->class; ?><br />
+                                                                    <b><?php echo $this->lang->line('section'); ?></b>: <?php echo $sibling_value->section; ?>
                                                                 </p>
+                                                                <button type="button" class="btn btn-xs btn-danger remove-single-sibling"
+                                                                    data-sibling-id="<?php echo $sibling_value->id ?>"
+                                                                    data-sibling-name="<?php echo $this->customlib->getFullname($sibling_value->firstname, $sibling_value->middlename, $sibling_value->lastname, $sch_setting->middlename, $sch_setting->lastname) ?>"
+                                                                    style="margin-top: 10px;">
+                                                                    <i class="fa fa-times"></i> <?php echo $this->lang->line('remove'); ?>
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -885,19 +891,20 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
 <div class="modal" id="deleteModal">
     <div class="modal-dialog">
         <div class="modal-content">
-
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                <h4 class="modal-title del_modal_title"></h4>
-            </div>
-            <div class="modal-hidden">
-                <input type="hidden" name="id" value="0" class="hd_input">
+                <h4 class="modal-title del_modal_title">Remove Siblings</h4>
             </div>
             <div class="modal-body del_modal_body">
-
+                <p>Select siblings to remove:</p>
+                <div id="siblings_to_remove_list" style="max-height: 300px; overflow-y: auto;">
+                    <!-- Sibling checkboxes will be populated here -->
+                </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-sm btn-primary delete_confirm"><?php echo $this->lang->line('confirm'); ?></button>
+                <button type="button" class="btn btn-sm btn-primary delete_confirm" id="remove-siblings-btn">
+                    <i class="fa fa-trash"></i> Remove Selected
+                </button>
                 <button type="button" class="btn btn-sm btn-default" data-dismiss="modal"><?php echo $this->lang->line('cancel'); ?></button>
             </div>
         </div>
@@ -924,7 +931,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                 selectedSiblings.push(<?php echo $sibling->id; ?>);
                 selectedSiblingNames.push("<?php echo $this->customlib->getFullname($sibling->firstname, $sibling->middlename, $sibling->lastname, $sch_setting->middlename, $sch_setting->lastname); ?>");
             <?php endforeach; ?>
-            updateSiblingDisplay();
+            // updateSiblingDisplay();
         <?php endif; ?>
 
         $(document).on('change', '#class_id', function(e) {
@@ -1070,16 +1077,74 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             }
         }
 
-        // Update sibling display
+        // Update sibling display function
         function updateSiblingDisplay() {
-            $('#sibling_names_display').html('');
+            // Update hidden inputs
             $('#sibling_ids').val(selectedSiblings.join(','));
             $('#sibling_names_next').val(selectedSiblingNames.join(', '));
 
+            // Update the small display names
+            $('#sibling_names_display').html('');
             selectedSiblingNames.forEach(function(name) {
-                $('#sibling_names_display').append('<span class="label label-success" style="display: block; margin-bottom: 5px;">' + name + '</span>');
+                $('#sibling_names_display').append('<span class="label label-success" style="display: inline-block; margin: 2px 5px 2px 0; padding: 5px;">' + name + '</span>');
             });
         }
+
+        // Remove single sibling via AJAX
+        $(document).on('click', '.remove-single-sibling', function() {
+            var siblingId = $(this).data('sibling-id');
+            var siblingName = $(this).data('sibling-name');
+
+            if (confirm('Are you sure you want to remove ' + siblingName + ' as a sibling?')) {
+                var $button = $(this);
+                $button.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Removing...');
+
+                // Use the same endpoint but with single sibling
+                $.ajax({
+                    type: "POST",
+                    url: baseurl + "student/remove_multiple_siblings_ajax",
+                    data: {
+                        'student_id': $("input[name='student_id']").val(),
+                        'sibling_ids': siblingId,
+                        'current_student_id': '<?php echo $student["id"]; ?>',
+                        '<?php echo $this->security->get_csrf_token_name(); ?>': '<?php echo $this->security->get_csrf_hash(); ?>'
+                    },
+                    dataType: "json",
+                    success: function(response) {
+                        if (response.status == 'success' || response.status == 'partial') {
+                            // Remove sibling card from UI
+                            $('#sib_div_' + siblingId).remove();
+
+                            // Remove from arrays
+                            var index = selectedSiblings.indexOf(siblingId.toString());
+                            if (index !== -1) {
+                                selectedSiblings.splice(index, 1);
+                                selectedSiblingNames.splice(index, 1);
+                            }
+
+                            // Update display
+                            updateSiblingDisplay();
+
+                            // Show success message
+                            showAlert('Success', response.message, 'success');
+
+                            // If no siblings left, hide the sibling section
+                            if (selectedSiblings.length === 0) {
+                                $('.sibling_div').remove();
+                            }
+                        } else {
+                            showAlert('Error', response.message, 'error');
+                            $button.prop('disabled', false).html('<i class="fa fa-times"></i> <?php echo $this->lang->line('remove'); ?>');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        showAlert('Error', 'An error occurred while removing the sibling. Please try again.', 'error');
+                        $button.prop('disabled', false).html('<i class="fa fa-times"></i> <?php echo $this->lang->line('remove'); ?>');
+                    }
+                });
+            }
+        });
+
 
         // Add sibling functionality - FIXED VERSION
         $(document).on('click', '.add_sibling', function() {
@@ -1140,18 +1205,131 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
             });
         });
 
-        // Remove all siblings
+        // Remove siblings functionality - shows modal with sibling selection
         $(document).on('click', '.remove_sibling', function() {
+            populateSiblingsToRemoveModal();
             $('#deleteModal').modal('show');
         });
 
-        $(document).on('click', '.delete_confirm', function() {
-            selectedSiblings = [];
-            selectedSiblingNames = [];
-            updateSiblingDisplay();
-            $('.sibling_div').remove();
-            $('#deleteModal').modal('hide');
+        // Populate the delete modal with sibling checkboxes
+        function populateSiblingsToRemoveModal() {
+            var siblingsList = $('#siblings_to_remove_list');
+            siblingsList.html('');
+
+            if (selectedSiblings.length === 0) {
+                siblingsList.html('<div class="alert alert-warning text-center">no siblings to remove</div>');
+                $('.delete_confirm').prop('disabled', true);
+                return;
+            }
+
+            $('.delete_confirm').prop('disabled', false);
+
+            // Create checkboxes for each sibling
+            for (var i = 0; i < selectedSiblings.length; i++) {
+                var siblingId = selectedSiblings[i];
+                var siblingName = selectedSiblingNames[i];
+
+                var checkboxHtml = '<div class="checkbox">';
+                checkboxHtml += '<label>';
+                checkboxHtml += '<input type="checkbox" name="siblings_to_remove[]" value="' + siblingId + '" checked> ';
+                checkboxHtml += siblingName;
+                checkboxHtml += '</label>';
+                checkboxHtml += '</div>';
+
+                siblingsList.append(checkboxHtml);
+            }
+        }
+
+        // Remove selected siblings when confirm button is clicked via AJAX
+        $(document).on('click', '#remove-siblings-btn', function() {
+            var siblingsToRemove = [];
+            var siblingsToRemoveNames = [];
+
+            // Get all checked sibling checkboxes
+            $('input[name="siblings_to_remove[]"]:checked').each(function() {
+                siblingsToRemove.push($(this).val());
+                // Find the corresponding name
+                var index = selectedSiblings.indexOf($(this).val());
+                if (index !== -1) {
+                    siblingsToRemoveNames.push(selectedSiblingNames[index]);
+                }
+            });
+
+            if (siblingsToRemove.length === 0) {
+                alert('Please select at least one sibling to remove');
+                return;
+            }
+
+            var $button = $(this);
+            var originalText = $button.html();
+            $button.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Removing...');
+
+            // Send AJAX request to remove multiple siblings
+            $.ajax({
+                type: "POST",
+                url: baseurl + "student/remove_multiple_siblings_ajax",
+                data: {
+                    'student_id': $("input[name='student_id']").val(),
+                    'sibling_ids': siblingsToRemove.join(','),
+                    'current_student_id': '<?php echo $student["id"]; ?>',
+                    '<?php echo $this->security->get_csrf_token_name(); ?>': '<?php echo $this->security->get_csrf_hash(); ?>'
+                },
+                dataType: "json",
+                success: function(response) {
+                    $button.prop('disabled', false).html(originalText);
+
+                    if (response.status == 'success') {
+                        // Remove from arrays and UI for each removed sibling
+                        siblingsToRemove.forEach(function(siblingId) {
+                            // Remove from arrays
+                            var index = selectedSiblings.indexOf(siblingId);
+                            if (index !== -1) {
+                                selectedSiblings.splice(index, 1);
+                                selectedSiblingNames.splice(index, 1);
+                            }
+
+                            // Remove card from UI
+                            $('#sib_div_' + siblingId).remove();
+                        });
+
+                        // Update display
+                        updateSiblingDisplay();
+
+                        // Hide modal
+                        $('#deleteModal').modal('hide');
+
+                        // Show success message
+                        showSiblingRemovalSuccess(siblingsToRemoveNames);
+
+                        // If no siblings left, hide the sibling section
+                        if (selectedSiblings.length === 0) {
+                            $('.sibling_div').remove();
+                        }
+                    } else {
+                        showAlert('Error', response.message, 'error');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $button.prop('disabled', false).html(originalText);
+                    showAlert('Error', 'An error occurred while removing siblings. Please try again.', 'error');
+                }
+            });
         });
+
+        // Function to show success message after removal
+        function showSiblingRemovalSuccess(removedNames) {
+            if (removedNames.length > 0) {
+                var message = 'Successfully removed siblings: ' + removedNames.join(', ');
+                // Using alert for simplicity - you can replace with toast notification
+                alert(message);
+            }
+        }
+
+        // Function to show alerts
+        function showAlert(title, message, type) {
+            // You can replace this with a better notification system
+            alert(message);
+        }
 
         $(document).on('click', '.mysiblings', function() {
             $('#mySiblingModal').modal('show');
@@ -1229,7 +1407,8 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                     $('#guardian_relation').val("")
                 }
             }
-        });
+        }
+    );
 </script>
 
 <script type="text/javascript" src="<?php echo base_url(); ?>backend/dist/js/savemode.js"></script>
