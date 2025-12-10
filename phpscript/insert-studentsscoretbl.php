@@ -54,7 +54,7 @@ if (!$queryGetstudent_session) {
     exit;
 }
 push_query_debug($debug, $sqlGetstudent_session, $queryGetstudent_session);
-// $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
+$rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
 $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
 
 if ($countGetstudent_session > 0) {
