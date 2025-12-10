@@ -18,8 +18,6 @@ $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
 $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
 $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
 
-echo $countGetstudent_session . '<br>';
-
 if ($countGetstudent_session > 0) {
     do {
         $studentid = $rowGetstudent_session['student_id'];
@@ -29,22 +27,35 @@ if ($countGetstudent_session > 0) {
         $rowGetscore = mysqli_fetch_assoc($queryGetscore);
         $countGetscore = mysqli_num_rows($queryGetscore);
 
-        echo $countGetscore . '<br>';
-
         if ($countGetscore > 0) {
         } else {
-            echo $studentid . '<br>';
             $sqlInsert = ("INSERT INTO `score` (`StudentID`, `ClassID`, `SectionID`, `SubjectID`, `Session`, `Term`) 
                 VALUES ('$studentid','$classid','$classsectionactual','$subjects','$session','$term')");
 
             if (mysqli_query($link, $sqlInsert)) {
-                echo 'insert worked';
             } else {
-                // show the failing SQL and the DB error (very useful for debugging)
-                echo "insert failed<br>";
-                echo "SQL: " . $sqlInsert . "<br>";
                 echo "MySQL error: " . mysqli_error($link) . "<br>";
             }
+        }
+
+        // 2) CLEANUP: delete stale score rows for this session/class/subject/term where the student is NOT in the current student_session
+        // This removes score rows for students who have left the class/section for this session,
+        // so they won't appear when you query for current class/section.
+        $sqlDeleteStale = "
+            DELETE FROM score
+            WHERE `Session` = '$session'
+                AND ClassID = '$classid'
+                AND SubjectID = '$subjects'
+                AND Term = '$term'
+                AND StudentID NOT IN (
+                    SELECT student_id FROM student_session
+                    WHERE session_id = '$session' AND class_id = '$classid' AND section_id = '$classsectionactual'
+                )
+        ";
+        if (mysqli_query($link, $sqlDeleteStale)) {
+            echo "cleanup done: stale scores removed<br>";
+        } else {
+            echo "cleanup failed: " . mysqli_error($link) . '<br>';
         }
     } while ($rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session));
 } else {
