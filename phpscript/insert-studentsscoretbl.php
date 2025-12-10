@@ -21,7 +21,7 @@ $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
 $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
 $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
 
-echo $countGetstudent_session;
+echo $countGetstudent_session . '<br>';
 
 if ($countGetstudent_session > 0) {
     do {
@@ -32,7 +32,9 @@ if ($countGetstudent_session > 0) {
         $rowGetscore = mysqli_fetch_assoc($queryGetscore);
         $countGetscore = mysqli_num_rows($queryGetscore);
 
-        echo $countGetscore;
+        echo $countGetscore . '<br>';
+
+        echo $studentid . '<br>';
 
         if ($countGetscore > 0) {
         } else {
