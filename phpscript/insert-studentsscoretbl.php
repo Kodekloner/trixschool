@@ -1,9 +1,6 @@
 <?php
 
 // DEV debugging helpers — remove in production
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-header('Content-Type: application/json; charset=UTF-8');
 
 include('../database/config.php');
 $classsection = $_POST['classsection'];
@@ -23,6 +20,8 @@ $sqlGetstudent_session = "SELECT * FROM `student_session` INNER JOIN students ON
 $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
 $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
 $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+
+echo $countGetstudent_session;
 
 if ($countGetstudent_session > 0) {
     do {
