@@ -76,7 +76,7 @@ if ($countGetclass_sections > 0) {
         $sqlGetstudent_session = "
             SELECT ss.student_id, students.lastname, students.middlename, students.firstname, students.admission_no,
                 CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name,
-                score.ID as scoreID, score.Exam, score.ca1, score.ca2, score.ca3, score.ca4, score.ca5, score.ca6,
+                score.ID as scoreID, score.exam, score.ca1, score.ca2, score.ca3, score.ca4, score.ca5, score.ca6,
                 score.ca7, score.ca8, score.ca9, score.ca10
             FROM student_session ss
             INNER JOIN students ON ss.student_id = students.id
