@@ -34,16 +34,16 @@ if ($countGetstudent_session > 0) {
 
         echo $countGetscore . '<br>';
 
-        echo $studentid . '<br>';
-
         if ($countGetscore > 0) {
         } else {
-
+            echo $studentid . '<br>';
             $sqlInsert = ("INSERT INTO `score` (`StudentID`, `ClassID`, `SectionID`, `SubjectID`, `Session`, `Term`) 
                 VALUES ('$studentid','$classid','$classsectionactual','$subjects','$session','$term')");
 
             if (mysqli_query($link, $sqlInsert)) {
+                echo 'insert worked';
             } else {
+                echo 'insert failed';
             }
         }
     } while ($rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session));
