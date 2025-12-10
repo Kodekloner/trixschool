@@ -59,5 +59,21 @@ if ($countGetstudent_session > 0) {
         }
     } while ($rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session));
 } else {
+    $sqlDeleteStale = "
+        DELETE FROM score
+        WHERE `Session` = '$session'
+            AND ClassID = '$classid'
+            AND SubjectID = '$subjects'
+            AND Term = '$term'
+            AND StudentID NOT IN (
+                SELECT student_id FROM student_session
+                WHERE session_id = '$session' AND class_id = '$classid' AND section_id = '$classsectionactual'
+            )
+    ";
+    if (mysqli_query($link, $sqlDeleteStale)) {
+        echo "cleanup done: stale scores removed<br>";
+    } else {
+        echo "cleanup failed: " . mysqli_error($link) . '<br>';
+    }
     echo "Error: " . $sqlGetstudent_session . "<br>" . mysqli_error($link);
 }

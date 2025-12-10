@@ -72,7 +72,26 @@ if ($countGetclass_sections > 0) {
         $cnt = 1;
 
         //$sqlGetstudent_session = "SELECT * FROM `score` INNER JOIN students ON score.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND SubjectID = '$subjects' AND Term = '$term' AND Session = '$session'";
-        $sqlGetstudent_session = "SELECT *, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name FROM `score` INNER JOIN students ON score.StudentID = students.id WHERE `Session` = '$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND SubjectID = '$subjects' AND Term = '$term' AND students.is_active = 'yes' ORDER BY full_name ASC";
+        // $sqlGetstudent_session = "SELECT *, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name FROM `score` INNER JOIN students ON score.StudentID = students.id WHERE `Session` = '$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND SubjectID = '$subjects' AND Term = '$term' AND students.is_active = 'yes' ORDER BY full_name ASC";
+        $sqlGetstudent_session = "
+            SELECT ss.student_id, students.lastname, students.middlename, students.firstname, students.admission_no,
+                CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name,
+                score.ID as scoreID, score.Exam, score.ca1, score.ca2, score.ca3, score.ca4, score.ca5, score.ca6,
+                score.ca7, score.ca8, score.ca9, score.ca10
+            FROM student_session ss
+            INNER JOIN students ON ss.student_id = students.id
+            LEFT JOIN score ON score.StudentID = students.id
+                AND score.Session = '$session'
+                AND score.ClassID = '$class_id'
+                AND score.SectionID = '$sectionnew'
+                AND score.SubjectID = '$subjects'
+                AND score.Term = '$term'
+            WHERE ss.session_id = '$session'
+            AND ss.class_id = '$class_id'
+            AND ss.section_id = '$sectionnew'
+            AND students.is_active = 'yes'
+            ORDER BY full_name ASC
+        ";
 
         $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
         $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
