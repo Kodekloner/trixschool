@@ -32,6 +32,8 @@ if ($countGetstudent_session > 0) {
         $rowGetscore = mysqli_fetch_assoc($queryGetscore);
         $countGetscore = mysqli_num_rows($queryGetscore);
 
+        echo $countGetscore;
+
         if ($countGetscore > 0) {
         } else {
 
