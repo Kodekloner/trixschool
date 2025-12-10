@@ -47,6 +47,7 @@ if ($countGetstudent_session > 0) {
                 AND ClassID = '$classid'
                 AND SubjectID = '$subjects'
                 AND Term = '$term'
+                AND SectionID = '$classsectionactual'
                 AND StudentID NOT IN (
                     SELECT student_id FROM student_session
                     WHERE session_id = '$session' AND class_id = '$classid' AND section_id = '$classsectionactual'
