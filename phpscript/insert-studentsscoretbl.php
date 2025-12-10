@@ -1,7 +1,4 @@
 <?php
-
-// DEV debugging helpers — remove in production
-
 include('../database/config.php');
 $classsection = $_POST['classsection'];
 
@@ -43,7 +40,10 @@ if ($countGetstudent_session > 0) {
             if (mysqli_query($link, $sqlInsert)) {
                 echo 'insert worked';
             } else {
-                echo 'insert failed';
+                // show the failing SQL and the DB error (very useful for debugging)
+                echo "insert failed<br>";
+                echo "SQL: " . $sqlInsert . "<br>";
+                echo "MySQL error: " . mysqli_error($link) . "<br>";
             }
         }
     } while ($rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session));
