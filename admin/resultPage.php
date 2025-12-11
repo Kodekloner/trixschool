@@ -265,84 +265,34 @@ $studsection = $rowGetsections['section'];
 
                 <div class="rel">
 
-                    <!-- <div class="row">
+                    <div class="row">
                         <div class="col">
                             <div align="center">
-                                <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php //echo $rowsch_settings['app_logo']; 
-                                                                                        ?>" align="center" class="img-fluid" style="margin: 10px; width: 50%;">
+                                <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $rowsch_settings['app_logo']; ?>" align="center" class="img-fluid" style="margin: 10px; width: 50%;">
                             </div>
                         </div>
 
                         <div class="col-6">
 
-                            <p class="schname" style="font-size:25px"><?php //echo $rowsch_settings['name']; 
-                                                                        ?></p>
-                            <p class="schloc" style="color: rgb(185, 7, 7);font-size:16px;margin-top:-20px;"><?php //echo $rowsch_settings['address']; 
-                                                                                                                ?>.</p>
+                            <p class="schname" style="font-size:25px"><?php echo $rowsch_settings['name']; ?></p>
+                            <p class="schloc" style="color: rgb(185, 7, 7);font-size:16px;margin-top:-20px;margin-bottom: 3px"><?php echo $rowsch_settings['address']; ?>.</p>
                             <div style="margin-top:-10px;text-align:center">
-                                <span>Email: <?php //echo $rowsch_settings['email']; 
-                                                ?>
+                                <span>Email: <?php echo $rowsch_settings['email']; ?>
                                 </span><br />
                                 <span>
-                                    Website: <?php //echo $defRUlsec; 
-                                                ?>
+                                    Website: <?php echo $defRUlsec; ?>
                                 </span>
                             </div>
                         </div>
 
                         <div class="col">
-                            <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php //echo $studimage; 
-                                                                                    ?>" align="center" class="img-fluid" style="margin: 10px; width: 45%;height:120px">
-                        </div>
-                    </div><br>
-
-                    <div align="center">
-                        <h5 style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php //echo $term; 
-                                                                                                                                    ?> TERM</span> <?php //echo $session_name; 
-                                                                                                                                                                    ?> SESSION <span><?php //$studsectionid; 
-                                                                                                                                                                                                                    ?></span></h5>
-                    </div> -->
-
-                    <div class="row">
-                        <div class="col">
-                            <div align="center">
-                                <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $rowsch_settings['app_logo']; ?>"
-                                    class="img-fluid"
-                                    style="margin: 10px; width: 50%;">
-                            </div>
-                        </div>
-
-                        <div class="col-6">
-
-                            <p class="schname" style="font-size:25px; text-align:center;">
-                                <?php echo $rowsch_settings['name']; ?>
-                            </p>
-
-                            <p class="schloc"
-                                style="color: rgb(185, 7, 7); font-size:16px; margin-top: -5px; text-align:center;">
-                                <?php echo $rowsch_settings['address']; ?>.
-                            </p>
-
-                            <!-- FIX: remove negative margin, add word-wrap -->
-                            <div style="
-                                margin-top: 5px;
-                                text-align: center;
-                                word-wrap: break-word;
-                                overflow-wrap: break-word;
-                            ">
-                                <span>Email: <?php echo $rowsch_settings['email']; ?></span><br />
-                                <span>Website: <?php echo $defRUlsec; ?></span>
-                            </div>
-                        </div>
-
-                        <div class="col">
-                            <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $studimage; ?>"
-                                class="img-fluid"
-                                style="margin: 10px; width: 45%; height:120px;">
+                            <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $studimage; ?>" align="center" class="img-fluid" style="margin: 10px; width: 45%;height:120px">
                         </div>
                     </div>
 
-                    <br>
+                    <div align="center">
+                        <h5 style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo $term; ?> TERM</span> <?php echo $session_name; ?> SESSION <span><?php $studsectionid; ?></span></h5>
+                    </div>
 
                     <!-- FIX: remove margin-top:-40px -->
                     <div align="center">
