@@ -49,7 +49,6 @@ $sqlDeleteStale = "
         DELETE FROM britishresult
         WHERE `Session` = '$session'
             AND ClassID = '$classid'
-            AND SubjectID = '$subjects'
             AND Term = '$term'
             AND SectionID = '$classsectionactual'
             AND StudentID NOT IN (

@@ -38,6 +38,27 @@ $countGetassigncatoclass = mysqli_num_rows($queryGetassigncatoclass);
 $reltype = $rowGetassigncatoclass['ResultType'];
 
 if ($reltype == 'british') {
+
+    // 2) CLEANUP: delete stale score rows for this session/class/subject/term where the student is NOT in the current student_session
+    // This removes score rows for students who have left the class/section for this session,
+    // so they won't appear when you query for current class/section.
+    $sqlDeleteStale = "
+        DELETE FROM britishresult
+        WHERE `Session` = '$session'
+            AND ClassID = '$classid'
+            AND Term = '$term'
+            AND SectionID = '$sectionnew'
+            AND StudentID NOT IN (
+                SELECT student_id FROM student_session
+                WHERE session_id = '$session' AND class_id = '$classid' AND section_id = '$sectionnew'
+            )
+    ";
+    if (mysqli_query($link, $sqlDeleteStale)) {
+        echo "cleanup done: stale scores removed<br>";
+    } else {
+        echo "cleanup failed: " . mysqli_error($link) . '<br>';
+    }
+
     $sqlGetstudent_session = "SELECT DISTINCT StudentID,lastname,middlename,firstname,admission_no FROM `britishresult` INNER JOIN students ON britishresult.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND Term = '$term' AND britishresult.StudentID='$staffid'";
 
     $sqlGetclass_sections = "SELECT * FROM `class_sections` WHERE `id`='$classsection'";
@@ -125,6 +146,27 @@ if ($reltype == 'british') {
                 </thead>
                 <tbody>';
         $cnt = 1;
+
+
+        // 2) CLEANUP: delete stale score rows for this session/class/subject/term where the student is NOT in the current student_session
+        // This removes score rows for students who have left the class/section for this session,
+        // so they won't appear when you query for current class/section.
+        $sqlDeleteStale = "
+                DELETE FROM score
+                WHERE `Session` = '$session'
+                    AND ClassID = '$classid'
+                    AND Term = '$term'
+                    AND SectionID = '$sectionnew'
+                    AND StudentID NOT IN (
+                        SELECT student_id FROM student_session
+                        WHERE session_id = '$session' AND class_id = '$classid' AND section_id = '$sectionnew'
+                    )
+            ";
+        if (mysqli_query($link, $sqlDeleteStale)) {
+            echo "cleanup done: stale scores removed<br>";
+        } else {
+            echo "cleanup failed: " . mysqli_error($link) . '<br>';
+        }
 
         $sqlGetstudent_session = "SELECT DISTINCT StudentID,lastname,middlename,firstname,admission_no, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name FROM `score`INNER JOIN students ON score.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND Term = '$term' AND students.is_active = 'yes' ORDER BY full_name ASC";
         $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);

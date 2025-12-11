@@ -107,6 +107,26 @@ if ($countGetclass_sections > 0) {
                               
                         </tr>';
 
+    // 2) CLEANUP: delete stale score rows for this session/class/subject/term where the student is NOT in the current student_session
+    // This removes score rows for students who have left the class/section for this session,
+    // so they won't appear when you query for current class/section.
+    $sqlDeleteStale = "
+            DELETE FROM score
+            WHERE `Session` = '$session'
+                AND ClassID = '$classid'
+                AND Term = '$term'
+                AND SectionID = '$sectionnew'
+                AND StudentID NOT IN (
+                    SELECT student_id FROM student_session
+                    WHERE session_id = '$session' AND class_id = '$classid' AND section_id = '$sectionnew'
+                )
+        ";
+    if (mysqli_query($link, $sqlDeleteStale)) {
+        echo "cleanup done: stale scores removed<br>";
+    } else {
+        echo "cleanup failed: " . mysqli_error($link) . '<br>';
+    }
+
     $studentsData = []; // Array to store all student data
 
     $sqlGetstudent_session = "SELECT DISTINCT StudentID,lastname,middlename,firstname,admission_no FROM `score`INNER JOIN students ON score.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND Term = '$term' AND students.is_active = 'yes'";
