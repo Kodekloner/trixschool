@@ -275,7 +275,7 @@ $studsection = $rowGetsections['section'];
                         <div class="col-6">
 
                             <p class="schname" style="font-size:25px"><?php echo $rowsch_settings['name']; ?></p>
-                            <p class="schloc" style="color: rgb(185, 7, 7);font-size:16px;margin-top:-20px;margin-bottom: 3px"><?php echo $rowsch_settings['address']; ?>.</p>
+                            <p class="schloc" style="color: rgb(185, 7, 7);font-size:16px;margin-top:-20px;margin-bottom: 8px"><?php echo $rowsch_settings['address']; ?>.</p>
                             <div style="margin-top:-10px;text-align:center">
                                 <span>Email: <?php echo $rowsch_settings['email']; ?>
                                 </span><br />
