@@ -37,28 +37,28 @@ if ($countGetstudent_session > 0) {
                 echo "MySQL error: " . mysqli_error($link) . "<br>";
             }
         }
-
-        // 2) CLEANUP: delete stale score rows for this session/class/subject/term where the student is NOT in the current student_session
-        // This removes score rows for students who have left the class/section for this session,
-        // so they won't appear when you query for current class/section.
-        $sqlDeleteStale = "
-            DELETE FROM score
-            WHERE `Session` = '$session'
-                AND ClassID = '$classid'
-                AND SubjectID = '$subjects'
-                AND Term = '$term'
-                AND SectionID = '$classsectionactual'
-                AND StudentID NOT IN (
-                    SELECT student_id FROM student_session
-                    WHERE session_id = '$session' AND class_id = '$classid' AND section_id = '$classsectionactual'
-                )
-        ";
-        if (mysqli_query($link, $sqlDeleteStale)) {
-            echo "cleanup done: stale scores removed<br>";
-        } else {
-            echo "cleanup failed: " . mysqli_error($link) . '<br>';
-        }
     } while ($rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session));
+
+    // 2) CLEANUP: delete stale score rows for this session/class/subject/term where the student is NOT in the current student_session
+    // This removes score rows for students who have left the class/section for this session,
+    // so they won't appear when you query for current class/section.
+    $sqlDeleteStale = "
+        DELETE FROM score
+        WHERE `Session` = '$session'
+            AND ClassID = '$classid'
+            AND SubjectID = '$subjects'
+            AND Term = '$term'
+            AND SectionID = '$classsectionactual'
+            AND StudentID NOT IN (
+                SELECT student_id FROM student_session
+                WHERE session_id = '$session' AND class_id = '$classid' AND section_id = '$classsectionactual'
+            )
+    ";
+    if (mysqli_query($link, $sqlDeleteStale)) {
+        echo "cleanup done: stale scores removed<br>";
+    } else {
+        echo "cleanup failed: " . mysqli_error($link) . '<br>';
+    }
 } else {
     $sqlDeleteStale = "
         DELETE FROM score
