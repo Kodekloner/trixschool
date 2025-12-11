@@ -294,19 +294,6 @@ $studsection = $rowGetsections['section'];
                         <h5 style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo $term; ?> TERM</span> <?php echo $session_name; ?> SESSION <span><?php $studsectionid; ?></span></h5>
                     </div>
 
-                    <!-- FIX: remove margin-top:-40px -->
-                    <div align="center">
-                        <h5 style="
-                            font-size: 17px; 
-                            font-weight: 500;
-                            margin-top: 10px;   /* this prevents overlapping */
-                        ">
-                            SUMMARY OF ACADEMIC PERFORMANCE FOR
-                            <span><?php echo $term; ?> TERM</span>
-                            <?php echo $session_name; ?> SESSION
-                        </h5>
-                    </div>
-
 
                     <?php
 
