@@ -63,7 +63,26 @@ if ($countGetGradingSystem > 0) {
                 <tbody>';
     $cnt = 1;
 
-    $sqlGetstudent_session = "SELECT *, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name FROM `students` INNER JOIN affective_domain_score ON students.id=affective_domain_score.studentid AND affective_domain_score.session='$session' AND affective_domain_score.classid = '$classid' AND affective_domain_score.sectionid = '$classsectionactual' AND affective_domain_score.term = '$term' AND students.is_active = 'yes' ORDER BY full_name ASC";
+    // $sqlGetstudent_session = "SELECT *, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name FROM `students` INNER JOIN affective_domain_score ON students.id=affective_domain_score.studentid AND affective_domain_score.session='$session' AND affective_domain_score.classid = '$classid' AND affective_domain_score.sectionid = '$classsectionactual' AND affective_domain_score.term = '$term' AND students.is_active = 'yes' ORDER BY full_name ASC";
+    $sqlGetstudent_session = "
+            SELECT ss.student_id, students.lastname, students.middlename, students.firstname, students.admission_no,
+                CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name,
+                affective_domain_score.ID as scoreID, affective_domain_score.domain1, affective_domain_score.domain2, affective_domain_score.domain3, affective_domain_score.domain4, affective_domain_score.domain5, affective_domain_score.domain6,
+                affective_domain_score.domain7, affective_domain_score.domain8, affective_domain_score.domain9, affective_domain_score.domain10, affective_domain_score.domain11, affective_domain_score.domain12, 
+                affective_domain_score.domain13, affective_domain_score.domain14, affective_domain_score.domain15, 
+            FROM student_session ss
+            INNER JOIN students ON ss.student_id = students.id
+            LEFT JOIN affective_domain_score ON affective_domain_score.studentid = students.id
+                AND affective_domain_score.session = '$session'
+                AND affective_domain_score.classid = '$classid'
+                AND affective_domain_score.sectionid = '$classsectionactual'
+                AND affective_domain_score.term = '$term'
+            WHERE ss.session_id = '$session'
+            AND ss.class_id = '$classid'
+            AND ss.section_id = '$classsectionactual'
+            AND students.is_active = 'yes'
+            ORDER BY full_name ASC
+        ";
     $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
     $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
     $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
