@@ -44,7 +44,31 @@ if ($countGetclass_sections > 0) {
                 <tbody>';
         $cnt = 1;
 
-        $sqlGetstudent_session = "SELECT *, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name FROM `britishresult` INNER JOIN students ON britishresult.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND Term = '$term' AND SectionID = '$sectionnew' AND SubjectID = '$subjects' AND students.is_active = 'yes' ORDER BY full_name ASC";
+        // $sqlGetstudent_session = "SELECT *, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name FROM `britishresult` INNER JOIN students ON britishresult.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND Term = '$term' AND SectionID = '$sectionnew' AND SubjectID = '$subjects' AND students.is_active = 'yes' ORDER BY full_name ASC";
+        $sqlGetstudent_session = "
+            SELECT
+                ss.student_id,
+                students.lastname,
+                students.middlename,
+                students.firstname,
+                students.admission_no,
+                CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name,
+                britishresult.ID AS britishID,
+                britishresult.* 
+            FROM student_session ss
+            INNER JOIN students ON ss.student_id = students.id
+            LEFT JOIN britishresult ON britishresult.StudentID = students.id
+                AND britishresult.Session   = '$session'
+                AND britishresult.ClassID   = '$class_id'
+                AND britishresult.SectionID = '$sectionnew'
+                AND britishresult.SubjectID = '$subjects'
+                AND britishresult.Term      = '$term'
+            WHERE ss.session_id = '$session'
+            AND ss.class_id   = '$class_id'
+            AND ss.section_id = '$sectionnew'
+            AND students.is_active = 'yes'
+            ORDER BY full_name ASC
+        ";
         $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
         $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
         $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
@@ -75,7 +99,7 @@ if ($countGetclass_sections > 0) {
                     			<td>' . $rowGetstudent_session['lastname'] . ' ' . $rowGetstudent_session['middlename'] . ' ' . $rowGetstudent_session['firstname'] . '</td>
                     			<td>' . $rowGetstudent_session['admission_no'] . '</td>
                     			<td>
-                    			    <select class="custom-select my-1 mr-sm-2 remarks" id="extcomment_' . $rowGetstudent_session["ID"] . '" data-id="' . $rowGetstudent_session["ID"] . '" data-extcom="' . $rowGetstudent_session['AdditionalComments'] . '">
+                    			    <select class="custom-select my-1 mr-sm-2 remarks" id="extcomment_' . $rowGetstudent_session["britishID"] . '" data-id="' . $rowGetstudent_session["britishID"] . '" data-extcom="' . $rowGetstudent_session['AdditionalComments'] . '">
                                         <option value="0" selected>Select Remark</option>
                                         <option value="Expected" ' . $selectedExpected . '>Expected</option>
                                         <option value="Emerging" ' . $selectedEmerging . '>Emerging</option>
@@ -83,7 +107,7 @@ if ($countGetclass_sections > 0) {
                                     </select>
                                 </td>
                                 <td>
-                                  <textarea type="text" rows="2" id="" class="form-control britishfield" data-id="extcomment_' . $rowGetstudent_session["ID"] . '" data-rowid="' . $rowGetstudent_session["ID"] . '" placeholder="input comment here">' . $rowGetstudent_session['AdditionalComments'] . '</textarea>
+                                  <textarea type="text" rows="2" id="" class="form-control britishfield" data-id="extcomment_' . $rowGetstudent_session["britishID"] . '" data-rowid="' . $rowGetstudent_session["britishID"] . '" placeholder="input comment here">' . $rowGetstudent_session['AdditionalComments'] . '</textarea>
                                 </td>      
                     		</tr>';
             } while ($rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session));

@@ -63,932 +63,951 @@ if ($countGetGradingSystem > 0) {
                 <tbody>';
     $cnt = 1;
 
-    $sqlGetstudent_session = "SELECT *, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name FROM `students` INNER JOIN psycomotor_score ON students.id=psycomotor_score.studentid AND psycomotor_score.session='$session' AND psycomotor_score.classid = '$classid' AND psycomotor_score.sectionid = '$classsectionactual' AND psycomotor_score.term = '$term' AND students.is_active = 'yes' ORDER BY full_name ASC";
+    // $sqlGetstudent_session = "SELECT *, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name FROM `students` INNER JOIN psycomotor_score ON students.id=psycomotor_score.studentid AND psycomotor_score.session='$session' AND psycomotor_score.classid = '$classid' AND psycomotor_score.sectionid = '$classsectionactual' AND psycomotor_score.term = '$term' AND students.is_active = 'yes' ORDER BY full_name ASC";
+    $sqlGetstudent_session = "
+            SELECT ss.student_id, students.lastname, students.middlename, students.firstname, students.admission_no,
+                CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name,
+                psycomotor_score.id as psid, psycomotor_score.psycomotor1, psycomotor_score.psycomotor2, psycomotor_score.psycomotor3, psycomotor_score.psycomotor4, psycomotor_score.psycomotor5, psycomotor_score.psycomotor6,
+                psycomotor_score.psycomotor7, psycomotor_score.psycomotor8, psycomotor_score.psycomotor9, psycomotor_score.psycomotor10, psycomotor_score.psycomotor11, psycomotor_score.psycomotor12,
+                psycomotor_score.psycomotor13, psycomotor_score.psycomotor14, psycomotor_score.psycomotor15
+            FROM student_session ss
+            INNER JOIN students ON ss.student_id = students.id
+            LEFT JOIN psycomotor_score ON psycomotor_score.studentid = students.id
+                AND psycomotor_score.session = '$session'
+                AND psycomotor_score.classid = '$classid'
+                AND psycomotor_score.sectionid = '$classsectionactual'
+                AND psycomotor_score.term = '$term'
+            WHERE ss.session_id = '$session'
+            AND ss.class_id = '$classid'
+            AND ss.section_id = '$classsectionactual'
+            AND students.is_active = 'yes'
+            ORDER BY full_name ASC
+        ";
     $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
     $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
     $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
 
     if ($countGetstudent_session > 0) {
         do {
-            echo '<tr id="' . $rowGetstudent_session["id"] . '" class="edit_tr">
+            echo '<tr id="' . $rowGetstudent_session["psid"] . '" class="edit_tr">
                     			<td>' . $cnt++ . '</td>
                     			<td>' . $rowGetstudent_session['lastname'] . ' ' . $rowGetstudent_session['middlename'] . ' ' . $rowGetstudent_session['firstname'] . '</td>
                     			<td>' . $rowGetstudent_session['admission_no'] . '</td>';
 
             if ($rowGetGradingSystem['NumberofP'] == '1') {
                 echo '<td class="edit_td">
-                                              <span id="ca1_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca1_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td style="display:none;">
-                                               <span id="ca2_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca2_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td style="display:none;">
-                                           <span id="ca3_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca3_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca4_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca4_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca5_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca5_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                              <span id="ca6_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca6_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td style="display:none;">
-                                               <span id="ca7_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca7_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td style="display:none;">
-                                           <span id="ca8_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca8_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca9_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca9_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca10_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca10_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca11_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca11_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca12_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca12_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca13_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca13_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca14_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca14_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca15_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca15_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>';
             } elseif ($rowGetGradingSystem['NumberofP'] == '2') {
                 echo '<td class="edit_td">
-                                              <span id="ca1_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca1_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                               <span id="ca2_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca2_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td style="display:none;">
-                                           <span id="ca3_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca3_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca4_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca4_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca5_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca5_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                              <span id="ca6_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca6_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td style="display:none;">
-                                               <span id="ca7_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca7_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td style="display:none;">
-                                           <span id="ca8_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca8_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca9_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca9_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca10_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca10_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca11_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca11_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca12_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca12_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca13_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca13_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca14_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca14_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca15_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca15_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>';
             } elseif ($rowGetGradingSystem['NumberofP'] == '3') {
                 echo '<td class="edit_td">
-                                              <span id="ca1_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca1_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                               <span id="ca2_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca2_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                           <span id="ca3_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca3_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca4_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca4_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca5_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca5_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                              <span id="ca6_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca6_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td style="display:none;">
-                                               <span id="ca7_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca7_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td style="display:none;">
-                                           <span id="ca8_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca8_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca9_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca9_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca10_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca10_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca11_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca11_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca12_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca12_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca13_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca13_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca14_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca14_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca15_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca15_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>';
             } elseif ($rowGetGradingSystem['NumberofP'] == '4') {
                 echo '<td class="edit_td">
-                                              <span id="ca1_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca1_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                               <span id="ca2_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca2_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                           <span id="ca3_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca3_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca4_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca4_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca5_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca5_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                              <span id="ca6_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca6_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td style="display:none;">
-                                               <span id="ca7_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca7_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td style="display:none;">
-                                           <span id="ca8_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca8_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca9_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca9_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca10_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca10_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca11_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca11_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca12_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca12_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca13_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca13_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca14_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca14_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca15_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca15_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>';
             } elseif ($rowGetGradingSystem['NumberofP'] == '5') {
                 echo '<td class="edit_td">
-                                              <span id="ca1_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca1_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                               <span id="ca2_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca2_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                           <span id="ca3_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca3_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca4_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca4_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca5_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca5_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                              <span id="ca6_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca6_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td style="display:none;">
-                                               <span id="ca7_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca7_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td style="display:none;">
-                                           <span id="ca8_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca8_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca9_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca9_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca10_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca10_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca11_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca11_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca12_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca12_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca13_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca13_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca14_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca14_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca15_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca15_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>';
             } elseif ($rowGetGradingSystem['NumberofP'] == '6') {
                 echo '<td class="edit_td">
-                                              <span id="ca1_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca1_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                               <span id="ca2_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca2_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                           <span id="ca3_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca3_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca4_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca4_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca5_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca5_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca6_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca6_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                             <td style="display:none;">
-                                               <span id="ca7_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca7_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td style="display:none;">
-                                           <span id="ca8_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca8_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca9_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca9_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca10_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca10_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca11_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca11_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca12_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca12_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca13_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca13_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca14_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca14_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca15_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca15_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>';
             } elseif ($rowGetGradingSystem['NumberofP'] == '7') {
                 echo '<td class="edit_td">
-                                              <span id="ca1_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca1_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                               <span id="ca2_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca2_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                           <span id="ca3_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca3_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca4_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca4_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca5_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca5_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca6_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca6_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca7_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca7_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                           <span id="ca8_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca8_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca9_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca9_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca10_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca10_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca11_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca11_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca12_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca12_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca13_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca13_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca14_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca14_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca15_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca15_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>';
             } elseif ($rowGetGradingSystem['NumberofP'] == '8') {
                 echo '<td class="edit_td">
-                                              <span id="ca1_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca1_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                               <span id="ca2_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca2_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                           <span id="ca3_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca3_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca4_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca4_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca5_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca5_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca6_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca6_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca7_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca7_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca8_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca8_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca9_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca9_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca10_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca10_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca11_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca11_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca12_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca12_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca13_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca13_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca14_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca14_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca15_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca15_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>';
             } elseif ($rowGetGradingSystem['NumberofP'] == '9') {
                 echo '<td class="edit_td">
-                                              <span id="ca1_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca1_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                               <span id="ca2_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca2_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                           <span id="ca3_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca3_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca4_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca4_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca5_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca5_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca6_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca6_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca7_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca7_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca8_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca8_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca9_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca9_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca10_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca10_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca11_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca11_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca12_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca12_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca13_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca13_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca14_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca14_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca15_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca15_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>';
             } elseif ($rowGetGradingSystem['NumberofP'] == '10') {
                 echo '<td class="edit_td">
-                                              <span id="ca1_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca1_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                               <span id="ca2_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca2_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                           <span id="ca3_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca3_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca4_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca4_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca5_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca5_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca6_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca6_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca7_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca7_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca8_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca8_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca9_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca9_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca10_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca10_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca11_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca11_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca12_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca12_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca13_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca13_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca14_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca14_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca15_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca15_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>';
             } elseif ($rowGetGradingSystem['NumberofP'] == '11') {
                 echo '<td class="edit_td">
-                                              <span id="ca1_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca1_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                               <span id="ca2_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca2_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                           <span id="ca3_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca3_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca4_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca4_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca5_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca5_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca6_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca6_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca7_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca7_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca8_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca8_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca9_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca9_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca10_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca10_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca11_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca11_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca12_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca12_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca13_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca13_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca14_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca14_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca15_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca15_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>';
             } elseif ($rowGetGradingSystem['NumberofP'] == '12') {
                 echo '<td class="edit_td">
-                                              <span id="ca1_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca1_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                               <span id="ca2_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca2_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                           <span id="ca3_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca3_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca4_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca4_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca5_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca5_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca6_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca6_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca7_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca7_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca8_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca8_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca9_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca9_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca10_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca10_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca11_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca11_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca12_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca12_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca13_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca13_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca14_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca14_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca15_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca15_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>';
             } elseif ($rowGetGradingSystem['NumberofP'] == '13') {
                 echo '<td class="edit_td">
-                                              <span id="ca1_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca1_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                               <span id="ca2_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca2_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                           <span id="ca3_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca3_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca4_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca4_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca5_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca5_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca6_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca6_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca7_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca7_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca8_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca8_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca9_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca9_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca10_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca10_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca11_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca11_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca12_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca12_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca13_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca13_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca14_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca14_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca15_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca15_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>';
             } elseif ($rowGetGradingSystem['NumberofP'] == '14') {
                 echo '<td class="edit_td">
-                                              <span id="ca1_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca1_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                               <span id="ca2_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca2_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                           <span id="ca3_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca3_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca4_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca4_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca5_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca5_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca6_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca6_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca7_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca7_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca8_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca8_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca9_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca9_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca10_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca10_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca11_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca11_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca12_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca12_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca13_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca13_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca14_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca14_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td style="display:none;">
-                                            <span id="ca15_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca15_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>';
             } elseif ($rowGetGradingSystem['NumberofP'] == '15') {
                 echo '<td class="edit_td">
-                                              <span id="ca1_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
-                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["id"] . '"/>
+                                              <span id="ca1_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor1"] . '</span>
+                                              <input type="text" value="' . $rowGetstudent_session["psycomotor1"] . '" class="editbox" id="ca1_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                               <span id="ca2_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
-                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["id"] . '"/>
+                                               <span id="ca2_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor2"] . '</span>
+                                               <input type="text" value="' . $rowGetstudent_session["psycomotor2"] . '" class="editbox" id="ca2_input_' . $rowGetstudent_session["psid"] . '"/>
                                             </td>
                                             <td>
-                                           <span id="ca3_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["id"] . '"/>
+                                           <span id="ca3_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor3"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor3"] . '" class="editbox" id="ca3_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca4_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
-                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca4_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor4"] . '</span>
+                                           <input type="text" value="' . $rowGetstudent_session["psycomotor4"] . '" class="editbox" id="ca4_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca5_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca5_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor5"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor5"] . '" class="editbox" id="ca5_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca6_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca6_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor6"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor6"] . '" class="editbox" id="ca6_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca7_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca7_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor7"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor7"] . '" class="editbox" id="ca7_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca8_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca8_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor8"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor8"] . '" class="editbox" id="ca8_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca9_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca9_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor9"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor9"] . '" class="editbox" id="ca9_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca10_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca10_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor10"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor10"] . '" class="editbox" id="ca10_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca11_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca11_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor11"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor11"] . '" class="editbox" id="ca11_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca12_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca12_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor12"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor12"] . '" class="editbox" id="ca12_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca13_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca13_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor13"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor13"] . '" class="editbox" id="ca13_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca14_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca14_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor14"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor14"] . '" class="editbox" id="ca14_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>
                                         <td>
-                                            <span id="ca15_' . $rowGetstudent_session["id"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
-                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["id"] . '"/>
+                                            <span id="ca15_' . $rowGetstudent_session["psid"] . '" class="text">' . $rowGetstudent_session["psycomotor15"] . '</span>
+                                            <input type="text" value="' . $rowGetstudent_session["psycomotor15"] . '" class="editbox" id="ca15_input_' . $rowGetstudent_session["psid"] . '"/>
                                         </td>';
             } else {
                 echo '';
@@ -1041,10 +1060,10 @@ if ($countGetGradingSystem > 0) {
             echo '
                     			
                     			<td>
-                                    <a style="color: black; font-size: 15px; color:red;" href="#" data-toggle="modal" data-target="#delScore" data-id="' . $rowGetstudent_session["id"] . '" data-name="' . $rowGetstudent_session['lastname'] . ' ' . $rowGetstudent_session['middlename'] . ' ' . $rowGetstudent_session['firstname'] . '\'s" id="delbtn">
+                                    <a style="color: black; font-size: 15px; color:red;" href="#" data-toggle="modal" data-target="#delScore" data-id="' . $rowGetstudent_session["psid"] . '" data-name="' . $rowGetstudent_session['lastname'] . ' ' . $rowGetstudent_session['middlename'] . ' ' . $rowGetstudent_session['firstname'] . '\'s" id="delbtn">
                                         <i class="fa fa-close"></i>
                                     </a>
-                                        <span style="display:none;"><input type="text" value="' . $rowGetstudent_session['lastname'] . ' ' . $rowGetstudent_session['middlename'] . ' ' . $rowGetstudent_session['firstname'] . '" class="editbox" id="studname_' . $rowGetstudent_session["id"] . '"/></span>
+                                        <span style="display:none;"><input type="text" value="' . $rowGetstudent_session['lastname'] . ' ' . $rowGetstudent_session['middlename'] . ' ' . $rowGetstudent_session['firstname'] . '" class="editbox" id="studname_' . $rowGetstudent_session["psid"] . '"/></span>
                                 </td>       
                     		</tr>';
         } while ($rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session));
