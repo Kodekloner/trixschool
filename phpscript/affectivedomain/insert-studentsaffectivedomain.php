@@ -44,7 +44,7 @@ if ($countGetstudent_session > 0) {
                 AND sectionid = '$classsection'
                 AND studentid NOT IN (
                     SELECT student_id FROM student_session
-                    WHERE session_id = '$session' AND class_id = '$classid' AND section_id = '$classsectionactual'
+                    WHERE session_id = '$session' AND class_id = '$classid' AND section_id = '$classsection'
                 )
         ";
         if (mysqli_query($link, $sqlDeleteStale)) {
@@ -65,7 +65,7 @@ if ($countGetstudent_session > 0) {
                 AND sectionid = '$classsection'
                 AND studentid NOT IN (
                     SELECT student_id FROM student_session
-                    WHERE session_id = '$session' AND class_id = '$classid' AND section_id = '$classsectionactual'
+                    WHERE session_id = '$session' AND class_id = '$classid' AND section_id = '$classsection'
                 )
         ";
     if (mysqli_query($link, $sqlDeleteStale)) {
