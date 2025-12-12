@@ -66,7 +66,7 @@ class Stuattendence extends Admin_Controller
             $date = $this->input->post('date');
             $student_list = $this->stuattendence_model->get();
             echo "here 1";
-            die();
+
             $data['studentlist'] = $student_list;
             $data['class_id'] = $class;
             $data['section_id'] = $section;
@@ -76,6 +76,7 @@ class Stuattendence extends Admin_Controller
             $session = $this->setting_model->getCurrentSession();
             $term = $this->setting_model->getCurrentTerm();
             echo "here 2";
+            die();
             if ($search == "saveattendence") {
                 $session_ary = $this->input->post('student_session');
                 $absent_student_list = array();
