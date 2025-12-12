@@ -64,9 +64,9 @@ class Stuattendence extends Admin_Controller
             $class = $this->input->post('class_id');
             $section = $this->input->post('section_id');
             $date = $this->input->post('date');
-            $student_list = $this->stuattendence_model->get();
             echo "here 1";
             die();
+            $student_list = $this->stuattendence_model->get();
             $data['studentlist'] = $student_list;
             $data['class_id'] = $class;
             $data['section_id'] = $section;
