@@ -2075,7 +2075,7 @@ $studsection = $rowGetsections['section'];
 
                                 $gettotgrade = floatval(round($rowgettotalgrade['average'] / $row_cntgetsubscore, 2));
 
-                                $gettotscore = $rowgettotalgrade['average'];
+                                $gettotscore = floatval(round($rowgettotalgrade['average']));
 
                                 $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND SubjectID IN (
                                                             SELECT subjects.id 
