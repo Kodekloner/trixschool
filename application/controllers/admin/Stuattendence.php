@@ -3,19 +3,22 @@
 if (!defined('BASEPATH'))
     exit('No direct script access allowed');
 
-class Stuattendence extends Admin_Controller {
+class Stuattendence extends Admin_Controller
+{
 
-    function __construct() {
+    function __construct()
+    {
         parent::__construct();
 
         $this->config->load("mailsms");
         $this->load->library('mailsmsconf');
         $this->config_attendance = $this->config->item('attendence');
         $this->load->model("classteacher_model");
-         $this->sch_setting_detail = $this->setting_model->getSetting();
+        $this->sch_setting_detail = $this->setting_model->getSetting();
     }
 
-    function index() {
+    function index()
+    {
         if (!$this->rbac->hasPrivilege('student_attendance', 'can_view')) {
             access_denied();
         }
@@ -62,6 +65,7 @@ class Stuattendence extends Admin_Controller {
             $section = $this->input->post('section_id');
             $date = $this->input->post('date');
             $student_list = $this->stuattendence_model->get();
+            echo "here 1";
             $data['studentlist'] = $student_list;
             $data['class_id'] = $class;
             $data['section_id'] = $section;
@@ -70,6 +74,7 @@ class Stuattendence extends Admin_Controller {
             $holiday = $this->input->post('holiday');
             $session = $this->setting_model->getCurrentSession();
             $term = $this->setting_model->getCurrentTerm();
+            echo "here 2";
             if ($search == "saveattendence") {
                 $session_ary = $this->input->post('student_session');
                 $absent_student_list = array();
@@ -136,17 +141,20 @@ class Stuattendence extends Admin_Controller {
                 $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
                 redirect('admin/stuattendence/index', 'refresh');
             }
+            echo "here 3";
             $attendencetypes = $this->attendencetype_model->get();
             $data['attendencetypeslist'] = $attendencetypes;
             $resultlist = $this->stuattendence_model->searchAttendenceClassSection($class, $section, date('Y-m-d', $this->customlib->datetostrtotime($date)));
             $data['resultlist'] = $resultlist;
+            echo "here 4";
             $this->load->view('layout/header', $data);
             $this->load->view('admin/stuattendence/attendenceList', $data);
             $this->load->view('layout/footer', $data);
         }
     }
 
-    function attendencereport() {
+    function attendencereport()
+    {
 
         if (!$this->rbac->hasPrivilege('attendance_by_date', 'can_view')) {
             access_denied();
@@ -218,14 +226,15 @@ class Stuattendence extends Admin_Controller {
             $resultlist = $this->stuattendence_model->searchAttendenceClassSectionPrepare($class, $section, date('Y-m-d', $this->customlib->datetostrtotime($date)));
 
             $data['resultlist'] = $resultlist;
-            $data['sch_setting'] =$this->sch_setting_detail;
+            $data['sch_setting'] = $this->sch_setting_detail;
             $this->load->view('layout/header', $data);
             $this->load->view('admin/stuattendence/attendencereport', $data);
             $this->load->view('layout/footer', $data);
         }
     }
 
-    function classattendencereport() {
+    function classattendencereport()
+    {
 
         if (!$this->rbac->hasPrivilege('attendance_report', 'can_view')) {
             access_denied();
@@ -338,7 +347,8 @@ class Stuattendence extends Admin_Controller {
         }
     }
 
-    function monthAttendance($st_month, $no_of_months, $student_id) {
+    function monthAttendance($st_month, $no_of_months, $student_id)
+    {
 
         $record = array();
 
@@ -361,7 +371,4 @@ class Stuattendence extends Admin_Controller {
 
         return $record;
     }
-
 }
-
-?>
