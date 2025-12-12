@@ -64,16 +64,13 @@ class Stuattendence extends Admin_Controller
             $class = $this->input->post('class_id');
             $section = $this->input->post('section_id');
             $date = $this->input->post('date');
-            echo "here 1";
-            die();
-            $student_list = $this->stuattendence_model->get();
-            $data['studentlist'] = $student_list;
+            // $student_list = $this->stuattendence_model->get();
+            // $data['studentlist'] = $student_list;
             $data['class_id'] = $class;
             $data['section_id'] = $section;
             $data['date'] = $date;
             $search = $this->input->post('search');
             $holiday = $this->input->post('holiday');
-            echo "here 2";
             $session = $this->setting_model->getCurrentSession();
             $term = $this->setting_model->getCurrentTerm();
             if ($search == "saveattendence") {
@@ -142,12 +139,10 @@ class Stuattendence extends Admin_Controller
                 $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('success_message') . '</div>');
                 redirect('admin/stuattendence/index', 'refresh');
             }
-            echo "here 3";
             $attendencetypes = $this->attendencetype_model->get();
             $data['attendencetypeslist'] = $attendencetypes;
             $resultlist = $this->stuattendence_model->searchAttendenceClassSection($class, $section, date('Y-m-d', $this->customlib->datetostrtotime($date)));
             $data['resultlist'] = $resultlist;
-            echo "here 4";
             $this->load->view('layout/header', $data);
             $this->load->view('admin/stuattendence/attendenceList', $data);
             $this->load->view('layout/footer', $data);
