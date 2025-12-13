@@ -245,12 +245,7 @@ class Subjectgroup_model extends MY_Model
             }
         }
 
-        // Dump and stop
-        echo '<pre>';
-        print_r($subject_groups);
-        echo '</pre>';
-        exit; // or die();
-        // return $subject_groups;
+        return $subject_groups;
     }
 
     public function getClassSectionByGroup($subject_group_id)
