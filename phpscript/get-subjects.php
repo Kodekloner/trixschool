@@ -17,7 +17,6 @@ $rowclasseschecker = mysqli_fetch_assoc($resultclasseschecker);
 $row_cntclasseschecker = mysqli_num_rows($resultclasseschecker);
 
 $classsection = $rowclasseschecker['id'];
-echo $classsection;
 
 $sqlstaffcheck = "SELECT * FROM `staff_roles` INNER JOIN roles ON staff_roles.role_id=roles.id WHERE staff_roles.staff_id='$staffid'";
 $resultstaffcheck = mysqli_query($link, $sqlstaffcheck);
