@@ -4,9 +4,11 @@ if (!defined('BASEPATH')) {
     exit('No direct script access allowed');
 }
 
-class Subjectgroup_model extends MY_Model {
+class Subjectgroup_model extends MY_Model
+{
 
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
         $this->current_session = $this->setting_model->getCurrentSession();
     }
@@ -17,7 +19,8 @@ class Subjectgroup_model extends MY_Model {
      * @param int $id
      * @return mixed
      */
-    public function get($classid = null) {
+    public function get($classid = null)
+    {
         $this->db->select('class_sections.id,class_sections.section_id,sections.section');
         $this->db->from('class_sections');
         $this->db->join('sections', 'sections.id = class_sections.section_id');
@@ -27,7 +30,8 @@ class Subjectgroup_model extends MY_Model {
         return $query->result_array();
     }
 
-    public function update($data) {
+    public function update($data)
+    {
 
         if (isset($data['id'])) {
             $this->db->where('id', $data['id']);
@@ -35,7 +39,8 @@ class Subjectgroup_model extends MY_Model {
         }
     }
 
-    public function check_data_exists($data) {
+    public function check_data_exists($data)
+    {
         $this->db->where('name', $data);
         $this->db->where('session_id', $this->current_session);
 
@@ -47,7 +52,8 @@ class Subjectgroup_model extends MY_Model {
         }
     }
 
-    public function class_exists($str) {
+    public function class_exists($str)
+    {
 
         $name = $this->security->xss_clean($str);
         $res = $this->check_data_exists($name);
@@ -66,7 +72,8 @@ class Subjectgroup_model extends MY_Model {
         }
     }
 
-    public function edit($data, $delete_sections, $add_sections, $delete_subjects, $add_subjects) {
+    public function edit($data, $delete_sections, $add_sections, $delete_subjects, $add_subjects)
+    {
         $this->db->trans_begin();
         if (isset($data['id'])) {
             $this->db->where('id', $data['id']);
@@ -130,7 +137,8 @@ class Subjectgroup_model extends MY_Model {
         }
     }
 
-    public function add($data, $subject_group, $section_group) {
+    public function add($data, $subject_group, $section_group)
+    {
         $this->db->trans_start(); # Starting Transaction
         $this->db->trans_strict(false); # See Note 01. If you wish can remove as well
         //=======================Code Start===========================
@@ -204,7 +212,8 @@ class Subjectgroup_model extends MY_Model {
         $this->db->insert_batch('subject_group_class_sections', $section_group_array);
     }
 
-    public function getDetailbyClassSection($class_id, $section_id) {
+    public function getDetailbyClassSection($class_id, $section_id)
+    {
         $this->db->select('class_sections.*,subject_group_subjects.class,sections.section')->from('class_sections');
         $this->db->where('class_id', $class_id);
         $this->db->where('section_id', $section_id);
@@ -216,7 +225,8 @@ class Subjectgroup_model extends MY_Model {
         return $query->row_array();
     }
 
-    public function getByID($id = null) {
+    public function getByID($id = null)
+    {
         $this->db->select('subject_groups.*')->from('subject_groups');
         $this->db->where('subject_groups.session_id', $this->current_session);
 
@@ -234,17 +244,25 @@ class Subjectgroup_model extends MY_Model {
                 $subject_groups[$subject_group_key]->sections = $this->getClassSectionByGroup($subject_group_value->id);
             }
         }
-        return $subject_groups;
+
+        // Dump and stop
+        echo '<pre>';
+        print_r($subject_groups);
+        echo '</pre>';
+        exit; // or die();
+        // return $subject_groups;
     }
 
-    public function getClassSectionByGroup($subject_group_id) {
+    public function getClassSectionByGroup($subject_group_id)
+    {
 
         $sql = "SELECT subject_group_class_sections.*,classes.id as `class_id`,classes.class,sections.id as `section_id`,sections.section FROM `subject_group_class_sections` INNER JOIN class_sections on class_sections.id=subject_group_class_sections.class_section_id INNER JOIN classes on classes.id=class_sections.class_id INNER join sections on sections.id=class_sections.section_id WHERE subject_group_class_sections.session_id=" . $this->db->escape($this->current_session) . " and subject_group_id=" . $this->db->escape($subject_group_id);
         $query = $this->db->query($sql);
         return $query->result();
     }
 
-    public function getGroupsubjects($subject_group_id) {
+    public function getGroupsubjects($subject_group_id)
+    {
         $class_id = "";
         $subject_groupid_condition = "";
         $userdata = $this->customlib->getUserData();
@@ -281,7 +299,8 @@ class Subjectgroup_model extends MY_Model {
         return $query->result();
     }
 
-    public function remove($id) {
+    public function remove($id)
+    {
         $this->db->trans_start(); # Starting Transaction
         $this->db->trans_strict(false); # See Note 01. If you wish can remove as well
         //=======================Code Start===========================
@@ -299,11 +318,13 @@ class Subjectgroup_model extends MY_Model {
         }
     }
 
-    public function getSubjectgroupbyTeacherid($staff_id) {
+    public function getSubjectgroupbyTeacherid($staff_id)
+    {
         return $this->db->select('GROUP_CONCAT(subject_group_id) as subject_group_ids')->from('subject_timetable')->where('staff_id', $staff_id)->group_by('staff_id')->get()->result_array();
     }
 
-    public function getGroupByClassandSection($class_id, $section_id) {
+    public function getGroupByClassandSection($class_id, $section_id)
+    {
         $return = true;
         $userdata = $this->customlib->getUserData();
         $role_id = $userdata["role_id"];
@@ -343,7 +364,8 @@ class Subjectgroup_model extends MY_Model {
         }
     }
 
-    public function getClassandSectionTimetable($class_id, $section_id) {
+    public function getClassandSectionTimetable($class_id, $section_id)
+    {
 
         $sql = "SELECT subject_group_class_sections.*,subject_group_subjects.id as `subject_group_id`,subject_group_subjects.subject_id,subjects.name,subjects.code,subject_timetable.day,subject_timetable.staff_id,subject_timetable.time_from,subject_timetable.time_to,subject_timetable.room_no,staff.name as `staff_name`,staff.surname FROM `class_sections` INNER JOIN subject_group_class_sections on subject_group_class_sections.class_section_id=class_sections.id INNER JOIN subject_group_subjects on subject_group_subjects.subject_group_id=subject_group_class_sections.subject_group_id INNER JOIN subjects on subjects.id=subject_group_subjects.subject_id INNER JOIN subject_timetable on subject_timetable.subject_group_subject_id=subject_group_subjects.id inner JOIN staff on staff.id= subject_timetable.staff_id WHERE class_sections.class_id=" . $this->db->escape($class_id) . " and class_sections.section_id=" . $this->db->escape($section_id) . " and subject_group_class_sections.session_id=" . $this->db->escape($this->current_session);
 
@@ -351,7 +373,8 @@ class Subjectgroup_model extends MY_Model {
         return $query->result();
     }
 
-    public function check_section_exists($str) {
+    public function check_section_exists($str)
+    {
         $sections = $this->input->post('sections');
         if (!isset($sections)) {
             return true;
@@ -369,7 +392,8 @@ class Subjectgroup_model extends MY_Model {
         }
     }
 
-    function check_section_data_exists($sections, $id) {
+    function check_section_data_exists($sections, $id)
+    {
 
         $this->db->where('session_id', $this->current_session);
         $this->db->where_in('class_section_id', $sections);
@@ -382,5 +406,4 @@ class Subjectgroup_model extends MY_Model {
             return FALSE;
         }
     }
-
 }
