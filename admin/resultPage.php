@@ -2128,11 +2128,6 @@ $studsection = $rowGetsections['section'];
                                 $totsubjects = $row_cntClasscount * $row_cntgetsubscore;
                                 $totsubjectsALL = $row_cntClasscount * $row_cntgetsubscoreALL;
 
-                                echo $row_cntClasscount . '<br>';
-                                echo $row_cntgetsubscoreALL . '<br>';
-                                echo $totsubjectsALL . '<br>';
-                                echo $rowgettotclassscor['totalScore'] . '<br>';
-
                                 $decStubsubavg = round($rowgettotclassscor['totalScore'] / $totsubjectsALL, 2);
 
                                 // $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score JOIN students ON score.StudentID = students.id WHERE students.is_active = 'yes'  AND (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND SubjectID != 0 AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'  GROUP BY StudentID order by total DESC LIMIT 1";
