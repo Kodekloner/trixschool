@@ -2109,7 +2109,7 @@ $studsection = $rowGetsections['section'];
                                 $rowgetsubscoreALL = mysqli_fetch_assoc($resultgetsubscoreALL);
                                 $row_cntgetsubscoreALL = mysqli_num_rows($resultgetsubscoreALL);
 
-                                $sqlgettotclassscor = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID IN (
+                                $sqlgettotclassscor = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND SubjectID IN (
                                                                 SELECT subjects.id 
                                                                 FROM `subject_group_class_sections` 
                                                                 INNER JOIN subject_group_subjects 
@@ -2128,38 +2128,10 @@ $studsection = $rowGetsections['section'];
                                 $totsubjects = $row_cntClasscount * $row_cntgetsubscore;
                                 $totsubjectsALL = $row_cntClasscount * $row_cntgetsubscoreALL;
 
-                                $sqlClassAverage = "
-                                    SELECT 
-                                        ROUND(AVG(student_total), 2) AS class_average
-                                    FROM (
-                                        SELECT 
-                                            StudentID,
-                                            SUM(
-                                                exam + ca1 + ca2 + ca3 + ca4 + ca5 + 
-                                                ca6 + ca7 + ca8 + ca9 + ca10
-                                            ) AS student_total
-                                        FROM score
-                                        WHERE
-                                            (exam != 0 OR ca1 != 0 OR ca2 != 0 OR ca3 != 0 OR ca4 != 0 
-                                            OR ca5 != 0 OR ca6 != 0 OR ca7 != 0 OR ca8 != 0 
-                                            OR ca9 != 0 OR ca10 != 0)
-                                            AND ClassID = '$classid'
-                                            AND Session = '$session'
-                                            AND Term = '$term'
-                                            AND SectionID = '$classsectionactual'
-                                        GROUP BY StudentID
-                                    ) AS totals
-                                ";
-
-                                $resultClassAverage = mysqli_query($link, $sqlClassAverage);
-
-                                $classAverage = 0;
-
-                                if ($resultClassAverage && mysqli_num_rows($resultClassAverage) > 0) {
-                                    $rowClassAverage = mysqli_fetch_assoc($resultClassAverage);
-                                    $classAverage = $rowClassAverage['class_average'] ?? 0;
-                                }
-
+                                echo $row_cntClasscount . '<br>';
+                                echo $row_cntgetsubscoreALL . '<br>';
+                                echo $totsubjectsALL . '<br>';
+                                echo $rowgettotclassscor['totalScore'] . '<br>';
 
                                 $decStubsubavg = round($rowgettotclassscor['totalScore'] / $totsubjectsALL, 2);
 
@@ -2769,7 +2741,7 @@ $studsection = $rowGetsections['section'];
                             <div align="center" class="summDD">
                                 <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
                                 <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
-                                <p>Class Average 2: <span style="font-weight:600;"><?php echo number_format($classAverage, 2); ?> </span></p>
+                                <p>Class Average 2: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
                                 <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
