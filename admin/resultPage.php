@@ -772,7 +772,7 @@ $studsection = $rowGetsections['section'];
                         <div align="center" class="summDD">
                             <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
                             <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
-                            <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
+                            <p>Class Average 1: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
                             <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                         </div>
 
@@ -2736,7 +2736,7 @@ $studsection = $rowGetsections['section'];
                             <div align="center" class="summDD">
                                 <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
                                 <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
-                                <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
+                                <p>Class Average 2: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
                                 <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
@@ -4743,7 +4743,7 @@ $studsection = $rowGetsections['section'];
                             <div align="center" class="summDD">
                                 <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
                                 <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
-                                <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
+                                <p>Class Average 3: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
                                 <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
@@ -6735,7 +6735,7 @@ $studsection = $rowGetsections['section'];
                             <div align="center" class="summDD">
                                 <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
                                 <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
-                                <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
+                                <p>Class Average 4: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
                                 <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
@@ -8359,7 +8359,7 @@ $studsection = $rowGetsections['section'];
                             <div align="center" class="summDD">
                                 <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?></span> </p>
                                 <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?></span> </p>
-                                <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?></span> </p>
+                                <p>Class Average 5: <span style="font-weight:600;"><?php echo $decStubsubavg; ?></span> </p>
                                 <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
