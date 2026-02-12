@@ -391,6 +391,11 @@
                                 <li><a href="<?php echo site_url('admin/addExam.php'); ?>"><i class="fa fa-angle-double-right"></i> CA Setting</a></li>
                             <?php
                             }
+                            if ($this->rbac->hasPrivilege('kindergarten_assessment_setting', 'can_edit')) {
+                            ?>
+                                <li><a href="<?php echo site_url('admin/add_kindergarten_assessment.php'); ?>"><i class="fa fa-angle-double-right"></i> Kindergarten Assessment Setting</a></li>
+                            <?php
+                            }
                             if ($this->rbac->hasPrivilege('add_affective_domain_setting', 'can_edit')) {
                             ?>
                                 <li><a href="<?php echo site_url('admin/addAffectiveDomain.php'); ?>"><i class="fa fa-angle-double-right"></i> Affective Domain Setting</a></li>
