@@ -37,8 +37,6 @@ if ($examNumber > 0) {
 
 		$MidTermCaToUseArr = explode(',', $MidTermCaToUse);
 
-		$MidTermMaxScore = $rowresultsettings['MidTermMaxScore'];
-
 		if (in_array("1", $MidTermCaToUseArr)) {
 			$check1 = 'checked';
 		} else {
@@ -260,7 +258,6 @@ if ($examNumber > 0) {
 						</div>
 					</div>
 				</div>  <br class="ten">';
-		echo '<script>$("#MidTermMaxScore").val("' . htmlspecialchars($MidTermMaxScore) . '");</script>';
 	} else {
 		echo '<div class="form-row one two three four five six seven eight nine ten"> 
 					<div class="col-sm col-md">
@@ -431,7 +428,6 @@ if ($examNumber > 0) {
 						</div>
 					</div>
 				</div>  <br class="ten">';
-		echo '<script>$("#MidTermMaxScore").val("0");</script>';
 	}
 } else {
 	echo '<div class="alert alert-info alert-dismissible fade show" role="alert">

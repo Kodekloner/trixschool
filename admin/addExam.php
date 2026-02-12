@@ -72,20 +72,6 @@
 
                                     </div>
 
-                                    <div class="form-group row" style="margin-top:30px;">
-                                        <div class="col-sm-6">
-                                            <label for="MidTermMaxScore">Mid‑Term Total Maximum Score (optional)</label>
-                                            <input type="number" step="0.01" class="form-control" id="MidTermMaxScore"
-                                                placeholder="e.g. 20 – leave 0 to use sum of selected CAs">
-                                        </div>
-                                        <div class="col-sm-6">
-                                            <small class="text-muted">
-                                                If you set a value here (e.g. 20), the mid‑term result will display
-                                                <strong>score / MidTermMaxScore</strong> and the percentage will be calculated accordingly.
-                                            </small>
-                                        </div>
-                                    </div>
-
                                     <button class="btn btn-primary submitbtn" style="margin-top: 30px;">Submit</button>
                                 </form>
 
@@ -514,8 +500,6 @@
 
             var examNumber = $('#examNumber').val();
 
-            var midTermMaxScore = $('#MidTermMaxScore').val()
-
             var catitle = $('#CaTitle').val();
 
             if (catitle != '' && catitle != '0') {
@@ -574,7 +558,7 @@
                             selectedcaformidterm.push($(this).data('id'));
                         });
 
-                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm + '&midTermMaxScore=' + midTermMaxScore;
+                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm;
 
                         $.ajax({
                             url: '../../../phpscript/updateresultsetting.php',
@@ -649,7 +633,7 @@
 
                         // alert(selectedcaformidterm);
 
-                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm + '&midTermMaxScore=' + midTermMaxScore;
+                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm;
 
                         $.ajax({
                             url: '../../../phpscript/updateresultsetting.php',
@@ -720,7 +704,7 @@
 
                         // alert(selectedcaformidterm);
 
-                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm + '&midTermMaxScore=' + midTermMaxScore;
+                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm;
 
                         $.ajax({
                             url: '../../../phpscript/updateresultsetting.php',
@@ -790,7 +774,7 @@
 
                         // alert(selectedcaformidterm);
 
-                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm + '&midTermMaxScore=' + midTermMaxScore;
+                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm;
 
                         $.ajax({
                             url: '../../../phpscript/updateresultsetting.php',
@@ -857,7 +841,7 @@
 
                         // alert(selectedcaformidterm);
 
-                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm + '&midTermMaxScore=' + midTermMaxScore;
+                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm;
 
                         $.ajax({
                             url: '../../../phpscript/updateresultsetting.php',
@@ -922,7 +906,7 @@
 
                         // alert(selectedcaformidterm);
 
-                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm + '&midTermMaxScore=' + midTermMaxScore;
+                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm;
 
                         $.ajax({
                             url: '../../../phpscript/updateresultsetting.php',
@@ -985,7 +969,7 @@
 
                         // alert(selectedcaformidterm);
 
-                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm + '&midTermMaxScore=' + midTermMaxScore;
+                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm;
 
                         $.ajax({
                             url: '../../../phpscript/updateresultsetting.php',
@@ -1046,7 +1030,7 @@
 
                         // alert(selectedcaformidterm);
 
-                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm + '&midTermMaxScore=' + midTermMaxScore;
+                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm;
 
                         $.ajax({
                             url: '../../../phpscript/updateresultsetting.php',
@@ -1105,7 +1089,7 @@
 
                         // alert(selectedcaformidterm);
 
-                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm + '&midTermMaxScore=' + midTermMaxScore;
+                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm;
 
                         $.ajax({
                             url: '../../../phpscript/updateresultsetting.php',
@@ -1161,7 +1145,7 @@
 
                         // alert(selectedcaformidterm);
 
-                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm + '&midTermMaxScore=' + midTermMaxScore;
+                        var dataString = 'catitle=' + catitle + '&ca1id=' + ca1id + '&ca1maxid=' + ca1maxid + '&ca2id=' + ca2id + '&ca2maxid=' + ca2maxid + '&ca3id=' + ca3id + '&ca3maxid=' + ca3maxid + '&ca4id=' + ca4id + '&ca4maxid=' + ca4maxid + '&ca5id=' + ca5id + '&ca5maxid=' + ca5maxid + '&examNumber=' + examNumber + '&ca6id=' + ca6id + '&ca6maxid=' + ca6maxid + '&ca7id=' + ca7id + '&ca7maxid=' + ca7maxid + '&ca8id=' + ca8id + '&ca8maxid=' + ca8maxid + '&ca9id=' + ca9id + '&ca9maxid=' + ca9maxid + '&ca10id=' + ca10id + '&ca10maxid=' + ca10maxid + '&selectedcaformidterm=' + selectedcaformidterm;
 
                         $.ajax({
                             url: '../../../phpscript/updateresultsetting.php',
