@@ -431,6 +431,11 @@
                                 <li><a href="<?php echo base_url(); ?>admin/britishMarkingSystem.php"><i class="fa fa-angle-double-right"></i> British Computation</a></li>
                             <?php
                             }
+                            if ($this->rbac->hasPrivilege('kindergarten_computation', 'can_view')) {
+                            ?>
+                                <li><a href="<?php echo base_url(); ?>admin/compute_kindergarten.php"><i class="fa fa-angle-double-right"></i> Kindergarten Computation</a></li>
+                            <?php
+                            }
                             if ($this->rbac->hasPrivilege('Head_teacher_default_comment', 'can_view')) {
                             ?>
                                 <li><a href="<?php echo site_url('admin/schoolHeadDefaultComment.php'); ?>"><i class="fa fa-angle-double-right"></i> Head Teacher's Def. Comment</a></li>
