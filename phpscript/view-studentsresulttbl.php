@@ -139,7 +139,7 @@ if ($rolefirst == 'student' || $rolefirst == 'parent') {
                     } else {
                         echo '<td>' . $term . ' Term</td>';
                     }
-
+                    echo $is_kindergarten;
                     if ($is_kindergarten) {
                         echo "here";
                         echo '<td>
