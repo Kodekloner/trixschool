@@ -21,6 +21,7 @@ $reldate = date('Y-m-d');
 $sql_kindergarten = "SELECT assessment_id FROM kindergarten_assignment WHERE class_id = '$classid' LIMIT 1";
 $result_kindergarten = mysqli_query($link, $sql_kindergarten);
 $is_kindergarten = (mysqli_num_rows($result_kindergarten) > 0);
+echo $is_kindergarten;
 $kindergarten_assessment_id = $is_kindergarten ? mysqli_fetch_assoc($result_kindergarten)['assessment_id'] : 0;
 
 $sqlGetassigncatoclass = "SELECT * FROM `assigncatoclass` WHERE `ClassID`='$classid'";
