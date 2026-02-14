@@ -142,7 +142,33 @@ if ($rolefirst == 'student') {
         //     }
         // }
         else {
-            $sqlclasses = "SELECT * FROM `classes` INNER JOIN assigncatoclass ON classes.id=assigncatoclass.ClassID ORDER BY class";
+            // Admin or other roles: get all classes that have any assessment (traditional or kindergarten)
+            $sqlclasses = "
+                SELECT c.id, c.class
+                FROM classes c
+                WHERE EXISTS (
+                    SELECT 1 FROM assigncatoclass ac WHERE ac.ClassID = c.id
+                    UNION
+                    SELECT 1 FROM kindergarten_assignment ka WHERE ka.class_id = c.id
+                )
+                ORDER BY c.class
+            ";
+            $resultclasses = mysqli_query($link, $sqlclasses);
+            if (mysqli_num_rows($resultclasses) > 0) {
+                echo '<option value="0">Select Class</option>';
+                while ($rowclasses = mysqli_fetch_assoc($resultclasses)) {
+                    echo '<option value="' . $rowclasses['id'] . '">' . $rowclasses['class'] . '</option>';
+                }
+            } else {
+                echo '<option value="0">No Classes with Assessments Found</option>';
+            }
+        }
+    } else {
+        echo '<option value="0">No Records Found</option>';
+    }
+}
+?>
+<!-- $sqlclasses = "SELECT * FROM `classes` INNER JOIN assigncatoclass ON classes.id=assigncatoclass.ClassID ORDER BY class";
             $resultclasses = mysqli_query($link, $sqlclasses);
             $rowclasses = mysqli_fetch_assoc($resultclasses);
             $row_cntclasses = mysqli_num_rows($resultclasses);
@@ -158,4 +184,4 @@ if ($rolefirst == 'student') {
 
         echo '<option value="0">No Records Found</option>';
     }
-}
+} -->

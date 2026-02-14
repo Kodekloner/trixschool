@@ -74,33 +74,7 @@ if ($rolefirst == 'student') {
                 echo '<option value="0">No Records Found</option>';
             }
         } else {
-            // Admin or other roles: get all classes that have any assessment (traditional or kindergarten)
-            $sqlclasses = "
-                SELECT c.id, c.class
-                FROM classes c
-                WHERE EXISTS (
-                    SELECT 1 FROM assigncatoclass ac WHERE ac.ClassID = c.id
-                    UNION
-                    SELECT 1 FROM kindergarten_assignment ka WHERE ka.class_id = c.id
-                )
-                ORDER BY c.class
-            ";
-            $resultclasses = mysqli_query($link, $sqlclasses);
-            if (mysqli_num_rows($resultclasses) > 0) {
-                echo '<option value="0">Select Class</option>';
-                while ($rowclasses = mysqli_fetch_assoc($resultclasses)) {
-                    echo '<option value="' . $rowclasses['id'] . '">' . $rowclasses['class'] . '</option>';
-                }
-            } else {
-                echo '<option value="0">No Classes with Assessments Found</option>';
-            }
-        }
-    } else {
-        echo '<option value="0">No Records Found</option>';
-    }
-}
-?>
-<!-- $sqlsection = "SELECT class_sections.id AS section_id,class_sections.section_id AS actual_section_id,section FROM `class_sections` INNER JOIN sections ON class_sections.section_id=sections.id WHERE class_id='$classid' ORDER BY section ASC";
+            $sqlsection = "SELECT class_sections.id AS section_id,class_sections.section_id AS actual_section_id,section FROM `class_sections` INNER JOIN sections ON class_sections.section_id=sections.id WHERE class_id='$classid' ORDER BY section ASC";
             $resultsection = mysqli_query($link, $sqlsection);
             $rowsection = mysqli_fetch_assoc($resultsection);
             $row_cntsection = mysqli_num_rows($resultsection);
@@ -119,4 +93,4 @@ if ($rolefirst == 'student') {
 
         echo '<option value="0">No Records Found</option>';
     }
-} -->
+}
