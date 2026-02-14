@@ -17,6 +17,12 @@ $staffid = $_POST['staffid'];
 
 $reldate = date('Y-m-d');
 
+// Check if this class has a kindergarten assessment assigned
+$sql_kindergarten = "SELECT assessment_id FROM kindergarten_assignment WHERE class_id = '$classid' LIMIT 1";
+$result_kindergarten = mysqli_query($link, $sql_kindergarten);
+$is_kindergarten = (mysqli_num_rows($result_kindergarten) > 0);
+$kindergarten_assessment_id = $is_kindergarten ? mysqli_fetch_assoc($result_kindergarten)['assessment_id'] : 0;
+
 $sqlGetassigncatoclass = "SELECT * FROM `assigncatoclass` WHERE `ClassID`='$classid'";
 $queryGetassigncatoclass = mysqli_query($link, $sqlGetassigncatoclass);
 $rowGetassigncatoclass = mysqli_fetch_assoc($queryGetassigncatoclass);
@@ -133,13 +139,23 @@ if ($rolefirst == 'student' || $rolefirst == 'parent') {
                         echo '<td>' . $term . ' Term</td>';
                     }
 
-                    echo '<td>
+                    if ($is_kindergarten) {
+                        echo '<td>
+                                        <a href="kindergarten_result_page.php?classsection=' . $classsection . '&classsectionactual=' . $classsectionactual . '&classid=' . $classid . '&session=' . $session . '&term=' . $term . '&id=' . $rowGetstudent_session['StudentID'] . '&reltype=' . $reltype . '&assessment_id=' . $kindergarten_assessment_id . '" style="font-size: 15px;text-decoration:underline;">
+                                            View Result
+                                        </a>
+                                    </td>';
+
+                        echo '</tr>';
+                    } else {
+                        echo '<td>
                                         <a href="resultPage.php?classsection=' . $classsection . '&classsectionactual=' . $classsectionactual . '&classid=' . $classid . '&session=' . $session . '&term=' . $term . '&id=' . $rowGetstudent_session['StudentID'] . '&reltype=' . $reltype . '" style="font-size: 15px;text-decoration:underline;">
                                             View Result
                                         </a>
                                     </td>';
 
-                    echo '</tr>';
+                        echo '</tr>';
+                    }
                 } while ($rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session));
             } else {
                 echo '<tr><td>No Records Found</td></tr>';

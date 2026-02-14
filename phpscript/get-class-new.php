@@ -155,7 +155,6 @@ if ($rolefirst == 'student') {
             ";
             $resultclasses = mysqli_query($link, $sqlclasses);
             if (mysqli_num_rows($resultclasses) > 0) {
-                echo '<option value="0">Select Class</option>';
                 while ($rowclasses = mysqli_fetch_assoc($resultclasses)) {
                     echo '<option value="' . $rowclasses['id'] . '">' . $rowclasses['class'] . '</option>';
                 }
