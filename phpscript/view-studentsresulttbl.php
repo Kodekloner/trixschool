@@ -139,9 +139,7 @@ if ($rolefirst == 'student' || $rolefirst == 'parent') {
                     } else {
                         echo '<td>' . $term . ' Term</td>';
                     }
-                    echo $is_kindergarten;
                     if ($is_kindergarten) {
-                        echo "here";
                         echo '<td>
                                         <a href="kindergarten_result_page.php?classsection=' . $classsection . '&classsectionactual=' . $classsectionactual . '&classid=' . $classid . '&session=' . $session . '&term=' . $term . '&id=' . $rowGetstudent_session['StudentID'] . '&reltype=' . $reltype . '&assessment_id=' . $kindergarten_assessment_id . '" style="font-size: 15px;text-decoration:underline;">
                                             View Result
@@ -245,13 +243,24 @@ if ($rolefirst == 'student' || $rolefirst == 'parent') {
                     echo '<td>' . $term . ' Term</td>';
                 }
 
-                echo '<td>
-                                    <a href="resultPage.php?classsection=' . $classsection . '&classsectionactual=' . $classsectionactual . '&classid=' . $classid . '&session=' . $session . '&term=' . $term . '&id=' . $rowGetstudent_session['StudentID'] . '&reltype=' . $reltype . '" style="font-size: 15px;text-decoration:underline;">
+                if ($is_kindergarten) {
+                    echo '<td>
+                                    <a href="kindergarten_result_page.php?classsection=' . $classsection . '&classsectionactual=' . $classsectionactual . '&classid=' . $classid . '&session=' . $session . '&term=' . $term . '&id=' . $rowGetstudent_session['StudentID'] . '&reltype=' . $reltype . '&assessment_id=' . $kindergarten_assessment_id . '" style="font-size: 15px;text-decoration:underline;">
                                         View Result
                                     </a>
                                 </td>';
 
-                echo '</tr>';
+                    echo '</tr>';
+                } else {
+
+                    echo '<td>
+                                        <a href="resultPage.php?classsection=' . $classsection . '&classsectionactual=' . $classsectionactual . '&classid=' . $classid . '&session=' . $session . '&term=' . $term . '&id=' . $rowGetstudent_session['StudentID'] . '&reltype=' . $reltype . '" style="font-size: 15px;text-decoration:underline;">
+                                            View Result
+                                        </a>
+                                    </td>';
+
+                    echo '</tr>';
+                }
             } while ($rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session));
         } else {
             echo '<tr><td>No Records Found</td></tr>';
