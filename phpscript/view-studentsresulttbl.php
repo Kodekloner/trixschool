@@ -140,6 +140,7 @@ if ($rolefirst == 'student' || $rolefirst == 'parent') {
                     }
 
                     if ($is_kindergarten) {
+                        echo "here";
                         echo '<td>
                                         <a href="kindergarten_result_page.php?classsection=' . $classsection . '&classsectionactual=' . $classsectionactual . '&classid=' . $classid . '&session=' . $session . '&term=' . $term . '&id=' . $rowGetstudent_session['StudentID'] . '&reltype=' . $reltype . '&assessment_id=' . $kindergarten_assessment_id . '" style="font-size: 15px;text-decoration:underline;">
                                             View Result
