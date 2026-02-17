@@ -1,12 +1,12 @@
 <?php
 include('../database/config.php');
 
-$sql = "SELECT has.*, c.class, s.section_name, sess.session
+$sql = "SELECT has.*, c.class, s.section, sess.session
         FROM holiday_assessment_settings has
         INNER JOIN classes c ON has.class_id = c.id
         INNER JOIN sections s ON has.section_id = s.id
         INNER JOIN sessions sess ON has.session_id = sess.id
-        ORDER BY sess.session DESC, c.class, s.section_name, has.term";
+        ORDER BY sess.session DESC, c.class, s.section, has.term";
 $res = mysqli_query($link, $sql);
 
 if (mysqli_num_rows($res) == 0) {
