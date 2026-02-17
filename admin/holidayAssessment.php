@@ -98,7 +98,7 @@
 				$('#section_id').html('<option value="">Loading...</option>');
 				if (classid) {
 					$.ajax({
-						url: '../../../phpscript/get-sections-by-class.php',
+						url: '../../../phpscript/get_sections_by_class.php',
 						method: 'POST',
 						data: {
 							classid: classid
