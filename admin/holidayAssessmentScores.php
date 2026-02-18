@@ -298,6 +298,12 @@
 				});
 			}
 
+			$('#subject').on('change', function() {
+				var selected = $(this).find('option:selected');
+				var max = selected.data('maxscore');
+				$('#current_max_score').val(max ? max : 0);
+			});
+
 			// Function to load the editable scores table
 			function loadScoresTable(session, term, classId, sectionId, subjectId, maxScore) {
 				$.ajax({
