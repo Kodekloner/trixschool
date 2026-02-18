@@ -1,16 +1,31 @@
 <?php
 include('../database/config.php');
 
-$class_id = mysqli_real_escape_string($link, $_POST['class_id']);
-$session_id = mysqli_real_escape_string($link, $_POST['session_id']);
-$term = mysqli_real_escape_string($link, $_POST['term']);
+$session = $_POST['session'];
+$term = $_POST['term'];
+$class_id = $_POST['class_id'];
+$staff_id = $_POST['staff_id'];
+$role = $_POST['role'];
 
-$sql = "SELECT s.id, s.section_name
-        FROM holiday_assessment_settings has
-        INNER JOIN sections s ON has.section_id = s.id
-        WHERE has.class_id = '$class_id' AND has.session_id = '$session_id' AND has.term = '$term' AND has.enabled = 1
-        ORDER BY s.section_name";
-$res = mysqli_query($link, $sql);
-while ($row = mysqli_fetch_assoc($res)) {
-	echo '<option value="' . $row['id'] . '">' . $row['section_name'] . '</option>';
+$sql = "SELECT DISTINCT sec.id, sec.section
+        FROM holiday_assessment_settings s
+        INNER JOIN sections sec ON s.section_id = sec.id
+        WHERE s.session_id = '$session' AND s.term = '$term'
+          AND s.class_id = '$class_id' AND s.enabled = 1";
+
+// If teacher, restrict to sections they teach in that class
+if ($role == 'Teacher') {
+        $sql .= " AND s.section_id IN (
+                SELECT DISTINCT section_id FROM subjecttables
+                WHERE staff_id = '$staff_id' AND class_id = '$class_id'
+            )";
 }
+
+$sql .= " ORDER BY sec.section";
+
+$result = mysqli_query($link, $sql);
+$output = '<option value="">Section</option>';
+while ($row = mysqli_fetch_assoc($result)) {
+        $output .= '<option value="' . $row['id'] . '">' . $row['section'] . '</option>';
+}
+echo $output;
