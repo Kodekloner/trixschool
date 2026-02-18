@@ -32,7 +32,7 @@ while ($row = mysqli_fetch_assoc($res)) {
 	echo '<td>' . $row['session'] . '</td>';
 	echo '<td>' . $row['term'] . '</td>';
 	echo '<td>' . $row['class'] . '</td>';
-	echo '<td>' . $row['section_name'] . '</td>';
+	echo '<td>' . $row['section'] . '</td>';
 	echo '<td>' . $status . '</td>';
 	echo '<td>' . $subjects . '</td>';
 	echo '<td>

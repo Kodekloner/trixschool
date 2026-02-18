@@ -92,6 +92,62 @@
 
 	<script>
 		$(document).ready(function() {
+			// Edit setting
+			$(document).on('click', '.edit-setting', function() {
+				var settingId = $(this).data('id');
+				$.ajax({
+					url: '../../../phpscript/get-holiday-setting.php',
+					method: 'POST',
+					data: {
+						id: settingId
+					},
+					dataType: 'json',
+					success: function(data) {
+						if (data.error) {
+							alert(data.error);
+							return;
+						}
+						// Set form fields
+						$('#session_id').val(data.session_id);
+						$('#term').val(data.term);
+						$('#class_id').val(data.class_id).trigger('change'); // this loads sections
+
+						// After sections are loaded, set section_id
+						// Use a one-time event or a small delay to ensure sections are populated
+						var waitForSections = setInterval(function() {
+							if ($('#section_id option').length > 1) { // more than just the placeholder
+								clearInterval(waitForSections);
+								$('#section_id').val(data.section_id).trigger('change'); // triggers subject load
+								$('#enabled').prop('checked', data.enabled == 1);
+							}
+						}, 100);
+					}
+				});
+			});
+
+			// Delete setting
+			$(document).on('click', '.delete-setting', function() {
+				if (confirm('Are you sure you want to delete this holiday assessment setting? This action cannot be undone.')) {
+					var settingId = $(this).data('id');
+					var btn = $(this);
+					btn.html('<i class="fa fa-circle-o-notch fa-spin"></i>');
+					$.ajax({
+						url: '../../../phpscript/delete-holiday-setting.php',
+						method: 'POST',
+						data: {
+							id: settingId
+						},
+						success: function(response) {
+							$('.messagetoo').html(response);
+							loadSettingsList(); // refresh the table
+						},
+						complete: function() {
+							btn.html('<i class="fa fa-trash"></i>');
+						}
+					});
+				}
+			});
+
 			// Load sections when class changes
 			$('#class_id').on('change', function() {
 				var classid = $(this).val();
