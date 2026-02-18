@@ -583,7 +583,7 @@ $studsection = $rowGetsections['section'];
                                                     if (in_array("1", $MidTermCaToUseArrshowscores)) {
                                                         $ca1 = $rowgetscore['ca1'];
                                                         $ca1_max = $rowGetrelset['CA1Score'];
-                                                        $ca1_pct = ($ca1_max > 0) ? round(($ca1_raw / $ca1_max) * 100, 2) . '%' : '0%';
+                                                        $ca1_pct = ($ca1_max > 0) ? round(($ca1 / $ca1_max) * 100, 2) . '%' : '0%';
                                                         $ca1table = '<td>' . $ca1_pct . '</td>';
                                                         // $ca1table = '<td>' . $rowgetscore['ca1'] . '</td>';
                                                         // $CA1MidTermHighestScoresubscore = $rowGetrelset['CA1Score'];
@@ -596,7 +596,7 @@ $studsection = $rowGetsections['section'];
                                                     if (in_array("2", $MidTermCaToUseArrshowscores)) {
                                                         $ca2 = $rowgetscore['ca2'];
                                                         $ca2_max = $rowGetrelset['CA2Score'];
-                                                        $ca2_pct = ($ca2_max > 0) ? round(($ca2_raw / $ca2_max) * 100, 2) . '%' : '0%';
+                                                        $ca2_pct = ($ca2_max > 0) ? round(($ca2 / $ca2_max) * 100, 2) . '%' : '0%';
                                                         $ca2table = '<td>' . $ca2_pct . '</td>';
                                                         // $ca2table = '<td>' . $rowgetscore['ca2'] . '</td>';
                                                         // $CA2MidTermHighestScoresubscore = $rowGetrelset['CA2Score'];
@@ -608,7 +608,7 @@ $studsection = $rowGetsections['section'];
                                                     if (in_array("3", $MidTermCaToUseArrshowscores)) {
                                                         $ca3 = $rowgetscore['ca3'];
                                                         $ca3_max = $rowGetrelset['CA3Score'];
-                                                        $ca3_pct = ($ca3_max > 0) ? round(($ca3_raw / $ca3_max) * 100, 2) . '%' : '0%';
+                                                        $ca3_pct = ($ca3_max > 0) ? round(($ca3 / $ca3_max) * 100, 2) . '%' : '0%';
                                                         $ca3table = '<td>' . $ca3_pct . '</td>';
                                                         // $ca3table = '<td>' . $rowgetscore['ca3'] . '</td>';
                                                         // $CA3MidTermHighestScoresubscore = $rowGetrelset['CA3Score'];
@@ -620,7 +620,7 @@ $studsection = $rowGetsections['section'];
                                                     if (in_array("4", $MidTermCaToUseArrshowscores)) {
                                                         $ca4 = $rowgetscore['ca4'];
                                                         $ca4_max = $rowGetrelset['CA4Score'];
-                                                        $ca4_pct = ($ca4_max > 0) ? round(($ca4_raw / $ca4_max) * 100, 2) . '%' : '0%';
+                                                        $ca4_pct = ($ca4_max > 0) ? round(($ca4 / $ca4_max) * 100, 2) . '%' : '0%';
                                                         $ca4table = '<td>' . $ca1_pct . '</td>';
                                                         // $ca4table = '<td>' . $rowgetscore['ca4'] . '</td>';
                                                         // $CA4MidTermHighestScoresubscore = $rowGetrelset['CA4Score'];
@@ -632,7 +632,7 @@ $studsection = $rowGetsections['section'];
                                                     if (in_array("5", $MidTermCaToUseArrshowscores)) {
                                                         $ca5 = $rowgetscore['ca5'];
                                                         $ca5_max = $rowGetrelset['CA5Score'];
-                                                        $ca5_pct = ($ca5_max > 0) ? round(($ca5_raw / $ca5_max) * 100, 2) . '%' : '0%';
+                                                        $ca5_pct = ($ca5_max > 0) ? round(($ca5 / $ca5_max) * 100, 2) . '%' : '0%';
                                                         $ca5table = '<td>' . $ca5_pct . '</td>';
                                                         // $ca5table = '<td>' . $rowgetscore['ca5'] . '</td>';
                                                         // $CA5MidTermHighestScoresubscore = $rowGetrelset['CA5Score'];
@@ -644,7 +644,7 @@ $studsection = $rowGetsections['section'];
                                                     if (in_array("6", $MidTermCaToUseArrshowscores)) {
                                                         $ca6 = $rowgetscore['ca6'];
                                                         $ca6_max = $rowGetrelset['CA6Score'];
-                                                        $ca6_pct = ($ca6_max > 0) ? round(($ca6_raw / $ca6_max) * 100, 2) . '%' : '0%';
+                                                        $ca6_pct = ($ca6_max > 0) ? round(($ca6 / $ca6_max) * 100, 2) . '%' : '0%';
                                                         $ca6table = '<td>' . $ca6_pct . '</td>';
                                                         // $ca6table = '<td>' . $rowgetscore['ca6'] . '</td>';
                                                         // $CA6MidTermHighestScoresubscore = $rowGetrelset['CA6Score'];
@@ -656,7 +656,7 @@ $studsection = $rowGetsections['section'];
                                                     if (in_array("7", $MidTermCaToUseArrshowscores)) {
                                                         $ca7 = $rowgetscore['ca7'];
                                                         $ca7_max = $rowGetrelset['CA7Score'];
-                                                        $ca7_pct = ($ca7_max > 0) ? round(($ca7_raw / $ca7_max) * 100, 2) . '%' : '0%';
+                                                        $ca7_pct = ($ca7_max > 0) ? round(($ca7 / $ca7_max) * 100, 2) . '%' : '0%';
                                                         $ca7table = '<td>' . $ca7_pct . '</td>';
                                                         // $ca7table = '<td>' . $rowgetscore['ca7'] . '</td>';
                                                         // $CA7MidTermHighestScoresubscore = $rowGetrelset['CA7Score'];
@@ -668,7 +668,7 @@ $studsection = $rowGetsections['section'];
                                                     if (in_array("8", $MidTermCaToUseArrshowscores)) {
                                                         $ca8 = $rowgetscore['ca8'];
                                                         $ca8_max = $rowGetrelset['CA8Score'];
-                                                        $ca8_pct = ($ca8_max > 0) ? round(($ca8_raw / $ca8_max) * 100, 2) . '%' : '0%';
+                                                        $ca8_pct = ($ca8_max > 0) ? round(($ca8 / $ca8_max) * 100, 2) . '%' : '0%';
                                                         $ca8table = '<td>' . $ca8_pct . '</td>';
                                                         // $ca8table = '<td>' . $rowgetscore['ca8'] . '</td>';
                                                         // $CA8MidTermHighestScoresubscore = $rowGetrelset['CA8Score'];
@@ -680,7 +680,7 @@ $studsection = $rowGetsections['section'];
                                                     if (in_array("9", $MidTermCaToUseArrshowscores)) {
                                                         $ca9 = $rowgetscore['ca9'];
                                                         $ca9_max = $rowGetrelset['CA9Score'];
-                                                        $ca9_pct = ($ca9_max > 0) ? round(($ca9_raw / $ca9_max) * 100, 2) . '%' : '0%';
+                                                        $ca9_pct = ($ca9_max > 0) ? round(($ca9 / $ca9_max) * 100, 2) . '%' : '0%';
                                                         $ca9table = '<td>' . $ca9_pct . '</td>';
                                                         // $ca9table = '<td>' . $rowgetscore['ca9'] . '</td>';
                                                         // $CA9MidTermHighestScoresubscore = $rowGetrelset['CA9Score'];
@@ -692,7 +692,7 @@ $studsection = $rowGetsections['section'];
                                                     if (in_array("10", $MidTermCaToUseArrshowscores)) {
                                                         $ca10 = $rowgetscore['ca10'];
                                                         $ca10_max = $rowGetrelset['CA10Score'];
-                                                        $ca10_pct = ($ca10_max > 0) ? round(($ca10_raw / $ca10_max) * 100, 2) . '%' : '0%';
+                                                        $ca10_pct = ($ca10_max > 0) ? round(($ca10 / $ca10_max) * 100, 2) . '%' : '0%';
                                                         $ca10table = '<td>' . $ca10_pct . '</td>';
                                                         // $ca10table = '<td>' . $rowgetscore['ca10'] . '</td>';
                                                         // $CA10MidTermHighestScoresubscore = $rowGetrelset['CA10Score'];
