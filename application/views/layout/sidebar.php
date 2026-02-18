@@ -443,7 +443,7 @@
                             }
                             if ($this->rbac->hasPrivilege('holiday_computation', 'can_view')) {
                             ?>
-                                <li><a href="<?php echo base_url(); ?>admin/holidayAssessmentScores.php><i class=" fa fa-angle-double-right"></i> Holiday Computation</a></li>
+                                <li><a href="<?php echo base_url(); ?>admin/holidayAssessmentScores.php"><i class=" fa fa-angle-double-right"></i> Holiday Computation</a></li>
                             <?php
                             }
                             if ($this->rbac->hasPrivilege('Head_teacher_default_comment', 'can_view')) {
