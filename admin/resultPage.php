@@ -714,6 +714,55 @@ $studsection = $rowGetsections['section'];
                         </div>
 
                         <?php
+                        // ==================== HOLIDAY ASSESSMENT TABLE (if enabled) ====================
+                        // Check if holiday assessment is enabled for this class/section/session/term
+                        $sqlHolidaySetting = "SELECT id FROM holiday_assessment_settings 
+                                                WHERE class_id = '$classid' 
+                                                    AND section_id = '$classsectionactual' 
+                                                    AND session_id = '$session' 
+                                                    AND term = '$term' 
+                                                    AND enabled = 1 
+                                                LIMIT 1";
+                        $resHolidaySetting = mysqli_query($link, $sqlHolidaySetting);
+                        if (mysqli_num_rows($resHolidaySetting) > 0) {
+                            $settingRow = mysqli_fetch_assoc($resHolidaySetting);
+                            $setting_id = $settingRow['id'];
+
+                            // Fetch holiday scores for this student, along with subject name and max_score
+                            $sqlHolidayScores = "SELECT s.name AS subject_name, hs.score, hs.max_score
+                                                    FROM holiday_assessment_scores hs
+                                                    INNER JOIN subjects s ON hs.subject_id = s.id
+                                                    WHERE hs.student_id = '$id'
+                                                    AND hs.class_id = '$classid'
+                                                    AND hs.section_id = '$classsectionactual'
+                                                    AND hs.session_id = '$session'
+                                                    AND hs.term = '$term'
+                                                    ORDER BY s.name";
+                            $resHolidayScores = mysqli_query($link, $sqlHolidayScores);
+                            if (mysqli_num_rows($resHolidayScores) > 0) {
+                                // Output the table
+                                echo '<div style="margin-top: 30px;">';
+                                echo '<h5 style="font-size: 16px; font-weight: 800; color: #000000; margin-bottom: 10px;">HOLIDAY ASSESSMENT</h5>';
+                                echo '<table class="table-bordered tab table-sm tb-result-border" style="width: 60%; margin: 0 auto;">';
+                                echo '<thead><tr><th>S/N</th><th>Subject</th><th>Score</th><th>Max Score</th></tr></thead><tbody>';
+
+                                $sn = 1;
+                                while ($row = mysqli_fetch_assoc($resHolidayScores)) {
+                                    echo '<tr>';
+                                    echo '<td>' . $sn++ . '</td>';
+                                    echo '<td>' . htmlspecialchars($row['subject_name']) . '</td>';
+                                    echo '<td>' . number_format($row['score'], 2) . '</td>';
+                                    echo '<td>' . $row['max_score'] . '</td>';
+                                    echo '</tr>';
+                                }
+                                echo '</tbody></table>';
+                                echo '</div>';
+                            }
+                        }
+                        // ==================== END HOLIDAY ASSESSMENT ====================
+                        ?>
+
+                        <?php
                         $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='$term'");
 
                         $resultresumdateOld = mysqli_query($link, $sqlresumdateOld);
