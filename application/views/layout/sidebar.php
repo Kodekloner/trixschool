@@ -391,6 +391,16 @@
                                 <li><a href="<?php echo site_url('admin/addExam.php'); ?>"><i class="fa fa-angle-double-right"></i> CA Setting</a></li>
                             <?php
                             }
+                            if ($this->rbac->hasPrivilege('kindergarten_assessment_setting', 'can_edit')) {
+                            ?>
+                                <li><a href="<?php echo site_url('admin/add_kindergarten_assessment.php'); ?>"><i class="fa fa-angle-double-right"></i> Kindergarten Assessment Setting</a></li>
+                            <?php
+                            }
+                            if ($this->rbac->hasPrivilege('Holiday_assessment_setting', 'can_edit')) {
+                            ?>
+                                <li><a href="<?php echo site_url('admin/holidayAssessment.php'); ?>"><i class="fa fa-angle-double-right"></i> Holiday Assessment Setting</a></li>
+                            <?php
+                            }
                             if ($this->rbac->hasPrivilege('add_affective_domain_setting', 'can_edit')) {
                             ?>
                                 <li><a href="<?php echo site_url('admin/addAffectiveDomain.php'); ?>"><i class="fa fa-angle-double-right"></i> Affective Domain Setting</a></li>
@@ -424,6 +434,16 @@
                             if ($this->rbac->hasPrivilege('british_computation', 'can_view')) {
                             ?>
                                 <li><a href="<?php echo base_url(); ?>admin/britishMarkingSystem.php"><i class="fa fa-angle-double-right"></i> British Computation</a></li>
+                            <?php
+                            }
+                            if ($this->rbac->hasPrivilege('kindergarten_computation', 'can_view')) {
+                            ?>
+                                <li><a href="<?php echo base_url(); ?>admin/compute_kindergarten.php"><i class="fa fa-angle-double-right"></i> Kindergarten Computation</a></li>
+                            <?php
+                            }
+                            if ($this->rbac->hasPrivilege('holiday_computation', 'can_view')) {
+                            ?>
+                                <li><a href="<?php echo base_url(); ?>admin/holidayAssessmentScores.php"><i class=" fa fa-angle-double-right"></i> Holiday Computation</a></li>
                             <?php
                             }
                             if ($this->rbac->hasPrivilege('Head_teacher_default_comment', 'can_view')) {
