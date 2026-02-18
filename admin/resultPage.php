@@ -529,7 +529,7 @@ $studsection = $rowGetsections['section'];
                             }
 
                             ?>
-                            <table class="table-bordered tab table-sm tb-result-border">
+                            <table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
 
                                 <tr>
                                     <th>SUBJECT(s)</th>
