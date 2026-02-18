@@ -20,9 +20,8 @@
 	<style type="text/css">
 		.editbox {
 			display: none;
-			width: 50px;
-			font-size: 14px;
 			width: 60px;
+			font-size: 14px;
 			background-color: #FFFFFF;
 			border: solid 1px #FFFFFF;
 			padding: 5px 5px;
@@ -41,13 +40,8 @@
 	</style>
 </head>
 
-<?php
-// Assume $id (staff id) and $rolefirst are set by ../layout/style.php
-// If not, you may need to start a session and retrieve them.
-// For safety, we set defaults if not defined.
-if (!isset($id)) $id = 0;
-if (!isset($rolefirst)) $rolefirst = '';
-?>
+<?php include('../layout/style.php'); ?>
+<!-- style.php is expected to set $id and $rolefirst among other things -->
 
 <body style="background: rgb(236, 234, 234);">
 
@@ -59,6 +53,7 @@ if (!isset($rolefirst)) $rolefirst = '';
 				<?php include('../layout/header.php'); ?>
 
 				<div class="content-data">
+					<!-- Filter Form Card -->
 					<div class="row" style="margin:15px;">
 						<div class="col-sm-12 cardBoxSty">
 							<form id="filterForm">
@@ -86,7 +81,6 @@ if (!isset($rolefirst)) $rolefirst = '';
 									<div class="form-group col-sm">
 										<select class="form-control" id="class" required>
 											<option value="">Class</option>
-											<!-- Populated via AJAX after session & term are selected -->
 										</select>
 									</div>
 									<div class="form-group col-sm">
@@ -100,23 +94,59 @@ if (!isset($rolefirst)) $rolefirst = '';
 										</select>
 									</div>
 									<div class="col-md-12" align="right">
-										<button type="button" class="btn btn-primary" id="loadScores">Load Students</button>
+										<button type="button" class="btn btn-primary" style="border-radius: 20px;" id="loadScores">
+											<i class="fa fa-search" aria-hidden="true"></i>
+											<span style="font-weight: 500;">Load Students</span>
+										</button>
 									</div>
 								</div>
 							</form>
 						</div>
 					</div>
 
-					<div id="scoresTable" class="mt-3">
-						<!-- Editable table will be loaded here -->
+					<!-- Scores Card -->
+					<div class="card cardBoxSty" style="margin: 15px;">
+						<div class="card-body">
+							<div class="row">
+								<div class="col-sm-12 col-md-12">
+									<h3 class="card-title">Online Holiday Assessment Scores</h3>
+									<div class="table-responsive m-t-40" id="scoresTable">
+										<div class="alert alert-primary" role="alert">
+											Please filter and click "Load Students" to proceed.
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
 					</div>
-				</div>
-			</div>
-		</div>
-	</div>
 
-	<!-- Hidden field to store max_score for the selected subject -->
-	<input type="hidden" id="current_max_score" value="0">
+					<!-- Hidden field to store max_score for the selected subject -->
+					<input type="hidden" id="current_max_score" value="0">
+
+					<!-- Delete Confirmation Modal (exactly like computeExam) -->
+					<div class="modal fade" id="delScore" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+						<div class="modal-dialog modal-md" role="document">
+							<div align="center" class="modal-content">
+								<form>
+									<div class="modal-body">
+										<span id="CompleteScoreDeleteOutput"></span>
+										<div id="displayScoreDelMsg">
+											<div align="center">Loading...</div>
+										</div>
+									</div>
+									<div style="margin:auto; padding-bottom: 15px;">
+										<button type="button" class="btn btn-info" data-dismiss="modal">Cancel</button>
+										<button id="confirmDelete" type="button" class="btn btn-danger">Yes! Delete</button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
+
+				</div> <!-- .content-data -->
+			</div> <!-- .content -->
+		</div> <!-- .sidebar-header -->
+	</div> <!-- .menu-wrapper -->
 
 	<!-- Scripts for editable table and DataTables -->
 	<script src="../assets/plugins/jquery-datatables-editable/jquery.dataTables.js"></script>
@@ -124,6 +154,10 @@ if (!isset($rolefirst)) $rolefirst = '';
 	<script src="../assets/plugins/tiny-editable/mindmup-editabletable.js"></script>
 	<script src="../assets/plugins/tiny-editable/numeric-input-example.js"></script>
 	<script src="../assets/bootstrap/js/bootstrap.bundle.min.js"></script>
+	<script src="../assets/js/jquery.dataTables.min.js"></script>
+	<script src="../assets/js/datatables.min.js"></script>
+	<script src="../assets/js/pdfmake.min.js"></script>
+	<script src="../assets/js/vfs_fonts.js"></script>
 
 	<script>
 		$(document).ready(function() {
@@ -356,13 +390,34 @@ if (!isset($rolefirst)) $rolefirst = '';
 			$(document).on('click', '.delbtn', function() {
 				var scoreId = $(this).data('id');
 				var studentName = $(this).data('name');
-				$('#selDeleteID').val(scoreId);
-				$('#deleteStudentName').html(studentName);
+
+				// Show loading in modal
+				$('#displayScoreDelMsg').html('<div align="center">Loading...</div>');
+				$('#CompleteScoreDeleteOutput').html(''); // clear previous
+
+				// Load confirmation prompt via AJAX (like computeExam)
+				$.ajax({
+					url: '../phpscript/load-holiday-score-del-prompt.php',
+					method: 'POST',
+					data: {
+						ScoreID: scoreId,
+						studname: studentName
+					},
+					success: function(result) {
+						$('#displayScoreDelMsg').html(result);
+					}
+				});
+
 				$('#delScore').modal('show');
+				// Store scoreId for deletion
+				$('#confirmDelete').data('scoreid', scoreId);
 			});
 
 			$('#confirmDelete').on('click', function() {
-				var scoreId = $('#selDeleteID').val();
+				var scoreId = $(this).data('scoreid');
+				var btn = $(this);
+				btn.html('Removing...<i class="fa fa-spinner fa-spin"></i>');
+
 				$.ajax({
 					url: '../phpscript/delete-holiday-score.php',
 					method: 'POST',
@@ -370,40 +425,34 @@ if (!isset($rolefirst)) $rolefirst = '';
 						id: scoreId
 					},
 					success: function(response) {
-						$('#delScore').modal('hide');
 						if (response.trim() === 'success') {
-							// Reload the table
-							$('#loadScores').click();
+							$('#CompleteScoreDeleteOutput').html(
+								'<div class="alert alert-success alert-rounded">' +
+								'<i class="ti-check"></i> Score removed successfully.' +
+								'<button type="button" class="close" data-dismiss="alert">×</button>' +
+								'</div>'
+							);
+							// Reload the table after a short delay
+							setTimeout(function() {
+								$('#delScore').modal('hide');
+								$('#loadScores').click();
+							}, 1500);
 						} else {
 							alert('Delete failed: ' + response);
+							$('#delScore').modal('hide');
 						}
+						btn.html('Yes! Delete');
+					},
+					error: function() {
+						alert('AJAX error during delete.');
+						$('#delScore').modal('hide');
+						btn.html('Yes! Delete');
 					}
 				});
 			});
 
 		}); // document ready
 	</script>
-
-	<!-- Delete Confirmation Modal -->
-	<div class="modal fade" id="delScore" tabindex="-1" role="dialog">
-		<div class="modal-dialog modal-md" role="document">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title">Confirm Delete</h5>
-					<button type="button" class="close" data-dismiss="modal">&times;</button>
-				</div>
-				<div class="modal-body">
-					<p>Are you sure you want to delete the score for <b><span id="deleteStudentName"></span></b>?</p>
-					<p class="text-danger">This action cannot be undone.</p>
-					<input type="hidden" id="selDeleteID">
-				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-					<button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
-				</div>
-			</div>
-		</div>
-	</div>
 
 </body>
 
