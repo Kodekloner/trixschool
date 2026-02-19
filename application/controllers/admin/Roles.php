@@ -66,6 +66,10 @@ class Roles extends Admin_Controller
 
         if ($this->input->server('REQUEST_METHOD') == "POST") {
 
+            echo '<pre>';
+            var_dump($this->input->post());
+            die();
+
             $per_cat_post = $this->input->post('per_cat');
             $role_id = $this->input->post('role_id');
             $to_be_insert = array();
