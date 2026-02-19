@@ -66,9 +66,9 @@ class Roles extends Admin_Controller
 
         if ($this->input->server('REQUEST_METHOD') == "POST") {
 
-            echo '<pre>';
-            var_dump($this->input->post());
-            die();
+            // echo '<pre>';
+            // var_dump($this->input->post());
+            // die();
 
             $per_cat_post = $this->input->post('per_cat');
             $role_id = $this->input->post('role_id');
@@ -105,8 +105,8 @@ class Roles extends Admin_Controller
             }
 
             $this->role_model->getInsertBatch($role_id, $to_be_insert, $to_be_update, $to_be_delete);
-            echo $this->db->last_query();
-            die();
+            // echo $this->db->last_query();
+            // die();
             redirect('admin/roles/permission/' . $id);
         }
 
