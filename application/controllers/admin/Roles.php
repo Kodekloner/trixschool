@@ -3,17 +3,20 @@
 if (!defined('BASEPATH'))
     exit('No direct script access allowed');
 
-class Roles extends Admin_Controller {
+class Roles extends Admin_Controller
+{
 
     private $perm_category = array();
 
-    function __construct() {
+    function __construct()
+    {
         parent::__construct();
         $this->load->config('mailsms');
         $this->perm_category = $this->config->item('perm_category');
     }
 
-    function index() {
+    function index()
+    {
         if (!$this->rbac->hasPrivilege('superadmin', 'can_view')) {
             access_denied();
         }
@@ -23,10 +26,12 @@ class Roles extends Admin_Controller {
         $this->session->set_userdata('sub_menu', 'admin/roles');
 
         $this->form_validation->set_rules(
-                'name', $this->lang->line('name'), array(
-            'required',
-            array('check_exists', array($this->role_model, 'valid_check_exists'))
-                )
+            'name',
+            $this->lang->line('name'),
+            array(
+                'required',
+                array('check_exists', array($this->role_model, 'valid_check_exists'))
+            )
         );
         if ($this->form_validation->run() == FALSE) {
             $listroute = $this->role_model->get();
@@ -44,8 +49,9 @@ class Roles extends Admin_Controller {
         }
     }
 
-    function permission($id) {
-           if (!$this->rbac->hasPrivilege('superadmin', 'can_view')) {
+    function permission($id)
+    {
+        if (!$this->rbac->hasPrivilege('superadmin', 'can_view')) {
             access_denied();
         }
         $data['title'] = 'Add Role';
@@ -95,6 +101,8 @@ class Roles extends Admin_Controller {
             }
 
             $this->role_model->getInsertBatch($role_id, $to_be_insert, $to_be_update, $to_be_delete);
+            echo $this->db->last_query();
+            die();
             redirect('admin/roles/permission/' . $id);
         }
 
@@ -103,8 +111,9 @@ class Roles extends Admin_Controller {
         $this->load->view('layout/footer');
     }
 
-    function edit($id) {
-           if (!$this->rbac->hasPrivilege('superadmin', 'can_view')) {
+    function edit($id)
+    {
+        if (!$this->rbac->hasPrivilege('superadmin', 'can_view')) {
             access_denied();
         }
         $data['title'] = 'Edit Role';
@@ -114,10 +123,12 @@ class Roles extends Admin_Controller {
         $data['name'] = $editrole["name"];
 
         $this->form_validation->set_rules(
-                'name', $this->lang->line('name'), array(
-            'required',
-            array('check_exists', array($this->role_model, 'valid_check_exists'))
-                )
+            'name',
+            $this->lang->line('name'),
+            array(
+                'required',
+                array('check_exists', array($this->role_model, 'valid_check_exists'))
+            )
         );
         if ($this->form_validation->run() == FALSE) {
             $listroute = $this->role_model->get();
@@ -136,12 +147,10 @@ class Roles extends Admin_Controller {
         }
     }
 
-    function delete($id) {
+    function delete($id)
+    {
         $data['title'] = 'Fees Master List';
         $this->role_model->remove($id);
         redirect('admin/roles/index');
     }
-
 }
-
-?>
