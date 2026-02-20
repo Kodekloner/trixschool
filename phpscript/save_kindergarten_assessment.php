@@ -60,8 +60,8 @@ try {
 	}
 
 	mysqli_commit($link);
-	echo '<div class="alert alert-success">Assessment saved successfully!</div>';
 	die("SAVED");
+	echo '<div class="alert alert-success">Assessment saved successfully!</div>';
 } catch (Exception $e) {
 	mysqli_rollback($link);
 	echo '<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>';
