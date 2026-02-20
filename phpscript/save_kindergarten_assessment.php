@@ -1,4 +1,6 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 include('../database/config.php');
 $data = json_decode($_POST['data'], true);
 
@@ -63,5 +65,3 @@ try {
 	mysqli_rollback($link);
 	echo '<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>';
 }
-
-die();
