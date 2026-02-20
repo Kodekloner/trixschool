@@ -1,6 +1,4 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
 include('../database/config.php');
 $data = json_decode($_POST['data'], true);
 
@@ -60,10 +58,8 @@ try {
 	}
 
 	mysqli_commit($link);
-	die("SAVED");
 	echo '<div class="alert alert-success">Assessment saved successfully!</div>';
 } catch (Exception $e) {
 	mysqli_rollback($link);
 	echo '<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>';
-	die("FAIL TO SAVE");
 }
