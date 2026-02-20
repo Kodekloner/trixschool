@@ -3,7 +3,6 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 include('../database/config.php');
 $data = json_decode($_POST['data'], true);
-die("SAVE FILE HIT");
 
 $assessment_id = $data['assessment_id'] ? intval($data['assessment_id']) : 0;
 $assessment_name = mysqli_real_escape_string($link, $data['assessment_name']);
@@ -62,7 +61,9 @@ try {
 
 	mysqli_commit($link);
 	echo '<div class="alert alert-success">Assessment saved successfully!</div>';
+	die("SAVED");
 } catch (Exception $e) {
 	mysqli_rollback($link);
 	echo '<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>';
+	die("FAIL TO SAVE");
 }
