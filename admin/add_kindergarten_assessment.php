@@ -252,6 +252,9 @@ include('../database/config.php');
 								location.reload();
 							}, 2000);
 						}
+					},
+					error: function(xhr, status, error) {
+						$('.messagetoo').html('<div class="alert alert-danger">AJAX Error: ' + error + '</div>');
 					}
 				});
 			});
