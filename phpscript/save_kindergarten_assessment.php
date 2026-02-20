@@ -63,3 +63,5 @@ try {
 	mysqli_rollback($link);
 	echo '<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>';
 }
+
+die();
