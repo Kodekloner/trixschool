@@ -145,7 +145,7 @@ if ($term == '1st') {
 }
 
 if ($term == '2nd') {
-    $term2 = 'second ter';
+    $term2 = 'second term';
 }
 
 if ($term == '3rd') {
@@ -290,10 +290,15 @@ $studsection = $rowGetsections['section'];
                         </div>
                     </div><br>
 
-                    <div align="center">
-                        <h5 style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo $term; ?> TERM</span> <?php echo $session_name; ?> SESSION <span><?php $studsectionid; ?></span></h5>
-                    </div>
-
+                    <?php if ($reltypemain == 'midterm') { ?>
+                        <div align="center">
+                            <h5 style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span>MID TERM</span> <?php echo $session_name; ?> SESSION <span><?php $studsectionid; ?></span></h5>
+                        </div>
+                    <?php } else { ?>
+                        <div align="center">
+                            <h5 style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo $term; ?> TERM</span> <?php echo $session_name; ?> SESSION <span><?php $studsectionid; ?></span></h5>
+                        </div>
+                    <?php } ?>
 
                     <?php
 
@@ -404,6 +409,13 @@ $studsection = $rowGetsections['section'];
                                 $getMidTermHighestScore = ($CA1MidTermHighestScore + $CA2MidTermHighestScore + $CA3MidTermHighestScore + $CA4MidTermHighestScore + $CA5MidTermHighestScore + $CA6MidTermHighestScore + $CA7MidTermHighestScore + $CA8MidTermHighestScore + $CA9MidTermHighestScore + $CA10MidTermHighestScore) * $row_cntgetsubscore;
 
                                 $gettotgrade = round($getMidTermAVG / $row_cntgetsubscore, 2);
+
+                                echo 'gettotgrade: ' . $gettotgrade;
+
+                                echo 'row_cntgetsubscore: ' . $row_cntgetsubscore;
+
+                                echo 'getMidTermAVG: ' . $getMidTermAVG;
+
 
                                 $gettotgradeold = round(($getMidTermAVG / $getMidTermHighestScore) * 100, 2);
 
@@ -709,6 +721,12 @@ $studsection = $rowGetsections['section'];
                                                 $getMidTermHighestScoresubscore = $CA1MidTermHighestScoresubscore + $CA2MidTermHighestScoresubscore + $CA3MidTermHighestScoresubscore + $CA4MidTermHighestScoresubscore + $CA5MidTermHighestScoresubscore + $CA6MidTermHighestScoresubscore + $CA7MidTermHighestScoresubscore + $CA8MidTermHighestScoresubscore + $CA9MidTermHighestScoresubscore + $CA10MidTermHighestScoresubscore;
 
                                                 $gettotgradetots = round(($total / $getMidTermHighestScoresubscore) * 100, 2);
+
+                                                echo 'gettotgradetots: ' . $gettotgradetots;
+
+                                                echo 'total: ' . $total;
+
+                                                echo 'getMidTermHighestScoresubscore: ' . $getMidTermHighestScoresubscore;
 
                                                 $sqlgetgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE gradingstructure.Type = 'midterm' AND $gettotgradetots >= RangeStart AND $gettotgradetots <= RangeEnd AND ClassID = '$classid'");
                                                 $resultgetgradstuc = mysqli_query($link, $sqlgetgradstuc);
