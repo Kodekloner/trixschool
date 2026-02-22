@@ -421,11 +421,11 @@ $studsection = $rowGetsections['section'];
 
                                 $gettotgradeold = round(($getMidTermAVG / $getMidTermHighestScore) * 100, 2);
 
-                                if ($gettotgradeold == '0' || $gettotgradeold == '' || $gettotgradeold == NULL) {
-                                    $gettotgrade = 0;
-                                } else {
-                                    $gettotgrade = $gettotgradeold;
-                                }
+                                // if ($gettotgradeold == '0' || $gettotgradeold == '' || $gettotgradeold == NULL) {
+                                //     $gettotgrade = 0;
+                                // } else {
+                                //     $gettotgrade = $gettotgradeold;
+                                // }
 
                                 $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE gradingstructure.Type = 'midterm' AND $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND assigngradingtclass.ClassID = '$classid'");
                                 $resultgettotgradstuc = mysqli_query($link, $sqlgettotgradstuc);
