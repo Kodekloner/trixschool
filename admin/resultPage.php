@@ -416,6 +416,8 @@ $studsection = $rowGetsections['section'];
 
                                 echo 'getMidTermAVG: ' . $getMidTermAVG;
 
+                                echo 'classid: ' . $classid;
+
 
                                 $gettotgradeold = round(($getMidTermAVG / $getMidTermHighestScore) * 100, 2);
 
