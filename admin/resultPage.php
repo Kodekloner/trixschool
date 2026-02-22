@@ -425,7 +425,7 @@ $studsection = $rowGetsections['section'];
                                     $gettotgrade = $gettotgradeold;
                                 }
 
-                                $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE gradingstructure.Type = 'midterm' AND $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
+                                $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE gradingstructure.Type = 'midterm' AND $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND assigngradingtclass.ClassID = '$classid'");
                                 $resultgettotgradstuc = mysqli_query($link, $sqlgettotgradstuc);
                                 $rowgettotgradstuc = mysqli_fetch_assoc($resultgettotgradstuc);
                                 $row_cntgettotgradstuc = mysqli_num_rows($resultgettotgradstuc);
