@@ -403,7 +403,7 @@ $studsection = $rowGetsections['section'];
 
                                 $getMidTermHighestScore = ($CA1MidTermHighestScore + $CA2MidTermHighestScore + $CA3MidTermHighestScore + $CA4MidTermHighestScore + $CA5MidTermHighestScore + $CA6MidTermHighestScore + $CA7MidTermHighestScore + $CA8MidTermHighestScore + $CA9MidTermHighestScore + $CA10MidTermHighestScore) * $row_cntgetsubscore;
 
-                                // $gettotgrade = round($getMidTermAVG/$row_cntgetsubscore, 2);
+                                $gettotgrade = round($getMidTermAVG / $row_cntgetsubscore, 2);
 
                                 $gettotgradeold = round(($getMidTermAVG / $getMidTermHighestScore) * 100, 2);
 
@@ -413,7 +413,7 @@ $studsection = $rowGetsections['section'];
                                     $gettotgrade = $gettotgradeold;
                                 }
 
-                                $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
+                                $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE gradingstructure.Type = 'midterm' AND $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
                                 $resultgettotgradstuc = mysqli_query($link, $sqlgettotgradstuc);
                                 $rowgettotgradstuc = mysqli_fetch_assoc($resultgettotgradstuc);
                                 $row_cntgettotgradstuc = mysqli_num_rows($resultgettotgradstuc);
@@ -710,7 +710,7 @@ $studsection = $rowGetsections['section'];
 
                                                 $gettotgradetots = round(($total / $getMidTermHighestScoresubscore) * 100, 2);
 
-                                                $sqlgetgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $gettotgradetots >= RangeStart AND $gettotgradetots <= RangeEnd AND ClassID = '$classid'");
+                                                $sqlgetgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE gradingstructure.Type = 'midterm' AND $gettotgradetots >= RangeStart AND $gettotgradetots <= RangeEnd AND ClassID = '$classid'");
                                                 $resultgetgradstuc = mysqli_query($link, $sqlgetgradstuc);
                                                 $rowgetgradstuc = mysqli_fetch_assoc($resultgetgradstuc);
                                                 $row_cntgetgradstuc = mysqli_num_rows($resultgetgradstuc);
@@ -719,6 +719,8 @@ $studsection = $rowGetsections['section'];
                                                     $grade = $rowgetgradstuc['Grade'];
                                                     $remark = $rowgetgradstuc['Remark'];
                                                 } else {
+                                                    $grade = 'N/A';
+                                                    $remark = 'N/A';
                                                 }
 
                                                 echo '<tr>
@@ -739,55 +741,6 @@ $studsection = $rowGetsections['section'];
                                 </tbody>
                             </table>
                         </div>
-
-                        <?php
-                        // ==================== HOLIDAY ASSESSMENT TABLE (if enabled) ====================
-                        // Check if holiday assessment is enabled for this class/section/session/term
-                        $sqlHolidaySetting = "SELECT id FROM holiday_assessment_settings 
-                                                WHERE class_id = '$classid' 
-                                                    AND section_id = '$classsectionactual' 
-                                                    AND session_id = '$session' 
-                                                    AND term = '$term' 
-                                                    AND enabled = 1 
-                                                LIMIT 1";
-                        $resHolidaySetting = mysqli_query($link, $sqlHolidaySetting);
-                        if (mysqli_num_rows($resHolidaySetting) > 0) {
-                            $settingRow = mysqli_fetch_assoc($resHolidaySetting);
-                            $setting_id = $settingRow['id'];
-
-                            // Fetch holiday scores for this student, along with subject name and max_score
-                            $sqlHolidayScores = "SELECT s.name AS subject_name, hs.score, hs.max_score
-                                                    FROM holiday_assessment_scores hs
-                                                    INNER JOIN subjects s ON hs.subject_id = s.id
-                                                    WHERE hs.student_id = '$id'
-                                                    AND hs.class_id = '$classid'
-                                                    AND hs.section_id = '$classsectionactual'
-                                                    AND hs.session_id = '$session'
-                                                    AND hs.term = '$term'
-                                                    ORDER BY s.name";
-                            $resHolidayScores = mysqli_query($link, $sqlHolidayScores);
-                            if (mysqli_num_rows($resHolidayScores) > 0) {
-                                // Output the table
-                                echo '<div style="margin-top: 30px;">';
-                                echo '<h5 style="font-size: 16px; font-weight: 800; color: #000000; margin-bottom: 10px;">HOLIDAY ASSESSMENT</h5>';
-                                echo '<table class="table-bordered tab table-sm tb-result-border" style="width: 60%; margin: 0 auto;">';
-                                echo '<thead><tr><th>S/N</th><th>Subject</th><th>Score</th><th>Max Score</th></tr></thead><tbody>';
-
-                                $sn = 1;
-                                while ($row = mysqli_fetch_assoc($resHolidayScores)) {
-                                    echo '<tr>';
-                                    echo '<td>' . $sn++ . '</td>';
-                                    echo '<td>' . htmlspecialchars($row['subject_name']) . '</td>';
-                                    echo '<td>' . number_format($row['score'], 2) . '</td>';
-                                    echo '<td>' . $row['max_score'] . '</td>';
-                                    echo '</tr>';
-                                }
-                                echo '</tbody></table>';
-                                echo '</div>';
-                            }
-                        }
-                        // ==================== END HOLIDAY ASSESSMENT ====================
-                        ?>
 
                         <?php
                         $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='$term'");
@@ -845,1070 +798,63 @@ $studsection = $rowGetsections['section'];
                             }
                         }
                         ?>
+
                         <div align="center" class="summDD">
-                            <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
-                            <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
-                            <p>Class Average 1: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
+                            <p>Total Score: <span style="font-weight:600;"><?php echo $getMidTermAVG; ?> </span></p>
+                            <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?>% </span></p>
+                            <!-- <p>Class Average: <span style="font-weight:600;"><?php //echo $decStubsubavg; 
+                                                                                    ?> </span></p> -->
                             <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                         </div>
 
-                        <!-- <div class="performance">
-                            <div class="row">
-                                <div class="col-4">
-                                    <div class="containerForChart">
-
-                                        <canvas class="newgraph" id="mysunChart" style="width:100%;"></canvas>
-
-                                    </div>
-                                </div>
-                                <div class="col-4" style="padding-right: 0px">
-                                    <div class="container-motto" style="margin-right: 2px;">
-                                        <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
-                                            <table class="tab table-sm" style="width:98%;border:0px solid black;">
-                                                <tr>
-                                                    <th colspan="4" style="text-align: center;">AFFECTIVE DOMAIN</th>
-                                                </tr>
-                                                <tbody> -->
                         <?php
+                        // ==================== HOLIDAY ASSESSMENT TABLE (if enabled) ====================
+                        // Check if holiday assessment is enabled for this class/section/session/term
+                        $sqlHolidaySetting = "SELECT id FROM holiday_assessment_settings 
+                                                    WHERE class_id = '$classid' 
+                                                        AND section_id = '$classsectionactual' 
+                                                        AND session_id = '$session' 
+                                                        AND term = '$term' 
+                                                        AND enabled = 1 
+                                                    LIMIT 1";
+                        $resHolidaySetting = mysqli_query($link, $sqlHolidaySetting);
+                        if (mysqli_num_rows($resHolidaySetting) > 0) {
+                            $settingRow = mysqli_fetch_assoc($resHolidaySetting);
+                            $setting_id = $settingRow['id'];
 
-                        // $sqlrelset = ("SELECT * FROM `affective_domain_settings` INNER JOIN assignsaftoclass ON affective_domain_settings.id=assignsaftoclass.AffectiveDomainSettingsId WHERE ClassID = '$classid'");
-                        // $resultrelset = mysqli_query($link, $sqlrelset);
-                        // $rowGetrelset = mysqli_fetch_assoc($resultrelset);
-                        // $row_cntrelset = mysqli_num_rows($resultrelset);
+                            // Fetch holiday scores for this student, along with subject name and max_score
+                            $sqlHolidayScores = "SELECT s.name AS subject_name, hs.score, hs.max_score
+                                                        FROM holiday_assessment_scores hs
+                                                        INNER JOIN subjects s ON hs.subject_id = s.id
+                                                        WHERE hs.student_id = '$id'
+                                                        AND hs.class_id = '$classid'
+                                                        AND hs.section_id = '$classsectionactual'
+                                                        AND hs.session_id = '$session'
+                                                        AND hs.term = '$term'
+                                                        ORDER BY s.name";
+                            $resHolidayScores = mysqli_query($link, $sqlHolidayScores);
+                            if (mysqli_num_rows($resHolidayScores) > 0) {
+                                // Output the table
+                                echo '<div style="margin-top: 30px;">';
+                                echo '<h5 style="font-size: 16px; font-weight: 800; color: #000000; margin-bottom: 10px;">HOLIDAY ASSESSMENT</h5>';
+                                echo '<table class="table-bordered tab table-sm tb-result-border" style="width: 60%; margin: 0 auto;">';
+                                echo '<thead><tr><th>S/N</th><th>Subject</th><th>Score</th><th>Max Score</th></tr></thead><tbody>';
 
-                        // if ($row_cntrelset > 0) {
-                        //     $sqlgetscore = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND term = '$term' AND sectionid = '$classsectionactual'");
-                        //     $resultgetscore = mysqli_query($link, $sqlgetscore);
-                        //     $rowgetscore = mysqli_fetch_assoc($resultgetscore);
-                        //     $row_cntgetscore = mysqli_num_rows($resultgetscore);
+                                $sn = 1;
+                                while ($row = mysqli_fetch_assoc($resHolidayScores)) {
+                                    echo '<tr>';
+                                    echo '<td>' . $sn++ . '</td>';
+                                    echo '<td>' . htmlspecialchars($row['subject_name']) . '</td>';
+                                    echo '<td>' . number_format($row['score'], 2) . '</td>';
+                                    echo '<td>' . $row['max_score'] . '</td>';
+                                    echo '</tr>';
+                                }
+                                echo '</tbody></table>';
+                                echo '</div>';
+                            }
+                        }
+                        // ==================== END HOLIDAY ASSESSMENT ====================
 
-                        //     if ($row_cntgetscore > 0) {
-                        //         if ($rowGetrelset['NumberofAD'] == '1') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['AD1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain1"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofAD'] == '2') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['AD1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain1"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain2"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofAD'] == '3') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['AD1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain1"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain2"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain3"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofAD'] == '4') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['AD1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain1"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain2"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain3"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain4"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofAD'] == '5') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['AD1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain1"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain2"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain3"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain4"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain5"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofAD'] == '6') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['AD1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain1"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain2"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain3"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain4"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain5"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain6"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofAD'] == '7') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['AD1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain7"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain2"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain3"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain4"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain5"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain6"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofAD'] == '8') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['AD1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain7"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain2"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD8Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain8"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain3"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain4"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain5"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain6"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofAD'] == '9') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['AD1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain7"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain2"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD8Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain8"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain3"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD9Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain9"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain4"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain5"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain6"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofAD'] == '10') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['AD1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain7"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain2"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD8Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain8"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain3"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD9Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain9"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain4"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD10Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain10"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain5"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain6"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofAD'] == '11') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['AD1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain7"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain2"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD8Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain8"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain3"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD9Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain9"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain4"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD10Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain10"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain5"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD11Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain11"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain6"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofAD'] == '12') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['AD1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain7"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain2"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD8Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain8"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain3"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD9Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain9"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain4"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD10Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain10"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain5"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD11Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain11"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain6"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD12Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain12"] . '</td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofAD'] == '13') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['AD1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD8Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain8"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain2"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD9Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain9"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain3"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD10Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain10"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain4"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD11Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain11"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain5"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD12Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain12"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain6"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD13Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain13"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain7"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofAD'] == '14') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['AD1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD8Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain8"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain2"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD9Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain9"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain3"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD10Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain10"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain4"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD11Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain11"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain5"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD12Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain12"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain6"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD13Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain13"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain7"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD14Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain14"] . '</td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofAD'] == '15') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['AD1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD9Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain9"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain2"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD10Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain10"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain3"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD11Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain11"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain4"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD12Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain12"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain5"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD13Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain13"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain6"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD14Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain14"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain7"] . '</td>
-                        //                                     <th>' . $rowGetrelset['AD15Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain15"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['AD8Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["domain8"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } else {
-                        //         }
-                        //     } else {
-                        //         echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
-                        //     }
-                        // }
-                        ?>
-                        <!-- </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-4" style="padding-left: 0px">
-                                    <div class="container-motto" style="margin-left: 2px;">
-                                        <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
-                                            <table class="tab table-sm" style="width:98%;">
-                                                <tr>
-                                                    <th colspan="4" style="text-align: center;">PSYCOMOTOR</th>
-                                                </tr>
-                                                <tbody> -->
-                        <?php
-
-                        // $sqlrelset = ("SELECT * FROM `psycomotor_settings` INNER JOIN assignspsycomotortoclass ON psycomotor_settings.id=assignspsycomotortoclass.PsycomotorSettingsId WHERE ClassID = '$classid'");
-                        // $resultrelset = mysqli_query($link, $sqlrelset);
-                        // $rowGetrelset = mysqli_fetch_assoc($resultrelset);
-                        // $row_cntrelset = mysqli_num_rows($resultrelset);
-
-                        // if ($row_cntrelset > 0) {
-                        //     $sqlgetscore = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND term = '$term' AND sectionid = '$classsectionactual'");
-                        //     $resultgetscore = mysqli_query($link, $sqlgetscore);
-                        //     $rowgetscore = mysqli_fetch_assoc($resultgetscore);
-                        //     $row_cntgetscore = mysqli_num_rows($resultgetscore);
-
-                        //     if ($row_cntgetscore > 0) {
-                        //         if ($rowGetrelset['NumberofP'] == '1') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['P1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor1"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofP'] == '2') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['P1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor1"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor2"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofP'] == '3') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['P1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor1"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor2"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor3"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofP'] == '4') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['P1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor1"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor2"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor3"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor4"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofP'] == '5') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['P1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor1"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor2"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor3"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor4"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor5"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofP'] == '6') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['P1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor1"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor2"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor3"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor4"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor5"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor6"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofP'] == '7') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['P1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor7"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor2"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor3"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor4"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor5"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor6"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofP'] == '8') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['P1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor7"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor2"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P8Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor8"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor3"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor4"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor5"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor6"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofP'] == '9') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['P1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor7"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor2"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P8Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor8"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor3"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P9Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor9"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor4"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor5"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor6"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofP'] == '10') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['P1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor7"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor2"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P8Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor8"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor3"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P9Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor9"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor4"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P10Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor10"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor5"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor6"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofP'] == '11') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['P1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor7"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor2"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P8Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor8"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor3"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P9Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor9"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor4"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P10Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor10"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor5"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P11Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor11"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor6"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofP'] == '12') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['P1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor7"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor2"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P8Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor8"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor3"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P9Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor9"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor4"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P10Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor10"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor5"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P11Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor11"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor6"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P12Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor12"] . '</td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofP'] == '13') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['P1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P8Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor8"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor2"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P9Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor9"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor3"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P10Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor10"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor4"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P11Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor11"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor5"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P12Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor12"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor6"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P13Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor13"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor7"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofP'] == '14') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['P1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P8Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor8"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor2"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P9Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor9"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor3"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P10Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor10"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor4"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P11Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor11"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor5"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P12Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor12"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor6"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P13Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor13"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor7"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P14Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor14"] . '</td>
-                        //                                 </tr>';
-                        //         } elseif ($rowGetrelset['NumberofP'] == '15') {
-                        //             echo '<tr>
-                        //                                     <th>' . $rowGetrelset['P1Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor1"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P9Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor9"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P2Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor2"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P10Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor10"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P3Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor3"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P11Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor11"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P4Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor4"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P12Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor12"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P5Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor5"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P13Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor13"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P6Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor6"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P14Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor14"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P7Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor7"] . '</td>
-                        //                                     <th>' . $rowGetrelset['P15Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor15"] . '</td>
-                        //                                 </tr>
-                        //                                 <tr>
-                        //                                     <th>' . $rowGetrelset['P8Title'] . '</th>
-                        //                                     <td>' . $rowgetscore["psycomotor8"] . '</td>
-                        //                                     <td></td>
-                        //                                     <td></td>
-                        //                                 </tr>';
-                        //         } else {
-                        //         }
-                        //     } else {
-                        //         echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
-                        //     }
-                        // }
-                        ?>
-                        <!-- </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div> -->
-
-                        <?php
 
                         $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `remark`!=''");
                         $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
@@ -2076,38 +1022,6 @@ $studsection = $rowGetsections['section'];
                 </div>
             </div>
             <?php
-                        /*
-                            if($term == '3rd')
-                            {
-
-                                $sessionnew = $session + 1;
-
-                                $sqlstudent_session = ("SELECT * FROM `student_session` WHERE `session_id`='$sessionnew' AND student_id = '$id'");
-
-                                $resultstudent_session = mysqli_query($link, $sqlstudent_session);
-                                $getstudent_session = mysqli_fetch_assoc($resultstudent_session);
-                                $sqlrow_cntstudent_session = mysqli_num_rows($resultstudent_session);
-
-                                if($sqlrow_cntstudent_session > 0)
-                                {
-                                    echo '<center>
-                                        <p class="promoted">PROMOTED TO THE NEXT CLASS</p>
-                                    </center>';
-                                }
-                                else
-                                {
-                                    echo '<center>
-                                        <p class="promoted">NOT PROMOTED TO THE NEXT CLASS</p>
-                                    </center>';
-                                }
-
-                            }
-                            else
-                            {
-
-                            }
-                        */
-
                     } elseif ($reltypemain == 'termly') {
 
                         if ($reltype == 'alphabetic') {
@@ -2259,7 +1173,7 @@ $studsection = $rowGetsections['section'];
                             $sunlowscrun = round($rowsunnylowwscoreuname['avgScore'], 2);
 
                             if ($row_cntgettotalgrade > 0) {
-                                $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
+                                $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE gradingstructure.Type = 'term' AND $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
                                 $resultgettotgradstuc = mysqli_query($link, $sqlgettotgradstuc);
                                 $rowgettotgradstuc = mysqli_fetch_assoc($resultgettotgradstuc);
                                 $row_cntgettotgradstuc = mysqli_num_rows($resultgettotgradstuc);
@@ -2410,12 +1324,6 @@ $studsection = $rowGetsections['section'];
                             $row_cntgetscorecheck = mysqli_num_rows($resultgetscorecheck);
 
                             if ($row_cntgetscorecheck > 0) {
-                                // $sqlgetgadingmeth = ("SELECT * FROM `classordepartment` WHERE InstitutionID = '$institution' AND FacultyOrSchoolID='$facultyID' AND ClassOrDepartmentID = '$classid'");
-                                // $resultgetgadingmeth = mysqli_query($link, $sqlgetgadingmeth);
-                                // $rowgetgadingmeth = mysqli_fetch_assoc($resultgetgadingmeth);
-                                // $row_cntgetgadingmeth = mysqli_num_rows($resultgetgadingmeth);
-
-                                // $gradeid = $rowgetgadingmeth['GradingMethodID'] . '</br>';
 
                                 do {
 
@@ -4080,40 +2988,6 @@ $studsection = $rowGetsections['section'];
                         </div>
                     </div>
                 </div>
-                <?php
-                            /*
-                            if($term == '3rd')
-                            {
-
-                                $sessionnew = $session + 1;
-
-                                $sqlstudent_session = ("SELECT * FROM `student_session` WHERE `session_id`='$sessionnew' AND student_id = '$id'");
-
-                                $resultstudent_session = mysqli_query($link, $sqlstudent_session);
-                                $getstudent_session = mysqli_fetch_assoc($resultstudent_session);
-                                $sqlrow_cntstudent_session = mysqli_num_rows($resultstudent_session);
-
-                                if($sqlrow_cntstudent_session > 0)
-                                {
-                                    echo '<center>
-                                        <p class="promoted">PROMOTED TO THE NEXT CLASS</p>
-                                    </center>';
-                                }
-                                else
-                                {
-                                    echo '<center>
-                                        <p class="promoted">NOT PROMOTED TO THE NEXT CLASS</p>
-                                    </center>';
-                                }
-
-                            }
-                            else
-                            {
-
-                            }
-                            */
-                ?>
-
             <?php
                         } elseif ($reltype == 'numeric') {
             ?>
@@ -4242,7 +3116,7 @@ $studsection = $rowGetsections['section'];
                             }
 
                             if ($row_cntgettotalgrade > 0) {
-                                $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
+                                $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE gradingstructure.Type = 'term' AND $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
                                 $resultgettotgradstuc = mysqli_query($link, $sqlgettotgradstuc);
                                 $rowgettotgradstuc = mysqli_fetch_assoc($resultgettotgradstuc);
                                 $row_cntgettotgradstuc = mysqli_num_rows($resultgettotgradstuc);
@@ -4375,22 +3249,10 @@ $studsection = $rowGetsections['section'];
 
                             if ($row_cntgetscorecheck > 0) {
 
-                                // $sqlgetgadingmeth = ("SELECT * FROM `classordepartment` WHERE InstitutionID = '$institution' AND FacultyOrSchoolID='$facultyID' AND ClassOrDepartmentID = '$classid'");
-                                // $resultgetgadingmeth = mysqli_query($link, $sqlgetgadingmeth);
-                                // $rowgetgadingmeth = mysqli_fetch_assoc($resultgetgadingmeth);
-                                // $row_cntgetgadingmeth = mysqli_num_rows($resultgetgadingmeth);
-
-                                // $gradeid = $rowgetgadingmeth['GradingMethodID'] . '</br>';
-
                                 do {
 
                                     $subname = $rowGetsub['name'];
                                     $subid = $rowGetsub['id'];
-
-                                    // $sqlgetscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
-                                    // $resultgetscore = mysqli_query($link, $sqlgetscore);
-                                    // $rowgetscore = mysqli_fetch_assoc($resultgetscore);
-                                    // $row_cntgetscore = mysqli_num_rows($resultgetscore);
 
 
                                     $sqlgetscore = ("SELECT * FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
@@ -4744,10 +3606,10 @@ $studsection = $rowGetsections['section'];
                                             echo "\n";
                                         }
                                         echo '</td>
-                                                                    <td>' . $sunlowscrunpersub . '</td>
-                                                                    <td>' . $sunhihscrunpersub . '</td>
-                                                                    <td>' . $remark . '</td>
-                                                                </tr>';
+                                                <td>' . $sunlowscrunpersub . '</td>
+                                                <td>' . $sunhihscrunpersub . '</td>
+                                                <td>' . $remark . '</td>
+                                            </tr>';
                                     } else {
                                     }
                                 } while ($rowGetsub = mysqli_fetch_assoc($resultsub));
@@ -4819,7 +3681,7 @@ $studsection = $rowGetsections['section'];
                 <div align="center" class="summDD">
                     <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
                     <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
-                    <p>Class Average 3: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
+                    <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
                     <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                 </div>
 
@@ -6087,39 +4949,6 @@ $studsection = $rowGetsections['section'];
                         </div>
                     </div>
                 </div>
-                <?php
-                            /*
-                                            if($term == '3rd')
-                                            {
-
-                                                $sessionnew = $session + 1;
-
-                                                $sqlstudent_session = ("SELECT * FROM `student_session` WHERE `session_id`='$sessionnew' AND student_id = '$id'");
-
-                                                $resultstudent_session = mysqli_query($link, $sqlstudent_session);
-                                                $getstudent_session = mysqli_fetch_assoc($resultstudent_session);
-                                                $sqlrow_cntstudent_session = mysqli_num_rows($resultstudent_session);
-
-                                                if($sqlrow_cntstudent_session > 0)
-                                                {
-                                                    echo '<center>
-                                                        <p class="promoted">PROMOTED TO THE NEXT CLASS</p>
-                                                    </center>';
-                                                }
-                                                else
-                                                {
-                                                    echo '<center>
-                                                        <p class="promoted">NOT PROMOTED TO THE NEXT CLASS</p>
-                                                    </center>';
-                                                }
-
-                                            }
-                                            else
-                                            {
-
-                                            }
-                                            */
-                ?>
 
             <?php
                         } elseif ($reltype == 'british') {
@@ -6459,45 +5288,11 @@ $studsection = $rowGetsections['section'];
                         </div>
                     </div>
                 </div>
-                <?php
-                            /*
-                                            if($term == '3rd')
-                                            {
-
-                                                $sessionnew = $session + 1;
-
-                                                $sqlstudent_session = ("SELECT * FROM `student_session` WHERE `session_id`='$sessionnew' AND student_id = '$id'");
-
-                                                $resultstudent_session = mysqli_query($link, $sqlstudent_session);
-                                                $getstudent_session = mysqli_fetch_assoc($resultstudent_session);
-                                                $sqlrow_cntstudent_session = mysqli_num_rows($resultstudent_session);
-
-                                                if($sqlrow_cntstudent_session > 0)
-                                                {
-                                                    echo '<center>
-                                                        <p class="promoted">PROMOTED TO THE NEXT CLASS</p>
-                                                    </center>';
-                                                }
-                                                else
-                                                {
-                                                    echo '<center>
-                                                        <p class="promoted">NOT PROMOTED TO THE NEXT CLASS</p>
-                                                    </center>';
-                                                }
-
-                                            }
-                                            else
-                                            {
-
-                                            }
-                                            */
-                ?>
             <?php
                         } else {
                             echo 'No result type has been set for this class';
                         }
                     } else {
-
                         if ($reltype == 'alphabetic') {
             ?>
                 <div class="container-motto">
@@ -6552,7 +5347,7 @@ $studsection = $rowGetsections['section'];
                             $sunlowscrun = round($rowsunnylowwscoreuname['total'], 2);
 
                             if ($row_cntgettotalgrade > 0) {
-                                $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
+                                $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE gradingstructure.Type = 'term' AND $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
                                 $resultgettotgradstuc = mysqli_query($link, $sqlgettotgradstuc);
                                 $rowgettotgradstuc = mysqli_fetch_assoc($resultgettotgradstuc);
                                 $row_cntgettotgradstuc = mysqli_num_rows($resultgettotgradstuc);
@@ -6811,7 +5606,7 @@ $studsection = $rowGetsections['section'];
                 <div align="center" class="summDD">
                     <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?> </span></p>
                     <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?> </span></p>
-                    <p>Class Average 4: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
+                    <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?> </span></p>
                     <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                 </div>
 
@@ -8038,28 +6833,11 @@ $studsection = $rowGetsections['section'];
                     </div>
                 </div>
                 <?php
-
-
-
                             $sqlstudent_session = ("SELECT * FROM `student_session` WHERE `session_id`='$sessionnew' AND student_id = '$id'");
 
                             $resultstudent_session = mysqli_query($link, $sqlstudent_session);
                             $getstudent_session = mysqli_fetch_assoc($resultstudent_session);
                             $sqlrow_cntstudent_session = mysqli_num_rows($resultstudent_session);
-                            /*
-                                                if($sqlrow_cntstudent_session > 0)
-                                                {
-                                                    echo '<center>
-                                                        <p class="promoted">PROMOTED TO THE NEXT CLASS</p>
-                                                    </center>';
-                                                }
-                                                else
-                                                {
-                                                    echo '<center>
-                                                        <p class="promoted">NOT PROMOTED TO THE NEXT CLASS</p>
-                                                    </center>';
-                                                }
-                                                */
 
                 ?>
 
@@ -8154,7 +6932,7 @@ $studsection = $rowGetsections['section'];
                             }
 
                             if ($row_cntgettotalgrade > 0) {
-                                $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
+                                $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE gradingstructure.Type = 'term' AND $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
                                 $resultgettotgradstuc = mysqli_query($link, $sqlgettotgradstuc);
                                 $rowgettotgradstuc = mysqli_fetch_assoc($resultgettotgradstuc);
                                 $row_cntgettotgradstuc = mysqli_num_rows($resultgettotgradstuc);
@@ -8435,7 +7213,7 @@ $studsection = $rowGetsections['section'];
                 <div align="center" class="summDD">
                     <p>Total Score: <span style="font-weight:600;"><?php echo $gettotscore; ?></span> </p>
                     <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?></span> </p>
-                    <p>Class Average 5: <span style="font-weight:600;"><?php echo $decStubsubavg; ?></span> </p>
+                    <p>Class Average: <span style="font-weight:600;"><?php echo $decStubsubavg; ?></span> </p>
                     <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                 </div>
 
@@ -9520,20 +8298,6 @@ $studsection = $rowGetsections['section'];
                                 $resultstudent_session = mysqli_query($link, $sqlstudent_session);
                                 $getstudent_session = mysqli_fetch_assoc($resultstudent_session);
                                 $sqlrow_cntstudent_session = mysqli_num_rows($resultstudent_session);
-                                /*
-                                                if($sqlrow_cntstudent_session > 0)
-                                                {
-                                                    echo '<center>
-                                                        <p class="promoted">PROMOTED TO THE NEXT CLASS</p>
-                                                    </center>';
-                                                }
-                                                else
-                                                {
-                                                    echo '<center>
-                                                        <p class="promoted">NOT PROMOTED TO THE NEXT CLASS</p>
-                                                    </center>';
-                                                }
-                                                */
                             } else {
                             }
 
