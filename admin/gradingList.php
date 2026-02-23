@@ -144,8 +144,8 @@
                                                                     <td>' . $rowgradingstructure['Type'] . '</td>
                                                                     <td>' . $row_cntassigngradingtclass . '</td>
                                                                     <td>
-                                    									<a href="#" style="color: blue;" data-toggle="modal" data-target="#exampleModal" data-toggle="tooltip" aria-hidden="true" data-id="' . $rowgradingstructure['GradingTitle'] . '" id="addstudentbtn"><i class="fa fa-tag" title="Assign/View Class"></i></a>&nbsp;&nbsp;&nbsp;
-                                                                        <a href="#" style="color: #000000;" data-id="' . $GradingTitle . '" data-canum="' . $row_cntgradingcnt . '" id="editbtn"><i class="fa fa-pencil" aria-hidden="true"></i></a>&nbsp;&nbsp;&nbsp;
+                                    									<a href="#" style="color: blue;" data-toggle="modal" data-target="#exampleModal" data-toggle="tooltip" aria-hidden="true" data-id="' . $rowgradingstructure['GradingTitle'] . '" data-type="' . $rowgradingstructure['Type'] . '" id="addstudentbtn"><i class="fa fa-tag" title="Assign/View Class"></i></a>&nbsp;&nbsp;&nbsp;
+                                                                        <a href="#" style="color: #000000;" data-id="' . $GradingTitle . '" data-canum="' . $row_cntgradingcnt . '" data-type="' . $rowgradingstructure['Type'] . '" id="editbtn"><i class="fa fa-pencil" aria-hidden="true"></i></a>&nbsp;&nbsp;&nbsp;
                                                                         <a href="#" style="color: #ff0000;" title="Delete" data-toggle="modal" data-target="#deleteModal" data-toggle="tooltip" aria-hidden="true" data-id="' . $rowgradingstructure['GradingTitle'] . '" id="deletebtn"><i class="fa fa-trash" aria-hidden="true"></i></a>
                                                                     </td>
                                                                 </tr>';
