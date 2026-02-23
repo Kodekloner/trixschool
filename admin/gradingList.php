@@ -103,7 +103,6 @@
                         </div>
 
                         <div class="col-sm-8">
-
                             <div class="table-responsive data_table">
                                 <h3 style="margin-bottom: 50px;">Grade List</h3>
 
@@ -119,46 +118,40 @@
                                         </thead>
                                         <tbody>
                                             <?php
-
                                             $sqlgradingstructure = "SELECT DISTINCT GradingTitle FROM `gradingstructure`";
                                             $resultgradingstructure = mysqli_query($link, $sqlgradingstructure);
-                                            $rowgradingstructure = mysqli_fetch_assoc($resultgradingstructure);
-                                            $row_cntgradingstructure = mysqli_num_rows($resultgradingstructure);
-
-                                            if ($row_cntgradingstructure > 0) {
-                                                do {
+                                            if (mysqli_num_rows($resultgradingstructure) > 0) {
+                                                while ($rowgradingstructure = mysqli_fetch_assoc($resultgradingstructure)) {
                                                     $GradingTitle = $rowgradingstructure['GradingTitle'];
 
+                                                    // Get count of grades and the first row to extract Type
                                                     $sqlgradingcnt = "SELECT * FROM `gradingstructure` WHERE GradingTitle = '$GradingTitle'";
                                                     $resultgradingcnt = mysqli_query($link, $sqlgradingcnt);
-                                                    $rowgradingcnt = mysqli_fetch_assoc($resultgradingcnt);
                                                     $row_cntgradingcnt = mysqli_num_rows($resultgradingcnt);
+                                                    $firstRow = mysqli_fetch_assoc($resultgradingcnt); // first row (any row works for Type)
+                                                    $type = $firstRow['Type'] ?? 'term'; // fallback to 'term'
 
+                                                    // Get count of classes assigned
                                                     $sqlassigngradingtclass = "SELECT * FROM `assigngradingtclass` WHERE GradingTitle = '$GradingTitle'";
                                                     $resultassigngradingtclass = mysqli_query($link, $sqlassigngradingtclass);
-                                                    $rowassigngradingtclass = mysqli_fetch_assoc($resultassigngradingtclass);
                                                     $row_cntassigngradingtclass = mysqli_num_rows($resultassigngradingtclass);
 
                                                     echo '<tr>
-                                                                    <th rowspan="' . $row_cntcnt . '" style="vertical-align: middle; font-weight: 400;">' . $rowgradingstructure['GradingTitle'] . '</th>
-                                                                    <td>' . $rowgradingstructure['Type'] . '</td>
-                                                                    <td>' . $row_cntassigngradingtclass . '</td>
-                                                                    <td>
-                                    									<a href="#" style="color: blue;" data-toggle="modal" data-target="#exampleModal" data-toggle="tooltip" aria-hidden="true" data-id="' . $rowgradingstructure['GradingTitle'] . '" data-type="' . $rowgradingstructure['Type'] . '" id="addstudentbtn"><i class="fa fa-tag" title="Assign/View Class"></i></a>&nbsp;&nbsp;&nbsp;
-                                                                        <a href="#" style="color: #000000;" data-id="' . $GradingTitle . '" data-canum="' . $row_cntgradingcnt . '" data-type="' . $rowgradingstructure['Type'] . '" id="editbtn"><i class="fa fa-pencil" aria-hidden="true"></i></a>&nbsp;&nbsp;&nbsp;
-                                                                        <a href="#" style="color: #ff0000;" title="Delete" data-toggle="modal" data-target="#deleteModal" data-toggle="tooltip" aria-hidden="true" data-id="' . $rowgradingstructure['GradingTitle'] . '" id="deletebtn"><i class="fa fa-trash" aria-hidden="true"></i></a>
-                                                                    </td>
-                                                                </tr>';
-                                                } while ($rowgradingstructure = mysqli_fetch_assoc($resultgradingstructure));
-                                            } else {
-                                                echo '<tr>
-                                                            <td colspan="12">No Records Found</td>
+                                                            <td>' . htmlspecialchars($GradingTitle) . '</td>
+                                                            <td>' . htmlspecialchars($type) . '</td>
+                                                            <td>' . $row_cntassigngradingtclass . '</td>
+                                                            <td>
+                                                                <a href="#" style="color: blue;" data-toggle="modal" data-target="#exampleModal" data-toggle="tooltip" aria-hidden="true" data-id="' . htmlspecialchars($GradingTitle) . '" data-type="' . htmlspecialchars($type) . '" id="addstudentbtn"><i class="fa fa-tag" title="Assign/View Class"></i></a>&nbsp;&nbsp;&nbsp;
+                                                                <a href="#" style="color: #000000;" data-id="' . htmlspecialchars($GradingTitle) . '" data-canum="' . $row_cntgradingcnt . '" data-type="' . htmlspecialchars($type) . '" id="editbtn"><i class="fa fa-pencil" aria-hidden="true"></i></a>&nbsp;&nbsp;&nbsp;
+                                                                <a href="#" style="color: #ff0000;" title="Delete" data-toggle="modal" data-target="#deleteModal" data-toggle="tooltip" aria-hidden="true" data-id="' . htmlspecialchars($GradingTitle) . '" id="deletebtn"><i class="fa fa-trash" aria-hidden="true"></i></a>
+                                                            </td>
                                                         </tr>';
+                                                }
+                                            } else {
+                                                echo '<tr><td colspan="4" class="text-center">No Records Found</td></tr>';
                                             }
                                             ?>
-
                                         </tbody>
-
                                     </table>
                                 </div>
                             </div>
