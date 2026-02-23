@@ -410,14 +410,6 @@ $studsection = $rowGetsections['section'];
 
                                 $gettotgrade = round($getMidTermAVG / $row_cntgetsubscore, 2);
 
-                                echo 'gettotgrade: ' . $gettotgrade;
-
-                                echo 'row_cntgetsubscore: ' . $row_cntgetsubscore;
-
-                                echo 'getMidTermAVG: ' . $getMidTermAVG;
-
-                                echo 'classid: ' . $classid;
-
 
                                 $gettotgradeold = round(($getMidTermAVG / $getMidTermHighestScore) * 100, 2);
 
@@ -723,12 +715,6 @@ $studsection = $rowGetsections['section'];
                                                 $getMidTermHighestScoresubscore = $CA1MidTermHighestScoresubscore + $CA2MidTermHighestScoresubscore + $CA3MidTermHighestScoresubscore + $CA4MidTermHighestScoresubscore + $CA5MidTermHighestScoresubscore + $CA6MidTermHighestScoresubscore + $CA7MidTermHighestScoresubscore + $CA8MidTermHighestScoresubscore + $CA9MidTermHighestScoresubscore + $CA10MidTermHighestScoresubscore;
 
                                                 $gettotgradetots = round(($total / $getMidTermHighestScoresubscore) * 100, 2);
-
-                                                echo 'gettotgradetots: ' . $gettotgradetots;
-
-                                                echo 'total: ' . $total;
-
-                                                echo 'getMidTermHighestScoresubscore: ' . $getMidTermHighestScoresubscore;
 
                                                 $sqlgetgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE gradingstructure.Type = 'midterm' AND $total >= RangeStart AND $total <= RangeEnd AND ClassID = '$classid'");
                                                 $resultgetgradstuc = mysqli_query($link, $sqlgetgradstuc);
