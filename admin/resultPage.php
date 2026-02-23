@@ -730,7 +730,7 @@ $studsection = $rowGetsections['section'];
 
                                                 echo 'getMidTermHighestScoresubscore: ' . $getMidTermHighestScoresubscore;
 
-                                                $sqlgetgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE gradingstructure.Type = 'midterm' AND $gettotgradetots >= RangeStart AND $gettotgradetots <= RangeEnd AND ClassID = '$classid'");
+                                                $sqlgetgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE gradingstructure.Type = 'midterm' AND $total >= RangeStart AND $total <= RangeEnd AND ClassID = '$classid'");
                                                 $resultgetgradstuc = mysqli_query($link, $sqlgetgradstuc);
                                                 $rowgetgradstuc = mysqli_fetch_assoc($resultgetgradstuc);
                                                 $row_cntgetgradstuc = mysqli_num_rows($resultgetgradstuc);
