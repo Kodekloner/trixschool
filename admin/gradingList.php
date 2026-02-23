@@ -363,6 +363,8 @@
 
             $('#gradeNumber').val(gradeNumber);
 
+            console.log(type);
+
             if (type == 'midterm') {
                 $('#isMidterm').prop('checked', true);
             } else {
