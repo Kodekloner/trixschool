@@ -270,7 +270,7 @@ include('../database/config.php');
 					</div><br>
 
 					<div align="center">
-						<h5 style="font-size: 17px; font-weight: 500;margin-top:-40px">PROGRESS REPORT FOR <?php echo $term; ?> TERM, <?php echo $session_name; ?> SESSION</h5>
+						<h5 style="font-size: 17px; font-weight: 500;margin-top:-40px">MIDTERM PROGRESS REPORT FOR <?php echo $term; ?> TERM, <?php echo $session_name; ?> SESSION</h5>
 					</div>
 
 					<!-- Student info -->
