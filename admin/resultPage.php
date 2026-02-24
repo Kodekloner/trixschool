@@ -975,17 +975,17 @@ $studsection = $rowGetsections['section'];
                             }
                         }
 
-                        $sqlresumdate = ("SELECT * FROM `resumptiondate` WHERE `Session`='$sessionnew' AND `Term`='$term' AND `Type`='$reltypemain'");
+                        // $sqlresumdate = ("SELECT * FROM `resumptiondate` WHERE `Session`='$sessionnew' AND `Term`='$term' AND `Type`='$reltypemain'");
 
-                        $resultresumdate = mysqli_query($link, $sqlresumdate);
-                        $getresumdate = mysqli_fetch_assoc($resultresumdate);
-                        $sqlrow_cntresumdate = mysqli_num_rows($resultresumdate);
+                        // $resultresumdate = mysqli_query($link, $sqlresumdate);
+                        // $getresumdate = mysqli_fetch_assoc($resultresumdate);
+                        // $sqlrow_cntresumdate = mysqli_num_rows($resultresumdate);
 
-                        if ($sqlrow_cntresumdate > 0) {
-                            $resumdate = date("l jS \of F Y", strtotime($getresumdate['Date']));
-                        } else {
-                            $resumdate = 'N/A';
-                        }
+                        // if ($sqlrow_cntresumdate > 0) {
+                        //     $resumdate = date("l jS \of F Y", strtotime($getresumdate['Date']));
+                        // } else {
+                        //     $resumdate = 'N/A';
+                        // }
                         ?>
                         <div class="col-12">
 
@@ -1005,19 +1005,21 @@ $studsection = $rowGetsections['section'];
                                         </div>
                                     </div>
 
-                                    <div class="row">
-                                        <div class="col-sm-10 col-md-10">
-                                            <div>
-                                                <p style="text-align: justify;"><b style="font-weight:600;">PRINCIPAL/HEAD TEACHER'S COMMENT:</b>&nbsp;&nbsp;&nbsp;<?php echo $principalRemark; ?></p>
+                                    <?php if ($principalRemark != 'N/A') { ?>
+                                        <div class="row">
+                                            <div class="col-sm-10 col-md-10">
+                                                <div>
+                                                    <p style="text-align: justify;"><b style="font-weight:600;">PRINCIPAL/HEAD TEACHER'S COMMENT:</b>&nbsp;&nbsp;&nbsp;<?php echo $principalRemark; ?></p>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-sm-2 col-md-2 signature-container">
+                                                <!-- <div> -->
+                                                <?php echo $hedteachsignhead; ?>
+                                                <!-- </div> -->
                                             </div>
                                         </div>
-
-                                        <div class="col-sm-2 col-md-2 signature-container">
-                                            <!-- <div> -->
-                                            <?php echo $hedteachsignhead; ?>
-                                            <!-- </div> -->
-                                        </div>
-                                    </div>
+                                    <?php } ?>
                                 </div>
                             </div>
 
