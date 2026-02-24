@@ -452,7 +452,7 @@ $studsection = $rowGetsections['section'];
                             <div class="row" style="margin: 10px;">
 
                                 <div class="col-4">
-                                    <h5 style="color: #000000;"> TOTAL SCORE: <b><?php echo $gettotgrade; ?></b></h5>
+                                    <h5 style="color: #000000;"> TOTAL SCORE: <b><?php echo $getMidTermAVG; ?></b></h5>
                                 </div>
 
                                 <div class="col-4">
@@ -590,8 +590,7 @@ $studsection = $rowGetsections['section'];
                                                         $ca1 = $rowgetscore['ca1'];
                                                         $ca1_max = $rowGetrelset['CA1Score'];
                                                         $ca1_pct = ($ca1_max > 0) ? round(($ca1 / $ca1_max) * 100, 2) . '%' : '0%';
-                                                        $ca1table = '<td>' . $ca1_pct . '</td>';
-                                                        // $ca1table = '<td>' . $rowgetscore['ca1'] . '</td>';
+                                                        $ca1table = '<td>' . $ca1 . '/' . $ca1_max . ' (' . $ca1_pct . ')</td>';
                                                         $CA1MidTermHighestScoresubscore = $rowGetrelset['CA1Score'];
                                                     } else {
                                                         $ca1 = '0';
@@ -603,104 +602,103 @@ $studsection = $rowGetsections['section'];
                                                         $ca2 = $rowgetscore['ca2'];
                                                         $ca2_max = $rowGetrelset['CA2Score'];
                                                         $ca2_pct = ($ca2_max > 0) ? round(($ca2 / $ca2_max) * 100, 2) . '%' : '0%';
-                                                        $ca2table = '<td>' . $ca2_pct . '</td>';
-                                                        // $ca2table = '<td>' . $rowgetscore['ca2'] . '</td>';
+                                                        $ca2table = '<td>' . $ca2 . '/' . $ca2_max . ' (' . $ca2_pct . ')</td>';
                                                         $CA2MidTermHighestScoresubscore = $rowGetrelset['CA2Score'];
                                                     } else {
                                                         $ca2 = '0';
                                                         $ca2table = '';
                                                         $CA2MidTermHighestScoresubscore = '0';
                                                     }
+
                                                     if (in_array("3", $MidTermCaToUseArrshowscores)) {
                                                         $ca3 = $rowgetscore['ca3'];
                                                         $ca3_max = $rowGetrelset['CA3Score'];
                                                         $ca3_pct = ($ca3_max > 0) ? round(($ca3 / $ca3_max) * 100, 2) . '%' : '0%';
-                                                        $ca3table = '<td>' . $ca3_pct . '</td>';
-                                                        // $ca3table = '<td>' . $rowgetscore['ca3'] . '</td>';
+                                                        $ca3table = '<td>' . $ca3 . '/' . $ca3_max . ' (' . $ca3_pct . ')</td>';
                                                         $CA3MidTermHighestScoresubscore = $rowGetrelset['CA3Score'];
                                                     } else {
                                                         $ca3 = '0';
                                                         $ca3table = '';
                                                         $CA3MidTermHighestScoresubscore = '0';
                                                     }
+
                                                     if (in_array("4", $MidTermCaToUseArrshowscores)) {
                                                         $ca4 = $rowgetscore['ca4'];
                                                         $ca4_max = $rowGetrelset['CA4Score'];
                                                         $ca4_pct = ($ca4_max > 0) ? round(($ca4 / $ca4_max) * 100, 2) . '%' : '0%';
-                                                        $ca4table = '<td>' . $ca1_pct . '</td>';
-                                                        // $ca4table = '<td>' . $rowgetscore['ca4'] . '</td>';
+                                                        $ca4table = '<td>' . $ca4 . '/' . $ca4_max . ' (' . $ca4_pct . ')</td>';
                                                         $CA4MidTermHighestScoresubscore = $rowGetrelset['CA4Score'];
                                                     } else {
                                                         $ca4 = '0';
                                                         $ca4table = '';
                                                         $CA4MidTermHighestScoresubscore = '0';
                                                     }
+
                                                     if (in_array("5", $MidTermCaToUseArrshowscores)) {
                                                         $ca5 = $rowgetscore['ca5'];
                                                         $ca5_max = $rowGetrelset['CA5Score'];
                                                         $ca5_pct = ($ca5_max > 0) ? round(($ca5 / $ca5_max) * 100, 2) . '%' : '0%';
-                                                        $ca5table = '<td>' . $ca5_pct . '</td>';
-                                                        // $ca5table = '<td>' . $rowgetscore['ca5'] . '</td>';
+                                                        $ca5table = '<td>' . $ca5 . '/' . $ca5_max . ' (' . $ca5_pct . ')</td>';
                                                         $CA5MidTermHighestScoresubscore = $rowGetrelset['CA5Score'];
                                                     } else {
                                                         $ca5 = '0';
                                                         $ca5table = '';
                                                         $CA5MidTermHighestScoresubscore = '0';
                                                     }
+
                                                     if (in_array("6", $MidTermCaToUseArrshowscores)) {
                                                         $ca6 = $rowgetscore['ca6'];
                                                         $ca6_max = $rowGetrelset['CA6Score'];
                                                         $ca6_pct = ($ca6_max > 0) ? round(($ca6 / $ca6_max) * 100, 2) . '%' : '0%';
-                                                        $ca6table = '<td>' . $ca6_pct . '</td>';
-                                                        // $ca6table = '<td>' . $rowgetscore['ca6'] . '</td>';
+                                                        $ca6table = '<td>' . $ca6 . '/' . $ca6_max . ' (' . $ca6_pct . ')</td>';
                                                         $CA6MidTermHighestScoresubscore = $rowGetrelset['CA6Score'];
                                                     } else {
                                                         $ca6 = '0';
                                                         $ca6table = '';
                                                         $CA6MidTermHighestScoresubscore = '0';
                                                     }
+
                                                     if (in_array("7", $MidTermCaToUseArrshowscores)) {
                                                         $ca7 = $rowgetscore['ca7'];
                                                         $ca7_max = $rowGetrelset['CA7Score'];
                                                         $ca7_pct = ($ca7_max > 0) ? round(($ca7 / $ca7_max) * 100, 2) . '%' : '0%';
-                                                        $ca7table = '<td>' . $ca7_pct . '</td>';
-                                                        // $ca7table = '<td>' . $rowgetscore['ca7'] . '</td>';
+                                                        $ca7table = '<td>' . $ca7 . '/' . $ca7_max . ' (' . $ca7_pct . ')</td>';
                                                         $CA7MidTermHighestScoresubscore = $rowGetrelset['CA7Score'];
                                                     } else {
                                                         $ca7 = '0';
                                                         $ca7table = '';
                                                         $CA7MidTermHighestScoresubscore = '0';
                                                     }
+
                                                     if (in_array("8", $MidTermCaToUseArrshowscores)) {
                                                         $ca8 = $rowgetscore['ca8'];
                                                         $ca8_max = $rowGetrelset['CA8Score'];
                                                         $ca8_pct = ($ca8_max > 0) ? round(($ca8 / $ca8_max) * 100, 2) . '%' : '0%';
-                                                        $ca8table = '<td>' . $ca8_pct . '</td>';
-                                                        // $ca8table = '<td>' . $rowgetscore['ca8'] . '</td>';
+                                                        $ca8table = '<td>' . $ca8 . '/' . $ca8_max . ' (' . $ca8_pct . ')</td>';
                                                         $CA8MidTermHighestScoresubscore = $rowGetrelset['CA8Score'];
                                                     } else {
                                                         $ca8 = '0';
                                                         $ca8table = '';
                                                         $CA8MidTermHighestScoresubscore = '0';
                                                     }
+
                                                     if (in_array("9", $MidTermCaToUseArrshowscores)) {
                                                         $ca9 = $rowgetscore['ca9'];
                                                         $ca9_max = $rowGetrelset['CA9Score'];
                                                         $ca9_pct = ($ca9_max > 0) ? round(($ca9 / $ca9_max) * 100, 2) . '%' : '0%';
-                                                        $ca9table = '<td>' . $ca9_pct . '</td>';
-                                                        // $ca9table = '<td>' . $rowgetscore['ca9'] . '</td>';
+                                                        $ca9table = '<td>' . $ca9 . '/' . $ca9_max . ' (' . $ca9_pct . ')</td>';
                                                         $CA9MidTermHighestScoresubscore = $rowGetrelset['CA9Score'];
                                                     } else {
                                                         $ca9 = '0';
                                                         $ca9table = '';
                                                         $CA9MidTermHighestScoresubscore = '0';
                                                     }
+
                                                     if (in_array("10", $MidTermCaToUseArrshowscores)) {
                                                         $ca10 = $rowgetscore['ca10'];
                                                         $ca10_max = $rowGetrelset['CA10Score'];
                                                         $ca10_pct = ($ca10_max > 0) ? round(($ca10 / $ca10_max) * 100, 2) . '%' : '0%';
-                                                        $ca10table = '<td>' . $ca10_pct . '</td>';
-                                                        // $ca10table = '<td>' . $rowgetscore['ca10'] . '</td>';
+                                                        $ca10table = '<td>' . $ca10 . '/' . $ca10_max . ' (' . $ca10_pct . ')</td>';
                                                         $CA10MidTermHighestScoresubscore = $rowGetrelset['CA10Score'];
                                                     } else {
                                                         $ca10 = '0';
@@ -841,7 +839,7 @@ $studsection = $rowGetsections['section'];
                             $resHolidayScores = mysqli_query($link, $sqlHolidayScores);
                             if (mysqli_num_rows($resHolidayScores) > 0) {
                                 // Output the table
-                                echo '<div style="margin-top: 30px;">';
+                                echo '<div style="margin-top: 30px;" align="center">';
                                 echo '<h5 style="font-size: 16px; font-weight: 800; color: #000000; margin-bottom: 10px;">HOLIDAY ASSESSMENT</h5>';
                                 echo '<table class="table-bordered tab table-sm tb-result-border" style="width: 60%; margin: 0 auto;">';
                                 echo '<thead><tr><th>S/N</th><th>Subject</th><th>Score</th><th>Max Score</th></tr></thead><tbody>';
@@ -1004,23 +1002,6 @@ $studsection = $rowGetsections['section'];
                                             <!-- </div> -->
                                         </div>
                                     </div>
-
-                                    <div class="row">
-                                        <div class="col-sm-12 col-md-12">
-                                            <div>
-                                                <p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate; ?></b></p>
-                                                <?php
-                                                if ($next_fee > 0) {
-                                                    echo '<p style="text-align: center;"><b style="font-weight:600;">NEXT TERM FEE: N' . $next_fee . '</b></p>';
-                                                }
-                                                ?>
-
-                                            </div>
-                                        </div>
-
-                                    </div>
-
-
                                 </div>
                             </div>
 
