@@ -86,6 +86,20 @@ include('../database/config.php');
 				width: auto !important;
 			}
 
+			/* Reset negative margins in the header */
+			.rel .schloc {
+				margin-top: 0 !important;
+			}
+
+			.rel .col-6 div[style*="margin-top"] {
+				margin-top: 0 !important;
+			}
+
+			/* Give the report title enough space */
+			.report-title {
+				margin-top: 10px !important;
+			}
+
 		}
 
 		.tab {
@@ -148,7 +162,7 @@ include('../database/config.php');
 	$student = mysqli_fetch_assoc($res_student);
 	$student_name = $student['lastname'] . ' ' . $student['middlename'] . ' ' . $student['firstname'];
 	$student_gender = $student['gender'];
-	$student_image = $student['image'];
+	$studimage = $student['image'];
 
 	// Get class & section names
 	$sql_class = "SELECT class FROM classes WHERE id = '$classid'";
@@ -270,7 +284,7 @@ include('../database/config.php');
 					</div><br>
 
 					<div align="center">
-						<h5 style="font-size: 17px; font-weight: 500;margin-top:-40px">MIDTERM PROGRESS REPORT FOR <?php echo $term; ?> TERM, <?php echo $session_name; ?> SESSION</h5>
+						<h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px">MIDTERM PROGRESS REPORT FOR <?php echo $term; ?> TERM, <?php echo $session_name; ?> SESSION</h5>
 					</div>
 
 					<!-- Student info -->

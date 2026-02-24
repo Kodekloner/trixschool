@@ -88,6 +88,20 @@ include('../database/config.php');
             width: auto !important;
         }
 
+        /* Reset negative margins in the header */
+        .rel .schloc {
+            margin-top: 0 !important;
+        }
+
+        .rel .col-6 div[style*="margin-top"] {
+            margin-top: 0 !important;
+        }
+
+        /* Give the report title enough space */
+        .report-title {
+            margin-top: 10px !important;
+        }
+
     }
 
     .tab {
@@ -292,11 +306,11 @@ $studsection = $rowGetsections['section'];
 
                     <?php if ($reltypemain == 'midterm') { ?>
                         <div align="center">
-                            <h5 style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo $term; ?> TERM, MID TERM</span> <?php echo $session_name; ?> SESSION <span><?php $studsectionid; ?></span></h5>
+                            <h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo $term; ?> TERM, MID TERM</span> <?php echo $session_name; ?> SESSION <span><?php $studsectionid; ?></span></h5>
                         </div>
                     <?php } else { ?>
                         <div align="center">
-                            <h5 style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo $term; ?> TERM</span> <?php echo $session_name; ?> SESSION <span><?php $studsectionid; ?></span></h5>
+                            <h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo $term; ?> TERM</span> <?php echo $session_name; ?> SESSION <span><?php $studsectionid; ?></span></h5>
                         </div>
                     <?php } ?>
 
@@ -413,6 +427,8 @@ $studsection = $rowGetsections['section'];
 
                                 $gettotgradeold = round(($getMidTermAVG / $getMidTermHighestScore) * 100, 2);
 
+                                $totalScore = round($getMidTermAVG, 2);
+
                                 // if ($gettotgradeold == '0' || $gettotgradeold == '' || $gettotgradeold == NULL) {
                                 //     $gettotgrade = 0;
                                 // } else {
@@ -452,7 +468,7 @@ $studsection = $rowGetsections['section'];
                             <div class="row" style="margin: 10px;">
 
                                 <div class="col-4">
-                                    <h5 style="color: #000000;"> TOTAL SCORE: <b><?php echo $getMidTermAVG; ?></b></h5>
+                                    <h5 style="color: #000000;"> TOTAL SCORE: <b><?php echo $totalScore; ?></b></h5>
                                 </div>
 
                                 <div class="col-4">
@@ -804,8 +820,8 @@ $studsection = $rowGetsections['section'];
                         ?>
 
                         <div align="center" class="summDD">
-                            <p>Total Score: <span style="font-weight:600;"><?php echo $getMidTermAVG; ?> </span></p>
-                            <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?>% </span></p>
+                            <p>Total Score: <span style="font-weight:600;"><?php echo $totalScore; ?> </span></p>
+                            <p>Average Score: <span style="font-weight:600;"><?php echo $gettotgrade; ?></span></p>
                             <!-- <p>Class Average: <span style="font-weight:600;"><?php //echo $decStubsubavg; 
                                                                                     ?> </span></p> -->
                             <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
