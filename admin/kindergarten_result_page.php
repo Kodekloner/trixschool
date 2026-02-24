@@ -337,7 +337,7 @@ include('../database/config.php');
 					</div>
 
 					<!-- Teacher's remark -->
-					<div class="row">
+					<div class="row mt-4">
 						<div class="col-sm-10 col-md-10">
 							<p style="text-align: justify;"><b>CLASS TEACHER'S REMARK:</b> <?php echo $teacher_remark; ?></p>
 						</div>
@@ -345,18 +345,6 @@ include('../database/config.php');
 							<?php echo $teacher_sign; ?>
 						</div>
 					</div>
-
-					<!-- Principal's remark -->
-					<!-- <div class="row">
-						<div class="col-sm-10 col-md-10">
-							<p style="text-align: justify;"><b>PRINCIPAL'S REMARK:</b> <?php //echo $principal_remark; 
-																						?></p>
-						</div>
-						<div class="col-sm-2 col-md-2 signature-container">
-							<?php //echo $principal_sign; 
-							?>
-						</div>
-					</div> -->
 
 					<!-- Next term begins (optional) -->
 					<?php
