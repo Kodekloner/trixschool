@@ -292,7 +292,7 @@ $studsection = $rowGetsections['section'];
 
                     <?php if ($reltypemain == 'midterm') { ?>
                         <div align="center">
-                            <h5 style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span>MID TERM</span> <?php echo $session_name; ?> SESSION <span><?php $studsectionid; ?></span></h5>
+                            <h5 style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo $term; ?> TERM, MID TERM</span> <?php echo $session_name; ?> SESSION <span><?php $studsectionid; ?></span></h5>
                         </div>
                     <?php } else { ?>
                         <div align="center">
