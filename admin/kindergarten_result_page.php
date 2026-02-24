@@ -339,7 +339,7 @@ include('../database/config.php');
 					<!-- Teacher's remark -->
 					<div class="row mt-4">
 						<div class="col-sm-10 col-md-10">
-							<p style="text-align: justify;"><b>CLASS TEACHER'S REMARK:</b> <?php echo $teacher_remark; ?></p>
+							<p class="pl-3" style="text-align: justify;"><b>CLASS TEACHER'S REMARK:</b> <?php echo $teacher_remark; ?></p>
 						</div>
 						<div class="col-sm-2 col-md-2 signature-container">
 							<?php echo $teacher_sign; ?>
