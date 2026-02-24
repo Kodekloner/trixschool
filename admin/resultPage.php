@@ -452,7 +452,7 @@ $studsection = $rowGetsections['section'];
                             <div class="row" style="margin: 10px;">
 
                                 <div class="col-4">
-                                    <h5 style="color: #000000;"> TOTAL SCORE: <b><?php echo $gettotgrade; ?></b></h5>
+                                    <h5 style="color: #000000;"> TOTAL SCORE: <b><?php echo $getMidTermAVG; ?></b></h5>
                                 </div>
 
                                 <div class="col-4">
