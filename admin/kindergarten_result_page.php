@@ -347,14 +347,16 @@ include('../database/config.php');
 					</div>
 
 					<!-- Principal's remark -->
-					<div class="row">
+					<!-- <div class="row">
 						<div class="col-sm-10 col-md-10">
-							<p style="text-align: justify;"><b>PRINCIPAL'S REMARK:</b> <?php echo $principal_remark; ?></p>
+							<p style="text-align: justify;"><b>PRINCIPAL'S REMARK:</b> <?php //echo $principal_remark; 
+																						?></p>
 						</div>
 						<div class="col-sm-2 col-md-2 signature-container">
-							<?php echo $principal_sign; ?>
+							<?php //echo $principal_sign; 
+							?>
 						</div>
-					</div>
+					</div> -->
 
 					<!-- Next term begins (optional) -->
 					<?php
