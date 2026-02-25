@@ -72,8 +72,8 @@ class Site extends Public_Controller
         $this->form_validation->set_rules('password', $this->lang->line('password'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
             $captcha =  $this->captchalib->generate_captcha();
-            $data['captcha_image'] = isset($captcha['image'])?$captcha['image']:"";
-            $data['name']          = $app_name; 
+            $data['captcha_image'] = isset($captcha['image']) ? $captcha['image'] : "";
+            $data['name']          = $app_name;
             $this->load->view('admin/login', $data);
         } else {
             $login_post = array(
@@ -137,7 +137,6 @@ class Site extends Public_Controller
                     } else {
                         redirect('admin/admin/dashboard');
                     }
-
                 } else {
                     $data['name']          = $app_name;
                     $data['error_message'] = $this->lang->line('your_account_is_disabled_please_contact_to_administrator');
@@ -368,7 +367,8 @@ class Site extends Public_Controller
         $this->form_validation->set_rules('username', $this->lang->line('username'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('password', $this->lang->line('password'), 'trim|required|xss_clean');
         if ($this->form_validation->run() == false) {
-            $data['captcha_image'] = $this->captchalib->generate_captcha()['image'];
+            $captcha = $this->captchalib->generate_captcha();
+            $data['captcha_image'] = isset($captcha['image']) ? $captcha['image'] : "";
             $this->load->view('userlogin', $data);
         } else {
             $login_post = array(
@@ -394,7 +394,7 @@ class Site extends Public_Controller
                         } else {
                             $language = array('lang_id' => $result[0]->lang_id, 'language' => $result[0]->language);
                         }
-                      
+
                         if ($result[0]->role == "parent") {
                             $username = $result[0]->guardian_name;
                             if ($result[0]->guardian_relation == "Father") {
@@ -406,11 +406,11 @@ class Site extends Public_Controller
                             }
                         } elseif ($result[0]->role == "student") {
                             $image    = $result[0]->image;
-							$username = $this->customlib->getFullName($result[0]->firstname,$result[0]->middlename,$result[0]->lastname,$this->sch_setting->middlename,$this->sch_setting->lastname);
+                            $username = $this->customlib->getFullName($result[0]->firstname, $result[0]->middlename, $result[0]->lastname, $this->sch_setting->middlename, $this->sch_setting->lastname);
                             $defaultclass = $this->user_model->get_studentdefaultClass($result[0]->user_id);
-                            $this->customlib->setUserLog($result[0]->username, $result[0]->role,$defaultclass['id']);
+                            $this->customlib->setUserLog($result[0]->username, $result[0]->role, $defaultclass['id']);
                         }
-						
+
                         $session_data = array(
                             'id'              => $result[0]->id,
                             'login_username'  => $result[0]->username,
@@ -428,14 +428,14 @@ class Site extends Public_Controller
                             'image'           =>  $image,
                             'gender'          => $result[0]->gender,
                         );
-                        if($session_data['is_rtl'] == "disabled"){
+                        if ($session_data['is_rtl'] == "disabled") {
 
-                        $language_result1 = $this->language_model->get($language['lang_id']);
-                        if ($this->customlib->get_rtl_languages($language_result1['short_code'])) {
-                            $session_data['is_rtl'] = 'enabled';
-                        } else {
-                            $session_data['is_rtl'] = 'disabled';
-                        }
+                            $language_result1 = $this->language_model->get($language['lang_id']);
+                            if ($this->customlib->get_rtl_languages($language_result1['short_code'])) {
+                                $session_data['is_rtl'] = 'enabled';
+                            } else {
+                                $session_data['is_rtl'] = 'disabled';
+                            }
                         }
 
                         $this->session->set_userdata('student', $session_data);
@@ -501,5 +501,4 @@ class Site extends Public_Controller
         $captcha = $this->captchalib->generate_captcha();
         echo $captcha['image'];
     }
-
 }
