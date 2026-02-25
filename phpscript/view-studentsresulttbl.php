@@ -232,19 +232,25 @@ if ($rolefirst == 'student' || $rolefirst == 'parent') {
         $cnt = 1;
         // ---- START MODIFICATION ----
         if ($is_kindergarten) {
-            $sqlGetstudent_session = "SELECT DISTINCT kr.student_id AS StudentID, 
-                                            s.lastname, s.middlename, s.firstname, s.admission_no,
-                                            CONCAT(s.lastname, ' ', COALESCE(s.middlename, ''), ' ', s.firstname) AS full_name
-                                    FROM kindergarten_result kr
-                                    INNER JOIN students s ON kr.student_id = s.id
-                                    INNER JOIN student_session ss ON kr.student_id = ss.student_id 
-                                            AND ss.session_id = kr.session_id 
-                                            AND ss.class_id = '$classid' 
-                                            AND ss.section_id = '$sectionnew'
-                                    WHERE kr.session_id = '$session'
-                                        AND kr.term = '$term'
-                                        AND kr.assessment_id = '$kindergarten_assessment_id'
-                                        AND s.is_active = 'yes'
+            $sqlGetstudent_session = "SELECT 
+                                            s.id AS StudentID,
+                                            s.lastname,
+                                            s.middlename,
+                                            s.firstname,
+                                            s.admission_no,
+                                            CONCAT(s.lastname, ' ', COALESCE(s.middlename, ''), ' ', s.firstname) AS full_name,
+                                            (SELECT COUNT(*) FROM kindergarten_result kr 
+                                            WHERE kr.student_id = s.id 
+                                            AND kr.session_id = '$session' 
+                                            AND kr.term = '$term' 
+                                            AND kr.assessment_id = '$kindergarten_assessment_id') AS has_result
+                                    FROM students s
+                                    INNER JOIN student_session ss 
+                                        ON s.id = ss.student_id 
+                                        AND ss.session_id = '$session' 
+                                        AND ss.class_id = '$classid' 
+                                        AND ss.section_id = '$sectionnew'
+                                    WHERE s.is_active = 'yes'
                                     ORDER BY full_name ASC";
         } elseif ($reltypenew == 'british') {
             $sqlGetstudent_session = "SELECT DISTINCT StudentID,lastname,middlename,firstname,admission_no, CONCAT(students.lastname, ' ', COALESCE(students.middlename, ''), ' ', students.firstname) AS full_name FROM `britishresult` INNER JOIN students ON britishresult.StudentID=students.id AND `Session`='$session' AND ClassID = '$classid' AND SectionID = '$sectionnew' AND Term = '$term' AND students.is_active = 'yes' ORDER BY full_name ASC";
