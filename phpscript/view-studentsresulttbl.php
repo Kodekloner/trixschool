@@ -96,12 +96,15 @@ if ($rolefirst == 'student' || $rolefirst == 'parent') {
             $cnt = 1;
             // ---- START MODIFICATION ----
             if ($is_kindergarten) {
-                // Query from kindergarten_result
                 $sqlGetstudent_session = "SELECT DISTINCT kr.student_id AS StudentID, 
                                                 s.lastname, s.middlename, s.firstname, s.admission_no,
                                                 CONCAT(s.lastname, ' ', COALESCE(s.middlename, ''), ' ', s.firstname) AS full_name
                                         FROM kindergarten_result kr
                                         INNER JOIN students s ON kr.student_id = s.id
+                                        INNER JOIN student_session ss ON kr.student_id = ss.student_id 
+                                                AND ss.session_id = kr.session_id 
+                                                AND ss.class_id = '$classid' 
+                                                AND ss.section_id = '$sectionnew'
                                         WHERE kr.session_id = '$session'
                                             AND kr.term = '$term'
                                             AND kr.assessment_id = '$kindergarten_assessment_id'
@@ -229,12 +232,15 @@ if ($rolefirst == 'student' || $rolefirst == 'parent') {
         $cnt = 1;
         // ---- START MODIFICATION ----
         if ($is_kindergarten) {
-            // Query from kindergarten_result
             $sqlGetstudent_session = "SELECT DISTINCT kr.student_id AS StudentID, 
                                             s.lastname, s.middlename, s.firstname, s.admission_no,
                                             CONCAT(s.lastname, ' ', COALESCE(s.middlename, ''), ' ', s.firstname) AS full_name
                                     FROM kindergarten_result kr
                                     INNER JOIN students s ON kr.student_id = s.id
+                                    INNER JOIN student_session ss ON kr.student_id = ss.student_id 
+                                            AND ss.session_id = kr.session_id 
+                                            AND ss.class_id = '$classid' 
+                                            AND ss.section_id = '$sectionnew'
                                     WHERE kr.session_id = '$session'
                                         AND kr.term = '$term'
                                         AND kr.assessment_id = '$kindergarten_assessment_id'
