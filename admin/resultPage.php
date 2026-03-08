@@ -235,7 +235,6 @@ $countGetassigncatoclass = mysqli_num_rows($queryGetassigncatoclass);
 // $rowGetassigncatoclass['ResultType'];'numeric';
 
 $reltype = $rowGetassigncatoclass['ResultType'];
-echo $reltype;
 $sqlGetsessions = "SELECT * FROM `sessions` WHERE `id`='$session'";
 $queryGetsessions = mysqli_query($link, $sqlGetsessions);
 $rowGetsessions = mysqli_fetch_assoc($queryGetsessions);
@@ -5264,7 +5263,7 @@ $studsection = $rowGetsections['section'];
                             </div>
                         <?php
                         } else {
-                            echo 'No result type has been set for this class termly';
+                            echo 'No result type has been set for this class';
                         }
                     } else {
                         if ($reltype == 'alphabetic') {
