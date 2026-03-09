@@ -190,8 +190,6 @@ if (mysqli_num_rows($session_name) > 0) {
 }
 
 
-
-
 $session = $_GET['session'];
 
 $sessionnew = $session + 1;
@@ -874,7 +872,7 @@ $studsection = $rowGetsections['section'];
                         // ==================== END HOLIDAY ASSESSMENT ====================
 
 
-                        $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `remark`!=''");
+                        $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='midterm' AND `remark`!=''");
                         $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                         $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
 
@@ -2787,7 +2785,7 @@ $studsection = $rowGetsections['section'];
 
                                     <?php
 
-                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `remark` != ''");
+                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `ResultSubType`='termly' AND `remark` != ''");
                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
 
@@ -4744,7 +4742,7 @@ $studsection = $rowGetsections['section'];
 
                                     <?php
 
-                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `remark` != ''");
+                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `ResultSubType`='termly' AND `remark` != ''");
                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
 
@@ -5085,7 +5083,7 @@ $studsection = $rowGetsections['section'];
                                 <div class="row">
 
                                     <?php
-                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `remark` != ''");
+                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `ResultSubType`='termly' AND `remark` != ''");
                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
 
@@ -8285,28 +8283,24 @@ $studsection = $rowGetsections['section'];
             data: {
                 labels: ["Class Avg", "Avg Score", "Highest", "Lowest"],
                 datasets: [{
-                        type: "bar",
-                        backgroundColor: [
-                            'rgba(0, 255, 0)',
-                            'rgba(54, 162, 235)',
-                            'rgba(255, 0, 0)',
-                            'rgba(128, 128, 128)',
-                        ],
-                        borderColor: [
-                            'rgba(0, 255, 0, 1)',
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 0, 0, 1)',
-                            'rgba(128, 128, 128, 1)',
-                        ],
-                        borderWidth: 1,
-                        label: "ACADEMIC PERFORMANCE",
-                        order: 1,
-                        data: [<?php echo $decStubsubavg; ?>, <?php echo $gettotgrade; ?>, <?php echo $sunhihscrun; ?>, <?php echo $sunlowscrun; ?>]
-
-                    },
-
-
-                ]
+                    type: "bar",
+                    backgroundColor: [
+                        'rgba(0, 255, 0)',
+                        'rgba(54, 162, 235)',
+                        'rgba(255, 0, 0)',
+                        'rgba(128, 128, 128)',
+                    ],
+                    borderColor: [
+                        'rgba(0, 255, 0, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 0, 0, 1)',
+                        'rgba(128, 128, 128, 1)',
+                    ],
+                    borderWidth: 1,
+                    label: "ACADEMIC PERFORMANCE",
+                    order: 1,
+                    data: [<?php echo $decStubsubavg; ?>, <?php echo $gettotgrade; ?>, <?php echo $sunhihscrun; ?>, <?php echo $sunlowscrun; ?>]
+                }, ]
             },
             options: {
                 scales: {
