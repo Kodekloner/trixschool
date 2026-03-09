@@ -5,6 +5,7 @@ $classsectionactual = $_POST['classsectionactual'];
 $classid = $_POST['classid'];
 $session = $_POST['session'];
 $term = $_POST['term'];
+$resultSubType = $_POST['resultType'] ?? 'termly';
 $RemarkType = $_POST['RemarkType'];
 
 // --- Get the class section mapping ---
@@ -91,7 +92,8 @@ if ($is_kindergarten) {
                              WHERE StudentID='$id' 
                                AND `Session`='$session' 
                                AND Term = '$term' 
-                               AND `RemarkType` = '$RemarkType'";
+                               AND `RemarkType` = '$RemarkType'
+                               AND `ResultSubType` = '$resultSubType'";
             $queryGetremark = mysqli_query($link, $sqlGetremark);
             $rowGetremark = mysqli_fetch_assoc($queryGetremark);
             $comment = $rowGetremark['remark'] ?? '';
@@ -183,7 +185,8 @@ if ($reltype == 'british') {
                              WHERE StudentID='$id' 
                                AND `Session`='$session' 
                                AND Term = '$term' 
-                               AND `RemarkType` = '$RemarkType'";
+                               AND `RemarkType` = '$RemarkType'
+                               AND `ResultSubType` = '$resultSubType'";
             $queryGetremark = mysqli_query($link, $sqlGetremark);
             $rowGetremark = mysqli_fetch_assoc($queryGetremark);
             $comment = $rowGetremark['remark'] ?? '';
@@ -272,7 +275,8 @@ if ($countGetstudent_session > 0) {
                          WHERE StudentID='$id' 
                            AND `Session`='$session' 
                            AND Term = '$term' 
-                           AND `RemarkType` = '$RemarkType'";
+                           AND `RemarkType` = '$RemarkType'
+                           AND `ResultSubType` = '$resultSubType'";
         $queryGetremark = mysqli_query($link, $sqlGetremark);
         $rowGetremark = mysqli_fetch_assoc($queryGetremark);
         $comment = $rowGetremark['remark'] ?? '';
