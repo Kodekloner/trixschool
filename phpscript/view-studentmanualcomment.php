@@ -217,6 +217,36 @@ if ($reltype == 'british') {
 // --------------------------------------------------------------------
 // This branch handles non‑british, non‑kindergarten results
 
+
+// Get the result setting for this class (used for midterm CA selection)
+$sqlAssign = "SELECT ResultSettingID FROM assigncatoclass WHERE ClassID='$classid'";
+$resultAssign = mysqli_query($link, $sqlAssign);
+$rowAssign = mysqli_fetch_assoc($resultAssign);
+$resultSettingID = $rowAssign['ResultSettingID'] ?? 0;
+
+$setting = [];
+if ($resultSettingID) {
+    $sqlSetting = "SELECT * FROM resultsetting WHERE ResultSettingID='$resultSettingID'";
+    $resultSetting = mysqli_query($link, $sqlSetting);
+    $setting = mysqli_fetch_assoc($resultSetting);
+}
+
+// Prepare midterm specific variables
+$midtermIndices = [];
+$midtermMaxTotal = 0;
+if ($resultSubType == 'midterm' && !empty($setting)) {
+    $midtermIndicesStr = $setting['MidTermCaToUse'] ?? '';
+    if ($midtermIndicesStr) {
+        $midtermIndices = explode(',', trim($midtermIndicesStr));
+        foreach ($midtermIndices as $index) {
+            $colScore = 'CA' . $index . 'Score';
+            if (isset($setting[$colScore])) {
+                $midtermMaxTotal += (float)$setting[$colScore];
+            }
+        }
+    }
+}
+
 // Cleanup stale rows (optional)
 $sqlDeleteStale = "
     DELETE FROM score
@@ -257,10 +287,16 @@ echo '<table class="table table-striped table-bordered" id="editable-datatable" 
             <tr>
                 <th>S/N</th>
                 <th>Admission No.</th>
-                <th>Student Name</th>
-                <th>Average</th>
-                <th>Grade</th>
-                <th>Comment</th>
+                <th>Student Name</th>';
+if ($resultSubType == 'midterm') {
+    echo '<th>Midterm Score (/' . $midtermMaxTotal . ')</th>
+                    <th>Midterm Grade</th>';
+} else {
+    echo '<th>Average</th>
+                    <th>Grade</th>';
+}
+
+echo '<th>Comment</th>
             </tr>
         </thead>
         <tbody>';
@@ -281,52 +317,107 @@ if ($countGetstudent_session > 0) {
         $rowGetremark = mysqli_fetch_assoc($queryGetremark);
         $comment = $rowGetremark['remark'] ?? '';
 
-        // Calculate average from score table (only if scores exist)
-        $sqlgetsubscore = "SELECT COUNT(*) AS subj_count FROM `score` 
-                           WHERE StudentID = '$id' 
-                             AND ClassID = '$classid' 
-                             AND Session = '$session' 
-                             AND Term = '$term' 
-                             AND SectionID = '$classsectionactual' 
+        if ($resultSubType == 'midterm' && !empty($midtermIndices)) {
+            // Build sum of selected CA columns
+            $sumCols = [];
+            foreach ($midtermIndices as $idx) {
+                $sumCols[] = "COALESCE(ca$idx, 0)";
+            }
+            $sumSQL = implode(' + ', $sumCols);
+
+            // Get midterm total and subject count from score table
+            $sqlMidterm = "SELECT COUNT(*) AS subj_count, 
+                                  SUM($sumSQL) AS total_midterm
+                           FROM score
+                           WHERE StudentID = '$id'
+                             AND ClassID = '$classid'
+                             AND Session = '$session'
+                             AND Term = '$term'
+                             AND SectionID = '$classsectionactual'
                              AND SubjectID != 0
-                             AND (Exam != 0 OR CA1 != 0 OR CA2 != 0 OR CA3 != 0 OR CA4 != 0 OR CA5 != 0 OR CA6 != 0 OR CA7 != 0 OR CA8 != 0 OR CA9 != 0 OR CA10 != 0)";
-        $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
-        $rowsubj = mysqli_fetch_assoc($resultgetsubscore);
-        $subject_count = $rowsubj['subj_count'];
+                             AND (" . implode(' != 0 OR ', $sumCols) . " != 0)";
+            $resultMidterm = mysqli_query($link, $sqlMidterm);
+            $rowMid = mysqli_fetch_assoc($resultMidterm);
+            $subjCount = $rowMid['subj_count'] ?? 0;
+            $totalMid = $rowMid['total_midterm'] ?? 0;
 
-        $sqlgettotalgrade = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total 
-                             FROM `score` 
-                             WHERE StudentID = '$id' 
-                               AND ClassID = '$classid' 
-                               AND Session = '$session' 
-                               AND Term = '$term' 
-                               AND SectionID = '$classsectionactual' 
-                               AND SubjectID != 0
-                               AND (Exam != 0 OR CA1 != 0 OR CA2 != 0 OR CA3 != 0 OR CA4 != 0 OR CA5 != 0 OR CA6 != 0 OR CA7 != 0 OR CA8 != 0 OR CA9 != 0 OR CA10 != 0)";
-        $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
-        $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
+            if ($subjCount > 0) {
+                $midScore = round($totalMid / $subjCount, 2);
+            } else {
+                $midScore = 'NA';
+            }
 
-        if ($subject_count > 0 && $rowgettotalgrade['total'] !== null) {
-            $average = round($rowgettotalgrade['total'] / $subject_count, 2);
-            // Fetch grade from grading structure
-            $sqlgettotgradstuc = "SELECT * FROM gradingstructure 
-                                  INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle 
-                                  WHERE $average >= RangeStart AND $average <= RangeEnd 
-                                    AND assigngradingtclass.ClassID = '$classid'";
-            $resultgettotgradstuc = mysqli_query($link, $sqlgettotgradstuc);
-            $rowgettotgradstuc = mysqli_fetch_assoc($resultgettotgradstuc);
-            $grade = $rowgettotgradstuc['Grade'] ?? 'NA';
-        } else {
-            $average = 'NA';
+            // Look up midterm grade
             $grade = 'NA';
-        }
+            if (is_numeric($midScore)) {
+                $sqlGrade = "SELECT gs.Grade
+                             FROM assigngradingtclass agc
+                             INNER JOIN gradingstructure gs ON agc.GradingTitle = gs.GradingTitle
+                             WHERE agc.ClassID = '$classid'
+                               AND gs.Type = 'midterm'
+                               AND $midScore >= gs.RangeStart AND $midScore <= gs.RangeEnd
+                             LIMIT 1";
+                $resultGrade = mysqli_query($link, $sqlGrade);
+                if ($rowGrade = mysqli_fetch_assoc($resultGrade)) {
+                    $grade = $rowGrade['Grade'];
+                }
+            }
 
+            $displayScore = $midScore;
+            $displayGrade = $grade;
+        } else {
+
+            // Calculate average from score table (only if scores exist)
+            $sqlgetsubscore = "SELECT COUNT(*) AS subj_count FROM `score` 
+                            WHERE StudentID = '$id' 
+                                AND ClassID = '$classid' 
+                                AND Session = '$session' 
+                                AND Term = '$term' 
+                                AND SectionID = '$classsectionactual' 
+                                AND SubjectID != 0
+                                AND (Exam != 0 OR CA1 != 0 OR CA2 != 0 OR CA3 != 0 OR CA4 != 0 OR CA5 != 0 OR CA6 != 0 OR CA7 != 0 OR CA8 != 0 OR CA9 != 0 OR CA10 != 0)";
+            $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
+            $rowsubj = mysqli_fetch_assoc($resultgetsubscore);
+            $subject_count = $rowsubj['subj_count'];
+
+            $sqlgettotalgrade = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total 
+                                FROM `score` 
+                                WHERE StudentID = '$id' 
+                                AND ClassID = '$classid' 
+                                AND Session = '$session' 
+                                AND Term = '$term' 
+                                AND SectionID = '$classsectionactual' 
+                                AND SubjectID != 0
+                                AND (Exam != 0 OR CA1 != 0 OR CA2 != 0 OR CA3 != 0 OR CA4 != 0 OR CA5 != 0 OR CA6 != 0 OR CA7 != 0 OR CA8 != 0 OR CA9 != 0 OR CA10 != 0)";
+            $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
+            $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
+
+            if ($subject_count > 0 && $rowgettotalgrade['total'] !== null) {
+                $average = round($rowgettotalgrade['total'] / $subject_count, 2);
+                // Fetch grade from grading structure
+                $sqlgettotgradstuc = "SELECT gs.Grade 
+                                      FROM gradingstructure gs
+                                      INNER JOIN assigngradingtclass agc ON gs.GradingTitle = agc.GradingTitle
+                                      WHERE $average >= gs.RangeStart AND $average <= gs.RangeEnd 
+                                        AND agc.ClassID = '$classid'
+                                        AND gs.Type = 'term'";
+                $resultgettotgradstuc = mysqli_query($link, $sqlgettotgradstuc);
+                $rowgettotgradstuc = mysqli_fetch_assoc($resultgettotgradstuc);
+                $grade = $rowgettotgradstuc['Grade'] ?? 'NA';
+            } else {
+                $average = 'NA';
+                $grade = 'NA';
+            }
+
+            $displayScore = $average;
+            $displayGrade = $grade;
+        }
         echo '<tr>
                 <td>' . $cnt++ . '</td>
                 <td>' . htmlspecialchars($row['admission_no']) . '</td>
                 <td>' . htmlspecialchars($row['lastname'] . ' ' . $row['middlename'] . ' ' . $row['firstname']) . '</td>
-                <td>' . $average . '</td>
-                <td>' . $grade . '</td>
+                <td>' . $displayScore . '</td>
+                <td>' . $displayGrade . '</td>
                 <td>
                     <textarea type="text" rows="4" class="form-control britishfield" 
                               data-id="' . $id . '" 
