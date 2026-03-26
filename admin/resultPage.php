@@ -1,5 +1,6 @@
 <?php
 include('../database/config.php');
+require_once('../helper/defaultcomment_helper.php');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -154,6 +155,8 @@ $classsectionactual = $_GET['classsectionactual'];
 $classid = $_GET['classid'];
 
 $term = $_GET['term'];
+$resultSubTypeRaw = strtolower(trim($_GET['reltype'] ?? 'termly'));
+$resultSubType = ($resultSubTypeRaw === 'midterm' || $resultSubTypeRaw === 'mid-term') ? 'midterm' : 'termly';
 
 if ($term == '1st') {
     $term2 = 'first term';
@@ -198,7 +201,7 @@ $id = $_GET['id'];
 
 // $_GET['reltype'];
 
-$reltypemain = $_GET['reltype'];
+$reltypemain = $resultSubType;
 
 $sqlstudents = "SELECT * FROM `students` WHERE id='$id'";
 $resultstudents = mysqli_query($link, $sqlstudents);
@@ -872,7 +875,7 @@ $studsection = $rowGetsections['section'];
                         // ==================== END HOLIDAY ASSESSMENT ====================
 
 
-                        $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='midterm' AND `remark`!=''");
+                        $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
                         $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                         $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
 
@@ -882,7 +885,7 @@ $studsection = $rowGetsections['section'];
 
                             $teacherid = $fetchfixedremark['StaffID'];
 
-                            $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$hedteachid'");
+                            $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$teacherid'");
                             $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                             $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                             $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
@@ -893,12 +896,11 @@ $studsection = $rowGetsections['section'];
                             } else {
                                 $hedteachsign = '';
                             }
-                        } else {
-
-                            $sqlgetteachremark = ("SELECT * FROM `defaultcomment` INNER JOIN class_teacher ON defaultcomment.PrincipalOrDeanOrHeadTeacherUserID=class_teacher.staff_id WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'teacher' AND class_id = '$classid'");
-                            $resultgetteachremark = mysqli_query($link, $sqlgetteachremark);
-                            $rowgetteachremark = mysqli_fetch_assoc($resultgetteachremark);
-                            $row_cntgetteachremark = mysqli_num_rows($resultgetteachremark);
+                                    } else {
+                                        $defaultClassTeacher = get_result_class_teacher($link, $classid, $classsectionactual, $session);
+                                        $defaultClassTeacherId = !empty($defaultClassTeacher['staff_id']) ? (int) $defaultClassTeacher['staff_id'] : null;
+                                        $rowgetteachremark = find_defaultcomment_match($link, 'Teacher', $classid, $resultSubType, $gettotgrade, $defaultClassTeacherId);
+                                        $row_cntgetteachremark = !empty($rowgetteachremark) ? 1 : 0;
 
                             if ($row_cntgetteachremark > 0) {
                                 $teacherRemark = $rowgetteachremark['DefaultComment'];
@@ -923,16 +925,16 @@ $studsection = $rowGetsections['section'];
                             }
                         }
 
-                        $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `remark`!=''");
+                        $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
                         $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                         $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
 
                         if ($rowcountprinfixedremark > 0) {
                             $principalRemark = $fetchfixedprinremark['remark'];
 
-                            $headteacherid = $fetchfixedprinremark['staff_id'];
+                            $headteacherid = $fetchfixedprinremark['StaffID'];
 
-                            $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
+                            $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                             $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                             $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
@@ -942,12 +944,9 @@ $studsection = $rowGetsections['section'];
                             } else {
                                 $hedteachsignhead = '';
                             }
-                        } else {
-
-                            $sqlgetprincremark = ("SELECT * FROM `defaultcomment` WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'SchoolHead'");
-                            $resultgetprincremark = mysqli_query($link, $sqlgetprincremark);
-                            $rowgetteachremark = mysqli_fetch_assoc($resultgetprincremark);
-                            $row_cntgetprincremark = mysqli_num_rows($resultgetprincremark);
+                                    } else {
+                                        $rowgetteachremark = find_defaultcomment_match($link, 'SchoolHead', $classid, $resultSubType, $gettotgrade);
+                                        $row_cntgetprincremark = !empty($rowgetteachremark) ? 1 : 0;
 
                             if ($row_cntgetprincremark > 0) {
                                 $principalRemark = $rowgetteachremark['DefaultComment'];
@@ -2785,7 +2784,7 @@ $studsection = $rowGetsections['section'];
 
                                     <?php
 
-                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `ResultSubType`='termly' AND `remark` != ''");
+                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `ResultSubType`='$resultSubType' AND `remark` != ''");
                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
 
@@ -2807,11 +2806,10 @@ $studsection = $rowGetsections['section'];
                                             $hedteachsign = '';
                                         }
                                     } else {
-
-                                        $sqlgetteachremark = ("SELECT * FROM `defaultcomment` INNER JOIN class_teacher ON defaultcomment.PrincipalOrDeanOrHeadTeacherUserID=class_teacher.staff_id WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'teacher' AND class_id = '$classid'");
-                                        $resultgetteachremark = mysqli_query($link, $sqlgetteachremark);
-                                        $rowgetteachremark = mysqli_fetch_assoc($resultgetteachremark);
-                                        $row_cntgetteachremark = mysqli_num_rows($resultgetteachremark);
+                                        $defaultClassTeacher = get_result_class_teacher($link, $classid, $classsectionactual, $session);
+                                        $defaultClassTeacherId = !empty($defaultClassTeacher['staff_id']) ? (int) $defaultClassTeacher['staff_id'] : null;
+                                        $rowgetteachremark = find_defaultcomment_match($link, 'Teacher', $classid, $resultSubType, $gettotgrade, $defaultClassTeacherId);
+                                        $row_cntgetteachremark = !empty($rowgetteachremark) ? 1 : 0;
 
                                         if ($row_cntgetteachremark > 0) {
                                             $teacherRemark = $rowgetteachremark['DefaultComment'];
@@ -2837,16 +2835,16 @@ $studsection = $rowGetsections['section'];
                                         }
                                     }
 
-                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `remark`!=''");
+                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
                                     $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                                     $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
 
                                     if ($rowcountprinfixedremark > 0) {
                                         $principalRemark = $fetchfixedprinremark['remark'];
 
-                                        $headteacherid = $fetchfixedprinremark['staff_id'];
+                                        $headteacherid = $fetchfixedprinremark['StaffID'];
 
-                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
+                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                         $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                         $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
@@ -2857,11 +2855,8 @@ $studsection = $rowGetsections['section'];
                                             $hedteachsignhead = '';
                                         }
                                     } else {
-
-                                        $sqlgetprincremark = ("SELECT * FROM `defaultcomment` WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'SchoolHead'");
-                                        $resultgetprincremark = mysqli_query($link, $sqlgetprincremark);
-                                        $rowgetteachremark = mysqli_fetch_assoc($resultgetprincremark);
-                                        $row_cntgetprincremark = mysqli_num_rows($resultgetprincremark);
+                                        $rowgetteachremark = find_defaultcomment_match($link, 'SchoolHead', $classid, $resultSubType, $gettotgrade);
+                                        $row_cntgetprincremark = !empty($rowgetteachremark) ? 1 : 0;
 
                                         if ($row_cntgetprincremark > 0) {
                                             $principalRemark = $rowgetteachremark['DefaultComment'];
@@ -4742,7 +4737,7 @@ $studsection = $rowGetsections['section'];
 
                                     <?php
 
-                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `ResultSubType`='termly' AND `remark` != ''");
+                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `ResultSubType`='$resultSubType' AND `remark` != ''");
                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
 
@@ -4764,11 +4759,10 @@ $studsection = $rowGetsections['section'];
                                             $hedteachsign = '';
                                         }
                                     } else {
-
-                                        $sqlgetteachremark = ("SELECT * FROM `defaultcomment` INNER JOIN class_teacher ON defaultcomment.PrincipalOrDeanOrHeadTeacherUserID=class_teacher.staff_id WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'teacher' AND class_id = '$classid'");
-                                        $resultgetteachremark = mysqli_query($link, $sqlgetteachremark);
-                                        $rowgetteachremark = mysqli_fetch_assoc($resultgetteachremark);
-                                        $row_cntgetteachremark = mysqli_num_rows($resultgetteachremark);
+                                        $defaultClassTeacher = get_result_class_teacher($link, $classid, $classsectionactual, $session);
+                                        $defaultClassTeacherId = !empty($defaultClassTeacher['staff_id']) ? (int) $defaultClassTeacher['staff_id'] : null;
+                                        $rowgetteachremark = find_defaultcomment_match($link, 'Teacher', $classid, $resultSubType, $gettotgrade, $defaultClassTeacherId);
+                                        $row_cntgetteachremark = !empty($rowgetteachremark) ? 1 : 0;
 
                                         if ($row_cntgetteachremark > 0) {
                                             $teacherRemark = $rowgetteachremark['DefaultComment'];
@@ -4794,16 +4788,16 @@ $studsection = $rowGetsections['section'];
                                         }
                                     }
 
-                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `remark`!=''");
+                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
                                     $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                                     $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
 
                                     if ($rowcountprinfixedremark > 0) {
                                         $principalRemark = $fetchfixedprinremark['remark'];
 
-                                        $headteacherid = $fetchfixedprinremark['staff_id'];
+                                        $headteacherid = $fetchfixedprinremark['StaffID'];
 
-                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
+                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                         $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                         $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
@@ -4814,11 +4808,8 @@ $studsection = $rowGetsections['section'];
                                             $hedteachsignhead = '';
                                         }
                                     } else {
-
-                                        $sqlgetprincremark = ("SELECT * FROM `defaultcomment` WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'SchoolHead'");
-                                        $resultgetprincremark = mysqli_query($link, $sqlgetprincremark);
-                                        $rowgetteachremark = mysqli_fetch_assoc($resultgetprincremark);
-                                        $row_cntgetprincremark = mysqli_num_rows($resultgetprincremark);
+                                        $rowgetteachremark = find_defaultcomment_match($link, 'SchoolHead', $classid, $resultSubType, $gettotgrade);
+                                        $row_cntgetprincremark = !empty($rowgetteachremark) ? 1 : 0;
 
                                         if ($row_cntgetprincremark > 0) {
                                             $principalRemark = $rowgetteachremark['DefaultComment'];
@@ -5083,7 +5074,7 @@ $studsection = $rowGetsections['section'];
                                 <div class="row">
 
                                     <?php
-                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `ResultSubType`='termly' AND `remark` != ''");
+                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `ResultSubType`='$resultSubType' AND `remark` != ''");
                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
 
@@ -5105,11 +5096,10 @@ $studsection = $rowGetsections['section'];
                                             $hedteachsign = '';
                                         }
                                     } else {
-
-                                        $sqlgetteachremark = ("SELECT * FROM `defaultcomment` INNER JOIN class_teacher ON defaultcomment.PrincipalOrDeanOrHeadTeacherUserID=class_teacher.staff_id WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'teacher' AND class_id = '$classid'");
-                                        $resultgetteachremark = mysqli_query($link, $sqlgetteachremark);
-                                        $rowgetteachremark = mysqli_fetch_assoc($resultgetteachremark);
-                                        $row_cntgetteachremark = mysqli_num_rows($resultgetteachremark);
+                                        $defaultClassTeacher = get_result_class_teacher($link, $classid, $classsectionactual, $session);
+                                        $defaultClassTeacherId = !empty($defaultClassTeacher['staff_id']) ? (int) $defaultClassTeacher['staff_id'] : null;
+                                        $rowgetteachremark = find_defaultcomment_match($link, 'Teacher', $classid, $resultSubType, $gettotgrade, $defaultClassTeacherId);
+                                        $row_cntgetteachremark = !empty($rowgetteachremark) ? 1 : 0;
 
                                         if ($row_cntgetteachremark > 0) {
                                             $teacherRemark = $rowgetteachremark['DefaultComment'];
@@ -5135,16 +5125,16 @@ $studsection = $rowGetsections['section'];
                                         }
                                     }
 
-                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `remark`!=''");
+                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
                                     $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                                     $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
 
                                     if ($rowcountprinfixedremark > 0) {
                                         $principalRemark = $fetchfixedprinremark['remark'];
 
-                                        $headteacherid = $fetchfixedprinremark['staff_id'];
+                                        $headteacherid = $fetchfixedprinremark['StaffID'];
 
-                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
+                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                         $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                         $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
@@ -5155,11 +5145,8 @@ $studsection = $rowGetsections['section'];
                                             $hedteachsignhead = '';
                                         }
                                     } else {
-
-                                        $sqlgetprincremark = ("SELECT * FROM `defaultcomment` WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'SchoolHead'");
-                                        $resultgetprincremark = mysqli_query($link, $sqlgetprincremark);
-                                        $rowgetteachremark = mysqli_fetch_assoc($resultgetprincremark);
-                                        $row_cntgetprincremark = mysqli_num_rows($resultgetprincremark);
+                                        $rowgetteachremark = find_defaultcomment_match($link, 'SchoolHead', $classid, $resultSubType, $gettotgrade);
+                                        $row_cntgetprincremark = !empty($rowgetteachremark) ? 1 : 0;
 
                                         if ($row_cntgetprincremark > 0) {
                                             $principalRemark = $rowgetteachremark['DefaultComment'];
@@ -6630,7 +6617,7 @@ $studsection = $rowGetsections['section'];
 
                                     <?php
 
-                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='3rd' AND `remark`!=''");
+                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='3rd' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
 
@@ -6652,11 +6639,10 @@ $studsection = $rowGetsections['section'];
                                             $hedteachsign = '';
                                         }
                                     } else {
-
-                                        $sqlgetteachremark = ("SELECT * FROM `defaultcomment` INNER JOIN class_teacher ON defaultcomment.PrincipalOrDeanOrHeadTeacherUserID=class_teacher.staff_id WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'teacher' AND class_id = '$classid'");
-                                        $resultgetteachremark = mysqli_query($link, $sqlgetteachremark);
-                                        $rowgetteachremark = mysqli_fetch_assoc($resultgetteachremark);
-                                        $row_cntgetteachremark = mysqli_num_rows($resultgetteachremark);
+                                        $defaultClassTeacher = get_result_class_teacher($link, $classid, $classsectionactual, $session);
+                                        $defaultClassTeacherId = !empty($defaultClassTeacher['staff_id']) ? (int) $defaultClassTeacher['staff_id'] : null;
+                                        $rowgetteachremark = find_defaultcomment_match($link, 'Teacher', $classid, $resultSubType, $gettotgrade, $defaultClassTeacherId);
+                                        $row_cntgetteachremark = !empty($rowgetteachremark) ? 1 : 0;
 
                                         if ($row_cntgetteachremark > 0) {
                                             $teacherRemark = $rowgetteachremark['DefaultComment'];
@@ -6682,16 +6668,16 @@ $studsection = $rowGetsections['section'];
                                         }
                                     }
 
-                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='3rd' AND `remark`!=''");
+                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='3rd' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
                                     $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                                     $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
 
                                     if ($rowcountprinfixedremark > 0) {
                                         $principalRemark = $fetchfixedprinremark['remark'];
 
-                                        $headteacherid = $fetchfixedprinremark['staff_id'];
+                                        $headteacherid = $fetchfixedprinremark['StaffID'];
 
-                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
+                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                         $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                         $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
@@ -6702,11 +6688,8 @@ $studsection = $rowGetsections['section'];
                                             $hedteachsignhead = '';
                                         }
                                     } else {
-
-                                        $sqlgetprincremark = ("SELECT * FROM `defaultcomment` WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'SchoolHead'");
-                                        $resultgetprincremark = mysqli_query($link, $sqlgetprincremark);
-                                        $rowgetteachremark = mysqli_fetch_assoc($resultgetprincremark);
-                                        $row_cntgetprincremark = mysqli_num_rows($resultgetprincremark);
+                                        $rowgetteachremark = find_defaultcomment_match($link, 'SchoolHead', $classid, $resultSubType, $gettotgrade);
+                                        $row_cntgetprincremark = !empty($rowgetteachremark) ? 1 : 0;
 
                                         if ($row_cntgetprincremark > 0) {
                                             $principalRemark = $rowgetteachremark['DefaultComment'];
@@ -8064,17 +8047,17 @@ $studsection = $rowGetsections['section'];
 
                                     <?php
 
-                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term'");
+                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType'");
                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
 
 
                                     if ($rowcountfixedremark > 0) {
-                                        $teacherRemark = $fetchfixedremark['RemarkComment'];
+                                        $teacherRemark = $fetchfixedremark['remark'];
 
                                         $teacherid = $fetchfixedremark['StaffID'];
 
-                                        $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$hedteachid'");
+                                        $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$teacherid'");
                                         $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                         $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                         $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
@@ -8086,11 +8069,10 @@ $studsection = $rowGetsections['section'];
                                             $hedteachsign = '';
                                         }
                                     } else {
-
-                                        $sqlgetteachremark = ("SELECT * FROM `defaultcomment` INNER JOIN class_teacher ON defaultcomment.PrincipalOrDeanOrHeadTeacherUserID=class_teacher.staff_id WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'teacher' AND class_id = '$classid'");
-                                        $resultgetteachremark = mysqli_query($link, $sqlgetteachremark);
-                                        $rowgetteachremark = mysqli_fetch_assoc($resultgetteachremark);
-                                        $row_cntgetteachremark = mysqli_num_rows($resultgetteachremark);
+                                        $defaultClassTeacher = get_result_class_teacher($link, $classid, $classsectionactual, $session);
+                                        $defaultClassTeacherId = !empty($defaultClassTeacher['staff_id']) ? (int) $defaultClassTeacher['staff_id'] : null;
+                                        $rowgetteachremark = find_defaultcomment_match($link, 'Teacher', $classid, $resultSubType, $gettotgrade, $defaultClassTeacherId);
+                                        $row_cntgetteachremark = !empty($rowgetteachremark) ? 1 : 0;
 
                                         if ($row_cntgetteachremark > 0) {
                                             $teacherRemark = $rowgetteachremark['DefaultComment'];
@@ -8116,16 +8098,16 @@ $studsection = $rowGetsections['section'];
                                         }
                                     }
 
-                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term'");
+                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType'");
                                     $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                                     $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
 
                                     if ($rowcountprinfixedremark > 0) {
-                                        $principalRemark = $fetchfixedprinremark['Remark'];
+                                        $principalRemark = $fetchfixedprinremark['remark'];
 
-                                        $headteacherid = $fetchfixedprinremark['staff_id'];
+                                        $headteacherid = $fetchfixedprinremark['StaffID'];
 
-                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
+                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                         $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                         $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
@@ -8136,11 +8118,8 @@ $studsection = $rowGetsections['section'];
                                             $hedteachsignhead = '';
                                         }
                                     } else {
-
-                                        $sqlgetprincremark = ("SELECT * FROM `defaultcomment` WHERE $gettotgrade BETWEEN RangeStart AND RangeEnd AND CommentType = 'SchoolHead'");
-                                        $resultgetprincremark = mysqli_query($link, $sqlgetprincremark);
-                                        $rowgetteachremark = mysqli_fetch_assoc($resultgetprincremark);
-                                        $row_cntgetprincremark = mysqli_num_rows($resultgetprincremark);
+                                        $rowgetteachremark = find_defaultcomment_match($link, 'SchoolHead', $classid, $resultSubType, $gettotgrade);
+                                        $row_cntgetprincremark = !empty($rowgetteachremark) ? 1 : 0;
 
                                         if ($row_cntgetprincremark > 0) {
                                             $principalRemark = $rowgetteachremark['DefaultComment'];

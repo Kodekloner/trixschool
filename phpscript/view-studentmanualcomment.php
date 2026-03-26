@@ -5,8 +5,11 @@ $classsectionactual = $_POST['classsectionactual'];
 $classid = $_POST['classid'];
 $session = $_POST['session'];
 $term = $_POST['term'];
-$resultSubType = $_POST['resultType'] ?? 'termly';
+$staffid = $_POST['staffid'] ?? 0;
+$resultSubTypeRaw = strtolower(trim($_POST['resultType'] ?? 'termly'));
+$resultSubType = ($resultSubTypeRaw === 'midterm' || $resultSubTypeRaw === 'mid-term') ? 'midterm' : 'termly';
 $RemarkType = $_POST['RemarkType'];
+$remarkStaffFilter = ($RemarkType === 'teacher' && !empty($staffid) && $staffid !== '0') ? " AND `StaffID` = '$staffid'" : '';
 
 // --- Get the class section mapping ---
 $sqlclasseschecker = "SELECT * FROM class_sections WHERE section_id = '$classsectionactual' AND class_id = '$classid'";
@@ -34,6 +37,11 @@ if ($countGetclass_sections == 0) {
 
 $sectionnew = $rowGetclass_sections['section_id'];
 $class_id = $rowGetclass_sections['class_id'];
+$studentSessionSource = "(SELECT DISTINCT student_id
+                          FROM student_session
+                          WHERE session_id = '$session'
+                            AND class_id = '$classid'
+                            AND section_id = '$sectionnew') ss";
 
 // --- Determine result type from assigncatoclass ---
 $sqlGetassigncatoclass = "SELECT * FROM `assigncatoclass` WHERE `ClassID`='$classid'";
@@ -51,7 +59,7 @@ $kindergarten_assessment_id = $is_kindergarten ? mysqli_fetch_assoc($result_kind
 //                            KINDERGARTEN BRANCH
 // --------------------------------------------------------------------
 if ($is_kindergarten) {
-    // Base student list from student_session
+    // Base student list from distinct student_session rows
     $sqlGetstudent_session = "
         SELECT 
             s.id AS StudentID,
@@ -60,12 +68,9 @@ if ($is_kindergarten) {
             s.middlename,
             s.firstname,
             CONCAT(s.lastname, ' ', COALESCE(s.middlename, ''), ' ', s.firstname) AS full_name
-        FROM student_session ss
+        FROM $studentSessionSource
         INNER JOIN students s ON ss.student_id = s.id
-        WHERE ss.session_id = '$session'
-          AND ss.class_id = '$classid'
-          AND ss.section_id = '$sectionnew'
-          AND s.is_active = 'yes'
+        WHERE s.is_active = 'yes'
         ORDER BY full_name ASC
     ";
 
@@ -93,7 +98,7 @@ if ($is_kindergarten) {
                                AND `Session`='$session' 
                                AND Term = '$term' 
                                AND `RemarkType` = '$RemarkType'
-                               AND `ResultSubType` = '$resultSubType'";
+                               AND `ResultSubType` = '$resultSubType'" . $remarkStaffFilter;
             $queryGetremark = mysqli_query($link, $sqlGetremark);
             $rowGetremark = mysqli_fetch_assoc($queryGetremark);
             $comment = $rowGetremark['remark'] ?? '';
@@ -135,7 +140,7 @@ if ($reltype == 'british') {
     ";
     mysqli_query($link, $sqlDeleteStale);   // no echo needed in production
 
-    // Base student list from student_session
+    // Base student list from distinct student_session rows, with aggregated british remarks/comments
     $sqlGetstudent_session = "
         SELECT 
             s.id AS StudentID,
@@ -144,19 +149,17 @@ if ($reltype == 'british') {
             s.middlename,
             s.firstname,
             CONCAT(s.lastname, ' ', COALESCE(s.middlename, ''), ' ', s.firstname) AS full_name,
-            br.Remark,
-            br.AdditionalComments
-        FROM student_session ss
+            GROUP_CONCAT(DISTINCT NULLIF(TRIM(br.Remark), '') ORDER BY br.Remark SEPARATOR '; ') AS RemarkSummary,
+            GROUP_CONCAT(DISTINCT NULLIF(TRIM(br.AdditionalComments), '') ORDER BY br.AdditionalComments SEPARATOR '; ') AS AdditionalCommentsSummary
+        FROM $studentSessionSource
         INNER JOIN students s ON ss.student_id = s.id
         LEFT JOIN britishresult br ON br.StudentID = s.id 
             AND br.Session = '$session' 
             AND br.ClassID = '$classid' 
             AND br.SectionID = '$sectionnew' 
             AND br.Term = '$term'
-        WHERE ss.session_id = '$session'
-          AND ss.class_id = '$classid'
-          AND ss.section_id = '$sectionnew'
-          AND s.is_active = 'yes'
+        WHERE s.is_active = 'yes'
+        GROUP BY s.id, s.admission_no, s.lastname, s.middlename, s.firstname
         ORDER BY full_name ASC
     ";
 
@@ -169,8 +172,8 @@ if ($reltype == 'british') {
                     <th>S/N</th>
                     <th>Admission No.</th>
                     <th>Student Name</th>
-                    <th>Remark</th>
-                    <th>Additional Comments</th>
+                    <th>Subject Remarks</th>
+                    <th>Additional Notes</th>
                     <th>Comment</th>
                 </tr>
             </thead>
@@ -186,7 +189,7 @@ if ($reltype == 'british') {
                                AND `Session`='$session' 
                                AND Term = '$term' 
                                AND `RemarkType` = '$RemarkType'
-                               AND `ResultSubType` = '$resultSubType'";
+                               AND `ResultSubType` = '$resultSubType'" . $remarkStaffFilter;
             $queryGetremark = mysqli_query($link, $sqlGetremark);
             $rowGetremark = mysqli_fetch_assoc($queryGetremark);
             $comment = $rowGetremark['remark'] ?? '';
@@ -195,8 +198,8 @@ if ($reltype == 'british') {
                     <td>' . $cnt++ . '</td>
                     <td>' . htmlspecialchars($row['admission_no']) . '</td>
                     <td>' . htmlspecialchars($row['lastname'] . ' ' . $row['middlename'] . ' ' . $row['firstname']) . '</td>
-                    <td>' . htmlspecialchars($row['Remark'] ?? '') . '</td>
-                    <td>' . htmlspecialchars($row['AdditionalComments'] ?? '') . '</td>
+                    <td style="white-space: normal;">' . htmlspecialchars($row['RemarkSummary'] ?? '') . '</td>
+                    <td style="white-space: normal;">' . htmlspecialchars($row['AdditionalCommentsSummary'] ?? '') . '</td>
                     <td>
                         <textarea type="text" rows="4" class="form-control britishfield" 
                                   data-id="' . $id . '" 
@@ -261,7 +264,7 @@ $sqlDeleteStale = "
 ";
 mysqli_query($link, $sqlDeleteStale);
 
-// Base student list from student_session
+// Base student list from distinct student_session rows
 $sqlGetstudent_session = "
     SELECT 
         s.id AS StudentID,
@@ -270,12 +273,9 @@ $sqlGetstudent_session = "
         s.middlename,
         s.firstname,
         CONCAT(s.lastname, ' ', COALESCE(s.middlename, ''), ' ', s.firstname) AS full_name
-    FROM student_session ss
+    FROM $studentSessionSource
     INNER JOIN students s ON ss.student_id = s.id
-    WHERE ss.session_id = '$session'
-      AND ss.class_id = '$classid'
-      AND ss.section_id = '$sectionnew'
-      AND s.is_active = 'yes'
+    WHERE s.is_active = 'yes'
     ORDER BY full_name ASC
 ";
 
@@ -312,7 +312,7 @@ if ($countGetstudent_session > 0) {
                            AND `Session`='$session' 
                            AND Term = '$term' 
                            AND `RemarkType` = '$RemarkType'
-                           AND `ResultSubType` = '$resultSubType'";
+                           AND `ResultSubType` = '$resultSubType'" . $remarkStaffFilter;
         $queryGetremark = mysqli_query($link, $sqlGetremark);
         $rowGetremark = mysqli_fetch_assoc($queryGetremark);
         $comment = $rowGetremark['remark'] ?? '';

@@ -1,5 +1,6 @@
 <?php
 include ('../database/config.php');
+require_once('../helper/defaultcomment_helper.php');
 ?>
 <!doctype html>
 <html lang="en">
@@ -47,7 +48,7 @@ include ('../database/config.php');
 
 				    <form>
                     <div class="form-row">
-                        <div class="form-group col-sm-3">
+                        <div class="form-group col-sm-4">
                             <select class="form-control" id="schoolhead">
                                 <option value="0">Select Head Teacher</option>
                                 <?php
@@ -60,37 +61,31 @@ include ('../database/config.php');
                                     {
                                         if($rowstaffcheck['name'] == 'Head Teacher')
                                         {
-                                            $sqlstaff = "SELECT staff.id AS staff_id,staff.name AS staff_name,staff.surname AS staff_surname FROM `staff` WHERE staff.id='$id' ORDER BY surname ASC";
-                                            $resultstaff = mysqli_query($link, $sqlstaff);
-                                            $rowstaff = mysqli_fetch_assoc($resultstaff);
-                                            $row_cntstaff = mysqli_num_rows($resultstaff);
-
-                                            if($row_cntstaff > 0)
-                                            {
-                                                do{
-
-                                                    echo '<option value="'.$rowstaff['staff_id'].'">'.$rowstaff['staff_surname'].' '.$rowstaff['staff_name'].'</option>';
-
-                                                }while($rowstaff = mysqli_fetch_assoc($resultstaff));
-                                            }
+                                            $sqlstaff = "SELECT staff.id AS staff_id, staff.name AS staff_name, staff.surname AS staff_surname
+                                                         FROM `staff`
+                                                         WHERE staff.id='$id'
+                                                         ORDER BY surname ASC";
                                         }
                                         else
                                         {
-                                            $sqlstaff = "SELECT staff.id AS staff_id,staff.name AS staff_name,staff.surname AS staff_surname FROM `staff` INNER JOIN staff_roles ON staff.id=staff_roles.staff_id INNER JOIN roles ON staff_roles.role_id=roles.id WHERE roles.name='Head Teacher' ORDER BY surname ASC";
-                                            $resultstaff = mysqli_query($link, $sqlstaff);
-                                            $rowstaff = mysqli_fetch_assoc($resultstaff);
-                                            $row_cntstaff = mysqli_num_rows($resultstaff);
-
-                                            if($row_cntstaff > 0)
-                                            {
-                                                do{
-
-                                                    echo'<option value="'.$rowstaff['staff_id'].'">'.$rowstaff['staff_surname'].' here '.$rowstaff['staff_name'].'</option>';
-
-                                                }while($rowstaff = mysqli_fetch_assoc($resultstaff));
-                                            }
+                                            $sqlstaff = "SELECT staff.id AS staff_id, staff.name AS staff_name, staff.surname AS staff_surname
+                                                         FROM `staff`
+                                                         INNER JOIN staff_roles ON staff.id = staff_roles.staff_id
+                                                         INNER JOIN roles ON staff_roles.role_id = roles.id
+                                                         WHERE roles.name='Head Teacher'
+                                                         ORDER BY surname ASC";
                                         }
 
+                                        $resultstaff = mysqli_query($link, $sqlstaff);
+                                        $rowstaff = mysqli_fetch_assoc($resultstaff);
+                                        $row_cntstaff = mysqli_num_rows($resultstaff);
+
+                                        if($row_cntstaff > 0)
+                                        {
+                                            do{
+                                                echo'<option value="'.$rowstaff['staff_id'].'">'.$rowstaff['staff_surname'].' '.$rowstaff['staff_name'].'</option>';
+                                            }while($rowstaff = mysqli_fetch_assoc($resultstaff));
+                                        }
                                     }
                                     else
                                     {
@@ -100,17 +95,37 @@ include ('../database/config.php');
                                 ?>
                             </select>
 						</div>
-
-                        <div class="form-group col-sm-2">
-
-                        </div>
-                        <div class="form-group col-sm-3">
-
-                        </div>
-
                         <div class="form-group col-sm-4">
+                            <select class="form-control" id="classid">
+                                <option value="0">Select Class</option>
+                                <?php
+                                    $sqlclasses = "SELECT * FROM `classes` ORDER BY class ASC";
+                                    $resultclasses = mysqli_query($link, $sqlclasses);
+                                    $rowclasses = mysqli_fetch_assoc($resultclasses);
+                                    $row_cntclasses = mysqli_num_rows($resultclasses);
 
-						</div>
+                                    if($row_cntclasses > 0)
+                                    {
+                                        do{
+                                            echo '<option value="'.$rowclasses['id'].'">'.$rowclasses['class'].'</option>';
+                                        }while($rowclasses = mysqli_fetch_assoc($resultclasses));
+                                    }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="form-group col-sm-4">
+                            <select class="form-control" id="resultType">
+                                <option value="termly">Termly</option>
+                                <option value="midterm">Mid-Term</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-sm-12">
+                            <div class="alert alert-info" id="defaultcomment-meta" style="margin-bottom: 0;">
+                                Select a head teacher, class and result type to load the allowed score range.
+                            </div>
+                        </div>
                     </div>
                 </form>
 
@@ -123,58 +138,66 @@ include ('../database/config.php');
 
             if(isset($_POST['submitbtn']))
             {
-
-               $commentfrom = $_POST['commentfrom'];
-               $commentfromto = $_POST['commentfromto'];
-
-               $comment = $_POST['comment'];
-
+               $commentfrom = $_POST['commentfrom'] ?? '';
+               $commentfromto = $_POST['commentfromto'] ?? '';
+               $comment = $_POST['comment'] ?? '';
                $CommentType = 'SchoolHead';
+               $principalID = (int) ($_POST['principalID'] ?? 0);
+               $classID = (int) ($_POST['classID'] ?? 0);
+               $resultType = $_POST['resultType'] ?? 'termly';
 
-               $principalID = $_POST['principalID'];
+                $validation = validate_defaultcomment_payload(
+                    $link,
+                    $principalID,
+                    $classID,
+                    $CommentType,
+                    $resultType,
+                    $commentfrom,
+                    $commentfromto,
+                    $comment
+                );
 
-                if($commentfrom == "" || $commentfromto == "" || $commentfrom < "0" || $comment == "" || $comment == "0" || $commentfromto < 0 || $commentfrom > $commentfromto)
+                if(!$validation['success'])
                 {
-                    echo"
-                        <div align='left' class='alert alert-warning'>
-                        <button type='button' class='close' data-dismiss='alert' aria-label='Close'> <span aria-hidden='true'>×</span> </button>Opps! Seem like you left some spaces blank Or the Range from is greater than the Range To. Check and resubmit</div>
-                        <input type='hidden' id='reloadStaffID' value='".$principalID."'>
-                    ";
+                    echo defaultcomment_alert_markup('warning', $validation['message'], $principalID, $classID, $validation['resultSubType']);
                 }
                 else
                 {
+                    $commentSafe = mysqli_real_escape_string($link, $validation['comment']);
+                    $resultType = $validation['resultSubType'];
+                    $commentfrom = $validation['rangeStart'];
+                    $commentfromto = $validation['rangeEnd'];
 
-                    $sqldefaultcomment = "SELECT * FROM `defaultcomment` WHERE PrincipalOrDeanOrHeadTeacherUserID= '$principalID' AND CommentType = '$CommentType' AND RangeStart = '$commentfrom' AND RangeEnd = '$commentfromto' AND DefaultComment = '$comment'";
+                    $sqldefaultcomment = "SELECT * FROM `defaultcomment`
+                                          WHERE PrincipalOrDeanOrHeadTeacherUserID = '$principalID'
+                                            AND ClassID = '$classID'
+                                            AND CommentType = '$CommentType'
+                                            AND ResultSubType = '$resultType'
+                                            AND RangeStart = '$commentfrom'
+                                            AND RangeEnd = '$commentfromto'
+                                            AND DefaultComment = '$commentSafe'";
                     $resultdefaultcomment = mysqli_query($link, $sqldefaultcomment);
-                    $rowdefaultcomment = mysqli_fetch_assoc($resultdefaultcomment);
-                    $row_cntdefaultcomment = mysqli_num_rows($resultdefaultcomment);
+                    $row_cntdefaultcomment = $resultdefaultcomment ? mysqli_num_rows($resultdefaultcomment) : 0;
 
                     if($row_cntdefaultcomment > 0)
                     {
-                        echo"
-                            <div align='left' class='alert alert-warning'>
-                            <button type='button' class='close' data-dismiss='alert' aria-label='Close'> <span aria-hidden='true'>×</span> </button>Already exists</div>
-                            <input type='hidden' id='reloadStaffID' value='".$principalID."'>
-                            ";
+                        echo defaultcomment_alert_markup('warning', 'Already exists.', $principalID, $classID, $resultType);
                     }
                     else
                     {
-                        $sqlInsertdefaultcomment = ("INSERT INTO `defaultcomment`(`PrincipalOrDeanOrHeadTeacherUserID`, `CommentType`, `RangeStart`, `RangeEnd`, `DefaultComment`)
-                        VALUES ('$principalID','$CommentType','$commentfrom','$commentfromto','$comment')");
-                        $Insertdefaultcomment = mysqli_query($link, $sqlInsertdefaultcomment) or die("".mysqli_error());
+                        $sqlInsertdefaultcomment = "INSERT INTO `defaultcomment`
+                                                    (`PrincipalOrDeanOrHeadTeacherUserID`, `ClassID`, `CommentType`, `ResultSubType`, `RangeStart`, `RangeEnd`, `DefaultComment`)
+                                                    VALUES
+                                                    ('$principalID', '$classID', '$CommentType', '$resultType', '$commentfrom', '$commentfromto', '$commentSafe')";
+                        $Insertdefaultcomment = mysqli_query($link, $sqlInsertdefaultcomment);
 
                         if($Insertdefaultcomment)
                         {
-                            echo"
-                                <div align='left' class='alert alert-success'>
-                                <button type='button' class='close' data-dismiss='alert' aria-label='Close'> <span aria-hidden='true'>×</span> </button>Added Successfully...</div>
-                                <input type='hidden' id='reloadStaffID' value='".$principalID."'>
-                            ";
+                            echo defaultcomment_alert_markup('success', 'Added successfully.', $principalID, $classID, $resultType);
                         }
                         else
                         {
-                            echo "Opps! not done. Something went wrong
-                            <input type='hidden' id='reloadStaffID' value='".$principalID."'>";
+                            echo defaultcomment_alert_markup('warning', 'Operation failed. Something went wrong.', $principalID, $classID, $resultType);
                         }
                     }
                 }
@@ -185,28 +208,42 @@ include ('../database/config.php');
             if(isset($_POST['proceeddelete']))
             {
 
-               $defaultcommentID = $_POST['comid'];
+               $defaultcommentID = (int) ($_POST['comid'] ?? 0);
 
                $sqldefaultcomment = "SELECT * FROM `defaultcomment` WHERE defaultcommentID = '$defaultcommentID'";
                 $resultdefaultcomment = mysqli_query($link, $sqldefaultcomment);
                 $rowdefaultcomment = mysqli_fetch_assoc($resultdefaultcomment);
-                $row_cntdefaultcomment = mysqli_num_rows($resultdefaultcomment);
+                $row_cntdefaultcomment = $resultdefaultcomment ? mysqli_num_rows($resultdefaultcomment) : 0;
 
-                $sqlDeleteexamgroup = ("DELETE FROM `defaultcomment` WHERE defaultcommentID= '$defaultcommentID'");
-                $Deleteexamgroup = mysqli_query($link, $sqlDeleteexamgroup) or die("".mysqli_error());
-
-                if($Deleteexamgroup)
+                if($row_cntdefaultcomment > 0)
                 {
-                    echo"
-                    <div align='left' class='alert alert-success'>
-                    <button type='button' class='close' data-dismiss='alert' aria-label='Close'> <span aria-hidden='true'>×</span> </button>Deleted Successfully...</div>
-                    <input type='hidden' id='reloadStaffID' value='".$rowdefaultcomment['PrincipalOrDeanOrHeadTeacherUserID']."'>
-                    ";
+                    $sqlDeleteexamgroup = "DELETE FROM `defaultcomment` WHERE defaultcommentID= '$defaultcommentID'";
+                    $Deleteexamgroup = mysqli_query($link, $sqlDeleteexamgroup);
+
+                    if($Deleteexamgroup)
+                    {
+                        echo defaultcomment_alert_markup(
+                            'success',
+                            'Deleted successfully.',
+                            $rowdefaultcomment['PrincipalOrDeanOrHeadTeacherUserID'],
+                            $rowdefaultcomment['ClassID'],
+                            $rowdefaultcomment['ResultSubType']
+                        );
+                    }
+                    else
+                    {
+                        echo defaultcomment_alert_markup(
+                            'warning',
+                            'Operation failed. Something went wrong.',
+                            $rowdefaultcomment['PrincipalOrDeanOrHeadTeacherUserID'],
+                            $rowdefaultcomment['ClassID'],
+                            $rowdefaultcomment['ResultSubType']
+                        );
+                    }
                 }
                 else
                 {
-                    echo "Opps! not done. Something went wrong
-                    <input type='hidden' id='reloadStaffID' value='".$rowdefaultcomment['PrincipalOrDeanOrHeadTeacherUserID']."'>";
+                    echo defaultcomment_alert_markup('warning', 'Record not found.', 0, 0, 'termly');
                 }
             }
         ?>
@@ -215,59 +252,79 @@ include ('../database/config.php');
             if(isset($_POST['editgradebtn']))
             {
 
-               $commentfrom = $_POST['commentfrom'];
-               $commentfromto = $_POST['commentfromto'];
-
-               $comment = $_POST['comment'];
-
-               $defaultcommentID = $_POST['defaultcommentID'];
+               $commentfrom = $_POST['commentfrom'] ?? '';
+               $commentfromto = $_POST['commentfromto'] ?? '';
+               $comment = $_POST['comment'] ?? '';
+               $defaultcommentID = (int) ($_POST['defaultcommentID'] ?? 0);
+               $CommentType = 'SchoolHead';
 
                 $sqldefaultcomment = "SELECT * FROM `defaultcomment` WHERE defaultcommentID = '$defaultcommentID'";
                 $resultdefaultcomment = mysqli_query($link, $sqldefaultcomment);
                 $rowdefaultcomment = mysqli_fetch_assoc($resultdefaultcomment);
-                $row_cntdefaultcomment = mysqli_num_rows($resultdefaultcomment);
+                $row_cntdefaultcomment = $resultdefaultcomment ? mysqli_num_rows($resultdefaultcomment) : 0;
 
-                if($commentfrom == "" || $commentfromto == "" || $commentfrom < "0" || $comment == "" || $comment == "0" || $commentfromto < 0 || $commentfrom > $commentfromto)
+                if($row_cntdefaultcomment <= 0)
                 {
-                    echo"
-                        <div align='left' class='alert alert-warning'>
-                        <button type='button' class='close' data-dismiss='alert' aria-label='Close'> <span aria-hidden='true'>×</span> </button>Opps! Seem like you left some spaces blank Or the Range from is greater than the Range To. Check and resubmit</div>
-                        <input id='reloadStaffID' value='".$rowdefaultcomment['PrincipalOrDeanOrHeadTeacherUserID']."'>
-                    ";
+                    echo defaultcomment_alert_markup('warning', 'Record not found.', 0, 0, 'termly');
                 }
                 else
                 {
+                    $principalID = (int) $rowdefaultcomment['PrincipalOrDeanOrHeadTeacherUserID'];
+                    $classID = (int) $rowdefaultcomment['ClassID'];
+                    $resultType = $rowdefaultcomment['ResultSubType'];
 
-                    $sqldefaultcomment = "SELECT * FROM `defaultcomment` WHERE defaultcommentID= '$defaultcommentID' AND DefaultComment = '$comment' AND RangeStart = '$commentfrom' AND RangeEnd = '$commentfromto'";
-                    $resultdefaultcomment = mysqli_query($link, $sqldefaultcomment);
-                    $rowdefaultcomment = mysqli_fetch_assoc($resultdefaultcomment);
-                    $row_cntdefaultcomment = mysqli_num_rows($resultdefaultcomment);
+                    $validation = validate_defaultcomment_payload(
+                        $link,
+                        $principalID,
+                        $classID,
+                        $CommentType,
+                        $resultType,
+                        $commentfrom,
+                        $commentfromto,
+                        $comment,
+                        $defaultcommentID
+                    );
 
-                    if($row_cntdefaultcomment > 0)
+                    if(!$validation['success'])
                     {
-                        echo"
-                            <div align='left' class='alert alert-warning'>
-                            <button type='button' class='close' data-dismiss='alert' aria-label='Close'> <span aria-hidden='true'>×</span> </button>Already exists</div>
-                            <input type='hidden' id='reloadStaffID' value='".$rowdefaultcomment['PrincipalOrDeanOrHeadTeacherUserID']."'>
-                            ";
+                        echo defaultcomment_alert_markup('warning', $validation['message'], $principalID, $classID, $validation['resultSubType']);
                     }
                     else
                     {
-                        $sqlInsertdefaultcomment = ("UPDATE `defaultcomment` SET `RangeStart`='$commentfrom',`RangeEnd`='$commentfromto',`DefaultComment`='$comment' WHERE `defaultcommentID` = '$defaultcommentID'");
-                        $Insertdefaultcomment = mysqli_query($link, $sqlInsertdefaultcomment) or die("".mysqli_error());
+                        $commentSafe = mysqli_real_escape_string($link, $validation['comment']);
+                        $commentfrom = $validation['rangeStart'];
+                        $commentfromto = $validation['rangeEnd'];
+                        $resultType = $validation['resultSubType'];
 
-                        if($Insertdefaultcomment)
+                        $sqldefaultcomment = "SELECT * FROM `defaultcomment`
+                                              WHERE defaultcommentID = '$defaultcommentID'
+                                                AND DefaultComment = '$commentSafe'
+                                                AND RangeStart = '$commentfrom'
+                                                AND RangeEnd = '$commentfromto'";
+                        $resultdefaultcomment = mysqli_query($link, $sqldefaultcomment);
+                        $row_cntdefaultcomment = $resultdefaultcomment ? mysqli_num_rows($resultdefaultcomment) : 0;
+
+                        if($row_cntdefaultcomment > 0)
                         {
-                            echo"
-                            <div align='left' class='alert alert-success'>
-                            <button type='button' class='close' data-dismiss='alert' aria-label='Close'> <span aria-hidden='true'>×</span> </button>Updated Successfully...</div>
-                            <input type='hidden' id='reloadStaffID' value='".$rowdefaultcomment['PrincipalOrDeanOrHeadTeacherUserID']."'>
-                            ";
+                            echo defaultcomment_alert_markup('warning', 'No changes detected.', $principalID, $classID, $resultType);
                         }
                         else
                         {
-                            echo "Opps! not done. Something went wrong
-                            <input type='hidden' id='reloadStaffID' value='".$rowdefaultcomment['PrincipalOrDeanOrHeadTeacherUserID']."'>";
+                            $sqlInsertdefaultcomment = "UPDATE `defaultcomment`
+                                                        SET `RangeStart`='$commentfrom',
+                                                            `RangeEnd`='$commentfromto',
+                                                            `DefaultComment`='$commentSafe'
+                                                        WHERE `defaultcommentID` = '$defaultcommentID'";
+                            $Insertdefaultcomment = mysqli_query($link, $sqlInsertdefaultcomment);
+
+                            if($Insertdefaultcomment)
+                            {
+                                echo defaultcomment_alert_markup('success', 'Updated successfully.', $principalID, $classID, $resultType);
+                            }
+                            else
+                            {
+                                echo defaultcomment_alert_markup('warning', 'Operation failed. Something went wrong.', $principalID, $classID, $resultType);
+                            }
                         }
                     }
                 }
@@ -277,7 +334,9 @@ include ('../database/config.php');
         <?php
             if(isset($_POST['submitbtnsign'])){
                 //Get current user ID from session
-                $principalID = $_POST['principalID'];
+                $principalID = (int) ($_POST['principalID'] ?? 0);
+                $classID = (int) ($_POST['classID'] ?? 0);
+                $resultType = $_POST['resultType'] ?? 'termly';
 
                 if(!empty($_FILES['staffsignature']['name']) || $principalID != '' && $principalID != '0')
                 {
@@ -299,7 +358,7 @@ include ('../database/config.php');
                                     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                         <span aria-hidden="true"><i class="la la-close"></i></span>
                                     </button>
-                                    <input id="reloadStaffID" type="hidden" value="'.$principalID.'">
+                                    '.defaultcomment_reload_state_markup($principalID, $classID, $resultType).'
                                 </div>
                             </div>';
                     }
@@ -313,7 +372,7 @@ include ('../database/config.php');
                                         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                             <span aria-hidden="true"><i class="la la-close"></i></span>
                                         </button>
-                                        <input id="reloadStaffID" type="hidden" value="'.$principalID.'">
+                                        '.defaultcomment_reload_state_markup($principalID, $classID, $resultType).'
                                     </div>
                                 </div>';
                         }
@@ -349,7 +408,7 @@ include ('../database/config.php');
                                                         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                                             <span aria-hidden="true"><i class="la la-close"></i></span>
                                                         </button>
-                                                        <input id="reloadStaffID" type="hidden" value="'.$principalID.'">
+                                                        '.defaultcomment_reload_state_markup($principalID, $classID, $resultType).'
                                                     </div>
                                                 </div>';
                                                     }
@@ -381,7 +440,7 @@ include ('../database/config.php');
                                                         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                                             <span aria-hidden="true"><i class="la la-close"></i></span>
                                                         </button>
-                                                        <input id="reloadStaffID" type="hidden" value="'.$principalID.'">
+                                                        '.defaultcomment_reload_state_markup($principalID, $classID, $resultType).'
                                                     </div>
                                                 </div>';
                                                     }
@@ -399,7 +458,7 @@ include ('../database/config.php');
                                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                                     <span aria-hidden="true"><i class="la la-close"></i></span>
                                 </button>
-                                <input id="reloadStaffID" type="hidden" value="'.$principalID.'">
+                                '.defaultcomment_reload_state_markup($principalID, $classID, $resultType).'
                             </div>
                         </div>';
                 }
@@ -452,14 +511,17 @@ include ('../database/config.php');
                         </div>
                         <form method="post"  enctype="multipart/form-data">
                             <div class="modal-body">
+                                <div class="alert alert-info" id="defaultcomment-modal-meta">
+                                    Select a head teacher, class and result type first to load the allowed score range.
+                                </div>
                                 <div class="row">
                                     <div class="col">
                                         <label style="font-weight: 500;">Ranges:</label>
-                                        <input type="number" name="commentfrom" class="form-control" placeholder="example 80">
+                                        <input type="number" step=".01" id="commentfrom" name="commentfrom" class="form-control" placeholder="example 80">
                                     </div>
                                     <div class="col">
                                         <label style="font-weight: 500;">&nbsp;&nbsp;&nbsp;</label>
-                                      <input type="number" name="commentfromto" class="form-control" placeholder="example 100">
+                                      <input type="number" step=".01" id="commentfromto" name="commentfromto" class="form-control" placeholder="example 100">
                                     </div>
                                 </div>
                                 <div class="form-group">
@@ -468,6 +530,8 @@ include ('../database/config.php');
                                   </div>
 
                                   <input type="hidden" id="principalID" name="principalID">
+                                  <input type="hidden" id="classID" name="classID">
+                                  <input type="hidden" id="resultTypeInput" name="resultType">
 
                             </div>
                             <div class="modal-footer">
@@ -503,6 +567,8 @@ include ('../database/config.php');
                                 </div>
 
                                 <input type="hidden" id="principalIDsig" name="principalID">
+                                <input type="hidden" id="classIDsig" name="classID">
+                                <input type="hidden" id="resultTypeSig" name="resultType">
 
                             </div>
                             <div class="modal-footer">
@@ -588,95 +654,157 @@ include ('../database/config.php');
 
 			table.buttons().container()
 			.appendTo('#example_wrapper .col-md-6:eq(0)');
-		});
+            
+            function setActionVisibility(showButtons) {
+                if (showButtons) {
+                    $('.hideme').show('slow');
+                } else {
+                    $('.hideme').hide('slow');
+                }
+            }
 
-		$('body').on('change','#schoolhead',function(){
+            function syncHiddenInputs(staffId, classId, resultType) {
+                $('#principalID').val(staffId);
+                $('#principalIDsig').val(staffId);
+                $('#classID').val(classId);
+                $('#classIDsig').val(classId);
+                $('#resultTypeInput').val(resultType);
+                $('#resultTypeSig').val(resultType);
+            }
 
-		    $('#commenttbl').html('<i class="fa fa-circle-o-notch fa-spin"></i> ...Processing');
-			var id = $(this).val();
+            function setMetaState(success, message, maxScore) {
+                var metaText = message;
 
-			$('#principalID').val(id);
+                if (success && maxScore !== null) {
+                    metaText = message + ' Maximum allowed score: ' + maxScore + '.';
+                }
 
-			$('#principalIDsig').val(id);
+                $('#defaultcomment-meta')
+                    .removeClass('alert-warning alert-info')
+                    .addClass(success ? 'alert-info' : 'alert-warning')
+                    .text(metaText);
 
-			if(id == '' || id == '0')
-			{
-			    $('.hideme').hide('slow');
-			    $('#commenttbl').html('<tr colspan="12"><td>No Records Found</td></tr>');
-			}
-			else
-			{
-			    $('.hideme').show('slow');
+                $('#defaultcomment-modal-meta')
+                    .removeClass('alert-warning alert-info')
+                    .addClass(success ? 'alert-info' : 'alert-warning')
+                    .text(metaText);
 
-			    $.ajax({
+                if (success && maxScore !== null) {
+                    $('#commentfrom, #commentfromto').attr('max', maxScore);
+                } else {
+                    $('#commentfrom, #commentfromto').removeAttr('max');
+                }
+            }
+
+            function loadCommentTable(staffId, classId, resultType) {
+                $('#commenttbl').html('<tr><td colspan="4"><i class="fa fa-circle-o-notch fa-spin"></i> Processing...</td></tr>');
+
+                $.ajax({
                     url: '../../../phpscript/get-commenttbl.php',
                     method:'POST',
-                    data: 'id=' + id,
+                    data: {
+                        id: staffId,
+                        classid: classId,
+                        resultType: resultType,
+                        commentType: 'SchoolHead'
+                    },
                     success: function(data) {
                         $('#commenttbl').html(data);
-
                     }
                 });
+            }
+
+            function loadHeadSignature(staffId) {
+                if (!staffId || staffId === '0') {
+                    $('#staffsigndiv').html('');
+                    return;
+                }
 
                 $.ajax({
                     url: '../../../phpscript/get-staff-signature.php',
                     method:'POST',
-                    data: 'id=' + id,
+                    data: {
+                        id: staffId
+                    },
                     success: function(data) {
                         $('#staffsigndiv').html(data);
-
                     }
                 });
-			}
+            }
 
-		});
+            function refreshDefaultCommentState() {
+                var staffId = $('#schoolhead').val();
+                var classId = $('#classid').val();
+                var resultType = $('#resultType').val();
 
-		$(document).ready(function(){
+                syncHiddenInputs(staffId, classId, resultType);
 
-		    $('#commenttbl').html('<i class="fa fa-circle-o-notch fa-spin"></i> ...Processing');
+                if (!staffId || staffId === '0' || !classId || classId === '0') {
+                    setActionVisibility(false);
+                    setMetaState(false, 'Select a head teacher, class and result type to load the allowed score range.', null);
+                    $('#commenttbl').html('<tr><td colspan="4">No Records Found</td></tr>');
+                    return;
+                }
 
-			var id = $('#reloadStaffID').val();
-
-
-            //alert(id);
-			if(id == '' || id == '0' || id == undefined)
-			{
-			    $('.hideme').hide('slow');
-			    $('#commenttbl').html('<tr colspan="12"><td>No Records Found</td></tr>');
-			}
-			else
-			{
-
-    			$('#schoolhead').val(id);
-
-    			$('#principalID').val(id);
-
-    			$('#principalIDsig').val(id);
-
-			    $('.hideme').show('slow');
-
-			    $.ajax({
-                    url: '../../../phpscript/get-commenttbl.php',
-                    method:'POST',
-                    data: 'id=' + id,
-                    success: function(data) {
-                        $('#commenttbl').html(data);
-
-                    }
-                });
-
+                $('#commenttbl').html('<tr><td colspan="4"><i class="fa fa-circle-o-notch fa-spin"></i> Processing...</td></tr>');
 
                 $.ajax({
-                    url: '../../../phpscript/get-staff-signature.php',
+                    url: '../../../phpscript/get-defaultcomment-meta.php',
                     method:'POST',
-                    data: 'id=' + id,
+                    dataType:'json',
+                    data: {
+                        classid: classId,
+                        resultType: resultType
+                    },
                     success: function(data) {
-                        $('#staffsigndiv').html(data);
+                        setMetaState(data.success, data.message, data.success ? data.maxScore : null);
 
+                        if (data.success) {
+                            setActionVisibility(true);
+                            loadCommentTable(staffId, classId, resultType);
+                        } else {
+                            setActionVisibility(false);
+                            $('#commenttbl').html('<tr><td colspan="4">' + data.message + '</td></tr>');
+                        }
+                    },
+                    error: function() {
+                        setActionVisibility(false);
+                        setMetaState(false, 'Unable to load the class score settings right now.', null);
+                        $('#commenttbl').html('<tr><td colspan="4">Unable to load records.</td></tr>');
                     }
                 });
-			}
+            }
 
+            $('#schoolhead, #classid, #resultType').on('change', function(){
+                loadHeadSignature($('#schoolhead').val());
+                refreshDefaultCommentState();
+            });
+
+            setActionVisibility(false);
+            $('#commenttbl').html('<tr><td colspan="4">No Records Found</td></tr>');
+
+            var reloadStaffId = $('#reloadStaffID').val() || $('#schoolhead').val();
+            var reloadClassId = $('#reloadClassID').val() || '0';
+            var reloadResultType = $('#reloadResultType').val() || 'termly';
+
+            if (reloadResultType) {
+                $('#resultType').val(reloadResultType);
+            }
+
+            if (reloadStaffId && reloadStaffId !== '0') {
+                $('#schoolhead').val(reloadStaffId);
+                loadHeadSignature(reloadStaffId);
+            }
+
+            if (reloadClassId && reloadClassId !== '0') {
+                $('#classid').val(reloadClassId);
+            }
+
+            if (reloadStaffId && reloadStaffId !== '0' && reloadClassId && reloadClassId !== '0') {
+                refreshDefaultCommentState();
+            } else {
+                syncHiddenInputs(reloadStaffId || '0', reloadClassId, $('#resultType').val());
+            }
 		});
 
 		$('body').on('click','#editbtn',function(){
