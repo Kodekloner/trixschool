@@ -1,5 +1,6 @@
 <?php
 include('../database/config.php');
+require_once('../helper/defaultcomment_helper.php');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -229,20 +230,20 @@ include('../database/config.php');
 
 	// Fetch principal remark
 	$sql_principal_remark = "
-    SELECT remark FROM remark
+    SELECT remark, StaffID FROM remark
     WHERE RemarkType = 'SchoolHead' AND StudentID = '$student_id' AND Session = '$session' AND Term = '$term' AND ResultSubType = '$resultSubType'
 ";
 	$res_principal = mysqli_query($link, $sql_principal_remark);
-	$principal_remark = (mysqli_num_rows($res_principal) > 0) ? mysqli_fetch_assoc($res_principal)['remark'] : '';
+	$principal_row = (mysqli_num_rows($res_principal) > 0) ? mysqli_fetch_assoc($res_principal) : [];
+	$principal_remark = $principal_row['remark'] ?? '';
 
 	// Get signatures (optional)
-	$sql_teacher_sign = "SELECT Signature FROM staffsignature WHERE staff_id = (SELECT StaffID FROM class_teacher WHERE class_id = '$classid' AND section_id = '$classsectionactual' LIMIT 1)";
-	$res_teacher_sign = mysqli_query($link, $sql_teacher_sign);
-	$teacher_sign = (mysqli_num_rows($res_teacher_sign) > 0) ? '<img src="../img/signature/' . mysqli_fetch_assoc($res_teacher_sign)['Signature'] . '" class="signature-img">' : '';
+	$class_teacher = get_result_class_teacher($link, $classid, $classsectionactual, $session);
+	$teacher_signature_row = get_staff_signature_row($link, $class_teacher['staff_id'] ?? 0);
+	$teacher_sign = !empty($teacher_signature_row['Signature']) ? build_staff_signature_html($teacher_signature_row['Signature'], '../img/signature/', 'signature-img') : '';
 
-	$sql_principal_sign = "SELECT Signature FROM staffsignature WHERE staff_id = (SELECT id FROM staff WHERE role = 'Principal' LIMIT 1)";
-	$res_principal_sign = mysqli_query($link, $sql_principal_sign);
-	$principal_sign = (mysqli_num_rows($res_principal_sign) > 0) ? '<img src="../img/signature/' . mysqli_fetch_assoc($res_principal_sign)['Signature'] . '" class="signature-img">' : '';
+	$principal_staff_id = resolve_school_head_staff_id($link, $principal_row['StaffID'] ?? 0);
+	$principal_sign = get_school_head_signature_html($link, $principal_staff_id, '../img/signature/');
 
 	// Attendance (simplified – you can reuse the logic from resultPage.php)
 	// For now, just placeholder

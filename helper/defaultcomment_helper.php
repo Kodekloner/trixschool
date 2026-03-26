@@ -179,6 +179,207 @@ if (!function_exists('get_result_class_teacher')) {
     }
 }
 
+if (!function_exists('get_staff_signature_row')) {
+    function get_staff_signature_row($link, $staffId)
+    {
+        $staffId = (int) $staffId;
+
+        if ($staffId <= 0) {
+            return null;
+        }
+
+        $sql = "SELECT * FROM `staffsignature`
+                WHERE `staff_id` = '$staffId'
+                  AND TRIM(COALESCE(`Signature`, '')) != ''
+                ORDER BY `id` DESC
+                LIMIT 1";
+        $result = mysqli_query($link, $sql);
+
+        return ($result && mysqli_num_rows($result) > 0) ? mysqli_fetch_assoc($result) : null;
+    }
+}
+
+if (!function_exists('find_staff_by_roles')) {
+    function find_staff_by_roles($link, array $roleNames, $requireSignature = false)
+    {
+        $roleNames = array_values(array_filter(array_map('trim', $roleNames), 'strlen'));
+
+        if (empty($roleNames)) {
+            return null;
+        }
+
+        $escapedRoleNames = [];
+        $roleOrderCases = [];
+
+        foreach ($roleNames as $index => $roleName) {
+            $escapedRoleName = mysqli_real_escape_string($link, $roleName);
+            $escapedRoleNames[] = "'" . $escapedRoleName . "'";
+            $roleOrderCases[] = "WHEN '" . $escapedRoleName . "' THEN " . ($index + 1);
+        }
+
+        $inClause = implode(', ', $escapedRoleNames);
+        $orderCase = 'CASE r.name ' . implode(' ', $roleOrderCases) . ' ELSE 999 END';
+        $signatureHaving = $requireSignature ? "HAVING TRIM(COALESCE(`Signature`, '')) != ''" : '';
+
+        $sql = "SELECT
+                    s.id AS staff_id,
+                    r.name AS role_name,
+                    (
+                        SELECT ss.Signature
+                        FROM `staffsignature` ss
+                        WHERE ss.staff_id = s.id
+                          AND TRIM(COALESCE(ss.Signature, '')) != ''
+                        ORDER BY ss.id DESC
+                        LIMIT 1
+                    ) AS `Signature`
+                FROM `staff_roles` sr
+                INNER JOIN `roles` r ON r.id = sr.role_id
+                INNER JOIN `staff` s ON s.id = sr.staff_id
+                WHERE r.name IN ($inClause)
+                GROUP BY s.id, r.name
+                $signatureHaving
+                ORDER BY $orderCase, s.id ASC
+                LIMIT 1";
+        $result = mysqli_query($link, $sql);
+
+        return ($result && mysqli_num_rows($result) > 0) ? mysqli_fetch_assoc($result) : null;
+    }
+}
+
+if (!function_exists('resolve_school_head_staff_id')) {
+    function resolve_school_head_staff_id($link, $preferredStaffId = 0)
+    {
+        $preferredStaffId = (int) $preferredStaffId;
+
+        if ($preferredStaffId > 0) {
+            return $preferredStaffId;
+        }
+
+        $rolePriority = ['Head Teacher', 'Principal', 'Dean'];
+        $staffWithSignature = find_staff_by_roles($link, $rolePriority, true);
+
+        if (!empty($staffWithSignature['staff_id'])) {
+            return (int) $staffWithSignature['staff_id'];
+        }
+
+        $staffWithoutSignature = find_staff_by_roles($link, $rolePriority, false);
+
+        return !empty($staffWithoutSignature['staff_id']) ? (int) $staffWithoutSignature['staff_id'] : 0;
+    }
+}
+
+if (!function_exists('build_staff_signature_url')) {
+    function build_staff_signature_url($signature, $localPrefix = '../img/signature/', $s3Prefix = 'https://schoollift.s3.us-east-2.amazonaws.com/')
+    {
+        $signature = trim((string) $signature);
+
+        if ($signature === '') {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $signature)) {
+            return $signature;
+        }
+
+        $encodePath = function ($path) {
+            $parts = array_values(array_filter(explode('/', trim((string) $path, '/')), 'strlen'));
+
+            return implode('/', array_map('rawurlencode', $parts));
+        };
+
+        if (stripos($signature, 'uploads/') === 0) {
+            return rtrim($s3Prefix, '/') . '/' . $encodePath($signature);
+        }
+
+        if (stripos($signature, 'img/signature/') === 0) {
+            return '../' . $encodePath($signature);
+        }
+
+        return rtrim($localPrefix, '/') . '/' . rawurlencode($signature);
+    }
+}
+
+if (!function_exists('build_staff_signature_html')) {
+    function build_staff_signature_html($signature, $localPrefix = '../img/signature/', $className = 'img-fluid signature-img')
+    {
+        $signatureUrl = build_staff_signature_url($signature, $localPrefix);
+
+        if ($signatureUrl === '') {
+            return '';
+        }
+
+        return '<img src="' . htmlspecialchars($signatureUrl, ENT_QUOTES) . '" align="center" class="' . htmlspecialchars($className, ENT_QUOTES) . '">';
+    }
+}
+
+if (!function_exists('get_school_head_signature_html')) {
+    function get_school_head_signature_html($link, $preferredStaffId = 0, $localPrefix = '../img/signature/')
+    {
+        $signatureRow = get_staff_signature_row($link, $preferredStaffId);
+
+        if (empty($signatureRow) && (int) $preferredStaffId <= 0) {
+            $fallbackStaff = find_staff_by_roles($link, ['Head Teacher', 'Principal', 'Dean'], true);
+
+            if (!empty($fallbackStaff['Signature'])) {
+                $signatureRow = $fallbackStaff;
+            }
+        }
+
+        return !empty($signatureRow['Signature']) ? build_staff_signature_html($signatureRow['Signature'], $localPrefix) : '';
+    }
+}
+
+if (!function_exists('get_school_head_comment_data')) {
+    function get_school_head_comment_data($link, $studentId, $sessionId, $term, $resultSubType, $classId, $score, $localPrefix = '../img/signature/')
+    {
+        $studentId = (int) $studentId;
+        $sessionId = (int) $sessionId;
+        $termSafe = mysqli_real_escape_string($link, (string) $term);
+        $resultSubType = normalize_defaultcomment_result_subtype($resultSubType);
+        $resultSubTypeSafe = mysqli_real_escape_string($link, $resultSubType);
+        $fixedRemarkSql = "SELECT *
+                           FROM `remark`
+                           WHERE `RemarkType` = 'SchoolHead'
+                             AND `StudentID` = '$studentId'
+                             AND `Session` = '$sessionId'
+                             AND `Term` = '$termSafe'
+                             AND `ResultSubType` = '$resultSubTypeSafe'
+                             AND TRIM(COALESCE(`remark`, '')) != ''
+                           ORDER BY `RemarkID` DESC
+                           LIMIT 1";
+        $fixedRemarkResult = mysqli_query($link, $fixedRemarkSql);
+        $fixedRemarkRow = ($fixedRemarkResult && mysqli_num_rows($fixedRemarkResult) > 0) ? mysqli_fetch_assoc($fixedRemarkResult) : null;
+
+        if (!empty($fixedRemarkRow)) {
+            $staffId = resolve_school_head_staff_id($link, $fixedRemarkRow['StaffID'] ?? 0);
+
+            return [
+                'remark' => $fixedRemarkRow['remark'],
+                'signatureHtml' => get_school_head_signature_html($link, $staffId, $localPrefix),
+                'staffId' => $staffId,
+            ];
+        }
+
+        $defaultCommentRow = find_defaultcomment_match($link, 'SchoolHead', $classId, $resultSubType, $score);
+
+        if (!empty($defaultCommentRow)) {
+            $staffId = resolve_school_head_staff_id($link, $defaultCommentRow['PrincipalOrDeanOrHeadTeacherUserID'] ?? 0);
+
+            return [
+                'remark' => $defaultCommentRow['DefaultComment'],
+                'signatureHtml' => get_school_head_signature_html($link, $staffId, $localPrefix),
+                'staffId' => $staffId,
+            ];
+        }
+
+        return [
+            'remark' => 'N/A',
+            'signatureHtml' => '',
+            'staffId' => 0,
+        ];
+    }
+}
+
 if (!function_exists('validate_defaultcomment_payload')) {
     function validate_defaultcomment_payload($link, $ownerId, $classId, $commentType, $resultSubType, $rangeStart, $rangeEnd, $comment, $excludeId = 0)
     {
