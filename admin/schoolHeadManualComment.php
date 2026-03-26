@@ -91,12 +91,19 @@
 						
 						<div class="form-group col-sm">
                             <select class="form-control" id="term">
-                              <option>Select Term</option>
+                              <option value="0">Select Term</option>
                               <option value="1st">1st Term</option>
                               <option value="2nd">2nd Term</option>
                               <option value="3rd">3rd Term</option>
                             </select>
 							<!--They would need to select Term in-order to display the Exam Group Created for that term-->
+                        </div>
+
+						<div class="form-group col-sm">
+                            <select class="form-control" id="resultType" disabled>
+                              <option value="termly">Termly</option>
+                              <option value="midterm">Mid-term</option>
+                            </select>
                         </div>
                         
 						<div class="form-group col-sm">
@@ -198,6 +205,36 @@
 	<script src="../assets/js/vfs_fonts.js"></script>
 
     <script>
+        function isValidValue(value)
+        {
+            return value !== undefined && value !== null && value !== '' && value !== '0';
+        }
+
+        function resetTable(message)
+        {
+            $('#tbl_data').html('<div class="alert alert-primary" role="alert">' + message + '</div>');
+        }
+
+        function resetSectionOptions(message)
+        {
+            $('#classsection').html('<option value="0">' + message + '</option>');
+        }
+
+        function syncResultTypeState()
+        {
+            var shouldEnable = isValidValue($("#session").val()) && isValidValue($("#term").val());
+
+            $("#resultType").prop('disabled', !shouldEnable);
+
+            if (!shouldEnable) {
+                $("#resultType").val('termly');
+            }
+        }
+
+        $("body").on("change", "#session, #term, #resultType", function() {
+            syncResultTypeState();
+            resetTable('Please Filter to proceed.');
+        });
         
         $("body").on("change", "#class", function(){
   
@@ -208,6 +245,7 @@
             var rolefirst = "<?php echo $rolefirst;?>";
             
             $('#classsection').html('<option value="0">Loading...</option>');
+            resetTable('Please Filter to proceed.');
             
             if(classid != '' && classid != '0')
             {
@@ -229,10 +267,14 @@
             }
             else
             {
-                $('#classsection').html('<option value="0">Please select class</option>');
+                resetSectionOptions('Please select class');
                 
             }
              
+        });
+
+        $("body").on("change", "#classsection", function() {
+            resetTable('Please Filter to proceed.');
         });
         
         $("body").on("click", "#getstud", function(){
@@ -246,18 +288,25 @@
             var session = $("#session").val();
             
             var term = $("#term").val();
+
+            var resultType = $("#resultType").val() || 'termly';
             
             var RemarkType = 'SchoolHead';
             
             if(classid != '' && classid != '0' && classsectionactual != '' && classsectionactual != '0' && session != '' && session != '0' && term != '' && term != '0')
             {
-                var dataString = 'classid=' + classid + '&session=' + session + '&term=' + term + '&classsectionactual=' + classsectionactual + '&RemarkType=' + RemarkType;
-                
-                // alert(dataString);
                 $.ajax({
                     url: '../../../phpscript/view-studentmanualcomment.php',
                     method:'POST',
-                    data:dataString,
+                    data:{
+                        classid: classid,
+                        session: session,
+                        term: term,
+                        classsectionactual: classsectionactual,
+                        RemarkType: RemarkType,
+                        resultType: resultType,
+                        staffid: 0
+                    },
                     
                     success: function(maindata2) {
                     
@@ -320,23 +369,32 @@
             var RemarkType = 'SchoolHead';
             
             var staffid = 0;
-            
-            var dataString = 'studentid='+ studentid + '&extcomment='+ extcomment + '&session='+ session + '&term='+ term + '&RemarkType='+ RemarkType + '&staffid='+ staffid;
-            
-            // alert(dataString);
+
+            var resultType = $("#resultType").val() || 'termly';
             
             $.ajax({
                 type: "POST",
                 url: "../../../phpscript/updateStudentmancomment.php",
-                data: dataString,
+                data: {
+                    studentid: studentid,
+                    extcomment: extcomment,
+                    session: session,
+                    term: term,
+                    RemarkType: RemarkType,
+                    staffid: staffid,
+                    resultType: resultType
+                },
                 cache: false,
                 success: function(result)
                 {
                     
                 }
             });
-       
+      
         });
+
+        syncResultTypeState();
+        resetSectionOptions('Select Class first');
     </script>
   </body>
 </html>

@@ -155,6 +155,8 @@ include('../database/config.php');
 	$session = $_GET['session'];
 	$student_id = $_GET['id'];
 	$assessment_id = $_GET['assessment_id']; // passed from the list
+	$resultSubTypeRaw = strtolower(trim($_GET['reltype'] ?? 'termly'));
+	$resultSubType = ($resultSubTypeRaw === 'midterm' || $resultSubTypeRaw === 'mid-term') ? 'midterm' : 'termly';
 
 	// Get student details
 	$sql_student = "SELECT * FROM students WHERE id = '$student_id'";
@@ -220,7 +222,7 @@ include('../database/config.php');
 	// Fetch teacher remark
 	$sql_teacher_remark = "
     SELECT remark FROM remark
-    WHERE RemarkType = 'teacher' AND StudentID = '$student_id' AND Session = '$session' AND Term = '$term'
+    WHERE RemarkType = 'teacher' AND StudentID = '$student_id' AND Session = '$session' AND Term = '$term' AND ResultSubType = '$resultSubType'
 ";
 	$res_teacher = mysqli_query($link, $sql_teacher_remark);
 	$teacher_remark = (mysqli_num_rows($res_teacher) > 0) ? mysqli_fetch_assoc($res_teacher)['remark'] : '';
@@ -228,7 +230,7 @@ include('../database/config.php');
 	// Fetch principal remark
 	$sql_principal_remark = "
     SELECT remark FROM remark
-    WHERE RemarkType = 'SchoolHead' AND StudentID = '$student_id' AND Session = '$session' AND Term = '$term'
+    WHERE RemarkType = 'SchoolHead' AND StudentID = '$student_id' AND Session = '$session' AND Term = '$term' AND ResultSubType = '$resultSubType'
 ";
 	$res_principal = mysqli_query($link, $sql_principal_remark);
 	$principal_remark = (mysqli_num_rows($res_principal) > 0) ? mysqli_fetch_assoc($res_principal)['remark'] : '';

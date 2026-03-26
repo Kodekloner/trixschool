@@ -72,6 +72,20 @@
                 <?php include('../layout/header.php'); ?>
 
                 <div class="content-data">
+                    <?php
+                    $roleNames = [];
+                    $sqlstaffroles = "SELECT roles.name FROM `staff_roles` INNER JOIN roles ON staff_roles.role_id=roles.id WHERE staff_roles.staff_id='$id'";
+                    $resultstaffroles = mysqli_query($link, $sqlstaffroles);
+
+                    if ($resultstaffroles) {
+                        while ($rowstaffrole = mysqli_fetch_assoc($resultstaffroles)) {
+                            $roleNames[] = strtolower(trim($rowstaffrole['name']));
+                        }
+                    }
+
+                    $hasTeacherOnlyRole = !empty($roleNames) && !array_diff($roleNames, ['teacher']);
+                    $canSelectResultSubType = !$hasTeacherOnlyRole;
+                    ?>
 
                     <div class="row" style="margin: 15px;">
 
@@ -105,7 +119,7 @@
 
                                     <div class="form-group col-sm">
                                         <select class="form-control" id="term">
-                                            <option>Select Term</option>
+                                            <option value="0">Select Term</option>
                                             <option value="1st">1st Term</option>
                                             <option value="2nd">2nd Term</option>
                                             <option value="3rd">3rd Term</option>
@@ -113,9 +127,8 @@
                                         <!--They would need to select Term in-order to display the Exam Group Created for that term-->
                                     </div>
 
-                                    <!-- Add this block inside the form-row, after the term dropdown -->
                                     <div class="form-group col-sm">
-                                        <select class="form-control" id="resultType">
+                                        <select class="form-control" id="resultType" disabled>
                                             <option value="termly">Termly</option>
                                             <option value="midterm">Mid-term</option>
                                         </select>
@@ -125,13 +138,8 @@
                                         <select class="form-control" id="staffid">
                                             <option value="0">Select Class Teacher</option>
                                             <?php
-                                            $sqlstaffcheck = "SELECT * FROM `staff_roles` INNER JOIN roles ON staff_roles.role_id=roles.id WHERE staff_roles.staff_id='$id'";
-                                            $resultstaffcheck = mysqli_query($link, $sqlstaffcheck);
-                                            $rowstaffcheck = mysqli_fetch_assoc($resultstaffcheck);
-                                            $row_cntstaffcheck = mysqli_num_rows($resultstaffcheck);
-
-                                            if ($row_cntstaffcheck > 0) {
-                                                if ($rowstaffcheck['name'] == 'Teacher') {
+                                            if (!empty($roleNames)) {
+                                                if ($hasTeacherOnlyRole) {
                                                     $sqlstaff = "SELECT DISTINCT staff.id AS staff_id,staff.name AS staff_name,staff.surname AS staff_surname FROM `staff` INNER JOIN class_teacher ON staff.id=class_teacher.staff_id WHERE staff.id='$id' ORDER BY surname ASC";
                                                     $resultstaff = mysqli_query($link, $sqlstaff);
                                                     $rowstaff = mysqli_fetch_assoc($resultstaff);
@@ -247,103 +255,146 @@
     <script src="../assets/js/vfs_fonts.js"></script>
 
     <script>
-        $("body").on("change", "#staffid", function() {
+        var canSelectResultSubType = <?php echo $canSelectResultSubType ? 'true' : 'false'; ?>;
 
-            var staffid = $(this).val();
+        function isValidValue(value) {
+            return value !== undefined && value !== null && value !== '' && value !== '0';
+        }
+
+        function resetClassOptions(message) {
+            $('#class').html('<option value="0">' + message + '</option>');
+        }
+
+        function resetSectionOptions(message) {
+            $('#classsection').html('<option value="0">' + message + '</option>');
+        }
+
+        function resetTable(message) {
+            $('#tbl_data').html('<div class="alert alert-primary" role="alert">' + message + '</div>');
+        }
+
+        function syncResultTypeState() {
+            var shouldEnable = canSelectResultSubType && isValidValue($("#session").val()) && isValidValue($("#term").val());
+
+            $("#resultType").prop('disabled', !shouldEnable);
+
+            if (!shouldEnable) {
+                $("#resultType").val('termly');
+            }
+        }
+
+        function loadClasses() {
+            var staffid = $("#staffid").val();
             var session = $("#session").val();
 
-            $('#class').html('<option value="0">Loading...</option>');
+            resetTable('Please Filter to proceed.');
+            resetClassOptions('Loading...');
+            resetSectionOptions('Select Class first');
 
-            if (staffid != '' && staffid != '0' && session != '' && session != '0') {
-
-                var dataString = 'staffid=' + staffid + '&session=' + session;
-
-                // alert(dataString);
-                $.ajax({
-                    url: '../../../phpscript/get-class-for-staff.php',
-                    method: 'POST',
-                    data: dataString,
-
-                    success: function(maindata2) {
-
-                        $('#class').html(maindata2);
-
-                    }
-                });
-            } else {
-                $('#class').html('<option value="0">Please select Staff and Session first</option>');
-
+            if (!isValidValue(staffid) || !isValidValue(session)) {
+                resetClassOptions('Please select Staff and Session first');
+                return;
             }
 
+            $.ajax({
+                url: '../../../phpscript/get-class-for-staff.php',
+                method: 'POST',
+                data: {
+                    staffid: staffid,
+                    session: session
+                },
+                success: function(maindata2) {
+                    $('#class').html(maindata2);
+                }
+            });
+        }
+
+        function loadSections() {
+            var staffid = $("#staffid").val();
+            var classid = $("#class").val();
+            var session = $("#session").val();
+
+            resetTable('Please Filter to proceed.');
+            resetSectionOptions('Loading...');
+
+            if (!isValidValue(classid) || !isValidValue(staffid) || !isValidValue(session)) {
+                resetSectionOptions('Please select class');
+                return;
+            }
+
+            $.ajax({
+                url: '../../../phpscript/get-class-section-staff.php',
+                method: 'POST',
+                data: {
+                    classid: classid,
+                    staffid: staffid,
+                    session: session
+                },
+                success: function(maindata2) {
+                    $('#classsection').html(maindata2);
+                }
+            });
+        }
+
+        $("body").on("change", "#session", function() {
+            syncResultTypeState();
+            loadClasses();
+        });
+
+        $("body").on("change", "#term", function() {
+            syncResultTypeState();
+            resetTable('Please Filter to proceed.');
+        });
+
+        $("body").on("change", "#resultType", function() {
+            resetTable('Please Filter to proceed.');
+        });
+
+        $("body").on("change", "#staffid", function() {
+            loadClasses();
         });
 
         $("body").on("change", "#class", function() {
+            loadSections();
+        });
 
-            var staffid = $("#staffid").val();
-            var classid = $(this).val();
-            var session = $("#session").val();
-
-            $('#classsection').html('<option value="0">Loading...</option>');
-
-            if (classid != '' && classid != '0') {
-
-                var dataString = 'classid=' + classid + '&staffid=' + staffid + '&session=' + session;
-
-                // alert(dataString);
-                $.ajax({
-                    url: '../../../phpscript/get-class-section-staff.php',
-                    method: 'POST',
-                    data: dataString,
-
-                    success: function(maindata2) {
-
-                        $('#classsection').html(maindata2);
-
-                    }
-                });
-            } else {
-                $('#classsection').html('<option value="0">Please select class</option>');
-
-            }
-
+        $("body").on("change", "#classsection", function() {
+            resetTable('Please Filter to proceed.');
         });
 
         $("body").on("click", "#getstud", function() {
 
             $('#tbl_data').html('<i class="fa fa-circle-o-notch fa-spin"></i> ...Processing');
 
+            var staffid = $("#staffid").val();
             var classsection = $("#classsection").val();
-
             var classsectionactual = $('#classsection :selected').data('id');
-
             var classid = $("#class").val();
-
             var session = $("#session").val();
-
             var term = $("#term").val();
-
-            var resultType = $("#resultType").val();
-
+            var resultType = $("#resultType").val() || 'termly';
             var RemarkType = 'teacher';
 
-            if (classid != '' && classid != '0' && classsection != '' && classsection != '0' && session != '' && session != '0' && term != '' && term != '0') {
-                var dataString = 'classid=' + classid + '&classsection=' + classsection + '&session=' + session + '&term=' + term + '&classsectionactual=' + classsectionactual + '&RemarkType=' + RemarkType + '&resultType=' + resultType;
-
-                // alert(dataString);
+            if (isValidValue(classid) && isValidValue(classsection) && isValidValue(session) && isValidValue(term) && isValidValue(staffid) && classsectionactual) {
                 $.ajax({
                     url: '../../../phpscript/view-studentmanualcomment.php',
                     method: 'POST',
-                    data: dataString,
-
+                    data: {
+                        classid: classid,
+                        classsection: classsection,
+                        classsectionactual: classsectionactual,
+                        session: session,
+                        term: term,
+                        RemarkType: RemarkType,
+                        resultType: resultType,
+                        staffid: staffid
+                    },
                     success: function(maindata2) {
-
                         $('#tbl_data').html(maindata2);
-
                     }
                 });
             } else {
-                $('#tbl_data').html('Please filter to view student list');
-
+                resetTable('Please filter to view student list');
             }
 
         });
@@ -397,14 +448,18 @@
 
             var resultType = $("#resultType").val();
 
-            var dataString = 'studentid=' + studentid + '&extcomment=' + extcomment + '&session=' + session + '&term=' + term + '&RemarkType=' + RemarkType + '&staffid=' + staffid + '&resultType=' + resultType;
-
-            // alert(dataString);
-
             $.ajax({
                 type: "POST",
                 url: "../../../phpscript/updateStudentmancomment.php",
-                data: dataString,
+                data: {
+                    studentid: studentid,
+                    extcomment: extcomment,
+                    session: session,
+                    term: term,
+                    RemarkType: RemarkType,
+                    staffid: staffid,
+                    resultType: resultType || 'termly'
+                },
                 cache: false,
                 success: function(result) {
 
@@ -412,6 +467,10 @@
             });
 
         });
+
+        syncResultTypeState();
+        resetClassOptions('Please select Staff and Session first');
+        resetSectionOptions('Select Class first');
     </script>
 </body>
 

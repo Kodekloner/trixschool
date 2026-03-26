@@ -13,7 +13,8 @@ $RemarkType = $_POST['RemarkType'];
 
 $staffid = $_POST['staffid'];
 
-$resultSubType = $_POST['resultType'] ?? 'termly';
+$resultSubTypeRaw = strtolower(trim($_POST['resultType'] ?? 'termly'));
+$resultSubType = ($resultSubTypeRaw === 'midterm' || $resultSubTypeRaw === 'mid-term') ? 'midterm' : 'termly';
 
 $sqlGetstudent_session = "SELECT * FROM `remark` WHERE StudentID='$studentid' AND `Session`='$session' AND Term = '$term' AND `RemarkType` = '$RemarkType' AND `ResultSubType` = '$resultSubType' AND `StaffID` = '$staffid'";
 $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);

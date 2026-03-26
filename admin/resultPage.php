@@ -154,6 +154,8 @@ $classsectionactual = $_GET['classsectionactual'];
 $classid = $_GET['classid'];
 
 $term = $_GET['term'];
+$resultSubTypeRaw = strtolower(trim($_GET['reltype'] ?? 'termly'));
+$resultSubType = ($resultSubTypeRaw === 'midterm' || $resultSubTypeRaw === 'mid-term') ? 'midterm' : 'termly';
 
 if ($term == '1st') {
     $term2 = 'first term';
@@ -198,7 +200,7 @@ $id = $_GET['id'];
 
 // $_GET['reltype'];
 
-$reltypemain = $_GET['reltype'];
+$reltypemain = $resultSubType;
 
 $sqlstudents = "SELECT * FROM `students` WHERE id='$id'";
 $resultstudents = mysqli_query($link, $sqlstudents);
@@ -872,7 +874,7 @@ $studsection = $rowGetsections['section'];
                         // ==================== END HOLIDAY ASSESSMENT ====================
 
 
-                        $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='midterm' AND `remark`!=''");
+                        $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
                         $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                         $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
 
@@ -882,7 +884,7 @@ $studsection = $rowGetsections['section'];
 
                             $teacherid = $fetchfixedremark['StaffID'];
 
-                            $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$hedteachid'");
+                            $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$teacherid'");
                             $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                             $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                             $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
@@ -923,16 +925,16 @@ $studsection = $rowGetsections['section'];
                             }
                         }
 
-                        $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `remark`!=''");
+                        $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
                         $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                         $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
 
                         if ($rowcountprinfixedremark > 0) {
                             $principalRemark = $fetchfixedprinremark['remark'];
 
-                            $headteacherid = $fetchfixedprinremark['staff_id'];
+                            $headteacherid = $fetchfixedprinremark['StaffID'];
 
-                            $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
+                            $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                             $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                             $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                             $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
@@ -2785,7 +2787,7 @@ $studsection = $rowGetsections['section'];
 
                                     <?php
 
-                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `ResultSubType`='termly' AND `remark` != ''");
+                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `ResultSubType`='$resultSubType' AND `remark` != ''");
                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
 
@@ -2837,16 +2839,16 @@ $studsection = $rowGetsections['section'];
                                         }
                                     }
 
-                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `remark`!=''");
+                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
                                     $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                                     $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
 
                                     if ($rowcountprinfixedremark > 0) {
                                         $principalRemark = $fetchfixedprinremark['remark'];
 
-                                        $headteacherid = $fetchfixedprinremark['staff_id'];
+                                        $headteacherid = $fetchfixedprinremark['StaffID'];
 
-                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
+                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                         $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                         $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
@@ -4742,7 +4744,7 @@ $studsection = $rowGetsections['section'];
 
                                     <?php
 
-                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `ResultSubType`='termly' AND `remark` != ''");
+                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `ResultSubType`='$resultSubType' AND `remark` != ''");
                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
 
@@ -4794,16 +4796,16 @@ $studsection = $rowGetsections['section'];
                                         }
                                     }
 
-                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `remark`!=''");
+                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
                                     $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                                     $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
 
                                     if ($rowcountprinfixedremark > 0) {
                                         $principalRemark = $fetchfixedprinremark['remark'];
 
-                                        $headteacherid = $fetchfixedprinremark['staff_id'];
+                                        $headteacherid = $fetchfixedprinremark['StaffID'];
 
-                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
+                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                         $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                         $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
@@ -5083,7 +5085,7 @@ $studsection = $rowGetsections['section'];
                                 <div class="row">
 
                                     <?php
-                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `ResultSubType`='termly' AND `remark` != ''");
+                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID` = '$id' AND `Session` = '$session' AND `Term` = '$term' AND `ResultSubType`='$resultSubType' AND `remark` != ''");
                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
 
@@ -5135,16 +5137,16 @@ $studsection = $rowGetsections['section'];
                                         }
                                     }
 
-                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `remark`!=''");
+                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
                                     $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                                     $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
 
                                     if ($rowcountprinfixedremark > 0) {
                                         $principalRemark = $fetchfixedprinremark['remark'];
 
-                                        $headteacherid = $fetchfixedprinremark['staff_id'];
+                                        $headteacherid = $fetchfixedprinremark['StaffID'];
 
-                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
+                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                         $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                         $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
@@ -6630,7 +6632,7 @@ $studsection = $rowGetsections['section'];
 
                                     <?php
 
-                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='3rd' AND `remark`!=''");
+                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='3rd' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
 
@@ -6682,16 +6684,16 @@ $studsection = $rowGetsections['section'];
                                         }
                                     }
 
-                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='3rd' AND `remark`!=''");
+                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='3rd' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
                                     $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                                     $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
 
                                     if ($rowcountprinfixedremark > 0) {
                                         $principalRemark = $fetchfixedprinremark['remark'];
 
-                                        $headteacherid = $fetchfixedprinremark['staff_id'];
+                                        $headteacherid = $fetchfixedprinremark['StaffID'];
 
-                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
+                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                         $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                         $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
@@ -8064,17 +8066,17 @@ $studsection = $rowGetsections['section'];
 
                                     <?php
 
-                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term'");
+                                    $sqlgettechremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'teacher' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType'");
                                     $rowcountfixedremark = mysqli_num_rows($sqlgettechremark);
                                     $fetchfixedremark = mysqli_fetch_assoc($sqlgettechremark);
 
 
                                     if ($rowcountfixedremark > 0) {
-                                        $teacherRemark = $fetchfixedremark['RemarkComment'];
+                                        $teacherRemark = $fetchfixedremark['remark'];
 
                                         $teacherid = $fetchfixedremark['StaffID'];
 
-                                        $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$hedteachid'");
+                                        $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$teacherid'");
                                         $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                         $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                         $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
@@ -8116,16 +8118,16 @@ $studsection = $rowGetsections['section'];
                                         }
                                     }
 
-                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term'");
+                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType'");
                                     $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
                                     $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
 
                                     if ($rowcountprinfixedremark > 0) {
-                                        $principalRemark = $fetchfixedprinremark['Remark'];
+                                        $principalRemark = $fetchfixedprinremark['remark'];
 
-                                        $headteacherid = $fetchfixedprinremark['staff_id'];
+                                        $headteacherid = $fetchfixedprinremark['StaffID'];
 
-                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = 5");
+                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
                                         $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
                                         $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
                                         $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);

@@ -5,8 +5,11 @@ $classsectionactual = $_POST['classsectionactual'];
 $classid = $_POST['classid'];
 $session = $_POST['session'];
 $term = $_POST['term'];
-$resultSubType = $_POST['resultType'] ?? 'termly';
+$staffid = $_POST['staffid'] ?? 0;
+$resultSubTypeRaw = strtolower(trim($_POST['resultType'] ?? 'termly'));
+$resultSubType = ($resultSubTypeRaw === 'midterm' || $resultSubTypeRaw === 'mid-term') ? 'midterm' : 'termly';
 $RemarkType = $_POST['RemarkType'];
+$remarkStaffFilter = ($RemarkType === 'teacher' && !empty($staffid) && $staffid !== '0') ? " AND `StaffID` = '$staffid'" : '';
 
 // --- Get the class section mapping ---
 $sqlclasseschecker = "SELECT * FROM class_sections WHERE section_id = '$classsectionactual' AND class_id = '$classid'";
@@ -93,7 +96,7 @@ if ($is_kindergarten) {
                                AND `Session`='$session' 
                                AND Term = '$term' 
                                AND `RemarkType` = '$RemarkType'
-                               AND `ResultSubType` = '$resultSubType'";
+                               AND `ResultSubType` = '$resultSubType'" . $remarkStaffFilter;
             $queryGetremark = mysqli_query($link, $sqlGetremark);
             $rowGetremark = mysqli_fetch_assoc($queryGetremark);
             $comment = $rowGetremark['remark'] ?? '';
@@ -186,7 +189,7 @@ if ($reltype == 'british') {
                                AND `Session`='$session' 
                                AND Term = '$term' 
                                AND `RemarkType` = '$RemarkType'
-                               AND `ResultSubType` = '$resultSubType'";
+                               AND `ResultSubType` = '$resultSubType'" . $remarkStaffFilter;
             $queryGetremark = mysqli_query($link, $sqlGetremark);
             $rowGetremark = mysqli_fetch_assoc($queryGetremark);
             $comment = $rowGetremark['remark'] ?? '';
@@ -312,7 +315,7 @@ if ($countGetstudent_session > 0) {
                            AND `Session`='$session' 
                            AND Term = '$term' 
                            AND `RemarkType` = '$RemarkType'
-                           AND `ResultSubType` = '$resultSubType'";
+                           AND `ResultSubType` = '$resultSubType'" . $remarkStaffFilter;
         $queryGetremark = mysqli_query($link, $sqlGetremark);
         $rowGetremark = mysqli_fetch_assoc($queryGetremark);
         $comment = $rowGetremark['remark'] ?? '';
