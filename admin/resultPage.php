@@ -925,50 +925,9 @@ $studsection = $rowGetsections['section'];
                             }
                         }
 
-                        $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
-                        $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
-                        $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
-
-                        if ($rowcountprinfixedremark > 0) {
-                            $principalRemark = $fetchfixedprinremark['remark'];
-
-                            $headteacherid = $fetchfixedprinremark['StaffID'];
-
-                            $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
-                            $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
-                            $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
-                            $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-
-                            if ($row_cntgetheadteachsignhead > 0) {
-                                $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
-                            } else {
-                                $hedteachsignhead = '';
-                            }
-                                    } else {
-                                        $rowgetteachremark = find_defaultcomment_match($link, 'SchoolHead', $classid, $resultSubType, $gettotgrade);
-                                        $row_cntgetprincremark = !empty($rowgetteachremark) ? 1 : 0;
-
-                            if ($row_cntgetprincremark > 0) {
-                                $principalRemark = $rowgetteachremark['DefaultComment'];
-
-                                $headteacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-
-                                $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
-                                $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
-                                $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
-                                $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-
-                                if ($row_cntgetheadteachsignhead > 0) {
-                                    $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
-                                } else {
-                                    $hedteachsignhead = '';
-                                }
-                            } else {
-                                $principalRemark = 'N/A';
-
-                                $hedteachsignhead = '';
-                            }
-                        }
+                        $schoolHeadCommentData = get_school_head_comment_data($link, $id, $session, $term, $resultSubType, $classid, $gettotgrade, '../img/signature/');
+                        $principalRemark = $schoolHeadCommentData['remark'];
+                        $hedteachsignhead = $schoolHeadCommentData['signatureHtml'];
                         ?>
                         <div class="col-12">
 
@@ -2835,50 +2794,9 @@ $studsection = $rowGetsections['section'];
                                         }
                                     }
 
-                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
-                                    $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
-                                    $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
-
-                                    if ($rowcountprinfixedremark > 0) {
-                                        $principalRemark = $fetchfixedprinremark['remark'];
-
-                                        $headteacherid = $fetchfixedprinremark['StaffID'];
-
-                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
-                                        $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
-                                        $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
-                                        $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-
-                                        if ($row_cntgetheadteachsignhead > 0) {
-                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
-                                        } else {
-                                            $hedteachsignhead = '';
-                                        }
-                                    } else {
-                                        $rowgetteachremark = find_defaultcomment_match($link, 'SchoolHead', $classid, $resultSubType, $gettotgrade);
-                                        $row_cntgetprincremark = !empty($rowgetteachremark) ? 1 : 0;
-
-                                        if ($row_cntgetprincremark > 0) {
-                                            $principalRemark = $rowgetteachremark['DefaultComment'];
-
-                                            $headteacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-
-                                            $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
-                                            $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
-                                            $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
-                                            $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-
-                                            if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
-                                            } else {
-                                                $hedteachsignhead = '';
-                                            }
-                                        } else {
-                                            $principalRemark = 'N/A';
-
-                                            $hedteachsignhead = '';
-                                        }
-                                    }
+                                    $schoolHeadCommentData = get_school_head_comment_data($link, $id, $session, $term, $resultSubType, $classid, $gettotgrade, '../img/signature/');
+                                    $principalRemark = $schoolHeadCommentData['remark'];
+                                    $hedteachsignhead = $schoolHeadCommentData['signatureHtml'];
 
                                     if ($term == '1st') {
                                         $termnew = '2nd';
@@ -4788,50 +4706,9 @@ $studsection = $rowGetsections['section'];
                                         }
                                     }
 
-                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
-                                    $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
-                                    $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
-
-                                    if ($rowcountprinfixedremark > 0) {
-                                        $principalRemark = $fetchfixedprinremark['remark'];
-
-                                        $headteacherid = $fetchfixedprinremark['StaffID'];
-
-                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
-                                        $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
-                                        $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
-                                        $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-
-                                        if ($row_cntgetheadteachsignhead > 0) {
-                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
-                                        } else {
-                                            $hedteachsignhead = '';
-                                        }
-                                    } else {
-                                        $rowgetteachremark = find_defaultcomment_match($link, 'SchoolHead', $classid, $resultSubType, $gettotgrade);
-                                        $row_cntgetprincremark = !empty($rowgetteachremark) ? 1 : 0;
-
-                                        if ($row_cntgetprincremark > 0) {
-                                            $principalRemark = $rowgetteachremark['DefaultComment'];
-
-                                            $headteacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-
-                                            $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
-                                            $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
-                                            $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
-                                            $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-
-                                            if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
-                                            } else {
-                                                $hedteachsignhead = '';
-                                            }
-                                        } else {
-                                            $principalRemark = 'N/A';
-
-                                            $hedteachsignhead = '';
-                                        }
-                                    }
+                                    $schoolHeadCommentData = get_school_head_comment_data($link, $id, $session, $term, $resultSubType, $classid, $gettotgrade, '../img/signature/');
+                                    $principalRemark = $schoolHeadCommentData['remark'];
+                                    $hedteachsignhead = $schoolHeadCommentData['signatureHtml'];
 
                                     if ($term == '1st') {
                                         $termnew = '2nd';
@@ -5125,50 +5002,9 @@ $studsection = $rowGetsections['section'];
                                         }
                                     }
 
-                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
-                                    $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
-                                    $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
-
-                                    if ($rowcountprinfixedremark > 0) {
-                                        $principalRemark = $fetchfixedprinremark['remark'];
-
-                                        $headteacherid = $fetchfixedprinremark['StaffID'];
-
-                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
-                                        $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
-                                        $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
-                                        $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-
-                                        if ($row_cntgetheadteachsignhead > 0) {
-                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
-                                        } else {
-                                            $hedteachsignhead = '';
-                                        }
-                                    } else {
-                                        $rowgetteachremark = find_defaultcomment_match($link, 'SchoolHead', $classid, $resultSubType, $gettotgrade);
-                                        $row_cntgetprincremark = !empty($rowgetteachremark) ? 1 : 0;
-
-                                        if ($row_cntgetprincremark > 0) {
-                                            $principalRemark = $rowgetteachremark['DefaultComment'];
-
-                                            $headteacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-
-                                            $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
-                                            $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
-                                            $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
-                                            $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-
-                                            if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
-                                            } else {
-                                                $hedteachsignhead = '';
-                                            }
-                                        } else {
-                                            $principalRemark = 'N/A';
-
-                                            $hedteachsignhead = '';
-                                        }
-                                    }
+                                    $schoolHeadCommentData = get_school_head_comment_data($link, $id, $session, $term, $resultSubType, $classid, $gettotgrade, '../img/signature/');
+                                    $principalRemark = $schoolHeadCommentData['remark'];
+                                    $hedteachsignhead = $schoolHeadCommentData['signatureHtml'];
 
                                     if ($term == '1st') {
                                         $termnew = '2nd';
@@ -6668,50 +6504,9 @@ $studsection = $rowGetsections['section'];
                                         }
                                     }
 
-                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='3rd' AND `ResultSubType`='$resultSubType' AND `remark`!=''");
-                                    $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
-                                    $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
-
-                                    if ($rowcountprinfixedremark > 0) {
-                                        $principalRemark = $fetchfixedprinremark['remark'];
-
-                                        $headteacherid = $fetchfixedprinremark['StaffID'];
-
-                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
-                                        $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
-                                        $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
-                                        $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-
-                                        if ($row_cntgetheadteachsignhead > 0) {
-                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
-                                        } else {
-                                            $hedteachsignhead = '';
-                                        }
-                                    } else {
-                                        $rowgetteachremark = find_defaultcomment_match($link, 'SchoolHead', $classid, $resultSubType, $gettotgrade);
-                                        $row_cntgetprincremark = !empty($rowgetteachremark) ? 1 : 0;
-
-                                        if ($row_cntgetprincremark > 0) {
-                                            $principalRemark = $rowgetteachremark['DefaultComment'];
-
-                                            $headteacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-
-                                            $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
-                                            $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
-                                            $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
-                                            $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-
-                                            if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
-                                            } else {
-                                                $hedteachsignhead = '';
-                                            }
-                                        } else {
-                                            $principalRemark = 'N/A';
-
-                                            $hedteachsignhead = '';
-                                        }
-                                    }
+                                    $schoolHeadCommentData = get_school_head_comment_data($link, $id, $session, '3rd', $resultSubType, $classid, $gettotgrade, '../img/signature/');
+                                    $principalRemark = $schoolHeadCommentData['remark'];
+                                    $hedteachsignhead = $schoolHeadCommentData['signatureHtml'];
 
                                     $sqlresumdate = ("SELECT * FROM `resumptiondate` WHERE `Session`='$sessionnew' AND `Term`='3rd'");
 
@@ -8098,50 +7893,9 @@ $studsection = $rowGetsections['section'];
                                         }
                                     }
 
-                                    $sqlgetprincremark = mysqli_query($link, "SELECT * FROM `remark` WHERE `RemarkType` = 'SchoolHead' AND `StudentID`='$id' AND `Session`='$session' AND `Term`='$term' AND `ResultSubType`='$resultSubType'");
-                                    $rowcountprinfixedremark = mysqli_num_rows($sqlgetprincremark);
-                                    $fetchfixedprinremark = mysqli_fetch_assoc($sqlgetprincremark);
-
-                                    if ($rowcountprinfixedremark > 0) {
-                                        $principalRemark = $fetchfixedprinremark['remark'];
-
-                                        $headteacherid = $fetchfixedprinremark['StaffID'];
-
-                                        $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
-                                        $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
-                                        $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
-                                        $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-
-                                        if ($row_cntgetheadteachsignhead > 0) {
-                                            $hedteachsignhead = '<img src="' . $defRUl . 'img/signature/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
-                                        } else {
-                                            $hedteachsignhead = '';
-                                        }
-                                    } else {
-                                        $rowgetteachremark = find_defaultcomment_match($link, 'SchoolHead', $classid, $resultSubType, $gettotgrade);
-                                        $row_cntgetprincremark = !empty($rowgetteachremark) ? 1 : 0;
-
-                                        if ($row_cntgetprincremark > 0) {
-                                            $principalRemark = $rowgetteachremark['DefaultComment'];
-
-                                            $headteacherid = $rowgetteachremark['PrincipalOrDeanOrHeadTeacherUserID'];
-
-                                            $sqlgetheadteachhead = ("SELECT * FROM `staffsignature` WHERE staff_id = '$headteacherid'");
-                                            $resultgetheadteachsignhead = mysqli_query($link, $sqlgetheadteachhead);
-                                            $rowgetheadteachsignhead = mysqli_fetch_assoc($resultgetheadteachsignhead);
-                                            $row_cntgetheadteachsignhead = mysqli_num_rows($resultgetheadteachsignhead);
-
-                                            if ($row_cntgetheadteachsignhead > 0) {
-                                                $hedteachsignhead = '<img src=" https://schoollift.s3.us-east-2.amazonaws.com/' . $rowgetheadteachsignhead['Signature'] . '" align="center" class="img-fluid signature-img">';
-                                            } else {
-                                                $hedteachsignhead = '';
-                                            }
-                                        } else {
-                                            $principalRemark = 'N/A';
-
-                                            $hedteachsignhead = '';
-                                        }
-                                    }
+                                    $schoolHeadCommentData = get_school_head_comment_data($link, $id, $session, $term, $resultSubType, $classid, $gettotgrade, '../img/signature/');
+                                    $principalRemark = $schoolHeadCommentData['remark'];
+                                    $hedteachsignhead = $schoolHeadCommentData['signatureHtml'];
 
                                     if ($term == '1st') {
                                         $termnew = '2nd';
