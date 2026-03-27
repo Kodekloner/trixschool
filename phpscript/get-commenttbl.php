@@ -29,7 +29,7 @@ if ($row_cntexamsubjects > 0) {
         echo '<tr>
                 <td>' . $rowexamsubjects['RangeStart'] . '</td>
                 <td>' . $rowexamsubjects['RangeEnd'] . '</td>
-                <td>' . htmlspecialchars($rowexamsubjects['DefaultComment']) . '</td>
+                <td>' . htmlspecialchars($rowexamsubjects['DefaultComment'], ENT_QUOTES, 'UTF-8') . '</td>
                 <td>
                     <a href="#" data-toggle="modal" data-target="#exampleModalEdit" data-id="' . $rowexamsubjects['defaultcommentID'] . '" id="editbtn" style="color: #000000;">
                         <i class="fa fa-pencil" title="Edit" data-toggle="tooltip" aria-hidden="true"></i>
