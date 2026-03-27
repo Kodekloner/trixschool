@@ -452,12 +452,18 @@
 
             var reltype = $("#reltype").val();
 
+            var classsectionactual = $("#classsection").val();
+
+            var classid = $("#class").val();
+
+            var rolefirst = '<?php echo $rolefirst; ?>';
+
             var displaydte = $("#displaydte").val();
 
-            if (session != '' && session != '0' && reltype != '' && reltype != '0' && displaydte != '' && displaydte != '0') {
+            if (session != '' && session != '0' && classid != '' && classid != '0' && classsectionactual != '' && classsectionactual != '0' && reltype != '' && reltype != '0' && displaydte != '' && displaydte != '0') {
 
                 if (reltype == 'cummulative') {
-                    var dataString = '&session=' + session + '&term=' + term + '&reltype=' + reltype + '&displaydte=' + displaydte;
+                    var dataString = '&session=' + session + '&term=' + term + '&classid=' + classid + '&classsectionactual=' + classsectionactual + '&reltype=' + reltype + '&rolefirst=' + rolefirst + '&displaydte=' + displaydte;
 
                     // alert(dataString);
                     $.ajax({
@@ -495,7 +501,7 @@
                 } else {
 
                     if (term != '' && term != '0') {
-                        var dataString = '&session=' + session + '&term=' + term + '&reltype=' + reltype + '&displaydte=' + displaydte;
+                        var dataString = '&session=' + session + '&term=' + term + '&classid=' + classid + '&classsectionactual=' + classsectionactual + '&reltype=' + reltype + '&rolefirst=' + rolefirst + '&displaydte=' + displaydte;
 
                         // alert(dataString);
                         $.ajax({
