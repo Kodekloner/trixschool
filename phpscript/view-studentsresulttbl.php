@@ -1,19 +1,20 @@
 <?php
 include('../database/config.php');
+require_once('../helper/publishresult_helper.php');
 
-$classsectionactual = $_POST['classsectionactual'];
+$classsectionactual = $_POST['classsectionactual'] ?? 0;
 
-$classid = $_POST['classid'];
+$classid = $_POST['classid'] ?? 0;
 
-$session = $_POST['session'];
+$session = $_POST['session'] ?? 0;
 
-$term = $_POST['term'];
+$term = $_POST['term'] ?? '';
 
-$reltype = $_POST['reltype'];
+$reltype = $_POST['reltype'] ?? '';
 
-$rolefirst = $_POST['rolefirst'];
+$rolefirst = $_POST['rolefirst'] ?? '';
 
-$staffid = $_POST['staffid'];
+$staffid = $_POST['staffid'] ?? 0;
 
 $reldate = date('Y-m-d');
 
@@ -40,16 +41,8 @@ if ($rolefirst == 'parent') {
 }
 
 if ($rolefirst == 'student' || $rolefirst == 'parent') {
-
-    if ($reltype == 'cummulative') {
-        $sqlGetstudent_session = "SELECT * FROM `publishresult` WHERE `Session`='$session' AND ResultType= '$reltype' AND Date <= '$reldate'";
-    } else {
-        $sqlGetstudent_session = "SELECT * FROM `publishresult` WHERE `Session`='$session' AND ResultType= '$reltype' AND Term = '$term' AND Date <= '$reldate'";
-    }
-
-    $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-    $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-    $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+    $publishedResult = find_publishresult_record($link, $session, $term, $reltype, $classid, $classsectionactual, $reldate);
+    $countGetstudent_session = !empty($publishedResult) ? 1 : 0;
 
     if ($countGetstudent_session > 0) {
         $sqlclasseschecker = "SELECT * FROM class_sections WHERE section_id = '$classsectionactual' AND class_id = '$classid'";

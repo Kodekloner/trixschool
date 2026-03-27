@@ -1,38 +1,30 @@
 <?php
     include ('../database/config.php');
+    require_once('../helper/publishresult_helper.php');
     
     
-    $classsection = $_POST['classsection'];
+    $classsection = $_POST['classsection'] ?? 0;
     
-    $classsectionactual = $_POST['classsectionactual'];
+    $classsectionactual = $_POST['classsectionactual'] ?? 0;
             
-    $classid = $_POST['classid'];
+    $classid = $_POST['classid'] ?? 0;
     
-    $session = $_POST['session'];
+    $session = $_POST['session'] ?? 0;
     
-    $term = $_POST['term'];
+    $term = $_POST['term'] ?? '';
     
-    $reltype = $_POST['reltype'];
+    $reltype = $_POST['reltype'] ?? '';
     
-    $rolefirst = $_POST['rolefirst'];
+    $rolefirst = $_POST['rolefirst'] ?? '';
     
     if($rolefirst == 'student'){
         
     }
     else
     {
-        if($reltype == 'cummulative')
-        {
-            $sqlGetstudent_session = "SELECT * FROM `publishresult` WHERE `Session`='$session' AND ResultType= '$reltype'";
-        }
-        else
-        {
-            $sqlGetstudent_session = "SELECT * FROM `publishresult` WHERE `Session`='$session' AND ResultType= '$reltype' AND Term = '$term'";
-        }
-        
-        $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-        $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-        $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+        $rowGetstudent_session = find_publishresult_record($link, $session, $term, $reltype, $classid, $classsectionactual);
+        $countGetstudent_session = !empty($rowGetstudent_session) ? 1 : 0;
+        $savedDate = $rowGetstudent_session['Date'] ?? '';
         
         
         if($countGetstudent_session > 0)
@@ -41,7 +33,7 @@
                     Publish Result
                 </a><br>
                 <span><small style="color:green;">Published</small></span>
-                <input type="hidden" id="datee" value="'.$rowGetstudent_session['Date'].'">';
+                <input type="hidden" id="datee" value="'.$savedDate.'">';
         }
         else
         {
@@ -49,7 +41,7 @@
                     Publish Result
                 </a><br>
                 <span><small style="color:red;">Not Published</small></span>
-                <input type="hidden" id="datee" value="'.$rowGetstudent_session['Date'].'">';
+                <input type="hidden" id="datee" value="'.$savedDate.'">';
         }
     }    
 ?>
