@@ -9,6 +9,38 @@ if (!function_exists('normalize_publishresult_reltype')) {
     }
 }
 
+if (!function_exists('can_staff_publish_result')) {
+    function can_staff_publish_result($link, $staffId, $rolefirst)
+    {
+        if (trim((string) $rolefirst) !== 'staff') {
+            return false;
+        }
+
+        $staffId = (int) $staffId;
+
+        if ($staffId <= 0) {
+            return false;
+        }
+
+        $allowedRoles = ['Admin', 'Super Admin', 'Head Teacher'];
+        $escapedRoles = [];
+
+        foreach ($allowedRoles as $roleName) {
+            $escapedRoles[] = "'" . mysqli_real_escape_string($link, $roleName) . "'";
+        }
+
+        $sql = "SELECT 1
+                FROM `staff_roles`
+                INNER JOIN `roles` ON staff_roles.role_id = roles.id
+                WHERE staff_roles.staff_id = '$staffId'
+                  AND roles.name IN (" . implode(', ', $escapedRoles) . ")
+                LIMIT 1";
+        $result = mysqli_query($link, $sql);
+
+        return $result && mysqli_num_rows($result) > 0;
+    }
+}
+
 if (!function_exists('build_publishresult_where_clause')) {
     function build_publishresult_where_clause($link, $session, $term, $reltype, $classId, $sectionId, $dateLimit = null)
     {

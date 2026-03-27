@@ -1,4 +1,8 @@
-<?php include('../database/config.php'); ?>
+<?php
+include('../database/config.php');
+require_once('../helper/publishresult_helper.php');
+$canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
+?>
 <!doctype html>
 <html lang="en">
 
@@ -143,6 +147,11 @@
                                 </div>
 
                                 <div class="col-md-12 col-lg-3 statusdiv" align="center">
+                                    <?php if (!$canPublishResult) { ?>
+                                        <div class="alert alert-light" role="alert" style="margin-bottom: 0;">
+                                            Result publishing is available only to Admin, Head Teacher and Super Admin.
+                                        </div>
+                                    <?php } ?>
 
                                 </div>
 
@@ -182,6 +191,7 @@
             </div>
         </div>
     </div>
+    <?php if ($canPublishResult) { ?>
     <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
 
         <div class="modal-dialog">
@@ -219,6 +229,7 @@
         </div>
 
     </div>
+    <?php } ?>
     <script src="../assets/plugins/jquery-datatables-editable/jquery.dataTables.js"></script>
     <script src="../assets/plugins/datatables/dataTables.bootstrap.js"></script>
     <script src="../assets/plugins/tiny-editable/mindmup-editabletable.js"></script>
@@ -238,6 +249,7 @@
 
     <script>
         $(document).ready(function() {
+            var canPublishResult = <?php echo $canPublishResult ? 'true' : 'false'; ?>;
             var rolefirstold = '<?php echo $rolefirst; ?>';
             if (rolefirstold == 'parent') {
                 $('.pub-result').hide()
@@ -376,22 +388,24 @@
                         }
                     });
 
-                    $.ajax({
-                        url: '../../../phpscript/view-publishresult.php',
-                        method: 'POST',
-                        data: dataString,
+                    if (canPublishResult) {
+                        $.ajax({
+                            url: '../../../phpscript/view-publishresult.php',
+                            method: 'POST',
+                            data: dataString,
 
-                        success: function(maindata3) {
-                            if (rolefirstold != 'parent') {
-                                $('.statusdiv').html(maindata3);
+                            success: function(maindata3) {
+                                if (rolefirstold != 'parent') {
+                                    $('.statusdiv').html(maindata3);
 
-                                var datee = $("#datee").val();
+                                    var datee = $("#datee").val();
 
-                                $('#displaydte').val(datee);
+                                    $('#displaydte').val(datee);
+                                }
+
                             }
-
-                        }
-                    });
+                        });
+                    }
                 } else {
 
                     if (term != '' && term != '0') {
@@ -411,22 +425,24 @@
                             }
                         });
 
-                        $.ajax({
-                            url: '../../../phpscript/view-publishresult.php',
-                            method: 'POST',
-                            data: dataString,
+                        if (canPublishResult) {
+                            $.ajax({
+                                url: '../../../phpscript/view-publishresult.php',
+                                method: 'POST',
+                                data: dataString,
 
-                            success: function(maindata3) {
-                                if (rolefirstold != 'parent') {
-                                    $('.statusdiv').html(maindata3);
+                                success: function(maindata3) {
+                                    if (rolefirstold != 'parent') {
+                                        $('.statusdiv').html(maindata3);
 
-                                    var datee = $("#datee").val();
+                                        var datee = $("#datee").val();
 
-                                    $('#displaydte').val(datee);
+                                        $('#displaydte').val(datee);
+                                    }
+
                                 }
-
-                            }
-                        });
+                            });
+                        }
                     } else {
                         $('#showme').hide('slow');
                         $('#tbl_data').html('Please select term to view student list');
@@ -443,6 +459,9 @@
         });
 
         $("body").on("click", "#submitstudentbtn", function() {
+            if (!canPublishResult) {
+                return;
+            }
 
             $('#submitstudentbtn').html('<i class="fa fa-circle-o-notch fa-spin"></i> ...Processing');
 
