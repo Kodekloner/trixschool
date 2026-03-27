@@ -345,7 +345,7 @@ if (!function_exists('get_school_head_comment_data')) {
                              AND `Term` = '$termSafe'
                              AND `ResultSubType` = '$resultSubTypeSafe'
                              AND TRIM(COALESCE(`remark`, '')) != ''
-                           ORDER BY `RemarkID` DESC
+                           ORDER BY `id` DESC
                            LIMIT 1";
         $fixedRemarkResult = mysqli_query($link, $fixedRemarkSql);
         $fixedRemarkRow = ($fixedRemarkResult && mysqli_num_rows($fixedRemarkResult) > 0) ? mysqli_fetch_assoc($fixedRemarkResult) : null;
