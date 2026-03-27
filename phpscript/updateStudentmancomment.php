@@ -2,15 +2,16 @@
 include('../database/config.php');
 require_once('../helper/defaultcomment_helper.php');
 
-$studentid = $_POST['studentid'];
+$studentid = (int) ($_POST['studentid'] ?? 0);
 
-$extcomment = $_POST['extcomment'];
+$extcommentRaw = (string) ($_POST['extcomment'] ?? '');
+$extcomment = mysqli_real_escape_string($link, $extcommentRaw);
 
-$session = $_POST['session'];
+$session = (int) ($_POST['session'] ?? 0);
 
-$term = $_POST['term'];
+$term = mysqli_real_escape_string($link, trim((string) ($_POST['term'] ?? '')));
 
-$RemarkType = $_POST['RemarkType'];
+$RemarkType = mysqli_real_escape_string($link, trim((string) ($_POST['RemarkType'] ?? '')));
 
 $staffid = (int) ($_POST['staffid'] ?? 0);
 

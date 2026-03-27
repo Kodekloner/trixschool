@@ -509,7 +509,7 @@ require_once('../helper/defaultcomment_helper.php');
                             <span aria-hidden="true">&times;</span>
                         </button>
                         </div>
-                        <form method="post"  enctype="multipart/form-data">
+                        <form method="post" enctype="multipart/form-data" accept-charset="UTF-8">
                             <div class="modal-body">
                                 <div class="alert alert-info" id="defaultcomment-modal-meta">
                                     Select a head teacher, class and result type first to load the allowed score range.
@@ -556,7 +556,7 @@ require_once('../helper/defaultcomment_helper.php');
                                 <span aria-hidden="true">&times;</span>
                             </button>
                         </div>
-                        <form method="post"  enctype="multipart/form-data">
+                        <form method="post" enctype="multipart/form-data" accept-charset="UTF-8">
                             <div class="modal-body">
                                 <div class="col">
                                     <input type="file" name="staffsignature" class="form-control" placeholder="80">
@@ -593,7 +593,7 @@ require_once('../helper/defaultcomment_helper.php');
                             <span aria-hidden="true">&times;</span>
                         </button>
                         </div>
-                        <form method="post" enctype="multipart/form-data" id="displayform">
+                        <form method="post" enctype="multipart/form-data" id="displayform" accept-charset="UTF-8">
 
                         </form>
 
@@ -620,7 +620,7 @@ require_once('../helper/defaultcomment_helper.php');
 
                     </div>
                     <div class="modal-footer">
-                        <form method="post" enctype="multipart/form-data" id="displayform">
+                        <form method="post" enctype="multipart/form-data" id="displayform" accept-charset="UTF-8">
 
                             <input type="hidden" id="comid" name="comid">
 

@@ -18,8 +18,8 @@ if ($row_cntexamsubjects > 0) {
         $maxScoreMeta = get_defaultcomment_max_score($link, $rowexamsubjects['ClassID'] ?? 0, $resultSubType);
         $maxAttribute = $maxScoreMeta['success'] ? ' max="' . $maxScoreMeta['maxScore'] . '"' : '';
         $maxScoreLabel = $maxScoreMeta['success'] ? $maxScoreMeta['maxScore'] : 'N/A';
-        $classLabel = !empty($rowexamsubjects['class']) ? htmlspecialchars($rowexamsubjects['class']) : 'Legacy default';
-        $resultTypeLabel = htmlspecialchars(ucwords(str_replace('-', ' ', $resultSubType)));
+        $classLabel = !empty($rowexamsubjects['class']) ? htmlspecialchars($rowexamsubjects['class'], ENT_QUOTES, 'UTF-8') : 'Legacy default';
+        $resultTypeLabel = htmlspecialchars(ucwords(str_replace('-', ' ', $resultSubType)), ENT_QUOTES, 'UTF-8');
 
         echo '<div class="modal-body">
                 <div class="alert alert-info" style="font-size: 14px;">
@@ -39,7 +39,7 @@ if ($row_cntexamsubjects > 0) {
                 </div>
                 <div class="form-group">
                     <label for="exampleFormControlTextarea1" style="font-weight: 500;">Comment:</label>
-                    <textarea class="form-control" name="comment" id="exampleFormControlTextarea1" rows="3" placeholder="example: excellent result">' . htmlspecialchars($rowexamsubjects['DefaultComment']) . '</textarea>
+                    <textarea class="form-control" name="comment" id="exampleFormControlTextarea1" rows="3" placeholder="example: excellent result">' . htmlspecialchars($rowexamsubjects['DefaultComment'], ENT_QUOTES, 'UTF-8') . '</textarea>
                 </div>
                 <input type="hidden" name="defaultcommentID" value="' . $rowexamsubjects['defaultcommentID'] . '">
             </div>
