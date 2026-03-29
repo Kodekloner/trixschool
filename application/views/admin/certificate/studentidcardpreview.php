@@ -46,6 +46,9 @@
             .vertlist{padding: 0; margin:0; list-style: none;}
             .vertlist li{text-align: left;display: inline-block;width: 100%; padding-bottom: 5px;color: #000;}
             .vertlist li span{width:65%;float: right;}
+            .qrwrap{text-align:center; margin-top: 12px;}
+            .qrwrap img{width: 82px; height: 82px; background: #fff; padding: 4px; border-radius: 4px;}
+            .qrwrap .qrlabel{font-size: 10px; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em;}
 
     </style>
         <?php
@@ -142,6 +145,10 @@ if($idcard->enable_vertical_card){
                                             }
                                             ?>
                         </ul>
+                        <div class="qrwrap">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=<?php echo rawurlencode('Student attendance QR'); ?>" alt="Attendance QR preview" />
+                            <div class="qrlabel">Scan To Mark Attendance</div>
+                        </div>
                         <div class="signature"><img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $idcard->sign_image; ?>" width="200" height="24" /></div>
                     </td>
                 </tr>
@@ -240,11 +247,19 @@ if($idcard->enable_vertical_card){
                                 </div><!--./staround-->
                             </td>
                         </tr>
-                        <tr>
-                            <td valign="top" align="right" class="principal"><img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $idcard->sign_image; ?>" width="66" height="40" /></td>
-                        </tr>
-                    </table>
-                </td>
+                    <tr>
+                        <td valign="top" align="right" class="principal"><img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $idcard->sign_image; ?>" width="66" height="40" /></td>
+                    </tr>
+                    <tr>
+                        <td valign="top">
+                            <div class="qrwrap">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=<?php echo rawurlencode('Student attendance QR'); ?>" alt="Attendance QR preview" />
+                                <div class="qrlabel">Scan To Mark Attendance</div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
             </tr>
         </table>
 

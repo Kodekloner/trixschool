@@ -47,6 +47,9 @@
     .vertlist{padding: 0; margin:0; list-style: none;height: 132px;}
     .vertlist li{text-align: left;display: inline-block;width: 100%; padding-bottom: 2px;color: #000;}
     .vertlist li span{width:55%;float: right;}
+    .qrwrap{text-align:center; margin-top: 10px;}
+    .qrwrap img{width: 82px; height: 82px; background: #fff; padding: 4px; border-radius: 4px;}
+    .qrwrap .qrlabel{font-size: 10px; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em;}
 </style>
 
 <?php
@@ -137,6 +140,12 @@ if($id_card[0]->enable_vertical_card)
 
                                         <?php if ($id_card[0]->enable_blood_group == 1) { ?><li class="stred"><?php echo $this->lang->line('blood_group'); ?><span><?php echo $student->blood_group; ?></span></li><?php } ?>
                         </ul>
+                        <?php if (!empty($student->student_session_id)) { ?>
+                        <div class="qrwrap">
+                            <img src="<?php echo get_student_attendance_qr_image_url($student->student_session_id); ?>" alt="Attendance QR Code" />
+                            <div class="qrlabel">Scan To Mark Attendance</div>
+                        </div>
+                        <?php } ?>
                         <div class="signature"><img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $id_card[0]->sign_image; ?>" width="150" height="24" style="width: 150px;" /></div>
                     </td>
                 </tr>
@@ -240,6 +249,16 @@ if($id_card[0]->enable_vertical_card)
                     <tr>
                         <td valign="top" align="right" class="principal"><img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $id_card[0]->sign_image; ?>" width="66" height="40" /></td>
                     </tr>
+                    <?php if (!empty($student->student_session_id)) { ?>
+                    <tr>
+                        <td valign="top">
+                            <div class="qrwrap">
+                                <img src="<?php echo get_student_attendance_qr_image_url($student->student_session_id); ?>" alt="Attendance QR Code" />
+                                <div class="qrlabel">Scan To Mark Attendance</div>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php } ?>
                 </table>
             </td>
 

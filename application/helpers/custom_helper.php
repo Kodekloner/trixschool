@@ -216,3 +216,38 @@ function array_insert(&$array, $position, $insert)
 function amountFormat($amount){
     return number_format((float)$amount, 2, '.', '');
 }
+
+if (!function_exists('get_student_attendance_qr_hash')) {
+    function get_student_attendance_qr_hash($student_session_id)
+    {
+        $student_session_id = (int) $student_session_id;
+        $secret             = (string) config_item('encryption_key');
+
+        if ($secret === '') {
+            $secret = (string) site_url();
+        }
+
+        return hash_hmac('sha256', 'student-attendance|' . $student_session_id, $secret);
+    }
+}
+
+if (!function_exists('get_student_attendance_qr_url')) {
+    function get_student_attendance_qr_url($student_session_id)
+    {
+        $student_session_id = (int) $student_session_id;
+
+        return site_url('qrattendance/mark/' . $student_session_id . '/' . get_student_attendance_qr_hash($student_session_id));
+    }
+}
+
+if (!function_exists('get_student_attendance_qr_image_url')) {
+    function get_student_attendance_qr_image_url($student_session_id, $size = 110)
+    {
+        $size = (int) $size;
+        if ($size <= 0) {
+            $size = 110;
+        }
+
+        return 'https://api.qrserver.com/v1/create-qr-code/?size=' . $size . 'x' . $size . '&data=' . rawurlencode(get_student_attendance_qr_url($student_session_id));
+    }
+}

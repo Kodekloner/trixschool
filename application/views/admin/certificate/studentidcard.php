@@ -60,6 +60,9 @@
             .spanlr{padding-left: 5px; padding-right: 5px;}
             .cardleft{width: 20%;float: left;}
             .cardright{width: 77%;float: right; }
+            .stqr{text-align:center; padding: 4px 0 10px; position: relative; z-index: 1;}
+            .stqr img{width: 86px; height: 86px; background: #fff; padding: 4px; border-radius: 4px;}
+            .stqrtext{font-size: 10px; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em;}
             /* .pt15{padding-top: 15px;}
              .p10tb{padding-bottom: 10px; padding-top: 10px;}*/
 
@@ -154,6 +157,16 @@
                                 </div><!--./staround-->
                             </td>
                         </tr>
+                        <?php if (!empty($resultlist[0]['student_session_id'])) { ?>
+                        <tr>
+                            <td valign="top">
+                                <div class="stqr">
+                                    <img src="<?php echo get_student_attendance_qr_image_url($resultlist[0]['student_session_id']); ?>" alt="Attendance QR Code" />
+                                    <div class="stqrtext">Scan To Mark Attendance</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php } ?>
                         <tr>
                             <td valign="top" align="right" class="principal"><img src="https://schoollift.s3.us-east-2.amazonaws.com/uploads/student_id_card/signature.png" width="66" height="40" /></td>
                         </tr>
