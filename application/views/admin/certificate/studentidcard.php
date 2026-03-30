@@ -102,7 +102,7 @@
                                 <div class="staround">
                                     <div class="cardleft">
                                         <div class="stimg">
-                                            <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $resultlist[0]['image']; ?>" class="img-responsive" />
+                                            <img src="<?php echo get_student_image_url($resultlist[0]['image'], isset($resultlist[0]['gender']) ? $resultlist[0]['gender'] : ''); ?>" class="img-responsive" />
                                         </div>
                                     </div><!--./cardleft-->
                                     <div class="cardright">

@@ -93,7 +93,7 @@ if($id_card[0]->enable_vertical_card)
                <tr>
                     <td valign="top">
                         <div class="stimg center-block">
-                            <img src="https://demo.smart-school.in/uploads/student_images/no_image.png" class="img-responsive img-circle block-center" style="border-radius: 8px; border:3px solid <?php echo $id_card[0]->header_color; ?>">
+                            <img src="<?php echo get_student_image_url($student->image, isset($student->gender) ? $student->gender : ''); ?>" class="img-responsive img-circle block-center" style="border-radius: 8px; border:3px solid <?php echo $id_card[0]->header_color; ?>">
                         </div>
 
                     </td>
@@ -209,7 +209,7 @@ if($id_card[0]->enable_vertical_card)
                                 <div class="cardleft">
 
                                     <div class="stimg">
-                                        <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $student->image; ?>" class="img-responsive" />
+                                        <img src="<?php echo get_student_image_url($student->image, isset($student->gender) ? $student->gender : ''); ?>" class="img-responsive" />
                                     </div>
                                 </div><!--./cardleft-->
                                 <div class="cardright">

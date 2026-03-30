@@ -48,7 +48,7 @@
                                         <div class="staround">
                                             <div class="cardleft">
                                                 <div class="stimg">
-                                                    <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $list[0]['image']; ?>" class="img-responsive" />
+                                                    <img src="<?php echo get_student_image_url($list[0]['image'], isset($list[0]['gender']) ? $list[0]['gender'] : ''); ?>" class="img-responsive" />
                                                 </div>
                                             </div><!--./cardleft-->
                                             <div class="cardright">

@@ -262,3 +262,45 @@ if (!function_exists('get_qr_attendance_demo_log_file')) {
         return FCPATH . 'uploads/qr_attendance_logs/qr_attendance_demo_' . $date . '.csv';
     }
 }
+
+if (!function_exists('get_storage_file_url')) {
+    function get_storage_file_url($file_path, $fallback = '')
+    {
+        $file_path = trim((string) $file_path);
+        $fallback  = trim((string) $fallback);
+
+        if ($file_path === '') {
+            $file_path = $fallback;
+        }
+
+        if ($file_path === '') {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $file_path)) {
+            return $file_path;
+        }
+
+        $normalized_path = ltrim($file_path, '/');
+        if (file_exists(FCPATH . $normalized_path)) {
+            return base_url($normalized_path);
+        }
+
+        return 'https://schoollift.s3.us-east-2.amazonaws.com/' . $normalized_path;
+    }
+}
+
+if (!function_exists('get_student_image_url')) {
+    function get_student_image_url($image_path, $gender = '')
+    {
+        $gender = strtolower(trim((string) $gender));
+
+        if ($gender === 'female') {
+            $default_image = 'uploads/student_images/default_female.jpg';
+        } else {
+            $default_image = 'uploads/student_images/default_male.jpg';
+        }
+
+        return get_storage_file_url($image_path, $default_image);
+    }
+}
