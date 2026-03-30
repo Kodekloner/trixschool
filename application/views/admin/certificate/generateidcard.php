@@ -84,7 +84,10 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                 <div class="box-header ptbnull"></div>
                                 <div class="box-header ptbnull">
                                     <h3 class="box-title titlefix"><i class="fa fa-users"></i> <?php echo $this->lang->line('student'); ?> <?php echo $this->lang->line('list'); ?></h3>
-                                    <button class="btn btn-info btn-sm printSelected pull-right" type="button" name="generate" title="<?php echo $this->lang->line('generate') . " " . $this->lang->line('certificate'); ?>"><?php echo $this->lang->line('generate'); ?></button>
+                                    <a href="<?php echo site_url('admin/qrattendancedemo'); ?>" class="btn btn-success btn-sm pull-right" style="margin-left:8px;">
+                                        <i class="fa fa-qrcode"></i> QR Demo Station
+                                    </a>
+                                    <button class="btn btn-info btn-sm printSelected pull-right" type="button" name="generate" title="<?php echo $this->lang->line('generate') . " " . $this->lang->line('certificate'); ?>">Generate Preview</button>
                                 </div>
                                 <div class="box-body table-responsive">
                                     <div class="download_label"><?php echo $title; ?></div>
@@ -159,6 +162,17 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                 </div>
                             </div>
                         </form>
+                        <div class="box box-default" id="generated_id_card_preview" style="display:none; margin: 15px;">
+                            <div class="box-header with-border">
+                                <h3 class="box-title"><i class="fa fa-id-card"></i> Generated ID Card Preview</h3>
+                                <button class="btn btn-primary btn-sm pull-right" type="button" id="print_generated_preview">
+                                    <i class="fa fa-print"></i> Print Cards
+                                </button>
+                            </div>
+                            <div class="box-body">
+                                <div id="generated_id_card_preview_body"></div>
+                            </div>
+                        </div>
                     <?php
                     }
                     ?>
@@ -269,11 +283,18 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                         'id_card': idCard,
                     },
                     success: function(response) {
-
-                        Popup(response.page);
+                        $('#generated_id_card_preview_body').html(response.page);
+                        $('#generated_id_card_preview').show();
+                        $('html, body').animate({
+                            scrollTop: $('#generated_id_card_preview').offset().top - 20
+                        }, 400);
                     },
                 });
             }
+        });
+
+        $(document).on('click', '#print_generated_preview', function() {
+            Popup($('#generated_id_card_preview_body').html());
         });
     });
 </script>

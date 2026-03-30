@@ -251,3 +251,14 @@ if (!function_exists('get_student_attendance_qr_image_url')) {
         return 'https://api.qrserver.com/v1/create-qr-code/?size=' . $size . 'x' . $size . '&data=' . rawurlencode(get_student_attendance_qr_url($student_session_id));
     }
 }
+
+if (!function_exists('get_qr_attendance_demo_log_file')) {
+    function get_qr_attendance_demo_log_file($date = null)
+    {
+        if (empty($date)) {
+            $date = date('Y-m-d');
+        }
+
+        return FCPATH . 'uploads/qr_attendance_logs/qr_attendance_demo_' . $date . '.csv';
+    }
+}
