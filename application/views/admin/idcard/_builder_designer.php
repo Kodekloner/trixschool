@@ -116,15 +116,23 @@ if ($builder_type === 'staff') {
 
     .id-card-designer-shell.is-large-window {
         position: fixed;
-        inset: 18px;
+        top: 50%;
+        left: 50%;
+        width: min(1200px, calc(100vw - 36px));
+        height: min(92vh, 920px);
+        transform: translate(-50%, -50%);
         z-index: 1060;
         margin: 0;
         background: rgba(248, 250, 252, 0.98);
         box-shadow: 0 24px 48px rgba(15, 23, 42, 0.28);
+        display: flex;
+        flex-direction: column;
     }
 
     .id-card-designer-shell.is-large-window .id-card-designer-preview {
-        min-height: calc(100vh - 180px);
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow: auto;
     }
 
     .id-card-designer-overlay {
