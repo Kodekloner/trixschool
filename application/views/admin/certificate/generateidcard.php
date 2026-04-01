@@ -84,9 +84,6 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                 <div class="box-header ptbnull"></div>
                                 <div class="box-header ptbnull">
                                     <h3 class="box-title titlefix"><i class="fa fa-users"></i> <?php echo $this->lang->line('student'); ?> <?php echo $this->lang->line('list'); ?></h3>
-                                    <a href="<?php echo site_url('admin/qrattendancedemo'); ?>" class="btn btn-success btn-sm pull-right" style="margin-left:8px;">
-                                        <i class="fa fa-qrcode"></i> QR Demo Station
-                                    </a>
                                     <button class="btn btn-info btn-sm printSelected pull-right" type="button" name="generate" title="<?php echo $this->lang->line('generate') . " " . $this->lang->line('certificate'); ?>">Generate Preview</button>
                                 </div>
                                 <div class="box-body table-responsive">

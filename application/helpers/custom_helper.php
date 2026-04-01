@@ -304,3 +304,246 @@ if (!function_exists('get_student_image_url')) {
         return get_storage_file_url($image_path, $default_image);
     }
 }
+
+if (!function_exists('get_staff_photo_url')) {
+    function get_staff_photo_url($image_path)
+    {
+        $image_path = trim((string) $image_path);
+        if ($image_path !== '' && !preg_match('#^https?://#i', $image_path) && strpos($image_path, '/') === false) {
+            $image_path = 'uploads/staff_images/' . $image_path;
+        }
+
+        return get_storage_file_url($image_path, 'uploads/staff_images/no_image.png');
+    }
+}
+
+if (!function_exists('normalize_id_card_unit')) {
+    function normalize_id_card_unit($unit)
+    {
+        $unit = strtolower(trim((string) $unit));
+        $allowed_units = array('in', 'mm', 'cm', 'px');
+
+        return in_array($unit, $allowed_units, true) ? $unit : 'in';
+    }
+}
+
+if (!function_exists('format_id_card_measurement')) {
+    function format_id_card_measurement($value)
+    {
+        $value = (float) $value;
+        $value = round($value, 2);
+        $formatted = number_format($value, 2, '.', '');
+
+        return rtrim(rtrim($formatted, '0'), '.');
+    }
+}
+
+if (!function_exists('get_id_card_dimension_config')) {
+    function get_id_card_dimension_config($card = null)
+    {
+        if (is_array($card)) {
+            $unit = isset($card['card_unit']) ? $card['card_unit'] : 'in';
+            $width = isset($card['card_width']) ? $card['card_width'] : 2.1;
+            $height = isset($card['card_height']) ? $card['card_height'] : 3.3;
+        } elseif (is_object($card)) {
+            $unit = isset($card->card_unit) ? $card->card_unit : 'in';
+            $width = isset($card->card_width) ? $card->card_width : 2.1;
+            $height = isset($card->card_height) ? $card->card_height : 3.3;
+        } else {
+            $unit = 'in';
+            $width = 2.1;
+            $height = 3.3;
+        }
+
+        $unit = normalize_id_card_unit($unit);
+        $width = (float) $width;
+        $height = (float) $height;
+
+        if ($width <= 0) {
+            $width = 2.1;
+        }
+        if ($height <= 0) {
+            $height = 3.3;
+        }
+
+        return array(
+            'unit' => $unit,
+            'width' => $width,
+            'height' => $height,
+            'portrait' => $height >= $width,
+        );
+    }
+}
+
+if (!function_exists('get_default_id_card_layout')) {
+    function get_default_id_card_layout($type = 'student', $portrait = true)
+    {
+        if ($type === 'staff') {
+            if ($portrait) {
+                return array(
+                    'logo' => array('x' => 6, 'y' => 4, 'w' => 12, 'h' => 10),
+                    'school_name' => array('x' => 21, 'y' => 4, 'w' => 72, 'h' => 8),
+                    'school_address' => array('x' => 6, 'y' => 14, 'w' => 88, 'h' => 8),
+                    'title' => array('x' => 6, 'y' => 24, 'w' => 88, 'h' => 7),
+                    'photo' => array('x' => 6, 'y' => 34, 'w' => 28, 'h' => 22),
+                    'name' => array('x' => 38, 'y' => 34, 'w' => 56, 'h' => 7),
+                    'designation' => array('x' => 38, 'y' => 42, 'w' => 56, 'h' => 6),
+                    'staff_id' => array('x' => 38, 'y' => 49, 'w' => 56, 'h' => 6),
+                    'department' => array('x' => 6, 'y' => 58, 'w' => 88, 'h' => 6),
+                    'father_name' => array('x' => 6, 'y' => 65, 'w' => 88, 'h' => 6),
+                    'mother_name' => array('x' => 6, 'y' => 72, 'w' => 88, 'h' => 6),
+                    'date_of_joining' => array('x' => 6, 'y' => 79, 'w' => 88, 'h' => 6),
+                    'phone' => array('x' => 6, 'y' => 86, 'w' => 42, 'h' => 6),
+                    'dob' => array('x' => 52, 'y' => 86, 'w' => 42, 'h' => 6),
+                    'address' => array('x' => 6, 'y' => 93, 'w' => 50, 'h' => 6),
+                    'signature' => array('x' => 58, 'y' => 92, 'w' => 18, 'h' => 6),
+                    'qr' => array('x' => 78, 'y' => 90, 'w' => 16, 'h' => 10),
+                );
+            }
+
+            return array(
+                'logo' => array('x' => 4, 'y' => 5, 'w' => 8, 'h' => 18),
+                'school_name' => array('x' => 14, 'y' => 4, 'w' => 56, 'h' => 10),
+                'school_address' => array('x' => 14, 'y' => 14, 'w' => 56, 'h' => 8),
+                'title' => array('x' => 73, 'y' => 5, 'w' => 23, 'h' => 12),
+                'photo' => array('x' => 4, 'y' => 28, 'w' => 20, 'h' => 44),
+                'name' => array('x' => 27, 'y' => 28, 'w' => 41, 'h' => 9),
+                'designation' => array('x' => 27, 'y' => 37, 'w' => 41, 'h' => 8),
+                'staff_id' => array('x' => 27, 'y' => 45, 'w' => 41, 'h' => 7),
+                'department' => array('x' => 27, 'y' => 53, 'w' => 41, 'h' => 7),
+                'father_name' => array('x' => 27, 'y' => 61, 'w' => 41, 'h' => 7),
+                'mother_name' => array('x' => 27, 'y' => 69, 'w' => 41, 'h' => 7),
+                'date_of_joining' => array('x' => 71, 'y' => 28, 'w' => 25, 'h' => 8),
+                'phone' => array('x' => 71, 'y' => 37, 'w' => 25, 'h' => 7),
+                'dob' => array('x' => 71, 'y' => 45, 'w' => 25, 'h' => 7),
+                'address' => array('x' => 71, 'y' => 53, 'w' => 25, 'h' => 12),
+                'signature' => array('x' => 60, 'y' => 82, 'w' => 18, 'h' => 10),
+                'qr' => array('x' => 80, 'y' => 76, 'w' => 16, 'h' => 18),
+            );
+        }
+
+        if ($portrait) {
+            return array(
+                'logo' => array('x' => 6, 'y' => 4, 'w' => 12, 'h' => 10),
+                'school_name' => array('x' => 21, 'y' => 4, 'w' => 72, 'h' => 8),
+                'school_address' => array('x' => 6, 'y' => 14, 'w' => 88, 'h' => 8),
+                'title' => array('x' => 6, 'y' => 24, 'w' => 88, 'h' => 7),
+                'photo' => array('x' => 6, 'y' => 34, 'w' => 28, 'h' => 22),
+                'student_name' => array('x' => 38, 'y' => 34, 'w' => 56, 'h' => 7),
+                'admission_no' => array('x' => 38, 'y' => 42, 'w' => 56, 'h' => 6),
+                'class' => array('x' => 38, 'y' => 49, 'w' => 56, 'h' => 6),
+                'father_name' => array('x' => 6, 'y' => 58, 'w' => 88, 'h' => 6),
+                'mother_name' => array('x' => 6, 'y' => 65, 'w' => 88, 'h' => 6),
+                'address' => array('x' => 6, 'y' => 72, 'w' => 88, 'h' => 10),
+                'phone' => array('x' => 6, 'y' => 84, 'w' => 42, 'h' => 6),
+                'dob' => array('x' => 52, 'y' => 84, 'w' => 42, 'h' => 6),
+                'blood_group' => array('x' => 6, 'y' => 91, 'w' => 30, 'h' => 5),
+                'signature' => array('x' => 38, 'y' => 90, 'w' => 28, 'h' => 8),
+                'qr' => array('x' => 70, 'y' => 89, 'w' => 22, 'h' => 10),
+            );
+        }
+
+        return array(
+            'logo' => array('x' => 4, 'y' => 5, 'w' => 8, 'h' => 18),
+            'school_name' => array('x' => 14, 'y' => 4, 'w' => 56, 'h' => 10),
+            'school_address' => array('x' => 14, 'y' => 14, 'w' => 56, 'h' => 8),
+            'title' => array('x' => 73, 'y' => 5, 'w' => 23, 'h' => 12),
+            'photo' => array('x' => 4, 'y' => 28, 'w' => 20, 'h' => 44),
+            'student_name' => array('x' => 27, 'y' => 28, 'w' => 41, 'h' => 9),
+            'admission_no' => array('x' => 27, 'y' => 37, 'w' => 41, 'h' => 7),
+            'class' => array('x' => 27, 'y' => 45, 'w' => 41, 'h' => 7),
+            'father_name' => array('x' => 27, 'y' => 53, 'w' => 41, 'h' => 7),
+            'mother_name' => array('x' => 27, 'y' => 61, 'w' => 41, 'h' => 7),
+            'address' => array('x' => 27, 'y' => 69, 'w' => 41, 'h' => 12),
+            'phone' => array('x' => 71, 'y' => 28, 'w' => 25, 'h' => 7),
+            'dob' => array('x' => 71, 'y' => 36, 'w' => 25, 'h' => 7),
+            'blood_group' => array('x' => 71, 'y' => 44, 'w' => 25, 'h' => 7),
+            'signature' => array('x' => 60, 'y' => 82, 'w' => 18, 'h' => 10),
+            'qr' => array('x' => 80, 'y' => 76, 'w' => 16, 'h' => 18),
+        );
+    }
+}
+
+if (!function_exists('get_id_card_layout_config')) {
+    function get_id_card_layout_config($layout_json = '', $type = 'student', $portrait = true)
+    {
+        $defaults = get_default_id_card_layout($type, $portrait);
+        $layout = $defaults;
+
+        if (!empty($layout_json)) {
+            $decoded = json_decode($layout_json, true);
+            if (is_array($decoded)) {
+                foreach ($defaults as $key => $default_box) {
+                    if (isset($decoded[$key]) && is_array($decoded[$key])) {
+                        $layout[$key] = array_merge($default_box, $decoded[$key]);
+                    }
+                }
+            }
+        }
+
+        foreach ($layout as $key => $box) {
+            foreach (array('x', 'y') as $axis) {
+                $layout[$key][$axis] = max(0, min(100, (float) $box[$axis]));
+            }
+            foreach (array('w', 'h') as $axis) {
+                $layout[$key][$axis] = max(4, min(100, (float) $box[$axis]));
+            }
+        }
+
+        return $layout;
+    }
+}
+
+if (!function_exists('sanitize_id_card_layout_json')) {
+    function sanitize_id_card_layout_json($layout_json = '', $type = 'student', $portrait = true)
+    {
+        return json_encode(get_id_card_layout_config($layout_json, $type, $portrait));
+    }
+}
+
+if (!function_exists('get_id_card_box_style')) {
+    function get_id_card_box_style($layout, $key)
+    {
+        if (!isset($layout[$key])) {
+            return '';
+        }
+
+        $box = $layout[$key];
+        return 'left:' . format_id_card_measurement($box['x']) . '%;top:' . format_id_card_measurement($box['y']) . '%;width:' . format_id_card_measurement($box['w']) . '%;height:' . format_id_card_measurement($box['h']) . '%;';
+    }
+}
+
+if (!function_exists('get_staff_attendance_qr_hash')) {
+    function get_staff_attendance_qr_hash($staff_id)
+    {
+        $staff_id = (int) $staff_id;
+        $secret = (string) config_item('encryption_key');
+
+        if ($secret === '') {
+            $secret = (string) site_url();
+        }
+
+        return hash_hmac('sha256', 'staff-attendance|' . $staff_id, $secret);
+    }
+}
+
+if (!function_exists('get_staff_attendance_qr_url')) {
+    function get_staff_attendance_qr_url($staff_id)
+    {
+        $staff_id = (int) $staff_id;
+
+        return site_url('qrattendance/staff/' . $staff_id . '/' . get_staff_attendance_qr_hash($staff_id));
+    }
+}
+
+if (!function_exists('get_staff_attendance_qr_image_url')) {
+    function get_staff_attendance_qr_image_url($staff_id, $size = 110)
+    {
+        $size = (int) $size;
+        if ($size <= 0) {
+            $size = 110;
+        }
+
+        return 'https://api.qrserver.com/v1/create-qr-code/?size=' . $size . 'x' . $size . '&data=' . rawurlencode(get_staff_attendance_qr_url($staff_id));
+    }
+}

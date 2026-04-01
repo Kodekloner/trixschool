@@ -31,6 +31,9 @@ class studentidcard extends Admin_Controller {
         $this->form_validation->set_rules('school_name', $this->lang->line('school_name'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('address', $this->lang->line('address_phone_email'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('title', $this->lang->line('id_card_title'), 'trim|required|xss_clean');
+        $this->form_validation->set_rules('card_unit', 'Card unit', 'trim|required|xss_clean');
+        $this->form_validation->set_rules('card_width', 'Card width', 'trim|required|numeric|greater_than[0]');
+        $this->form_validation->set_rules('card_height', 'Card height', 'trim|required|numeric|greater_than[0]');
         $this->form_validation->set_rules('background_image',$this->lang->line('background_image'), 'callback_handle_upload[background_image]');
         $this->form_validation->set_rules('logo_img', $this->lang->line('logo'), 'callback_handle_upload[logo_img]');
         $this->form_validation->set_rules('sign_image', $this->lang->line('signature'), 'callback_handle_upload[sign_image]');
@@ -78,10 +81,12 @@ class studentidcard extends Admin_Controller {
             if ($this->input->post('is_active_blood_group') == 1) {
                 $bloodgroup = $this->input->post('is_active_blood_group');
             }
-            $enable_vertical_card=$this->input->post('enable_vertical_card');
-             if (isset($enable_vertical_card)) {
-                $vertical_card = 1;
-            }
+            $card_width = (float) $this->input->post('card_width');
+            $card_height = (float) $this->input->post('card_height');
+            $card_unit = normalize_id_card_unit($this->input->post('card_unit'));
+            $vertical_card = $card_height >= $card_width ? 1 : 0;
+            $photo_style = $this->input->post('photo_style') === 'square' ? 'square' : 'round';
+            $layout_json = sanitize_id_card_layout_json($this->input->post('layout_json', false), 'student', $vertical_card === 1);
             $data = array(
                 'title' => $this->input->post('title'),
                 'school_name' => $this->input->post('school_name'),
@@ -96,6 +101,11 @@ class studentidcard extends Admin_Controller {
                 'enable_phone' => $phone,
                 'enable_dob' => $dob,
                 'enable_blood_group' => $bloodgroup,
+                'card_unit' => $card_unit,
+                'card_width' => $card_width,
+                'card_height' => $card_height,
+                'photo_style' => $photo_style,
+                'layout_json' => $layout_json,
                 'enable_vertical_card' => $vertical_card,
                 'status' => 1,
             );
@@ -240,6 +250,9 @@ class studentidcard extends Admin_Controller {
         $this->form_validation->set_rules('school_name', $this->lang->line('school_name'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('address', $this->lang->line('address_phone_email'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('title', $this->lang->line('id_card_title'), 'trim|required|xss_clean');
+        $this->form_validation->set_rules('card_unit', 'Card unit', 'trim|required|xss_clean');
+        $this->form_validation->set_rules('card_width', 'Card width', 'trim|required|numeric|greater_than[0]');
+        $this->form_validation->set_rules('card_height', 'Card height', 'trim|required|numeric|greater_than[0]');
         $this->form_validation->set_rules('background_image',$this->lang->line('background_image'), 'callback_handle_upload[background_image]');
         $this->form_validation->set_rules('logo_img', $this->lang->line('logo'), 'callback_handle_upload[logo_img]');
         $this->form_validation->set_rules('sign_image', $this->lang->line('signature'), 'callback_handle_upload[sign_image]');
@@ -287,10 +300,12 @@ class studentidcard extends Admin_Controller {
             if ($this->input->post('is_active_blood_group') == 1) {
                 $bloodgroup = $this->input->post('is_active_blood_group');
             }
-            $enable_vertical_card=$this->input->post('enable_vertical_card');
-             if (isset($enable_vertical_card)) {
-                $vertical_card = 1;
-            }
+            $card_width = (float) $this->input->post('card_width');
+            $card_height = (float) $this->input->post('card_height');
+            $card_unit = normalize_id_card_unit($this->input->post('card_unit'));
+            $vertical_card = $card_height >= $card_width ? 1 : 0;
+            $photo_style = $this->input->post('photo_style') === 'square' ? 'square' : 'round';
+            $layout_json = sanitize_id_card_layout_json($this->input->post('layout_json', false), 'student', $vertical_card === 1);
 
             if (!empty($_FILES['background_image']['name'])) {
                 // $config['upload_path'] = 'uploads/student_id_card/background/';
@@ -356,8 +371,8 @@ class studentidcard extends Admin_Controller {
                 // $this->load->library('upload', $config);
                 // $this->upload->initialize($config);
 
-                $file_info = pathinfo($_FILES['sign_img']['name']);
-                $file_path = $_FILES['sign_img']['tmp_name'];
+                $file_info = pathinfo($_FILES['sign_image']['name']);
+                $file_path = $_FILES['sign_image']['tmp_name'];
                 $file_name = "sign" . $id;
 
                 $upload_result = upload_to_s3($file_path, $file_info, $file_name, "uploads/student_id_card/signature/");
@@ -390,6 +405,11 @@ class studentidcard extends Admin_Controller {
                 'enable_phone' => $phone,
                 'enable_dob' => $dob,
                 'enable_blood_group' => $bloodgroup,
+                'card_unit' => $card_unit,
+                'card_width' => $card_width,
+                'card_height' => $card_height,
+                'photo_style' => $photo_style,
+                'layout_json' => $layout_json,
                 'enable_vertical_card'=>$vertical_card,
                 'status' => 1,
             );

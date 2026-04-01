@@ -126,13 +126,25 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                         <label for="enable_blood_group" class="label-success"></label>
                                     </div>
                                 </div>
-                                <div class="form-group switch-inline">
-                                    <label><?php echo $this->lang->line('design').' '.$this->lang->line('type'); ?></label>
-                                    <div class="material-switch switchcheck">
-                                        <input id="enable_vertical_card" name="enable_vertical_card" type="checkbox" class="chk" value="1" <?php echo set_checkbox('enable_vertical_card', '1', (set_value('enable_vertical_card') == 1) ? TRUE : FALSE); ?>>
-                                        <label for="enable_vertical_card" class="label-success"></label>
-                                    </div>
-                                </div>
+                                <?php
+                                $builder_card = (object) array(
+                                    'title' => set_value('title'),
+                                    'school_name' => set_value('school_name'),
+                                    'school_address' => set_value('address'),
+                                    'header_color' => set_value('header_color'),
+                                    'card_unit' => set_value('card_unit', 'in'),
+                                    'card_width' => set_value('card_width', 2.1),
+                                    'card_height' => set_value('card_height', 3.3),
+                                    'photo_style' => set_value('photo_style', 'round'),
+                                    'layout_json' => set_value('layout_json'),
+                                    'background' => '',
+                                    'logo' => '',
+                                    'sign_image' => '',
+                                );
+                                $builder_type = 'student';
+                                $this->load->view('admin/idcard/_builder_designer', compact('builder_card', 'builder_type'));
+                                ?>
+                                <input type="hidden" name="enable_vertical_card" value="1">
                             </div><!-- /.box-body -->
                             <div class="box-footer">
                                 <button type="submit" class="btn btn-info pull-right"><?php echo $this->lang->line('save'); ?></button>
@@ -163,7 +175,8 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                     <tr>
                                         <th><?php echo $this->lang->line('icard'); ?> <?php echo $this->lang->line('title'); ?></th>
                             <th><?php echo $this->lang->line('background_image'); ?></th>
-                            <th class="text text-center"> <?php echo $this->lang->line('design').' '.$this->lang->line('type'); ?> </th>
+                            <th class="text text-center">Card Size</th>
+                            <th class="text text-center">Orientation</th>
                                         <th class="text-right"><?php echo $this->lang->line('action'); ?></th>
                                     </tr>
                                 </thead>
@@ -188,10 +201,14 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                                     <?php } ?>
 
                                                 </td>
-                                                   <td class="mailbox-name text text-center">
-                                                    <?php echo ($idcard->enable_vertical_card) ?
-                                                    $this->lang->line('vertical') :$this->lang->line('horizontal')  ?>
-
+                                                <td class="mailbox-name text text-center">
+                                                    <?php
+                                                    $dimension_config = get_id_card_dimension_config($idcard);
+                                                    echo format_id_card_measurement($dimension_config['width']) . ' x ' . format_id_card_measurement($dimension_config['height']) . ' ' . strtoupper($dimension_config['unit']);
+                                                    ?>
+                                                </td>
+                                                <td class="mailbox-name text text-center">
+                                                    <?php echo $dimension_config['portrait'] ? $this->lang->line('vertical') : $this->lang->line('horizontal'); ?>
                                                 </td>
                                                 <td class="mailbox-date pull-right no-print">
                                                     <a data-id="<?php echo $idcard->id ?>" class="btn btn-default btn-xs view_data"  data-toggle="tooltip" title="<?php echo $this->lang->line('view'); ?>">

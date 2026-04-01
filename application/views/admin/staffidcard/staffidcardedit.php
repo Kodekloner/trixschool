@@ -130,13 +130,21 @@
                                         <label for="enable_staff_dob" class="label-success"></label>
                                     </div>
                                 </div>
-                                    <div class="form-group switch-inline">
-                                    <label><?php echo $this->lang->line('design').' '.$this->lang->line('type'); ?> </label>
-                                    <div class="material-switch switchcheck">
-                                        <input id="enable_vertical_card" name="enable_vertical_card" type="checkbox" class="chk" value="1" <?php echo set_checkbox('enable_vertical_card', '1', (set_value('enable_vertical_card', $editstaffidcard[0]->enable_vertical_card) == 1) ? TRUE : FALSE); ?>>
-                                        <label for="enable_vertical_card" class="label-success"></label>
-                                    </div>
-                                </div>
+                                <?php
+                                $builder_card = clone $editstaffidcard[0];
+                                $builder_card->title = set_value('title', $editstaffidcard[0]->title);
+                                $builder_card->school_name = set_value('school_name', $editstaffidcard[0]->school_name);
+                                $builder_card->school_address = set_value('address', $editstaffidcard[0]->school_address);
+                                $builder_card->header_color = set_value('header_color', $editstaffidcard[0]->header_color);
+                                $builder_card->card_unit = set_value('card_unit', isset($editstaffidcard[0]->card_unit) ? $editstaffidcard[0]->card_unit : 'in');
+                                $builder_card->card_width = set_value('card_width', isset($editstaffidcard[0]->card_width) ? $editstaffidcard[0]->card_width : 2.1);
+                                $builder_card->card_height = set_value('card_height', isset($editstaffidcard[0]->card_height) ? $editstaffidcard[0]->card_height : 3.3);
+                                $builder_card->photo_style = set_value('photo_style', isset($editstaffidcard[0]->photo_style) ? $editstaffidcard[0]->photo_style : 'round');
+                                $builder_card->layout_json = set_value('layout_json', isset($editstaffidcard[0]->layout_json) ? $editstaffidcard[0]->layout_json : '');
+                                $builder_type = 'staff';
+                                $this->load->view('admin/idcard/_builder_designer', compact('builder_card', 'builder_type'));
+                                ?>
+                                <input type="hidden" name="enable_vertical_card" value="1">
                             </div><!-- /.box-body -->
                             <div class="box-footer">
                                 <button type="submit" class="btn btn-info pull-right"><?php echo $this->lang->line('save'); ?></button>
@@ -169,7 +177,8 @@
                                         <th><?php echo $this->lang->line('icard'); ?> <?php echo $this->lang->line('title'); ?></th>
                                         <!-- <th>Certificate Text</th> -->
                                         <th><?php echo $this->lang->line('background_image'); ?></th>
-                                         <th class="text text-center"><?php echo $this->lang->line('design').' '.$this->lang->line('type'); ?> </th>
+                                        <th class="text text-center">Card Size</th>
+                                        <th class="text text-center">Orientation</th>
                                         <th class="text-right"><?php echo $this->lang->line('action'); ?></th>
                                     </tr>
                                 </thead>
@@ -194,8 +203,14 @@
                                                     <?php } ?>
 
                                                 </td>
-                                                  <td class="mailbox-name text text-center">
-                                                    <?php echo ($staffidcards_value->enable_vertical_card) ? $this->lang->line('vertical') : $this->lang->line('horizontal')?>
+                                                <td class="mailbox-name text text-center">
+                                                    <?php
+                                                    $dimension_config = get_id_card_dimension_config($staffidcards_value);
+                                                    echo format_id_card_measurement($dimension_config['width']) . ' x ' . format_id_card_measurement($dimension_config['height']) . ' ' . strtoupper($dimension_config['unit']);
+                                                    ?>
+                                                </td>
+                                                <td class="mailbox-name text text-center">
+                                                    <?php echo $dimension_config['portrait'] ? $this->lang->line('vertical') : $this->lang->line('horizontal'); ?>
                                                 </td>
                                                 <td class="mailbox-date pull-right no-print white-space-nowrap">
                                                   <a data-id="<?php echo $staffidcards_value->id ?>" class="btn btn-default btn-xs view_data"  data-toggle="tooltip" title="<?php echo $this->lang->line('view'); ?>">

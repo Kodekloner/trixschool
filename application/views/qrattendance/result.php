@@ -75,12 +75,13 @@
         <h1>QR Attendance</h1>
         <p><?php echo html_escape($message); ?></p>
 
-        <?php if ($student_name !== '') { ?>
+        <?php if ($full_name !== '') { ?>
             <div class="attendance-meta">
-                <div><strong>Student</strong><?php echo html_escape($student_name); ?></div>
-                <div><strong>Admission No</strong><?php echo html_escape($admission_no); ?></div>
-                <div><strong>Class</strong><?php echo html_escape($class_section); ?></div>
+                <div><strong><?php echo html_escape($entity_label); ?></strong><?php echo html_escape($full_name); ?></div>
+                <div><strong>ID</strong><?php echo html_escape($identity_no); ?></div>
+                <div><strong><?php echo html_escape($details_label); ?></strong><?php echo html_escape($details_value); ?></div>
                 <div><strong>Date</strong><?php echo html_escape($attendance_on); ?></div>
+                <div><strong>Scanned At</strong><?php echo html_escape($scanned_at); ?></div>
             </div>
         <?php } ?>
     </div>

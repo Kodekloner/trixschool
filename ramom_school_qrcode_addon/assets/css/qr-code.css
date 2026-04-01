@@ -1,0 +1,27 @@
+.qrcode-scan .box {
+	border: 1px solid #4b4b4b;
+	padding: 10px;
+	text-align: center;
+}
+.qrcode-scan .box span {
+	display: block;
+	background: #0a8000;
+	color: #fff;
+	padding: 5px;
+}
+
+.qrcode-scan .box span.title {
+	background: #4d4646;
+	text-align:left;
+	padding-left: 15px;
+}
+
+.qrcode-scan .box #reader {
+	
+}
+
+.camera-preview {
+	padding: 100px 0;
+	background: #131313;
+	color: #fff;
+}
