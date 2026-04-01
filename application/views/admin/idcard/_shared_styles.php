@@ -108,9 +108,16 @@
     .id-card-signature img,
     .id-card-qr img {
         object-fit: contain;
-        background: rgba(255, 255, 255, 0.9);
         padding: 4px;
         border-radius: 8px;
+    }
+
+    .id-card-signature img {
+        background: rgba(255, 255, 255, 0.9);
+    }
+
+    .id-card-qr img {
+        background: transparent;
     }
 
     .id-card-qr {

@@ -89,6 +89,7 @@ if ($builder_type === 'staff') {
         background: #f9fafb;
         padding: 12px;
         margin-bottom: 15px;
+        position: relative;
     }
 
     .id-card-designer-shell .help-block {
@@ -100,6 +101,42 @@ if ($builder_type === 'staff') {
         background: linear-gradient(180deg, #ffffff, #eef2f7);
         border-radius: 10px;
         overflow: auto;
+        min-height: 520px;
+    }
+
+    .id-card-designer-stage {
+        position: relative;
+        min-width: 100%;
+        min-height: 100%;
+    }
+
+    .id-card-designer-zoom-target {
+        transform-origin: top left;
+    }
+
+    .id-card-designer-shell.is-large-window {
+        position: fixed;
+        inset: 18px;
+        z-index: 1060;
+        margin: 0;
+        background: rgba(248, 250, 252, 0.98);
+        box-shadow: 0 24px 48px rgba(15, 23, 42, 0.28);
+    }
+
+    .id-card-designer-shell.is-large-window .id-card-designer-preview {
+        min-height: calc(100vh - 180px);
+    }
+
+    .id-card-designer-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        z-index: 1050;
+    }
+
+    .id-card-designer-overlay.active {
+        display: block;
     }
 
     .designer-element {
@@ -171,21 +208,61 @@ if ($builder_type === 'staff') {
         margin-bottom: 10px;
     }
 
+    .card-size-group {
+        clear: both;
+        display: block;
+        width: 100%;
+    }
+
+    .card-size-group > label:first-child {
+        display: block;
+        float: none;
+        clear: both;
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    .card-size-group > .req {
+        display: inline-block;
+        margin-left: 2px;
+        vertical-align: top;
+    }
+
     .id-card-designer-actions {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 8px;
         gap: 10px;
+        flex-wrap: wrap;
     }
 
     .id-card-designer-meta {
         font-size: 12px;
         color: #6b7280;
     }
+
+    .id-card-designer-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .id-card-designer-toolbar input[type="range"] {
+        width: 180px;
+    }
+
+    .id-card-designer-zoom-value {
+        min-width: 52px;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
+        color: #334155;
+    }
 </style>
 
-<div class="form-group">
+<div class="form-group card-size-group">
     <label>Card Size</label><small class="req"> *</small>
     <div class="row card-size-grid">
         <div class="col-xs-12">
@@ -225,20 +302,32 @@ if ($builder_type === 'staff') {
 
 <div class="form-group">
     <label>Layout Designer</label>
+    <div class="id-card-designer-overlay" data-designer-overlay="<?php echo $preview_id; ?>"></div>
     <div class="id-card-designer-shell">
         <div class="id-card-designer-actions">
             <div class="id-card-designer-meta">Drag items in the preview to change their position. The saved layout is used for print and preview.</div>
-            <button type="button" class="btn btn-default btn-xs" data-reset-layout="<?php echo $preview_id; ?>">Reset Positions</button>
+            <div class="id-card-designer-toolbar">
+                <button type="button" class="btn btn-default btn-xs" data-zoom-out="<?php echo $preview_id; ?>">-</button>
+                <input type="range" min="80" max="320" step="10" value="170" data-zoom-range="<?php echo $preview_id; ?>">
+                <button type="button" class="btn btn-default btn-xs" data-zoom-in="<?php echo $preview_id; ?>">+</button>
+                <span class="id-card-designer-zoom-value" data-zoom-value="<?php echo $preview_id; ?>">170%</span>
+                <button type="button" class="btn btn-default btn-xs" data-reset-layout="<?php echo $preview_id; ?>">Reset Positions</button>
+                <button type="button" class="btn btn-primary btn-xs" data-toggle-large="<?php echo $preview_id; ?>">Open Large Window</button>
+            </div>
         </div>
         <div class="id-card-designer-preview">
-            <div id="<?php echo $preview_id; ?>">
-                <?php
-                if ($builder_type === 'staff') {
-                    $this->load->view('admin/idcard/_staff_card_item', array('card' => $preview_card, 'staff' => $preview_payload, 'designer_mode' => true));
-                } else {
-                    $this->load->view('admin/idcard/_student_card_item', array('card' => $preview_card, 'student' => $preview_payload, 'designer_mode' => true));
-                }
-                ?>
+            <div class="id-card-designer-stage" data-designer-stage="<?php echo $preview_id; ?>">
+                <div class="id-card-designer-zoom-target" data-zoom-target="<?php echo $preview_id; ?>">
+                    <div id="<?php echo $preview_id; ?>">
+                        <?php
+                        if ($builder_type === 'staff') {
+                            $this->load->view('admin/idcard/_staff_card_item', array('card' => $preview_card, 'staff' => $preview_payload, 'designer_mode' => true));
+                        } else {
+                            $this->load->view('admin/idcard/_student_card_item', array('card' => $preview_card, 'student' => $preview_payload, 'designer_mode' => true));
+                        }
+                        ?>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -260,6 +349,15 @@ if (!window.initIdCardDesigner) {
         var unitInput = document.getElementById(config.unitInputId);
         var photoStyleInput = document.getElementById(config.photoStyleInputId);
         var layoutInput = document.getElementById(config.layoutInputId);
+        var shell = wrapper.closest('.id-card-designer-shell');
+        var overlay = document.querySelector('[data-designer-overlay="' + config.previewId + '"]');
+        var stage = document.querySelector('[data-designer-stage="' + config.previewId + '"]');
+        var zoomTarget = document.querySelector('[data-zoom-target="' + config.previewId + '"]');
+        var zoomRange = document.querySelector('[data-zoom-range="' + config.previewId + '"]');
+        var zoomValue = document.querySelector('[data-zoom-value="' + config.previewId + '"]');
+        var zoomIn = document.querySelector('[data-zoom-in="' + config.previewId + '"]');
+        var zoomOut = document.querySelector('[data-zoom-out="' + config.previewId + '"]');
+        var toggleLarge = document.querySelector('[data-toggle-large="' + config.previewId + '"]');
         var resetButton = document.querySelector('[data-reset-layout="' + config.previewId + '"]');
         var form = layoutInput ? layoutInput.form : null;
         var headerColorInput = form ? form.querySelector('input[name="header_color"]') : null;
@@ -267,6 +365,7 @@ if (!window.initIdCardDesigner) {
         var titleNode = card.querySelector('[data-element="title"]');
         var elements = {};
         var layout = JSON.parse(layoutInput.value || '{}');
+        var zoom = zoomRange ? percent(zoomRange.value, 170) / 100 : 1.7;
 
         card.querySelectorAll('.designer-element').forEach(function (node) {
             elements[node.getAttribute('data-element')] = node;
@@ -331,6 +430,7 @@ if (!window.initIdCardDesigner) {
             var unit = unitInput.value || 'in';
             card.style.width = width + unit;
             card.style.height = height + unit;
+            syncZoom();
         }
 
         function syncPhotoShape() {
@@ -362,6 +462,21 @@ if (!window.initIdCardDesigner) {
                 background.style.backgroundImage = 'url(' + event.target.result + ')';
             };
             reader.readAsDataURL(backgroundInput.files[0]);
+        }
+
+        function syncZoom() {
+            if (!zoomTarget || !stage) {
+                return;
+            }
+            zoomTarget.style.transform = 'scale(' + zoom + ')';
+            stage.style.width = (card.offsetWidth * zoom) + 'px';
+            stage.style.height = (card.offsetHeight * zoom) + 'px';
+            if (zoomValue) {
+                zoomValue.textContent = Math.round(zoom * 100) + '%';
+            }
+            if (zoomRange) {
+                zoomRange.value = Math.round(zoom * 100);
+            }
         }
 
         function syncToggles() {
@@ -468,11 +583,59 @@ if (!window.initIdCardDesigner) {
             });
         }
 
+        if (zoomRange) {
+            zoomRange.addEventListener('input', function () {
+                zoom = percent(this.value, 170) / 100;
+                syncZoom();
+            });
+        }
+
+        if (zoomIn) {
+            zoomIn.addEventListener('click', function () {
+                zoom = Math.min(3.2, zoom + 0.1);
+                syncZoom();
+            });
+        }
+
+        if (zoomOut) {
+            zoomOut.addEventListener('click', function () {
+                zoom = Math.max(0.8, zoom - 0.1);
+                syncZoom();
+            });
+        }
+
+        if (toggleLarge) {
+            toggleLarge.addEventListener('click', function () {
+                var active = shell.classList.toggle('is-large-window');
+                if (overlay) {
+                    overlay.classList.toggle('active', active);
+                }
+                toggleLarge.textContent = active ? 'Close Large Window' : 'Open Large Window';
+                zoom = active ? Math.max(zoom, 2.2) : Math.min(zoom, 1.7);
+                syncZoom();
+            });
+        }
+
+        if (overlay) {
+            overlay.addEventListener('click', function () {
+                if (shell.classList.contains('is-large-window')) {
+                    shell.classList.remove('is-large-window');
+                    overlay.classList.remove('active');
+                    if (toggleLarge) {
+                        toggleLarge.textContent = 'Open Large Window';
+                    }
+                    zoom = Math.min(zoom, 1.7);
+                    syncZoom();
+                }
+            });
+        }
+
         syncSize();
         renderLayout();
         syncPhotoShape();
         syncHeaderColor();
         syncToggles();
+        syncZoom();
     };
 }
 
