@@ -135,6 +135,14 @@ if ($builder_type === 'staff') {
         overflow: auto;
     }
 
+    .id-card-designer-shell.is-large-window .id-card-designer-stage {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 20px 24px 36px;
+        box-sizing: border-box;
+    }
+
     .id-card-designer-overlay {
         display: none;
         position: fixed;

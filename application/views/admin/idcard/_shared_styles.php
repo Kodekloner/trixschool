@@ -108,8 +108,8 @@
     .id-card-signature img,
     .id-card-qr img {
         object-fit: contain;
-        padding: 4px;
-        border-radius: 8px;
+        padding: 1px;
+        border-radius: 4px;
     }
 
     .id-card-signature img {
@@ -128,6 +128,7 @@
         padding: 0;
         background: transparent;
         border-radius: 0;
+        gap: 0;
     }
 
     .id-card-qr-media {
@@ -185,14 +186,17 @@
 
     .id-card-qr-label {
         position: static;
-        margin-top: 3px;
-        font-size: 7px;
-        letter-spacing: 0.04em;
+        margin-top: 0;
+        font-size: 6px;
+        letter-spacing: 0.01em;
         text-transform: uppercase;
         text-align: center;
         color: #0f172a;
-        line-height: 1.15;
+        line-height: 1;
         font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: clip;
     }
 
     @media print {

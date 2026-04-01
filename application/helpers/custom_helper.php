@@ -241,7 +241,7 @@ if (!function_exists('get_student_attendance_qr_url')) {
 }
 
 if (!function_exists('get_student_attendance_qr_image_url')) {
-    function get_student_attendance_qr_image_url($student_session_id, $size = 160)
+    function get_student_attendance_qr_image_url($student_session_id, $size = 220)
     {
         $size = (int) $size;
         if ($size <= 0) {
@@ -540,7 +540,7 @@ if (!function_exists('get_staff_attendance_qr_url')) {
 }
 
 if (!function_exists('get_staff_attendance_qr_image_url')) {
-    function get_staff_attendance_qr_image_url($staff_id, $size = 160)
+    function get_staff_attendance_qr_image_url($staff_id, $size = 220)
     {
         $size = (int) $size;
         if ($size <= 0) {
