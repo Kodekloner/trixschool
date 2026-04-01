@@ -253,13 +253,36 @@ if (!function_exists('get_student_attendance_qr_image_url')) {
 }
 
 if (!function_exists('get_qr_attendance_demo_log_file')) {
+    function get_qr_attendance_demo_log_directory()
+    {
+        $directories = array(
+            FCPATH . 'uploads/qr_attendance_logs/',
+            APPPATH . 'cache/qr_attendance_logs/',
+            rtrim(sys_get_temp_dir(), '/\\') . DIRECTORY_SEPARATOR . 'trixschool_qr_attendance_logs' . DIRECTORY_SEPARATOR,
+        );
+
+        foreach ($directories as $directory) {
+            if (is_dir($directory) && is_writable($directory)) {
+                return $directory;
+            }
+
+            if (!is_dir($directory) && @mkdir($directory, 0775, true) && is_writable($directory)) {
+                return $directory;
+            }
+        }
+
+        return $directories[0];
+    }
+}
+
+if (!function_exists('get_qr_attendance_demo_log_file')) {
     function get_qr_attendance_demo_log_file($date = null)
     {
         if (empty($date)) {
             $date = date('Y-m-d');
         }
 
-        return FCPATH . 'uploads/qr_attendance_logs/qr_attendance_demo_' . $date . '.csv';
+        return get_qr_attendance_demo_log_directory() . 'qr_attendance_demo_' . $date . '.csv';
     }
 }
 

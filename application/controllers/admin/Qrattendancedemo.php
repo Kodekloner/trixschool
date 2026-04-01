@@ -23,6 +23,8 @@ class Qrattendancedemo extends Admin_Controller
         $data['title']         = 'QR Attendance Logs';
         $data['attendance_on'] = $this->setting_model->getDateYmd();
         $data['log_files']     = $this->get_log_files();
+        $data['today_log_exists'] = file_exists(get_qr_attendance_demo_log_file($data['attendance_on']));
+        $data['log_directory'] = get_qr_attendance_demo_log_directory();
 
         $this->session->set_userdata('top_menu', 'Attendance');
         $this->session->set_userdata('sub_menu', 'qrattendancedemo/index');
@@ -59,7 +61,7 @@ class Qrattendancedemo extends Admin_Controller
 
     private function get_log_files()
     {
-        $directory = FCPATH . 'uploads/qr_attendance_logs/';
+        $directory = get_qr_attendance_demo_log_directory();
         if (!is_dir($directory)) {
             return array();
         }

@@ -265,13 +265,15 @@ class Qrattendance extends CI_Controller
         $file_path = get_qr_attendance_demo_log_file($data['attendance_on']);
         $directory = dirname($file_path);
 
-        if (!is_dir($directory)) {
-            @mkdir($directory, 0775, true);
+        if (!is_dir($directory) && !@mkdir($directory, 0775, true)) {
+            log_message('error', 'QR attendance log directory could not be created: ' . $directory);
+            return false;
         }
 
         $is_new_file = !file_exists($file_path);
         $handle      = @fopen($file_path, 'a');
         if ($handle === false) {
+            log_message('error', 'QR attendance log file could not be opened for writing: ' . $file_path);
             return false;
         }
 
