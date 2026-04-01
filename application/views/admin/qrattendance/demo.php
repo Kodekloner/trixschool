@@ -1,6 +1,6 @@
 <div class="content-wrapper">
     <section class="content-header">
-        <h1><i class="fa fa-qrcode"></i> QR Attendance Demo</h1>
+        <h1><i class="fa fa-qrcode"></i> QR Attendance Logs</h1>
     </section>
 
     <section class="content">
@@ -10,11 +10,11 @@
                     <div class="box-header with-border">
                         <h3 class="box-title">Scan Station</h3>
                         <a href="<?php echo site_url('admin/qrattendancedemo/download/' . $attendance_on); ?>" class="btn btn-success btn-sm pull-right">
-                            <i class="fa fa-download"></i> Download Demo CSV
+                            <i class="fa fa-download"></i> Download Today's CSV
                         </a>
                     </div>
                     <div class="box-body">
-                        <p class="text-muted">Use the camera scanner for a fast demo, or paste the QR URL below if you want a manual fallback.</p>
+                        <p class="text-muted">Use the camera scanner for a fast scan station, or paste the QR URL below if you want a manual fallback. Each successful scan is written into a CSV file on the server.</p>
 
                         <div id="qr-reader" style="width: 100%; min-height: 280px; border: 1px dashed #d2d6de; border-radius: 4px; padding: 10px;"></div>
                         <div id="qr-reader-message" class="help-block" style="margin-top: 10px;">Camera scanner is loading.</div>
@@ -39,16 +39,17 @@
                     </div>
                     <div class="box-body">
                         <div id="scan_feedback" class="alert alert-info">
-                            Scan a student ID card to see the result here.
+                            Scan a student or staff ID card to see the result here.
                         </div>
 
                         <div class="table-responsive">
                             <table class="table table-striped table-bordered">
                                 <thead>
                                     <tr>
-                                        <th>Admission No</th>
-                                        <th>Student</th>
-                                        <th>Class</th>
+                                        <th>Type</th>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Details</th>
                                         <th>Status</th>
                                         <th>Timestamp</th>
                                     </tr>
@@ -57,6 +58,44 @@
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                </div>
+
+                <div class="box box-default">
+                    <div class="box-header with-border">
+                        <h3 class="box-title">Saved CSV Logs</h3>
+                    </div>
+                    <div class="box-body table-responsive">
+                        <table class="table table-striped table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Filename</th>
+                                    <th>Size</th>
+                                    <th class="text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($log_files)) { ?>
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">No QR attendance CSV file has been created yet. Scan a card first, then refresh this page.</td>
+                                    </tr>
+                                <?php } else { ?>
+                                    <?php foreach ($log_files as $log_file) { ?>
+                                        <tr>
+                                            <td><?php echo html_escape($log_file['date']); ?></td>
+                                            <td><?php echo html_escape($log_file['name']); ?></td>
+                                            <td><?php echo number_format($log_file['size'] / 1024, 2); ?> KB</td>
+                                            <td class="text-right">
+                                                <a href="<?php echo site_url('admin/qrattendancedemo/download/' . $log_file['date']); ?>" class="btn btn-success btn-xs">
+                                                    <i class="fa fa-download"></i> Download
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php } ?>
+                                <?php } ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -90,17 +129,18 @@
                 .html(
                     '<strong>' + escapeHtml(result.status) + ':</strong> ' +
                     escapeHtml(result.message) +
-                    (result.student_name ? '<br><strong>Student:</strong> ' + escapeHtml(result.student_name) : '') +
-                    (result.admission_no ? '<br><strong>Admission No:</strong> ' + escapeHtml(result.admission_no) : '')
+                    (result.full_name ? '<br><strong>Name:</strong> ' + escapeHtml(result.full_name) : '') +
+                    (result.identity_no ? '<br><strong>ID:</strong> ' + escapeHtml(result.identity_no) : '')
                 );
         }
 
         function appendResultRow(result) {
             var row = '' +
                 '<tr>' +
-                    '<td>' + escapeHtml(result.admission_no) + '</td>' +
-                    '<td>' + escapeHtml(result.student_name) + '</td>' +
-                    '<td>' + escapeHtml(result.class_section) + '</td>' +
+                    '<td>' + escapeHtml(result.entity_type) + '</td>' +
+                    '<td>' + escapeHtml(result.identity_no) + '</td>' +
+                    '<td>' + escapeHtml(result.full_name) + '</td>' +
+                    '<td>' + escapeHtml(result.details_value) + '</td>' +
                     '<td><span class="label label-default">' + escapeHtml(result.status) + '</span></td>' +
                     '<td>' + escapeHtml(result.scanned_at) + '</td>' +
                 '</tr>';
@@ -155,7 +195,7 @@
         });
 
         if (typeof Html5QrcodeScanner !== 'undefined') {
-            $('#qr-reader-message').text('Grant camera access, then present each student ID card to the scanner.');
+            $('#qr-reader-message').text('Grant camera access, then present each student or staff ID card to the scanner.');
             var scanner = new Html5QrcodeScanner('qr-reader', {
                 fps: 10,
                 qrbox: 220

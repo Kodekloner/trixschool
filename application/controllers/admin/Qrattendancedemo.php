@@ -20,8 +20,9 @@ class Qrattendancedemo extends Admin_Controller
             access_denied();
         }
 
-        $data['title']         = 'QR Attendance Demo';
+        $data['title']         = 'QR Attendance Logs';
         $data['attendance_on'] = $this->setting_model->getDateYmd();
+        $data['log_files']     = $this->get_log_files();
 
         $this->session->set_userdata('top_menu', 'Attendance');
         $this->session->set_userdata('sub_menu', 'qrattendancedemo/index');
@@ -54,5 +55,33 @@ class Qrattendancedemo extends Admin_Controller
         header('Cache-Control: must-revalidate');
         readfile($file_path);
         exit;
+    }
+
+    private function get_log_files()
+    {
+        $directory = FCPATH . 'uploads/qr_attendance_logs/';
+        if (!is_dir($directory)) {
+            return array();
+        }
+
+        $files = glob($directory . 'qr_attendance_demo_*.csv');
+        if (empty($files)) {
+            return array();
+        }
+
+        rsort($files);
+        $results = array();
+        foreach ($files as $file_path) {
+            $basename = basename($file_path);
+            if (preg_match('/qr_attendance_demo_([0-9]{4}-[0-9]{2}-[0-9]{2})\.csv$/', $basename, $matches)) {
+                $results[] = array(
+                    'date' => $matches[1],
+                    'name' => $basename,
+                    'size' => filesize($file_path),
+                );
+            }
+        }
+
+        return $results;
     }
 }
