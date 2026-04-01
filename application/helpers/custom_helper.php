@@ -396,8 +396,8 @@ if (!function_exists('get_default_id_card_layout')) {
                     'phone' => array('x' => 6, 'y' => 86, 'w' => 42, 'h' => 6),
                     'dob' => array('x' => 52, 'y' => 86, 'w' => 42, 'h' => 6),
                     'address' => array('x' => 6, 'y' => 93, 'w' => 50, 'h' => 6),
-                    'signature' => array('x' => 58, 'y' => 92, 'w' => 18, 'h' => 6),
-                    'qr' => array('x' => 78, 'y' => 90, 'w' => 16, 'h' => 10),
+                    'signature' => array('x' => 56, 'y' => 92, 'w' => 18, 'h' => 6),
+                    'qr' => array('x' => 74, 'y' => 86, 'w' => 20, 'h' => 14),
                 );
             }
 
@@ -417,8 +417,8 @@ if (!function_exists('get_default_id_card_layout')) {
                 'phone' => array('x' => 71, 'y' => 37, 'w' => 25, 'h' => 7),
                 'dob' => array('x' => 71, 'y' => 45, 'w' => 25, 'h' => 7),
                 'address' => array('x' => 71, 'y' => 53, 'w' => 25, 'h' => 12),
-                'signature' => array('x' => 60, 'y' => 82, 'w' => 18, 'h' => 10),
-                'qr' => array('x' => 80, 'y' => 76, 'w' => 16, 'h' => 18),
+                'signature' => array('x' => 58, 'y' => 82, 'w' => 18, 'h' => 10),
+                'qr' => array('x' => 76, 'y' => 70, 'w' => 20, 'h' => 24),
             );
         }
 
@@ -438,8 +438,8 @@ if (!function_exists('get_default_id_card_layout')) {
                 'phone' => array('x' => 6, 'y' => 84, 'w' => 42, 'h' => 6),
                 'dob' => array('x' => 52, 'y' => 84, 'w' => 42, 'h' => 6),
                 'blood_group' => array('x' => 6, 'y' => 91, 'w' => 30, 'h' => 5),
-                'signature' => array('x' => 38, 'y' => 90, 'w' => 28, 'h' => 8),
-                'qr' => array('x' => 70, 'y' => 89, 'w' => 22, 'h' => 10),
+                'signature' => array('x' => 36, 'y' => 90, 'w' => 26, 'h' => 8),
+                'qr' => array('x' => 66, 'y' => 84, 'w' => 26, 'h' => 14),
             );
         }
 
@@ -458,8 +458,8 @@ if (!function_exists('get_default_id_card_layout')) {
             'phone' => array('x' => 71, 'y' => 28, 'w' => 25, 'h' => 7),
             'dob' => array('x' => 71, 'y' => 36, 'w' => 25, 'h' => 7),
             'blood_group' => array('x' => 71, 'y' => 44, 'w' => 25, 'h' => 7),
-            'signature' => array('x' => 60, 'y' => 82, 'w' => 18, 'h' => 10),
-            'qr' => array('x' => 80, 'y' => 76, 'w' => 16, 'h' => 18),
+            'signature' => array('x' => 58, 'y' => 82, 'w' => 18, 'h' => 10),
+            'qr' => array('x' => 76, 'y' => 70, 'w' => 20, 'h' => 24),
         );
     }
 }
@@ -486,7 +486,11 @@ if (!function_exists('get_id_card_layout_config')) {
                 $layout[$key][$axis] = max(0, min(100, (float) $box[$axis]));
             }
             foreach (array('w', 'h') as $axis) {
-                $layout[$key][$axis] = max(4, min(100, (float) $box[$axis]));
+                $minimum = 4;
+                if ($key === 'qr') {
+                    $minimum = $axis === 'w' ? 18 : 12;
+                }
+                $layout[$key][$axis] = max($minimum, min(100, (float) $box[$axis]));
             }
         }
 

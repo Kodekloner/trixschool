@@ -6,13 +6,26 @@
         align-items: flex-start;
     }
 
+    .id-card-sheet {
+        width: 210mm;
+        min-height: 297mm;
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 8mm;
+        background: #ffffff;
+        box-sizing: border-box;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    }
+
     .id-card-item {
         page-break-inside: avoid;
+        break-inside: avoid;
     }
 
     .id-card-canvas {
         position: relative;
         overflow: hidden;
+        isolation: isolate;
         border-radius: 14px;
         border: 1px solid rgba(0, 0, 0, 0.18);
         background: #f8fafc;
@@ -24,6 +37,7 @@
     .id-card-bg {
         position: absolute;
         inset: 0;
+        z-index: 0;
         background-position: center;
         background-repeat: no-repeat;
         background-size: cover;
@@ -33,7 +47,7 @@
         position: absolute;
         overflow: hidden;
         box-sizing: border-box;
-        z-index: 2;
+        z-index: 3;
     }
 
     .id-card-panel {
@@ -94,6 +108,26 @@
         border-radius: 8px;
     }
 
+    .id-card-qr {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        padding: 4px;
+        background: rgba(255, 255, 255, 0.92);
+        border-radius: 10px;
+    }
+
+    .id-card-qr-media {
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .id-card-qr-media img {
+        width: 100%;
+        height: 100%;
+    }
+
     .id-card-photo img.round {
         border-radius: 999px;
     }
@@ -140,20 +174,40 @@
     }
 
     .id-card-qr-label {
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 2px;
+        position: static;
+        margin-top: 3px;
         font-size: 7px;
         letter-spacing: 0.04em;
         text-transform: uppercase;
         text-align: center;
         color: #0f172a;
+        line-height: 1.15;
+        font-weight: 700;
     }
 
     @media print {
+        @page {
+            size: A4 portrait;
+            margin: 8mm;
+        }
+
         .id-card-grid {
-            gap: 0.12in;
+            display: block;
+            width: 100%;
+            column-gap: 0;
+        }
+
+        .id-card-sheet {
+            width: 100%;
+            min-height: auto;
+            padding: 0;
+            box-shadow: none;
+        }
+
+        .id-card-item {
+            display: inline-block;
+            margin: 0 0.1in 0.12in 0;
+            vertical-align: top;
         }
 
         .id-card-canvas {

@@ -24,8 +24,10 @@ $student = array(
     'gender' => isset($student_row['gender']) ? $student_row['gender'] : '',
 );
 ?>
-<div class="id-card-grid">
-    <?php $this->load->view('admin/idcard/_student_card_item', array('card' => $card, 'student' => $student)); ?>
+<div class="id-card-sheet">
+    <div class="id-card-grid">
+        <?php $this->load->view('admin/idcard/_student_card_item', array('card' => $card, 'student' => $student)); ?>
+    </div>
 </div>
 </body>
 </html>

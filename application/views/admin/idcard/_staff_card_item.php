@@ -112,7 +112,9 @@ $designer_mode = !empty($designer_mode);
 
         <?php if ($qr_url !== '') { ?>
             <div class="id-card-layer id-card-qr<?php echo $designer_mode ? ' designer-element' : ''; ?>"<?php echo $designer_mode ? ' data-element="qr"' : ''; ?> style="<?php echo get_id_card_box_style($layout, 'qr'); ?>">
-                <img src="<?php echo $qr_url; ?>" alt="Attendance QR">
+                <div class="id-card-qr-media">
+                    <img src="<?php echo $qr_url; ?>" alt="Attendance QR">
+                </div>
                 <div class="id-card-qr-label">Scan For Attendance</div>
             </div>
         <?php } ?>

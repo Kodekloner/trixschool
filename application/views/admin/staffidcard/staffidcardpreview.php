@@ -15,6 +15,8 @@ $sample_staff = array(
 );
 ?>
 <?php $this->load->view('admin/idcard/_shared_styles'); ?>
-<div class="id-card-grid">
-    <?php $this->load->view('admin/idcard/_staff_card_item', array('card' => $idcard, 'staff' => $sample_staff)); ?>
+<div class="id-card-sheet">
+    <div class="id-card-grid">
+        <?php $this->load->view('admin/idcard/_staff_card_item', array('card' => $idcard, 'staff' => $sample_staff)); ?>
+    </div>
 </div>
