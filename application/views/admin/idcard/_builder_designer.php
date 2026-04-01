@@ -194,29 +194,30 @@ if ($builder_type === 'staff') {
         border: 1px solid #ffffff;
         border-radius: 999px;
         z-index: 15;
+        opacity: 0.9;
     }
 
     .designer-resize-handle.edge-e {
-        top: calc(50% - 7px);
-        right: -5px;
-        width: 10px;
-        height: 14px;
+        top: calc(50% - 5px);
+        right: -3px;
+        width: 6px;
+        height: 10px;
         cursor: ew-resize;
     }
 
     .designer-resize-handle.edge-s {
-        left: calc(50% - 7px);
-        bottom: -5px;
-        width: 14px;
-        height: 10px;
+        left: calc(50% - 5px);
+        bottom: -3px;
+        width: 10px;
+        height: 6px;
         cursor: ns-resize;
     }
 
     .designer-resize-handle.corner-se {
-        right: -5px;
-        bottom: -5px;
-        width: 11px;
-        height: 11px;
+        right: -3px;
+        bottom: -3px;
+        width: 7px;
+        height: 7px;
         cursor: nwse-resize;
     }
 
