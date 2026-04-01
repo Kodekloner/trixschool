@@ -147,8 +147,15 @@ class Qrattendance extends CI_Controller
 
         $existing_attendance = $this->attendencetype_model->getStudentAttendence($today, $student_session_id);
         if (!empty($existing_attendance)) {
+            $attendance_type = '';
+            if (is_array($existing_attendance) && isset($existing_attendance['type'])) {
+                $attendance_type = $existing_attendance['type'];
+            } elseif (is_object($existing_attendance) && isset($existing_attendance->type)) {
+                $attendance_type = $existing_attendance->type;
+            }
+
             $data['status']  = 'info';
-            $data['message'] = 'Attendance has already been marked for today as ' . $existing_attendance['type'] . '.';
+            $data['message'] = 'Attendance has already been marked for today' . ($attendance_type !== '' ? ' as ' . $attendance_type : '') . '.';
             $this->append_demo_log($data);
             return $data;
         }
