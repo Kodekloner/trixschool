@@ -277,6 +277,8 @@ class Qrattendance extends CI_Controller
             return false;
         }
 
+        $this->normalize_demo_log_file($file_path);
+
         $is_new_file = !file_exists($file_path);
         $handle      = @fopen($file_path, 'a');
         if ($handle === false) {
@@ -285,23 +287,81 @@ class Qrattendance extends CI_Controller
         }
 
         if ($is_new_file) {
-            fputcsv($handle, array('person_type', 'identity_no', 'full_name', 'details', 'attendance_on', 'scanned_at', 'status', 'message', 'source'));
+            fputcsv($handle, $this->get_demo_log_headers());
         }
 
-        fputcsv($handle, array(
-            $data['entity_type'],
-            $data['identity_no'],
-            $data['full_name'],
-            $data['details_value'],
-            $data['attendance_on'],
-            $data['scanned_at'],
-            $data['status'],
-            $data['message'],
-            $data['source'],
-        ));
+        fputcsv($handle, $this->get_demo_log_row($data));
 
         fclose($handle);
         return true;
+    }
+
+    private function get_demo_log_headers()
+    {
+        return array('identity_no', 'timestamp', 'status', 'message');
+    }
+
+    private function get_demo_log_row($data)
+    {
+        return array(
+            isset($data['identity_no']) ? $data['identity_no'] : '',
+            isset($data['scanned_at']) ? $data['scanned_at'] : '',
+            isset($data['status']) ? $data['status'] : '',
+            isset($data['message']) ? $data['message'] : '',
+        );
+    }
+
+    private function normalize_demo_log_file($file_path)
+    {
+        if (!file_exists($file_path)) {
+            return;
+        }
+
+        $expected_header = $this->get_demo_log_headers();
+        $handle = @fopen($file_path, 'r');
+        if ($handle === false) {
+            return;
+        }
+
+        $header = fgetcsv($handle);
+        if ($header === false) {
+            fclose($handle);
+            return;
+        }
+
+        if ($header === $expected_header) {
+            fclose($handle);
+            return;
+        }
+
+        $rows = array();
+        while (($row = fgetcsv($handle)) !== false) {
+            if (empty($row)) {
+                continue;
+            }
+
+            $rows[] = array(
+                isset($row[1]) ? $row[1] : '',
+                isset($row[5]) ? $row[5] : '',
+                isset($row[6]) ? $row[6] : '',
+                isset($row[7]) ? $row[7] : '',
+            );
+        }
+
+        fclose($handle);
+
+        $rewrite_handle = @fopen($file_path, 'w');
+        if ($rewrite_handle === false) {
+            log_message('error', 'QR attendance log file could not be rewritten: ' . $file_path);
+            return;
+        }
+
+        fputcsv($rewrite_handle, $expected_header);
+        foreach ($rows as $row) {
+            fputcsv($rewrite_handle, $row);
+        }
+
+        fclose($rewrite_handle);
     }
 
     private function json_response($payload, $status_code)
