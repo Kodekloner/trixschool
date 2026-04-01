@@ -279,8 +279,17 @@ if ($builder_type === 'staff') {
 </style>
 
 <div class="form-group card-size-group">
-    <label>Card Size</label><small class="req"> *</small>
+    <label>Card Size</label>
     <div class="row card-size-grid">
+        <div class="col-xs-12">
+            <div class="form-group">
+                <label for="<?php echo $builder_type; ?>_card_orientation">Orientation</label>
+                <select class="form-control" id="<?php echo $builder_type; ?>_card_orientation">
+                    <option value="portrait" <?php echo $dimensions['portrait'] ? 'selected' : ''; ?>>Vertical</option>
+                    <option value="landscape" <?php echo !$dimensions['portrait'] ? 'selected' : ''; ?>>Horizontal</option>
+                </select>
+            </div>
+        </div>
         <div class="col-xs-12">
             <div class="form-group">
                 <label class="sr-only" for="<?php echo $builder_type; ?>_card_unit">Unit</label>
@@ -305,7 +314,7 @@ if ($builder_type === 'staff') {
             </div>
         </div>
     </div>
-    <span class="help-block">Default size is 2.1 inches wide by 3.3 inches tall.</span>
+    <span class="help-block">Vertical default is 2.1 inches by 3.3 inches. Horizontal default is 3.3 inches by 2.1 inches.</span>
 </div>
 
 <div class="form-group">
@@ -362,6 +371,7 @@ if (!window.initIdCardDesigner) {
         var background = wrapper.querySelector('.id-card-bg');
         var widthInput = document.getElementById(config.widthInputId);
         var heightInput = document.getElementById(config.heightInputId);
+        var orientationInput = document.getElementById(config.orientationInputId);
         var unitInput = document.getElementById(config.unitInputId);
         var photoStyleInput = document.getElementById(config.photoStyleInputId);
         var layoutInput = document.getElementById(config.layoutInputId);
@@ -447,6 +457,32 @@ if (!window.initIdCardDesigner) {
             card.style.width = width + unit;
             card.style.height = height + unit;
             syncZoom();
+            syncOrientationFromSize();
+        }
+
+        function syncOrientationFromSize() {
+            if (!orientationInput) {
+                return;
+            }
+            var width = percent(widthInput.value, 2.1);
+            var height = percent(heightInput.value, 3.3);
+            orientationInput.value = height >= width ? 'portrait' : 'landscape';
+        }
+
+        function applyOrientationDefaults() {
+            if (!orientationInput) {
+                return;
+            }
+            if (orientationInput.value === 'landscape') {
+                widthInput.value = '3.3';
+                heightInput.value = '2.1';
+            } else {
+                widthInput.value = '2.1';
+                heightInput.value = '3.3';
+            }
+            layout = currentDefaults();
+            syncSize();
+            renderLayout();
         }
 
         function syncPhotoShape() {
@@ -578,6 +614,9 @@ if (!window.initIdCardDesigner) {
             input.addEventListener('input', syncSize);
             input.addEventListener('change', syncSize);
         });
+        if (orientationInput) {
+            orientationInput.addEventListener('change', applyOrientationDefaults);
+        }
         photoStyleInput.addEventListener('change', syncPhotoShape);
         if (headerColorInput) {
             headerColorInput.addEventListener('input', syncHeaderColor);
@@ -652,6 +691,7 @@ if (!window.initIdCardDesigner) {
         syncHeaderColor();
         syncToggles();
         syncZoom();
+        syncOrientationFromSize();
     };
 }
 
@@ -661,6 +701,7 @@ document.addEventListener('DOMContentLoaded', function () {
         layoutInputId: <?php echo json_encode($layout_input_id); ?>,
         widthInputId: <?php echo json_encode($builder_type . '_card_width'); ?>,
         heightInputId: <?php echo json_encode($builder_type . '_card_height'); ?>,
+        orientationInputId: <?php echo json_encode($builder_type . '_card_orientation'); ?>,
         unitInputId: <?php echo json_encode($builder_type . '_card_unit'); ?>,
         photoStyleInputId: <?php echo json_encode($builder_type . '_photo_style'); ?>,
         checkboxMap: <?php echo json_encode($checkbox_map); ?>,
