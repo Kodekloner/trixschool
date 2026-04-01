@@ -32,6 +32,8 @@
         box-shadow: 0 8px 26px rgba(15, 23, 42, 0.12);
         color: #0f172a;
         font-family: Arial, sans-serif;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
     .id-card-bg {
@@ -41,6 +43,8 @@
         background-position: center;
         background-repeat: no-repeat;
         background-size: cover;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
     .id-card-layer {
@@ -48,21 +52,23 @@
         overflow: hidden;
         box-sizing: border-box;
         z-index: 3;
+        visibility: visible !important;
+        opacity: 1 !important;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
     }
 
     .id-card-panel {
         background: rgba(255, 255, 255, 0.82);
         border-radius: 8px;
         padding: 4px 6px;
-        backdrop-filter: blur(2px);
     }
 
     .id-card-brand {
-        display: flex;
-        align-items: center;
-        gap: 6px;
+        display: block;
         font-weight: 700;
         font-size: 11px;
+        text-align: center;
     }
 
     .id-card-brand img {
@@ -72,9 +78,7 @@
     }
 
     .id-card-heading {
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        display: block;
         text-align: center;
         color: #fff;
         font-size: 11px;
@@ -137,9 +141,7 @@
     }
 
     .id-card-text {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
+        display: block;
         width: 100%;
         height: 100%;
         font-size: 9px;
@@ -148,7 +150,6 @@
     }
 
     .id-card-text.center {
-        justify-content: center;
         text-align: center;
     }
 
@@ -162,6 +163,7 @@
 
     .id-card-field-line {
         display: block;
+        white-space: normal;
     }
 
     .id-card-field-line .label {
@@ -191,6 +193,11 @@
             margin: 8mm;
         }
 
+        body {
+            margin: 0 !important;
+            background: #fff !important;
+        }
+
         .id-card-grid {
             display: block;
             width: 100%;
@@ -212,6 +219,10 @@
 
         .id-card-canvas {
             box-shadow: none;
+        }
+
+        .id-card-panel {
+            background: rgba(255, 255, 255, 0.92) !important;
         }
     }
 </style>
