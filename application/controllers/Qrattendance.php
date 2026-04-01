@@ -13,7 +13,6 @@ class Qrattendance extends CI_Controller
     {
         parent::__construct();
 
-        $this->config->load('payroll');
         $this->load->helper(array('url', 'custom'));
         $this->load->library('customlib');
         $this->load->model('attendencetype_model');
@@ -23,7 +22,13 @@ class Qrattendance extends CI_Controller
         $this->load->model('staffattendancemodel');
         $this->load->model('stuattendence_model');
         $this->school_setting = $this->setting_model->getSetting();
-        $this->staff_attendance_config = (array) $this->config->item('staffattendance');
+        $this->staff_attendance_config = array(
+            'present'  => 1,
+            'late'     => 2,
+            'absent'   => 3,
+            'half_day' => 4,
+            'holiday'  => 5,
+        );
     }
 
     public function mark($student_session_id = null, $signature = null)

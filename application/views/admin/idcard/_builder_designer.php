@@ -197,26 +197,26 @@ if ($builder_type === 'staff') {
     }
 
     .designer-resize-handle.edge-e {
-        top: calc(50% - 10px);
-        right: -7px;
-        width: 14px;
-        height: 20px;
+        top: calc(50% - 7px);
+        right: -5px;
+        width: 10px;
+        height: 14px;
         cursor: ew-resize;
     }
 
     .designer-resize-handle.edge-s {
-        left: calc(50% - 10px);
-        bottom: -7px;
-        width: 20px;
-        height: 14px;
+        left: calc(50% - 7px);
+        bottom: -5px;
+        width: 14px;
+        height: 10px;
         cursor: ns-resize;
     }
 
     .designer-resize-handle.corner-se {
-        right: -7px;
-        bottom: -7px;
-        width: 16px;
-        height: 16px;
+        right: -5px;
+        bottom: -5px;
+        width: 11px;
+        height: 11px;
         cursor: nwse-resize;
     }
 
