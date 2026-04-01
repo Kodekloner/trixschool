@@ -59,8 +59,9 @@
     }
 
     .id-card-panel {
-        background: rgba(255, 255, 255, 0.82);
-        border-radius: 8px;
+        background: transparent;
+        border: 0;
+        border-radius: 0;
         padding: 4px 6px;
     }
 
@@ -117,9 +118,9 @@
         flex-direction: column;
         align-items: stretch;
         justify-content: flex-start;
-        padding: 4px;
-        background: rgba(255, 255, 255, 0.92);
-        border-radius: 10px;
+        padding: 0;
+        background: transparent;
+        border-radius: 0;
     }
 
     .id-card-qr-media {
@@ -221,8 +222,5 @@
             box-shadow: none;
         }
 
-        .id-card-panel {
-            background: rgba(255, 255, 255, 0.92) !important;
-        }
     }
 </style>

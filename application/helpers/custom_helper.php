@@ -241,7 +241,7 @@ if (!function_exists('get_student_attendance_qr_url')) {
 }
 
 if (!function_exists('get_student_attendance_qr_image_url')) {
-    function get_student_attendance_qr_image_url($student_session_id, $size = 110)
+    function get_student_attendance_qr_image_url($student_session_id, $size = 160)
     {
         $size = (int) $size;
         if ($size <= 0) {
@@ -482,16 +482,15 @@ if (!function_exists('get_id_card_layout_config')) {
         }
 
         foreach ($layout as $key => $box) {
-            foreach (array('x', 'y') as $axis) {
-                $layout[$key][$axis] = max(0, min(100, (float) $box[$axis]));
-            }
             foreach (array('w', 'h') as $axis) {
                 $minimum = 4;
                 if ($key === 'qr') {
-                    $minimum = $axis === 'w' ? 18 : 12;
+                    $minimum = $axis === 'w' ? 22 : 16;
                 }
                 $layout[$key][$axis] = max($minimum, min(100, (float) $box[$axis]));
             }
+            $layout[$key]['x'] = max(0, min(100 - $layout[$key]['w'], (float) $box['x']));
+            $layout[$key]['y'] = max(0, min(100 - $layout[$key]['h'], (float) $box['y']));
         }
 
         return $layout;
@@ -541,7 +540,7 @@ if (!function_exists('get_staff_attendance_qr_url')) {
 }
 
 if (!function_exists('get_staff_attendance_qr_image_url')) {
-    function get_staff_attendance_qr_image_url($staff_id, $size = 110)
+    function get_staff_attendance_qr_image_url($staff_id, $size = 160)
     {
         $size = (int) $size;
         if ($size <= 0) {

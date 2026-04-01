@@ -105,10 +105,70 @@ if ($builder_type === 'staff') {
     .designer-element {
         cursor: move;
         user-select: none;
+        overflow: visible;
+        background: transparent !important;
+        border: 1px dashed rgba(37, 99, 235, 0.7) !important;
+        border-radius: 8px !important;
+        box-shadow: none !important;
     }
 
     .designer-element.hidden-by-toggle {
         display: none !important;
+    }
+
+    .designer-element.id-card-panel,
+    .designer-element.id-card-heading,
+    .designer-element.id-card-qr,
+    .designer-element.id-card-signature,
+    .designer-element.id-card-brand,
+    .designer-element.id-card-photo {
+        background: transparent !important;
+    }
+
+    .designer-element.id-card-heading {
+        color: #0f172a !important;
+        text-transform: none;
+        letter-spacing: 0;
+    }
+
+    .designer-element.id-card-qr {
+        padding: 4px !important;
+    }
+
+    .designer-resize-handle {
+        position: absolute;
+        background: #2563eb;
+        border: 1px solid #ffffff;
+        border-radius: 999px;
+        z-index: 15;
+    }
+
+    .designer-resize-handle.edge-e {
+        top: calc(50% - 10px);
+        right: -7px;
+        width: 14px;
+        height: 20px;
+        cursor: ew-resize;
+    }
+
+    .designer-resize-handle.edge-s {
+        left: calc(50% - 10px);
+        bottom: -7px;
+        width: 20px;
+        height: 14px;
+        cursor: ns-resize;
+    }
+
+    .designer-resize-handle.corner-se {
+        right: -7px;
+        bottom: -7px;
+        width: 16px;
+        height: 16px;
+        cursor: nwse-resize;
+    }
+
+    .card-size-grid .form-group {
+        margin-bottom: 10px;
     }
 
     .id-card-designer-actions {
@@ -127,20 +187,29 @@ if ($builder_type === 'staff') {
 
 <div class="form-group">
     <label>Card Size</label><small class="req"> *</small>
-    <div class="row">
-        <div class="col-xs-4">
-            <select class="form-control" name="card_unit" id="<?php echo $builder_type; ?>_card_unit">
-                <option value="in" <?php echo $dimensions['unit'] === 'in' ? 'selected' : ''; ?>>Inches</option>
-                <option value="mm" <?php echo $dimensions['unit'] === 'mm' ? 'selected' : ''; ?>>Millimetres</option>
-                <option value="cm" <?php echo $dimensions['unit'] === 'cm' ? 'selected' : ''; ?>>Centimetres</option>
-                <option value="px" <?php echo $dimensions['unit'] === 'px' ? 'selected' : ''; ?>>Pixels</option>
-            </select>
+    <div class="row card-size-grid">
+        <div class="col-xs-12">
+            <div class="form-group">
+                <label class="sr-only" for="<?php echo $builder_type; ?>_card_unit">Unit</label>
+                <select class="form-control" name="card_unit" id="<?php echo $builder_type; ?>_card_unit">
+                    <option value="in" <?php echo $dimensions['unit'] === 'in' ? 'selected' : ''; ?>>Inches</option>
+                    <option value="mm" <?php echo $dimensions['unit'] === 'mm' ? 'selected' : ''; ?>>Millimetres</option>
+                    <option value="cm" <?php echo $dimensions['unit'] === 'cm' ? 'selected' : ''; ?>>Centimetres</option>
+                    <option value="px" <?php echo $dimensions['unit'] === 'px' ? 'selected' : ''; ?>>Pixels</option>
+                </select>
+            </div>
         </div>
-        <div class="col-xs-4">
-            <input type="number" step="0.01" min="0.01" class="form-control" name="card_width" id="<?php echo $builder_type; ?>_card_width" value="<?php echo set_value('card_width', format_id_card_measurement($dimensions['width'])); ?>" placeholder="Width">
+        <div class="col-xs-6">
+            <div class="form-group">
+                <label for="<?php echo $builder_type; ?>_card_width">Width</label>
+                <input type="number" step="0.01" min="0.01" class="form-control" name="card_width" id="<?php echo $builder_type; ?>_card_width" value="<?php echo set_value('card_width', format_id_card_measurement($dimensions['width'])); ?>" placeholder="Width">
+            </div>
         </div>
-        <div class="col-xs-4">
-            <input type="number" step="0.01" min="0.01" class="form-control" name="card_height" id="<?php echo $builder_type; ?>_card_height" value="<?php echo set_value('card_height', format_id_card_measurement($dimensions['height'])); ?>" placeholder="Height">
+        <div class="col-xs-6">
+            <div class="form-group">
+                <label for="<?php echo $builder_type; ?>_card_height">Height</label>
+                <input type="number" step="0.01" min="0.01" class="form-control" name="card_height" id="<?php echo $builder_type; ?>_card_height" value="<?php echo set_value('card_height', format_id_card_measurement($dimensions['height'])); ?>" placeholder="Height">
+            </div>
         </div>
     </div>
     <span class="help-block">Default size is 2.1 inches wide by 3.3 inches tall.</span>
@@ -201,6 +270,17 @@ if (!window.initIdCardDesigner) {
 
         card.querySelectorAll('.designer-element').forEach(function (node) {
             elements[node.getAttribute('data-element')] = node;
+        });
+
+        Object.keys(elements).forEach(function (key) {
+            ['edge-e', 'edge-s', 'corner-se'].forEach(function (handleType) {
+                if (!elements[key].querySelector('.designer-resize-handle.' + handleType)) {
+                    var handle = document.createElement('span');
+                    handle.className = 'designer-resize-handle ' + handleType;
+                    handle.setAttribute('data-direction', handleType);
+                    elements[key].appendChild(handle);
+                }
+            });
         });
 
         function percent(value, fallback) {
@@ -295,9 +375,18 @@ if (!window.initIdCardDesigner) {
             });
         }
 
+        function minimumSize(key) {
+            if (key === 'qr') {
+                return {w: 22, h: 16};
+            }
+
+            return {w: 8, h: 6};
+        }
+
         var activeDrag = null;
 
         function startDrag(event) {
+            var handle = event.target.closest('.designer-resize-handle');
             var source = event.target.closest('.designer-element');
             if (!source) {
                 return;
@@ -309,8 +398,12 @@ if (!window.initIdCardDesigner) {
                 key: key,
                 startX: point.clientX,
                 startY: point.clientY,
+                mode: handle ? 'resize' : 'move',
+                direction: handle ? handle.getAttribute('data-direction') : '',
                 originX: layout[key].x,
-                originY: layout[key].y
+                originY: layout[key].y,
+                originW: layout[key].w,
+                originH: layout[key].h
             };
         }
 
@@ -324,8 +417,18 @@ if (!window.initIdCardDesigner) {
             var dx = ((point.clientX - activeDrag.startX) / rect.width) * 100;
             var dy = ((point.clientY - activeDrag.startY) / rect.height) * 100;
             var box = layout[activeDrag.key];
-            box.x = clamp(activeDrag.originX + dx, 0, 100 - box.w);
-            box.y = clamp(activeDrag.originY + dy, 0, 100 - box.h);
+            if (activeDrag.mode === 'resize') {
+                var minSize = minimumSize(activeDrag.key);
+                if (activeDrag.direction === 'edge-e' || activeDrag.direction === 'corner-se') {
+                    box.w = clamp(activeDrag.originW + dx, minSize.w, 100 - box.x);
+                }
+                if (activeDrag.direction === 'edge-s' || activeDrag.direction === 'corner-se') {
+                    box.h = clamp(activeDrag.originH + dy, minSize.h, 100 - box.y);
+                }
+            } else {
+                box.x = clamp(activeDrag.originX + dx, 0, 100 - box.w);
+                box.y = clamp(activeDrag.originY + dy, 0, 100 - box.h);
+            }
             renderLayout();
         }
 
