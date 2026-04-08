@@ -630,11 +630,9 @@ echo $this->customlib->getFullName($feearray[0]->firstname, $feearray[0]->middle
                                                             <td class="">
 
                                                                 <?php
-                                                                if ($feeList->due_date == "0000-00-00") {
-                                                                    
-                                                                } else {
-
-                                                                    echo date($this->customlib->getSchoolDateFormat(), $this->customlib->dateyyyymmddTodateformat($feeList->due_date));
+                                                                $due_date_timestamp = $this->customlib->dateyyyymmddTodateformat($feeList->due_date);
+                                                                if (!empty($due_date_timestamp)) {
+                                                                    echo date($this->customlib->getSchoolDateFormat(), $due_date_timestamp);
                                                                 }
                                                                 ?>
                                                             </td>
@@ -690,7 +688,12 @@ echo $this->customlib->getFullName($feearray[0]->firstname, $feearray[0]->middle
                                                                     </td>
                                                                     <td class="text text-center"><?php echo $fee_deposits_value->payment_mode; ?></td>
                                                                     <td class="text text-center">
-                                                                        <?php echo date($this->customlib->getSchoolDateFormat(), $this->customlib->dateyyyymmddTodateformat($fee_deposits_value->date)); ?>
+                                                                        <?php
+                                                                        $deposit_date_timestamp = $this->customlib->dateyyyymmddTodateformat($fee_deposits_value->date);
+                                                                        if (!empty($deposit_date_timestamp)) {
+                                                                            echo date($this->customlib->getSchoolDateFormat(), $deposit_date_timestamp);
+                                                                        }
+                                                                        ?>
                                                                     </td>
                                                                     <td class="text text-right"><?php echo ($currency_symbol . number_format($fee_deposits_value->amount, 2, '.', '')); ?></td>
                                                                     <td class="text text-right"><?php echo ($currency_symbol . number_format($fee_deposits_value->amount_fine, 2, '.', '')); ?></td>
