@@ -22,7 +22,13 @@ class Mailer {
         $mail = new PHPMailer();
         $mail->CharSet = 'UTF-8';
         $school_name = $this->sch_setting[0]['name'];
-        $school_email    = $this->sch_setting[0]['email'];
+        $school_email = $this->sch_setting[0]['email'];
+        $from_email   = filter_var($school_email, FILTER_VALIDATE_EMAIL) ? $school_email : '';
+
+        if ($from_email === '' && filter_var($this->CI->mail_config->smtp_username, FILTER_VALIDATE_EMAIL)) {
+            $from_email = $this->CI->mail_config->smtp_username;
+        }
+
         if ($this->CI->mail_config->email_type == "smtp") {
 
             $mail->IsSMTP();
@@ -32,16 +38,20 @@ class Mailer {
             $mail->Port       = $this->CI->mail_config->smtp_port;
             $mail->Username   = $this->CI->mail_config->smtp_username;
             $mail->Password   = $this->CI->mail_config->smtp_password;
-            $mail->SetFrom($this->CI->mail_config->smtp_username, $school_name);
-            $mail->AddReplyTo($this->CI->mail_config->smtp_username, $this->CI->mail_config->smtp_username);
+            if ($from_email !== '') {
+                $mail->SetFrom($from_email, $school_name);
+                $mail->AddReplyTo($from_email, $school_name);
+            }
         } else {
             $mail->isSMTP();
             $mail->Host        = 'localhost';
             $mail->SMTPAuth    = false;
             $mail->SMTPAutoTLS = false;
             $mail->Port        = 25;
-            $mail->SetFrom($school_email, $school_name);
-            $mail->AddReplyTo($school_email, $school_name);
+            if ($from_email !== '') {
+                $mail->SetFrom($from_email, $school_name);
+                $mail->AddReplyTo($from_email, $school_name);
+            }
         }
         if (!empty($FILES)) {
             if (isset($_FILES['files']) && !empty($_FILES['files'])) {
