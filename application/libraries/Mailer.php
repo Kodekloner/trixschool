@@ -19,6 +19,20 @@ class Mailer {
 
         return substr($value, 0, 2) . str_repeat('*', max(0, $length - 4)) . substr($value, -2);
     }
+
+    private function sanitizeDebugLine($line) {
+        $line = trim((string) $line);
+
+        if (stripos($line, 'CLIENT -> SERVER: AUTH LOGIN') !== false) {
+            return 'CLIENT -> SERVER: AUTH LOGIN [REDACTED]';
+        }
+
+        if (preg_match('/^CLIENT -> SERVER:\s+[A-Za-z0-9+\/=]{16,}$/', $line)) {
+            return 'CLIENT -> SERVER: [REDACTED AUTH PAYLOAD]';
+        }
+
+        return $line;
+    }
  
     public function __construct() {
         $this->CI = &get_instance();
@@ -51,7 +65,7 @@ class Mailer {
             $mail->IsSMTP();
             $mail->SMTPDebug  = 2;
             $mail->Debugoutput = function ($str, $level) use (&$smtp_debug_output) {
-                $debug_line = 'Mailer SMTP debug level ' . $level . ': ' . trim($str);
+                $debug_line = 'Mailer SMTP debug level ' . $level . ': ' . $this->sanitizeDebugLine($str);
                 $smtp_debug_output[] = $debug_line;
                 log_message('error', $debug_line);
             };
