@@ -75,8 +75,10 @@ class Schsettings extends Admin_Controller
 		$currencyPlace          = $this->customlib->getCurrencyPlace();
 		$data['currencyPlace']  = $currencyPlace;
 		$data['result']         = $this->setting_model->getSetting();
-
-		//$data['app_response']   = $this->auth->andapp_validate();
+		$data['app_response']   = false;
+		if (isset($this->auth) && method_exists($this->auth, 'andapp_validate')) {
+			$data['app_response'] = (bool) $this->auth->andapp_validate();
+		}
 		$this->load->view('layout/header', $data);
 		$this->load->view('setting/settingList', $data);
 		$this->load->view('layout/footer', $data);
