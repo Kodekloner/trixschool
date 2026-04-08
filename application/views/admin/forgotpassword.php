@@ -6,12 +6,14 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#424242" />
         <title><?php $app_name = $this->setting_model->get();
-$admin_logo       = !empty($app_name[0]['admin_logo']) ? basename($app_name[0]['admin_logo']) : '';
-$admin_small_logo = !empty($app_name[0]['admin_small_logo']) ? basename($app_name[0]['admin_small_logo']) : '';
+$admin_logo       = !empty($app_name[0]['admin_logo']) ? $app_name[0]['admin_logo'] : '';
+$admin_small_logo = !empty($app_name[0]['admin_small_logo']) ? $app_name[0]['admin_small_logo'] : '';
+$admin_logo_url   = get_school_asset_url($admin_logo, 'uploads/school_content/admin_logo');
+$admin_small_logo_url = get_school_asset_url($admin_small_logo, 'uploads/school_content/admin_small_logo');
 echo $app_name[0]['name'];
 ?></title>
         <!--favican-->
-        <link href="<?php echo base_url('uploads/school_content/admin_small_logo/' . $admin_small_logo); ?>" rel="shortcut icon" type="image/x-icon">
+        <link href="<?php echo $admin_small_logo_url; ?>" rel="shortcut icon" type="image/x-icon">
         <!-- CSS -->
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,100,300,500">
         <link rel="stylesheet" href="<?php echo base_url(); ?>backend/usertemplate/assets/bootstrap/css/bootstrap.min.css">
@@ -38,7 +40,7 @@ echo $app_name[0]['name'];
                                 <div class="loginbg">
                                     <div class="form-top">
                                         <div class="form-top-left logowidth">
-                                            <img src="<?php echo base_url('uploads/school_content/admin_logo/' . $admin_logo); ?>" />
+                                            <img src="<?php echo $admin_logo_url; ?>" />
                                         </div>
                                         <!-- <div class="form-top-right"><i class="fa fa-key"></i></div> -->
                                     </div>
