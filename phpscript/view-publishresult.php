@@ -16,6 +16,10 @@
     $reltype = $_POST['reltype'] ?? '';
     
     $rolefirst = $_POST['rolefirst'] ?? '';
+
+    if (!can_staff_publish_result($link, $id ?? 0, $rolefirst)) {
+        exit;
+    }
     
     if($rolefirst == 'student'){
         

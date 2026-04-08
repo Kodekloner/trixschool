@@ -82,3 +82,34 @@ if (!function_exists('upload_to_s3')) {
         }
     }
 }
+
+if (!function_exists('get_school_asset_url')) {
+    /**
+     * Resolve a stored asset value to a browser-safe URL.
+     *
+     * Supports full URLs, S3 keys like uploads/..., and legacy filename-only values.
+     */
+    function get_school_asset_url($path, $local_directory = '')
+    {
+        $path = trim((string) $path);
+        if ($path === '') {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $path)) {
+            return $path;
+        }
+
+        $normalized_path = ltrim($path, '/');
+
+        if (strpos($normalized_path, 'uploads/') === 0) {
+            return 'https://schoollift.s3.us-east-2.amazonaws.com/' . $normalized_path;
+        }
+
+        if ($local_directory !== '') {
+            return base_url(trim($local_directory, '/') . '/' . basename($normalized_path));
+        }
+
+        return base_url($normalized_path);
+    }
+}

@@ -1,6 +1,43 @@
-<?php $currency_symbol = $this->customlib->getSchoolCurrencyFormat();?>
+<?php
+$currency_symbol    = $this->customlib->getSchoolCurrencyFormat();
+$receipt_header     = $this->setting_model->unlink_receiptheader();
+$receipt_header_url = get_school_asset_url($receipt_header, 'uploads/print_headerfooter/student_receipt');
+$watermark_logo     = !empty($sch_setting->image) ? $sch_setting->image : '';
+$watermark_logo_url = get_school_asset_url($watermark_logo, 'uploads/school_content/logo');
+?>
 <style type="text/css">
     .page-break { display: block; page-break-before: always; }
+    .invoice {
+        min-height: 560px;
+        overflow: hidden;
+        position: relative;
+    }
+    .receipt-watermark {
+        left: 50%;
+        opacity: 0.08;
+        pointer-events: none;
+        position: absolute;
+        top: 52%;
+        transform: translate(-50%, -50%);
+        width: 240px;
+        z-index: 0;
+    }
+    .receipt-watermark img {
+        display: block;
+        width: 100%;
+    }
+    .invoice .row,
+    .invoice hr,
+    .invoice table {
+        position: relative;
+        z-index: 1;
+    }
+    .receipt-header-image {
+        display: block;
+        height: 100px;
+        object-fit: contain;
+        width: 100%;
+    }
     @media print {
         .page-break { display: block; page-break-before: always; }
         .col-sm-1, .col-sm-2, .col-sm-3, .col-sm-4, .col-sm-5, .col-sm-6, .col-sm-7, .col-sm-8, .col-sm-9, .col-sm-10, .col-sm-11, .col-sm-12 {
@@ -208,14 +245,16 @@
             <div class="row">
                 <div id="content" class="col-lg-12 col-sm-12 ">
                     <div class="invoice">
+                        <?php if ($watermark_logo_url != '') {?>
+                            <div class="receipt-watermark">
+                                <img src="<?php echo $watermark_logo_url; ?>" alt="<?php echo $this->customlib->getAppName(); ?>">
+                            </div>
+                        <?php }?>
                         <div class="row header ">
                             <div class="col-sm-12">
-                                <?php
-?>
-
-                                <img  src="<?php echo base_url(); ?>/uploads/print_headerfooter/student_receipt/<?php $this->setting_model->get_receiptheader();?>" style="height: 100px;width: 100%;">
-                                <?php
-?>
+                                <?php if ($receipt_header_url != '') {?>
+                                    <img src="<?php echo $receipt_header_url; ?>" class="receipt-header-image" alt="<?php echo $this->lang->line('fees_receipt'); ?>">
+                                <?php }?>
                             </div>
 
                         </div>
@@ -359,13 +398,16 @@ if ($sch_setting->is_duplicate_fees_invoice) {
     ?>
                         <div class="page-break"></div>
                         <div class="invoice">
+                            <?php if ($watermark_logo_url != '') {?>
+                                <div class="receipt-watermark">
+                                    <img src="<?php echo $watermark_logo_url; ?>" alt="<?php echo $this->customlib->getAppName(); ?>">
+                                </div>
+                            <?php }?>
                             <div class="row header ">
                                 <div class="col-sm-12">
-                                    <?php
-?>
-
-                                    <img  src="<?php echo base_url(); ?>/uploads/print_headerfooter/student_receipt/<?php $this->setting_model->get_receiptheader();?>" style="height: 100px;width: 100%;">
-                                    <?php ?>
+                                    <?php if ($receipt_header_url != '') {?>
+                                        <img src="<?php echo $receipt_header_url; ?>" class="receipt-header-image" alt="<?php echo $this->lang->line('fees_receipt'); ?>">
+                                    <?php }?>
                                 </div>
 
                             </div>
