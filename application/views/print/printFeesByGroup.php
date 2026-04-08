@@ -2,8 +2,8 @@
 $currency_symbol    = $this->customlib->getSchoolCurrencyFormat();
 $receipt_header     = $this->setting_model->unlink_receiptheader();
 $receipt_header_url = get_school_asset_url($receipt_header, 'uploads/print_headerfooter/student_receipt');
-$watermark_logo     = !empty($sch_setting->admin_logo) ? $sch_setting->admin_logo : '';
-$watermark_logo_url = get_school_asset_url($watermark_logo, 'uploads/school_content/admin_logo');
+$watermark_logo     = !empty($sch_setting->image) ? $sch_setting->image : '';
+$watermark_logo_url = get_school_asset_url($watermark_logo, 'uploads/school_content/logo');
 ?>
 <style type="text/css">
     .page-break	{ display: block; page-break-before: always; }
