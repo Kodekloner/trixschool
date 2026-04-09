@@ -6,12 +6,34 @@ if (!defined('BASEPATH')) {
 
 class Media extends Admin_Controller
 {
+    private $imageMimeTypes = array('image/png', 'image/jpeg', 'image/gif');
 
     public function __construct()
     {
         parent::__construct();
         $this->load->library('imageResize');
         $this->load->model("filetype_model");
+    }
+
+    private function isImageFileType($file_type)
+    {
+        return in_array(strtolower((string) $file_type), $this->imageMimeTypes, true);
+    }
+
+    private function generateMediaFileName($original_name)
+    {
+        $fileInfo  = pathinfo((string) $original_name);
+        $name_part = isset($fileInfo['filename']) ? $fileInfo['filename'] : 'media';
+        $extension = isset($fileInfo['extension']) ? strtolower($fileInfo['extension']) : '';
+
+        $name_part = preg_replace('/[^A-Za-z0-9_-]+/', '-', $name_part);
+        $name_part = trim($name_part, '-_');
+
+        if ($name_part === '') {
+            $name_part = 'media';
+        }
+
+        return $name_part . '-' . uniqid() . ($extension !== '' ? '.' . $extension : '');
     }
 
     public function index()
@@ -132,57 +154,65 @@ class Media extends Admin_Controller
         $allowed_mime_type = array_map('trim', array_map('strtolower', explode(',', $result->image_mime)));
 
         if (isset($_FILES['files']) && !empty($_FILES['files'])) {
-            $destination_path = "uploads/gallery/media/";
-            $thumb_path       = "uploads/gallery/media/thumb/";
-            $responses        = $this->imageresize->resize($_FILES["files"], $destination_path, $thumb_path, "media");
-            $response_array   = array();
-            if ($responses) {
-                $img_array  = array();
-                $validation = 0;
-                foreach ($responses['images'] as $key => $value) {
+            $response_array = array('status' => 1, 'msg' => $this->lang->line('something_wrong'));
+            $files          = $_FILES['files'];
+            $image_count    = isset($files['name']) && is_array($files['name']) ? count($files['name']) : 0;
+            $media_dir      = 'uploads/gallery/media/';
+            $has_files      = false;
 
-                    $validation = 1;
-                    $temp       = explode(".", $value['store_name']);
-                    $file_type  = strtolower($value['file_type']);
-
-                    $extension = end($temp);
-                    $extension = strtolower($extension);
-
-                    if (!in_array($extension, $allowedExts)) {
-                        $validation = 0;
-                    }
-                    if (!in_array($file_type, $allowed_mime_type)) {
-                        $validation = 0;
-                    }
+            for ($key = 0; $key < $image_count; $key++) {
+                $file_name = isset($files['name'][$key]) ? $files['name'][$key] : '';
+                if ($file_name === '') {
+                    continue;
                 }
 
-                if ($validation == 1) {
-                    foreach ($responses['images'] as $key => $value) {
-                        $data = array(
-                            'img_name'   => $value['store_name'],
-                            'file_type'  => $value['file_type'],
-                            'file_size'  => $value['file_size'],
-                            'thumb_name' => $value['store_name'],
-                            'thumb_path' => $value['thumb_path'],
-                            'dir_path'   => $value['dir_path'],
-                        );
-                        $insert_id         = $this->cms_media_model->add($data);
-                        $data['record_id'] = $insert_id;
-                        $img_array[]       = $data;
-                    }
-                    $response_array['status'] = 0;
-                    $response_array['msg']    = $this->lang->line('success_message');
+                $has_files  = true;
+                $fileInfo   = pathinfo($file_name);
+                $extension  = isset($fileInfo['extension']) ? strtolower($fileInfo['extension']) : '';
+                $file_type  = isset($files['type'][$key]) ? strtolower($files['type'][$key]) : '';
+                $file_error = isset($files['error'][$key]) ? (int) $files['error'][$key] : 1;
 
-                } else {
-                    $response_array['status'] = 0;
-                    $response_array['msg']    = $this->lang->line('extension_not_allowed');
-
+                if ($file_error !== 0 || !in_array($extension, $allowedExts, true) || !in_array($file_type, $allowed_mime_type, true)) {
+                    $response_array['msg'] = $this->lang->line('extension_not_allowed');
+                    echo json_encode($response_array);
+                    return;
                 }
-
-            } else {
-                $response_array['status'] = 0;
-                $response_array['msg']    = $this->lang->line('something_wrong');
             }
+
+            if (!$has_files) {
+                echo json_encode($response_array);
+                return;
+            }
+
+            for ($key = 0; $key < $image_count; $key++) {
+                $file_name = isset($files['name'][$key]) ? $files['name'][$key] : '';
+                if ($file_name === '') {
+                    continue;
+                }
+
+                $fileInfo       = pathinfo($file_name);
+                $generated_name = $this->generateMediaFileName($file_name);
+                $upload_result  = upload_to_s3($files['tmp_name'][$key], $fileInfo, $generated_name, $media_dir);
+
+                if (empty($upload_result['success']) || empty($upload_result['s3_key'])) {
+                    $response_array['msg'] = isset($upload_result['error']) ? $upload_result['error'] : $this->lang->line('something_wrong');
+                    echo json_encode($response_array);
+                    return;
+                }
+
+                $data = array(
+                    'img_name'   => basename($upload_result['s3_key']),
+                    'file_type'  => isset($files['type'][$key]) ? $files['type'][$key] : '',
+                    'file_size'  => isset($files['size'][$key]) ? $files['size'][$key] : 0,
+                    'thumb_name' => '',
+                    'thumb_path' => '',
+                    'dir_path'   => $media_dir,
+                );
+                $this->cms_media_model->add($data);
+            }
+
+            $response_array['status'] = 0;
+            $response_array['msg']    = $this->lang->line('success_message');
             echo json_encode($response_array);
         }
     }
@@ -192,41 +222,40 @@ class Media extends Admin_Controller
 
         $is_image = "0";
         $is_video = "0";
-        if ($result->file_type == 'image/png' || $result->file_type == 'image/jpeg' || $result->file_type == 'image/jpeg' || $result->file_type == 'image/jpeg' || $result->file_type == 'image/gif') {
-
-            $file     = base_url() . $result->dir_path . $result->img_name;
-            $file_src = base_url() . $result->thumb_path . $result->img_name;
+        if ($this->isImageFileType($result->file_type)) {
+            $file     = get_school_media_thumb_url($result->img_name, $result->thumb_path, $result->dir_path);
+            $file_src = get_school_media_url($result->img_name, $result->dir_path);
             $is_image = 1;
         } elseif ($result->file_type == 'video') {
-            $file     = base_url() . $result->thumb_path . $result->img_name;
+            $file     = get_school_media_thumb_url($result->img_name, $result->thumb_path, $result->dir_path);
             $file_src = $result->vid_url;
 
             $is_video = 1;
         } elseif ($result->file_type == 'text/plain') {
             $file     = base_url('backend/images/txticon.png');
-            $file_src = base_url() . $result->dir_path . $result->img_name;
+            $file_src = get_school_media_url($result->img_name, $result->dir_path);
         } elseif ($result->file_type == 'application/zip' || $result->file_type == 'application/x-rar') {
             $file     = base_url('backend/images/zipicon.png');
-            $file_src = base_url() . $result->dir_path . $result->img_name;
+            $file_src = get_school_media_url($result->img_name, $result->dir_path);
         } elseif ($result->file_type == 'application/pdf') {
             $file     = base_url('backend/images/pdficon.png');
-            $file_src = base_url() . $result->dir_path . $result->img_name;
+            $file_src = get_school_media_url($result->img_name, $result->dir_path);
         } elseif ($result->file_type == 'application/msword') {
             $file     = base_url('backend/images/wordicon.png');
-            $file_src = base_url() . $result->dir_path . $result->img_name;
+            $file_src = get_school_media_url($result->img_name, $result->dir_path);
         } elseif ($result->file_type == 'application/vnd.ms-excel') {
             $file     = base_url('backend/images/excelicon.png');
-            $file_src = base_url() . $result->dir_path . $result->img_name;
+            $file_src = get_school_media_url($result->img_name, $result->dir_path);
         } else {
             $file     = base_url('backend/images/docicon.png');
-            $file_src = base_url() . $result->dir_path . $result->img_name;
+            $file_src = get_school_media_url($result->img_name, $result->dir_path);
         }
 //==============
         $output = '';
         $output .= "<div class='col-sm-3 col-md-2 col-xs-6 img_div_modal image_div div_record_" . $result->id . "'>";
         $output .= "<div class='fadeoverlay'>";
         $output .= "<div class='fadeheight'>";
-        $output .= "<img class='' data-fid='" . $result->id . "' data-content_type='" . $result->file_type . "' data-content_name='" . $result->img_name . "' data-is_image='" . $is_image . "' data-vid_url='" . $result->vid_url . "' data-img='" . base_url() . $result->dir_path . $result->img_name . "' src='" . $file . "'>";
+        $output .= "<img class='' data-fid='" . $result->id . "' data-content_type='" . $result->file_type . "' data-content_name='" . $result->img_name . "' data-is_image='" . $is_image . "' data-vid_url='" . $result->vid_url . "' data-img='" . $file_src . "' src='" . $file . "'>";
         $output .= "</div>";
         if ($is_video == 1) {
             $output .= "<i class='fa fa-youtube-play videoicon'></i>";

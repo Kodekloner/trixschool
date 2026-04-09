@@ -10,7 +10,7 @@ if (isset($banner_images) && !empty($banner_images)) {
             foreach ($banner_images as $banner_img_key => $banner_img_value) {
                 ?>
                 <div class="item <?php if ($banner_first) echo 'active'; ?>">
-                    <img src="<?php echo base_url($banner_img_value->dir_path . $banner_img_value->img_name); ?>" alt="" />
+                    <img src="<?php echo get_school_media_url($banner_img_value->img_name, $banner_img_value->dir_path); ?>" alt="" />
                 </div>
                 <?php
                 $banner_first = FALSE;

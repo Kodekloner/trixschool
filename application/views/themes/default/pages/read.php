@@ -15,7 +15,7 @@ if (isset($page['event_start']) && $page['event_end']) {
             echo "<div class='gallery'>";
             foreach ($page['page_contents'] as $page_content_key => $page_content_value) {
 
-                $url = base_url($page_content_value->dir_path . $page_content_value->img_name);
+                $url = get_school_media_url($page_content_value->img_name, $page_content_value->dir_path);
 
                 if ($page_content_value->file_type == "video") {
                     $url = $page_content_value->vid_url;

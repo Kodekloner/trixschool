@@ -186,10 +186,12 @@
                                         <?php
                                         if (!empty($result['page_contents'])) {
                                             foreach ($result['page_contents'] as $page_content_key => $page_content_value) {
+                                                $content_source = get_school_media_url($page_content_value->img_name, $page_content_value->dir_path);
+                                                $content_thumb  = get_school_media_thumb_url($page_content_value->img_name, $page_content_value->thumb_path, $page_content_value->dir_path);
                                                 ?>
                                                 <div class='col-sm-3 col-md-2 col-xs-6 img_div_modal gallery_img div_record_<?php echo $page_content_value->id; ?>'>
                                                     <div class='fadeoverlay'>
-                                                        <img class='img-responsive' data-fid='<?php echo $page_content_value->id; ?>' data-content_name='<?php echo $page_content_value->img_name; ?>' data-is_image='' data-img='<?php echo $page_content_value->dir_path . $page_content_value->img_name; ?>' src='<?php echo base_url($page_content_value->thumb_path . $page_content_value->img_name); ?>'>
+                                                        <img class='img-responsive' data-fid='<?php echo $page_content_value->id; ?>' data-content_name='<?php echo $page_content_value->img_name; ?>' data-is_image='' data-img='<?php echo $content_source; ?>' src='<?php echo $content_thumb; ?>'>
                                                         <input type='hidden' value='<?php echo $page_content_value->id; ?>' name='gallery_images[]'>
                                                         <?php
                                                         if ($page_content_value->file_type == 'video') {
