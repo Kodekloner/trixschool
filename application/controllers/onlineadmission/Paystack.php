@@ -100,9 +100,9 @@ class Paystack extends Front_Controller
                         $gateway_response['admission_id']   = $reference; 
                         $gateway_response['paid_amount']    = $amount;
                         $gateway_response['transaction_id'] = $ref;
-                        $gateway_response['payment_mode']   = 'paytm';
+                        $gateway_response['payment_mode']   = 'paystack';
                         $gateway_response['payment_type']   = 'online';
-                        $gateway_response['note']           = "Payment deposit through Paystack TXN ID: " . $transactionid;
+                        $gateway_response['note']           = "Payment deposit through Paystack TXN ID: " . $ref;
                         $gateway_response['date']           = date("Y-m-d H:i:s");
                         $return_detail                      = $this->onlinestudent_model->paymentSuccess($gateway_response);
                         $sender_details = array('firstname' => $online_data->firstname, 'lastname' => $online_data->lastname, 'email' => $online_data->email,'date'=>$date,'reference_no'=>$online_data->reference_no,'mobileno'=>$online_data->mobileno,'paid_amount'=>$amount);
