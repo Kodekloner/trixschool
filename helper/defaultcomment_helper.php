@@ -9,6 +9,61 @@ if (!function_exists('normalize_defaultcomment_result_subtype')) {
     }
 }
 
+if (!function_exists('get_class_result_type')) {
+    function get_class_result_type($link, $classId)
+    {
+        $classId = (int) $classId;
+
+        if ($classId <= 0) {
+            return '';
+        }
+
+        $sql = "SELECT ResultType
+                FROM `assigncatoclass`
+                WHERE ClassID = '$classId'
+                ORDER BY id DESC
+                LIMIT 1";
+        $result = mysqli_query($link, $sql);
+        $row = $result ? mysqli_fetch_assoc($result) : null;
+
+        return strtolower(trim((string) ($row['ResultType'] ?? '')));
+    }
+}
+
+if (!function_exists('class_uses_british_result_computation')) {
+    function class_uses_british_result_computation($link, $classId)
+    {
+        return get_class_result_type($link, $classId) === 'british';
+    }
+}
+
+if (!function_exists('class_has_kindergarten_assessment')) {
+    function class_has_kindergarten_assessment($link, $classId)
+    {
+        $classId = (int) $classId;
+
+        if ($classId <= 0) {
+            return false;
+        }
+
+        $sql = "SELECT id
+                FROM `kindergarten_assignment`
+                WHERE class_id = '$classId'
+                LIMIT 1";
+        $result = mysqli_query($link, $sql);
+
+        return $result && mysqli_num_rows($result) > 0;
+    }
+}
+
+if (!function_exists('class_disables_school_head_default_comments')) {
+    function class_disables_school_head_default_comments($link, $classId)
+    {
+        return class_uses_british_result_computation($link, $classId)
+            || class_has_kindergarten_assessment($link, $classId);
+    }
+}
+
 if (!function_exists('get_defaultcomment_max_score')) {
     function get_defaultcomment_max_score($link, $classId, $resultSubType)
     {
@@ -20,6 +75,14 @@ if (!function_exists('get_defaultcomment_max_score')) {
                 'success' => false,
                 'maxScore' => 0,
                 'message' => 'Select a class first.'
+            ];
+        }
+
+        if (class_uses_british_result_computation($link, $classId)) {
+            return [
+                'success' => false,
+                'maxScore' => 0,
+                'message' => 'Default comments are not available for British-computation classes.'
             ];
         }
 
@@ -88,6 +151,10 @@ if (!function_exists('find_defaultcomment_match')) {
         $resultSubType = normalize_defaultcomment_result_subtype($resultSubType);
         $commentTypeSafe = mysqli_real_escape_string($link, $commentType);
         $ownerCondition = $ownerId !== null ? " AND PrincipalOrDeanOrHeadTeacherUserID = '" . (int) $ownerId . "'" : '';
+
+        if ($classId > 0 && class_uses_british_result_computation($link, $classId)) {
+            return null;
+        }
 
         $queries = [];
 
@@ -334,6 +401,7 @@ if (!function_exists('get_school_head_comment_data')) {
     {
         $studentId = (int) $studentId;
         $sessionId = (int) $sessionId;
+        $classId = (int) $classId;
         $termSafe = mysqli_real_escape_string($link, (string) $term);
         $resultSubType = normalize_defaultcomment_result_subtype($resultSubType);
         $resultSubTypeSafe = mysqli_real_escape_string($link, $resultSubType);
@@ -357,6 +425,14 @@ if (!function_exists('get_school_head_comment_data')) {
                 'remark' => $fixedRemarkRow['remark'],
                 'signatureHtml' => get_school_head_signature_html($link, $staffId, $localPrefix),
                 'staffId' => $staffId,
+            ];
+        }
+
+        if ($classId > 0 && class_disables_school_head_default_comments($link, $classId)) {
+            return [
+                'remark' => 'N/A',
+                'signatureHtml' => '',
+                'staffId' => 0,
             ];
         }
 

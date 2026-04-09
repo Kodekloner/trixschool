@@ -64,15 +64,17 @@ require_once('../helper/defaultcomment_helper.php');
                                             $sqlstaff = "SELECT staff.id AS staff_id, staff.name AS staff_name, staff.surname AS staff_surname
                                                          FROM `staff`
                                                          WHERE staff.id='$id'
+                                                           AND staff.is_active = 1
                                                          ORDER BY surname ASC";
                                         }
                                         else
                                         {
-                                            $sqlstaff = "SELECT staff.id AS staff_id, staff.name AS staff_name, staff.surname AS staff_surname
+                                            $sqlstaff = "SELECT DISTINCT staff.id AS staff_id, staff.name AS staff_name, staff.surname AS staff_surname
                                                          FROM `staff`
                                                          INNER JOIN staff_roles ON staff.id = staff_roles.staff_id
                                                          INNER JOIN roles ON staff_roles.role_id = roles.id
                                                          WHERE roles.name='Head Teacher'
+                                                           AND staff.is_active = 1
                                                          ORDER BY surname ASC";
                                         }
 
@@ -99,7 +101,16 @@ require_once('../helper/defaultcomment_helper.php');
                             <select class="form-control" id="classid">
                                 <option value="0">Select Class</option>
                                 <?php
-                                    $sqlclasses = "SELECT * FROM `classes` ORDER BY class ASC";
+                                    $sqlclasses = "SELECT classes.*
+                                                   FROM `classes`
+                                                   LEFT JOIN `assigncatoclass` british_assign
+                                                     ON british_assign.ClassID = classes.id
+                                                    AND LOWER(TRIM(british_assign.ResultType)) = 'british'
+                                                   LEFT JOIN `kindergarten_assignment` kindergarten_assign
+                                                     ON kindergarten_assign.class_id = classes.id
+                                                   WHERE british_assign.ClassID IS NULL
+                                                     AND kindergarten_assign.class_id IS NULL
+                                                   ORDER BY class ASC";
                                     $resultclasses = mysqli_query($link, $sqlclasses);
                                     $rowclasses = mysqli_fetch_assoc($resultclasses);
                                     $row_cntclasses = mysqli_num_rows($resultclasses);
@@ -146,58 +157,65 @@ require_once('../helper/defaultcomment_helper.php');
                $classID = (int) ($_POST['classID'] ?? 0);
                $resultType = $_POST['resultType'] ?? 'termly';
 
-                $validation = validate_defaultcomment_payload(
-                    $link,
-                    $principalID,
-                    $classID,
-                    $CommentType,
-                    $resultType,
-                    $commentfrom,
-                    $commentfromto,
-                    $comment
-                );
-
-                if(!$validation['success'])
+                if(class_disables_school_head_default_comments($link, $classID))
                 {
-                    echo defaultcomment_alert_markup('warning', $validation['message'], $principalID, $classID, $validation['resultSubType']);
+                    echo defaultcomment_alert_markup('warning', 'Default head teacher comments are not available for British or kindergarten classes.', $principalID, $classID, normalize_defaultcomment_result_subtype($resultType));
                 }
                 else
                 {
-                    $commentSafe = mysqli_real_escape_string($link, $validation['comment']);
-                    $resultType = $validation['resultSubType'];
-                    $commentfrom = $validation['rangeStart'];
-                    $commentfromto = $validation['rangeEnd'];
+                    $validation = validate_defaultcomment_payload(
+                        $link,
+                        $principalID,
+                        $classID,
+                        $CommentType,
+                        $resultType,
+                        $commentfrom,
+                        $commentfromto,
+                        $comment
+                    );
 
-                    $sqldefaultcomment = "SELECT * FROM `defaultcomment`
-                                          WHERE PrincipalOrDeanOrHeadTeacherUserID = '$principalID'
-                                            AND ClassID = '$classID'
-                                            AND CommentType = '$CommentType'
-                                            AND ResultSubType = '$resultType'
-                                            AND RangeStart = '$commentfrom'
-                                            AND RangeEnd = '$commentfromto'
-                                            AND DefaultComment = '$commentSafe'";
-                    $resultdefaultcomment = mysqli_query($link, $sqldefaultcomment);
-                    $row_cntdefaultcomment = $resultdefaultcomment ? mysqli_num_rows($resultdefaultcomment) : 0;
-
-                    if($row_cntdefaultcomment > 0)
+                    if(!$validation['success'])
                     {
-                        echo defaultcomment_alert_markup('warning', 'Already exists.', $principalID, $classID, $resultType);
+                        echo defaultcomment_alert_markup('warning', $validation['message'], $principalID, $classID, $validation['resultSubType']);
                     }
                     else
                     {
-                        $sqlInsertdefaultcomment = "INSERT INTO `defaultcomment`
-                                                    (`PrincipalOrDeanOrHeadTeacherUserID`, `ClassID`, `CommentType`, `ResultSubType`, `RangeStart`, `RangeEnd`, `DefaultComment`)
-                                                    VALUES
-                                                    ('$principalID', '$classID', '$CommentType', '$resultType', '$commentfrom', '$commentfromto', '$commentSafe')";
-                        $Insertdefaultcomment = mysqli_query($link, $sqlInsertdefaultcomment);
+                        $commentSafe = mysqli_real_escape_string($link, $validation['comment']);
+                        $resultType = $validation['resultSubType'];
+                        $commentfrom = $validation['rangeStart'];
+                        $commentfromto = $validation['rangeEnd'];
 
-                        if($Insertdefaultcomment)
+                        $sqldefaultcomment = "SELECT * FROM `defaultcomment`
+                                              WHERE PrincipalOrDeanOrHeadTeacherUserID = '$principalID'
+                                                AND ClassID = '$classID'
+                                                AND CommentType = '$CommentType'
+                                                AND ResultSubType = '$resultType'
+                                                AND RangeStart = '$commentfrom'
+                                                AND RangeEnd = '$commentfromto'
+                                                AND DefaultComment = '$commentSafe'";
+                        $resultdefaultcomment = mysqli_query($link, $sqldefaultcomment);
+                        $row_cntdefaultcomment = $resultdefaultcomment ? mysqli_num_rows($resultdefaultcomment) : 0;
+
+                        if($row_cntdefaultcomment > 0)
                         {
-                            echo defaultcomment_alert_markup('success', 'Added successfully.', $principalID, $classID, $resultType);
+                            echo defaultcomment_alert_markup('warning', 'Already exists.', $principalID, $classID, $resultType);
                         }
                         else
                         {
-                            echo defaultcomment_alert_markup('warning', 'Operation failed. Something went wrong.', $principalID, $classID, $resultType);
+                            $sqlInsertdefaultcomment = "INSERT INTO `defaultcomment`
+                                                        (`PrincipalOrDeanOrHeadTeacherUserID`, `ClassID`, `CommentType`, `ResultSubType`, `RangeStart`, `RangeEnd`, `DefaultComment`)
+                                                        VALUES
+                                                        ('$principalID', '$classID', '$CommentType', '$resultType', '$commentfrom', '$commentfromto', '$commentSafe')";
+                            $Insertdefaultcomment = mysqli_query($link, $sqlInsertdefaultcomment);
+
+                            if($Insertdefaultcomment)
+                            {
+                                echo defaultcomment_alert_markup('success', 'Added successfully.', $principalID, $classID, $resultType);
+                            }
+                            else
+                            {
+                                echo defaultcomment_alert_markup('warning', 'Operation failed. Something went wrong.', $principalID, $classID, $resultType);
+                            }
                         }
                     }
                 }
