@@ -64,15 +64,17 @@ require_once('../helper/defaultcomment_helper.php');
                                             $sqlstaff = "SELECT staff.id AS staff_id, staff.name AS staff_name, staff.surname AS staff_surname
                                                          FROM `staff`
                                                          WHERE staff.id='$id'
+                                                           AND staff.is_active = 1
                                                          ORDER BY surname ASC";
                                         }
                                         else
                                         {
-                                            $sqlstaff = "SELECT staff.id AS staff_id, staff.name AS staff_name, staff.surname AS staff_surname
+                                            $sqlstaff = "SELECT DISTINCT staff.id AS staff_id, staff.name AS staff_name, staff.surname AS staff_surname
                                                          FROM `staff`
                                                          INNER JOIN staff_roles ON staff.id = staff_roles.staff_id
                                                          INNER JOIN roles ON staff_roles.role_id = roles.id
                                                          WHERE roles.name='Head Teacher'
+                                                           AND staff.is_active = 1
                                                          ORDER BY surname ASC";
                                         }
 
