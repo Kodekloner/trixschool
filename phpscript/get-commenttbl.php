@@ -13,8 +13,8 @@ if ($id <= 0 || $classid <= 0) {
     exit;
 }
 
-if (class_uses_british_result_computation($link, $classid)) {
-    echo '<tr><td colspan="4">Default comments are not available for British-computation classes.</td></tr>';
+if ($commentType === 'SchoolHead' && class_disables_school_head_default_comments($link, $classid)) {
+    echo '<tr><td colspan="4">Default head teacher comments are not available for British or kindergarten classes.</td></tr>';
     exit;
 }
 
