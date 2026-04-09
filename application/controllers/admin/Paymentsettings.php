@@ -7,6 +7,11 @@ class Paymentsettings extends Admin_Controller {
 
     function __construct() {
         parent::__construct();
+        if ($this->router->fetch_method() !== 'index') {
+            if (!$this->rbac->hasPrivilege('payment_methods', 'can_edit')) {
+                access_denied();
+            }
+        }
     }
 
     function index() {

@@ -14,6 +14,12 @@
 
         public function admissionsetting()
     {
+        if (!$this->rbac->hasPrivilege('online_admission', 'can_view')) {
+            access_denied();
+        }
+        if (!empty($this->input->post('submitbtn')) && !$this->rbac->hasPrivilege('online_admission', 'can_edit')) {
+            access_denied();
+        }
         $this->session->set_userdata('top_menu', 'System Settings');
         $this->session->set_userdata('sub_menu', 'System Settings/onlineadmissionsetting');
         $data                    = array();
@@ -73,6 +79,9 @@
 
     public function changeformfieldsetting()
     { 
+        if (!$this->rbac->hasPrivilege('online_admission', 'can_edit')) {
+            access_denied();
+        }
         
         $this->form_validation->set_rules('name', $this->lang->line('student'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('status', $this->lang->line('status'), 'trim|required|xss_clean');
