@@ -7,10 +7,10 @@
             echo "<div class='gallery'>";
             foreach ($page['page_contents'] as $page_content_key => $page_content_value) {
 
-                $url = "https://schoollift.s3.us-east-2.amazonaws.com/" . $page_content_value->dir_path . $page_content_value->img_name;
+                $url = get_school_media_url($page_content_value->img_name, $page_content_value->dir_path);
 
                 if ($page_content_value->file_type == "video") {
-                    $url = "https://schoollift.s3.us-east-2.amazonaws.com/" . $page_content_value->vid_url;
+                    $url = $page_content_value->vid_url;
                 }
                 ?>
                 <div class="col-sm-6 col-md-4 col-lg-4 img_div_modal">

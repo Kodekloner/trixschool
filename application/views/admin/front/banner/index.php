@@ -34,10 +34,12 @@
                                     <?php
                                     if (isset($banner_images) && !empty($banner_images)) {
                                         foreach ($banner_images as $banner_image_key => $banner_image_value) {
+                                            $banner_source = get_school_media_url($banner_image_value->img_name, $banner_image_value->dir_path);
+                                            $banner_thumb  = get_school_media_thumb_url($banner_image_value->img_name, $banner_image_value->thumb_path, $banner_image_value->dir_path);
                                             ?>
                                             <div class='col-sm-3 col-md-2 col-xs-6 img_div_modal gallery_img div_record_<?php echo $banner_image_value->id ?>'>
                                                 <div class='fadeoverlay'>
-                                                    <img class='img-responsive' data-fid='<?php echo $banner_image_value->id ?>' data-content_name='<?php echo $banner_image_value->img_name; ?>' data-img='<?php echo base_url($banner_image_value->thumb_path . $banner_image_value->img_name) ?>' src='<?php echo base_url($banner_image_value->thumb_path . $banner_image_value->img_name) ?>'>
+                                                    <img class='img-responsive' data-fid='<?php echo $banner_image_value->id ?>' data-content_name='<?php echo $banner_image_value->img_name; ?>' data-img='<?php echo $banner_source; ?>' src='<?php echo $banner_thumb; ?>'>
                                                     <?php
                                                     if ($this->rbac->hasPrivilege('banner_images', 'can_delete')) {
                                                         ?>

@@ -113,3 +113,69 @@ if (!function_exists('get_school_asset_url')) {
         return base_url($normalized_path);
     }
 }
+
+if (!function_exists('build_school_media_asset_path')) {
+    /**
+     * Build a stored media path that works for both legacy local records and S3-backed records.
+     */
+    function build_school_media_asset_path($img_name, $dir_path = '')
+    {
+        $img_name = trim((string) $img_name);
+        $dir_path = trim((string) $dir_path);
+
+        if ($img_name === '') {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $img_name)) {
+            return $img_name;
+        }
+
+        $normalized_img = ltrim($img_name, '/');
+
+        if (strpos($normalized_img, 'uploads/') === 0) {
+            return $normalized_img;
+        }
+
+        if ($dir_path !== '') {
+            return trim($dir_path, '/') . '/' . basename($normalized_img);
+        }
+
+        return $normalized_img;
+    }
+}
+
+if (!function_exists('get_school_media_url')) {
+    function get_school_media_url($img_name, $dir_path = '')
+    {
+        return get_school_asset_url(build_school_media_asset_path($img_name, $dir_path));
+    }
+}
+
+if (!function_exists('get_school_media_thumb_url')) {
+    function get_school_media_thumb_url($img_name, $thumb_path = '', $dir_path = '')
+    {
+        $img_name   = trim((string) $img_name);
+        $thumb_path = trim((string) $thumb_path);
+
+        if ($img_name === '') {
+            return '';
+        }
+
+        if (preg_match('#^https?://#i', $img_name)) {
+            return $img_name;
+        }
+
+        $normalized_img = ltrim($img_name, '/');
+
+        if (strpos($normalized_img, 'uploads/') === 0) {
+            return get_school_asset_url($normalized_img);
+        }
+
+        if ($thumb_path !== '') {
+            return get_school_asset_url(trim($thumb_path, '/') . '/' . basename($normalized_img));
+        }
+
+        return get_school_media_url($img_name, $dir_path);
+    }
+}
