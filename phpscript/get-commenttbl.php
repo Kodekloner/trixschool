@@ -13,6 +13,11 @@ if ($id <= 0 || $classid <= 0) {
     exit;
 }
 
+if (class_uses_british_result_computation($link, $classid)) {
+    echo '<tr><td colspan="4">Default comments are not available for British-computation classes.</td></tr>';
+    exit;
+}
+
 $sqlexamsubjects = "SELECT *
                     FROM `defaultcomment`
                     WHERE PrincipalOrDeanOrHeadTeacherUserID = '$id'

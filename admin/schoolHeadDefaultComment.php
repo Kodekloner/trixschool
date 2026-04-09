@@ -101,7 +101,13 @@ require_once('../helper/defaultcomment_helper.php');
                             <select class="form-control" id="classid">
                                 <option value="0">Select Class</option>
                                 <?php
-                                    $sqlclasses = "SELECT * FROM `classes` ORDER BY class ASC";
+                                    $sqlclasses = "SELECT classes.*
+                                                   FROM `classes`
+                                                   LEFT JOIN `assigncatoclass` british_assign
+                                                     ON british_assign.ClassID = classes.id
+                                                    AND LOWER(TRIM(british_assign.ResultType)) = 'british'
+                                                   WHERE british_assign.ClassID IS NULL
+                                                   ORDER BY class ASC";
                                     $resultclasses = mysqli_query($link, $sqlclasses);
                                     $rowclasses = mysqli_fetch_assoc($resultclasses);
                                     $row_cntclasses = mysqli_num_rows($resultclasses);
