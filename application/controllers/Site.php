@@ -190,8 +190,23 @@ class Site extends Public_Controller
                     $name           = $result->name;
                     $resetPassLink  = site_url('admin/resetpassword') . "/" . $verification_code;
                     $sender_details = array('resetPassLink' => $resetPassLink, 'name' => $name, 'username' => $result->email, 'email' => $email);
-                    $this->mailsmsconf->mailsms('forgot_password', $sender_details);
-                    $this->session->set_flashdata('message', $this->lang->line('please_check_your_email_to_recover_your_password'));
+                    $mail_sent = $this->mailsmsconf->mailsms('forgot_password', $sender_details);
+
+                    if ($mail_sent === false) {
+                        $is_development = defined('ENVIRONMENT') && ENVIRONMENT === 'development';
+                        $mailer_hint    = trim((string) $this->mailer->get_last_hint());
+                        $mailer_error   = trim((string) $this->mailer->get_last_error());
+
+                        if ($is_development && $mailer_hint !== '') {
+                            $this->session->set_flashdata('message', $mailer_hint);
+                        } elseif ($is_development && $mailer_error !== '') {
+                            $this->session->set_flashdata('message', 'Password reset email could not be sent. ' . $mailer_error);
+                        } else {
+                            $this->session->set_flashdata('message', 'Password reset email could not be sent. Please contact the administrator.');
+                        }
+                    } else {
+                        $this->session->set_flashdata('message', $this->lang->line('please_check_your_email_to_recover_your_password'));
+                    }
                 } else {
                     $this->session->set_flashdata('disable_message', $this->lang->line('your_account_is_disabled_please_contact_to_administrator'));
                 }

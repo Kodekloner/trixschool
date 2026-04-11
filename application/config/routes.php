@@ -14,6 +14,7 @@ $route['librarian/unauthorized'] = 'librarian/librarian/unauthorized';
 $route['404_override'] = 'welcome/show_404';
 $route['translate_uri_dashes'] = FALSE;
 $route['cron/(:any)'] = 'cron/index/$1';
+$route['webhooks/ses-inbound'] = 'webhooks/ses_inbound';
 
 //======= front url rewriting==========
 $route['page/(:any)'] = 'welcome/page/$1';

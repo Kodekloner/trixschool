@@ -8,6 +8,8 @@ class Mailer {
 
     public $mail_config;
     private $sch_setting;
+    private $last_error = '';
+    private $last_hint = '';
 
     private function maskValue($value) {
         $value = (string) $value;
@@ -43,8 +45,11 @@ class Mailer {
     }
  
     public function send_mail($toemail, $subject, $body, $FILES = array(), $cc = "") {
+        $this->last_error = '';
+        $this->last_hint = '';
 
         if (empty($this->CI->mail_config)) {
+            $this->last_error = 'No active email configuration found.';
             log_message('error', 'Mailer send failed: no active email configuration found.');
             return false;
         }
@@ -114,6 +119,8 @@ class Mailer {
         $mail->AltBody = $body;
         $mail->AddAddress($toemail);
         if ($mail->Send()) {
+            $this->last_error = '';
+            $this->last_hint = '';
             log_message(
                 'info',
                 'Mailer send success: to=' . $toemail .
@@ -123,6 +130,13 @@ class Mailer {
             );
             return true;
         } else {
+            $this->last_error = (string) $mail->ErrorInfo;
+
+            if (stripos($this->last_error, 'Email address is not verified') !== false) {
+                $this->last_hint = 'Amazon SES is rejecting this email because the SES account or region is still in sandbox mode, or the recipient identity is not verified. Verify the recipient email in SES or move the SES account out of sandbox for this region.';
+                log_message('error', 'Mailer SES hint: ' . $this->last_hint);
+            }
+
             log_message(
                 'error',
                 'Mailer send failed: to=' . $toemail .
@@ -141,6 +155,14 @@ class Mailer {
             }
             return false;
         }
+    }
+
+    public function get_last_error() {
+        return $this->last_error;
+    }
+
+    public function get_last_hint() {
+        return $this->last_hint;
     }
 
 }
