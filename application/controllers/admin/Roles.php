@@ -54,6 +54,7 @@ class Roles extends Admin_Controller
         if (!$this->rbac->hasPrivilege('superadmin', 'can_view')) {
             access_denied();
         }
+        $this->role_model->ensurePublishResultPermissionSetup();
         $data['title'] = 'Add Role';
         $data['id'] = $id;
         $role = $this->role_model->get($id);
