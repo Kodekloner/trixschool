@@ -51,6 +51,7 @@ class Schsettings extends Admin_Controller
 		if (!$this->rbac->hasPrivilege('general_setting', 'can_view')) {
 			access_denied();
 		}
+		$this->role_model->ensureWhatsappSupportPermissionSetup();
 		$app_ver = $this->config->item('app_ver');
 		$this->session->set_userdata('top_menu', 'System Settings');
 		$this->session->set_userdata('sub_menu', 'schsettings/index');
@@ -75,6 +76,8 @@ class Schsettings extends Admin_Controller
 		$currencyPlace          = $this->customlib->getCurrencyPlace();
 		$data['currencyPlace']  = $currencyPlace;
 		$data['result']         = $this->setting_model->getSetting();
+		$data['whatsapp_support_can_view'] = $this->rbac->hasPrivilege('whatsapp_support_setting', 'can_view');
+		$data['whatsapp_support_can_edit'] = $this->rbac->hasPrivilege('whatsapp_support_setting', 'can_edit');
 		$data['app_response']   = false;
 		if (isset($this->auth) && method_exists($this->auth, 'andapp_validate')) {
 			$data['app_response'] = (bool) $this->auth->andapp_validate();
@@ -379,6 +382,52 @@ class Schsettings extends Admin_Controller
 			$array = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('success_message'));
 			echo json_encode($array);
 		}
+	}
+
+	public function ajax_update_whatsapp_support()
+	{
+		$this->role_model->ensureWhatsappSupportPermissionSetup();
+
+		if (!$this->rbac->hasPrivilege('whatsapp_support_setting', 'can_edit')) {
+			access_denied();
+		}
+
+		$this->form_validation->set_rules('sch_id', $this->lang->line('id'), 'trim|required|xss_clean');
+		$this->form_validation->set_rules('whatsapp_support_enabled', 'WhatsApp support', 'trim|required|xss_clean');
+
+		$enabled = $this->input->post('whatsapp_support_enabled');
+		if ((string) $enabled === '1') {
+			$this->form_validation->set_rules('whatsapp_support_number', 'WhatsApp number', 'trim|required|xss_clean');
+		}
+
+		if ($this->form_validation->run() == false) {
+			$data = array(
+				'sch_id'                   => form_error('sch_id'),
+				'whatsapp_support_enabled' => form_error('whatsapp_support_enabled'),
+				'whatsapp_support_number'  => form_error('whatsapp_support_number'),
+			);
+			$array = array('status' => 'fail', 'error' => $data);
+			echo json_encode($array);
+			return;
+		}
+
+		$whatsapp_number = trim((string) $this->input->post('whatsapp_support_number'));
+		$whatsapp_number = preg_replace('/[^0-9]/', '', $whatsapp_number);
+
+		$data = array(
+			'id'                       => $this->input->post('sch_id'),
+			'whatsapp_support_enabled' => ((string) $enabled === '1') ? 1 : 0,
+			'whatsapp_support_number'  => $whatsapp_number,
+			'whatsapp_support_message' => trim((string) $this->input->post('whatsapp_support_message')),
+		);
+
+		if ((int) $data['whatsapp_support_enabled'] === 0) {
+			$data['whatsapp_support_number'] = '';
+		}
+
+		$this->setting_model->add($data);
+		$array = array('status' => 'success', 'error' => '', 'message' => $this->lang->line('success_message'));
+		echo json_encode($array);
 	}
 
 

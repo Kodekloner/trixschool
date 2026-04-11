@@ -55,6 +55,7 @@ class Roles extends Admin_Controller
             access_denied();
         }
         $this->role_model->ensurePublishResultPermissionSetup();
+        $this->role_model->ensureWhatsappSupportPermissionSetup();
         $data['title'] = 'Add Role';
         $data['id'] = $id;
         $role = $this->role_model->get($id);
