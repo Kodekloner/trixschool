@@ -192,43 +192,43 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
         </div>
     </div>
     <?php if ($canPublishResult) { ?>
-    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
 
-        <div class="modal-dialog">
+            <div class="modal-dialog">
 
-            <div class="modal-content">
+                <div class="modal-content">
 
-                <div class="modal-header pub-result">
-                    <h6 style="margin-left: 25%;" class="modal-title" id="exampleModalLabel">Publish Result For Session And Term</h6>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
+                    <div class="modal-header pub-result">
+                        <h6 style="margin-left: 25%;" class="modal-title" id="exampleModalLabel">Publish Result For Session And Term</h6>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
 
-                <div class="modal-body">
-                    <form>
-                        <div id="errmsgnewstudent"></div>
+                    <div class="modal-body">
+                        <form>
+                            <div id="errmsgnewstudent"></div>
 
-                        <div class="form-row" id="displayclasses">
+                            <div class="form-row" id="displayclasses">
 
-                            <input type="date" class="form-control" id="displaydte" value="">
+                                <input type="date" class="form-control" id="displaydte" value="">
 
-                        </div>
+                            </div>
 
-                    </form>
+                        </form>
 
-                </div>
+                    </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="submitstudentbtn">Save</button>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="submitstudentbtn">Save</button>
+                    </div>
+
                 </div>
 
             </div>
 
         </div>
-
-    </div>
     <?php } ?>
     <script src="../assets/plugins/jquery-datatables-editable/jquery.dataTables.js"></script>
     <script src="../assets/plugins/datatables/dataTables.bootstrap.js"></script>
@@ -249,7 +249,6 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
 
     <script>
         $(document).ready(function() {
-            var canPublishResult = <?php echo $canPublishResult ? 'true' : 'false'; ?>;
             var rolefirstold = '<?php echo $rolefirst; ?>';
             if (rolefirstold == 'parent') {
                 $('.pub-result').hide()
@@ -352,6 +351,7 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
             var rolefirstold = '<?php echo $rolefirst; ?>';
             var staffid = "<?php echo $id; ?>";
             console.log(rolefirstold);
+            var canPublishResult = <?php echo $canPublishResult ? 'true' : 'false'; ?>;
             if (rolefirstold == 'parent') {
                 var staffid = localStorage.getItem('kidid');
                 console.log(staffid);
@@ -368,6 +368,8 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
             var term = $("#term").val();
 
             var reltype = $("#reltype").val();
+
+
 
             if (classid != '' && classid != '0' && session != '' && session != '0' && reltype != '' && reltype != '0') {
 
