@@ -149,7 +149,7 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
                                 <div class="col-md-12 col-lg-3 statusdiv" align="center">
                                     <?php if (!$canPublishResult) { ?>
                                         <div class="alert alert-light" role="alert" style="margin-bottom: 0;">
-                                            Result publishing is available only to Admin, Head Teacher and Super Admin.
+                                            Result publishing is available only to users with the Publish Result permission.
                                         </div>
                                     <?php } ?>
 
