@@ -96,9 +96,11 @@ class Mailsmsconf {
                 if ($chk_mail_sms['mail'] && $chk_mail_sms['template'] != "") {
                     if (!empty($sender_details['email'])) {
                         $subject = $chk_mail_sms['subject'];
-                        $this->CI->mailer->send_mail($sender_details['email'], $subject, $msg);
+                        return $this->CI->mailer->send_mail($sender_details['email'], $subject, $msg);
                     }
                 }
+
+                return false;
             }  elseif ($send_for == "online_admission_form_submission") {
 
                 $this->sendOnlineadmission($chk_mail_sms, $sender_details, $chk_mail_sms['template'], $chk_mail_sms['subject'], $chk_mail_sms['template_id']);
@@ -109,6 +111,8 @@ class Mailsmsconf {
                 
             }
         }
+
+        return null;
     } 
 
     public function mailsmsalumnistudent($sender_details) {

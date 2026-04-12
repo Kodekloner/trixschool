@@ -12,6 +12,13 @@ class Smsconfig extends Admin_Controller
         parent::__construct();
     }
 
+    private function requireSmsSettingEdit()
+    {
+        if (!$this->rbac->hasPrivilege('sms_setting', 'can_edit')) {
+            access_denied();
+        }
+    }
+
     public function index()
     {
         if (!$this->rbac->hasPrivilege('sms_setting', 'can_view')) {
@@ -30,6 +37,7 @@ class Smsconfig extends Admin_Controller
 
     public function clickatell()
     {
+        $this->requireSmsSettingEdit();
 
         $this->form_validation->set_error_delimiters('', '');
         $this->form_validation->set_rules('clickatell_user', $this->lang->line('username'), 'required');
@@ -62,6 +70,7 @@ class Smsconfig extends Admin_Controller
 
     public function twilio()
     {
+        $this->requireSmsSettingEdit();
 
         $this->form_validation->set_error_delimiters('', '');
 
@@ -96,6 +105,7 @@ class Smsconfig extends Admin_Controller
 
     public function custom()
     {
+        $this->requireSmsSettingEdit();
 
         $this->form_validation->set_error_delimiters('', '');
 
@@ -124,6 +134,7 @@ class Smsconfig extends Admin_Controller
 
     public function msgnineone()
     {
+        $this->requireSmsSettingEdit();
 
         $this->form_validation->set_error_delimiters('', '');
 
@@ -155,6 +166,7 @@ class Smsconfig extends Admin_Controller
 
     public function smscountry()
     {
+        $this->requireSmsSettingEdit();
 
         $this->form_validation->set_error_delimiters('', '');
 
@@ -189,6 +201,7 @@ class Smsconfig extends Admin_Controller
 
     public function textlocal()
     {
+        $this->requireSmsSettingEdit();
 
         $this->form_validation->set_error_delimiters('', '');
 
@@ -224,6 +237,7 @@ class Smsconfig extends Admin_Controller
 
     public function bulk_sms()
     {
+        $this->requireSmsSettingEdit();
 
         $this->form_validation->set_error_delimiters('', '');
 
@@ -256,6 +270,7 @@ class Smsconfig extends Admin_Controller
 
     public function mobireach()
     {
+        $this->requireSmsSettingEdit();
 
         $this->form_validation->set_error_delimiters('', '');
 
@@ -291,8 +306,9 @@ class Smsconfig extends Admin_Controller
     }
 
      public function nexmo(){
-      
-          $this->form_validation->set_error_delimiters('', '');
+        $this->requireSmsSettingEdit();
+
+        $this->form_validation->set_error_delimiters('', '');
 
         $this->form_validation->set_rules('nexmo_api_key', $this->lang->line('nexmo_api_key'), 'required');
         $this->form_validation->set_rules('nexmo_api_secret', $this->lang->line('nexmo_api_secret'), 'required');
@@ -326,7 +342,8 @@ class Smsconfig extends Admin_Controller
      }
 
       public function africastalking(){
-      
+        $this->requireSmsSettingEdit();
+
         $this->form_validation->set_error_delimiters('', '');
 
         $this->form_validation->set_rules('africastalking_username', $this->lang->line('africastalking_username'), 'required');

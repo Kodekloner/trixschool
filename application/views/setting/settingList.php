@@ -840,6 +840,60 @@
                         </form>
                     </div><!-- /.box-body -->
                 </div>
+                <?php if (!empty($whatsapp_support_can_view) || !empty($whatsapp_support_can_edit)) { ?>
+                <div class="box box-primary">
+                    <div class="box-header ptbnull">
+                        <h3 class="box-title titlefix"><i class="fa fa-whatsapp"></i> WhatsApp Support</h3>
+                    </div>
+                    <div class="">
+                        <form role="form" id="whatsapp_support_form" class="" method="post">
+                            <div class="box-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group row">
+                                            <label class="col-sm-4">Enable Support</label>
+                                            <div class="col-sm-8">
+                                                <label class="radio-inline">
+                                                    <input type="radio" name="whatsapp_support_enabled" value="1" <?php echo ((int) $result->whatsapp_support_enabled === 1) ? 'checked' : ''; ?> <?php echo empty($whatsapp_support_can_edit) ? 'disabled' : ''; ?>> Yes
+                                                </label>
+                                                <label class="radio-inline">
+                                                    <input type="radio" name="whatsapp_support_enabled" value="0" <?php echo ((int) $result->whatsapp_support_enabled !== 1) ? 'checked' : ''; ?> <?php echo empty($whatsapp_support_can_edit) ? 'disabled' : ''; ?>> No
+                                                </label>
+                                                <input type="hidden" name="sch_id" value="<?php echo $result->id; ?>">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group row">
+                                            <label class="col-sm-4">WhatsApp Number</label>
+                                            <div class="col-sm-8">
+                                                <input type="text" class="form-control" name="whatsapp_support_number" value="<?php echo html_escape($result->whatsapp_support_number); ?>" placeholder="2348012345678" <?php echo empty($whatsapp_support_can_edit) ? 'disabled' : ''; ?>>
+                                                <span class="help-block" style="margin-bottom:0;">Use country code without spaces or + sign.</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group row">
+                                            <label class="col-sm-2">Default Message</label>
+                                            <div class="col-sm-10">
+                                                <textarea class="form-control" name="whatsapp_support_message" rows="3" <?php echo empty($whatsapp_support_can_edit) ? 'disabled' : ''; ?>><?php echo html_escape($result->whatsapp_support_message); ?></textarea>
+                                                <span class="help-block" style="margin-bottom:0;">This message is prefilled when users open WhatsApp from the login page.</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="box-footer">
+                                <?php if (!empty($whatsapp_support_can_edit)) { ?>
+                                <button type="button" class="btn btn-primary submit_whatsapp_support pull-right" data-loading-text="<i class='fa fa-circle-o-notch fa-spin'></i> Processing">Save WhatsApp Support</button>
+                                <?php } ?>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <?php } ?>
             </div><!--/.col (left) -->
             <!-- right column -->
 
@@ -1062,6 +1116,35 @@
                     window.location.reload(true);
                 }
 
+                $this.button('reset');
+            }
+        });
+    });
+
+    $(".submit_whatsapp_support").on('click', function (e) {
+        var $this = $(this);
+        $this.button('loading');
+        $.ajax({
+            url: '<?php echo site_url("schsettings/ajax_update_whatsapp_support") ?>',
+            type: 'POST',
+            data: $('#whatsapp_support_form').serialize(),
+            dataType: 'json',
+            success: function (data) {
+                if (data.status == "fail") {
+                    var message = "";
+                    $.each(data.error, function (index, value) {
+                        message += value;
+                    });
+                    errorMsg(message);
+                } else {
+                    successMsg(data.message);
+                    window.location.reload(true);
+                }
+
+                $this.button('reset');
+            },
+            error: function () {
+                errorMsg('Unable to save WhatsApp support settings.');
                 $this.button('reset');
             }
         });

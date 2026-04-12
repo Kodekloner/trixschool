@@ -260,6 +260,115 @@ class Role_model extends MY_Model {
         return $permission_category_id;
     }
 
+    public function ensureWhatsappSupportPermissionSetup() {
+        $created_at = date('Y-m-d H:i:s');
+
+        $permission_group = $this->db
+            ->where('short_code', 'system_settings')
+            ->get('permission_group')
+            ->row_array();
+
+        if (!empty($permission_group['id'])) {
+            $permission_group_id = (int) $permission_group['id'];
+        } else {
+            $this->db->insert('permission_group', array(
+                'name'       => 'System Settings',
+                'short_code' => 'system_settings',
+                'is_active'  => 1,
+                'system'     => 1,
+                'created_at' => $created_at,
+            ));
+            $permission_group_id = (int) $this->db->insert_id();
+        }
+
+        $permission_category = $this->db
+            ->where('short_code', 'whatsapp_support_setting')
+            ->get('permission_category')
+            ->row_array();
+
+        $permission_data = array(
+            'perm_group_id' => $permission_group_id,
+            'name'          => 'WhatsApp Support Setting',
+            'short_code'    => 'whatsapp_support_setting',
+            'enable_view'   => 1,
+            'enable_add'    => 0,
+            'enable_edit'   => 1,
+            'enable_delete' => 0,
+        );
+
+        if (!empty($permission_category['id'])) {
+            $permission_category_id = (int) $permission_category['id'];
+            $this->db->where('id', $permission_category_id);
+            $this->db->update('permission_category', $permission_data);
+        } else {
+            $permission_data['created_at'] = $created_at;
+            $this->db->insert('permission_category', $permission_data);
+            $permission_category_id = (int) $this->db->insert_id();
+        }
+
+        if ($permission_category_id <= 0) {
+            return 0;
+        }
+
+        $default_roles = $this->db
+            ->select('id')
+            ->from('roles')
+            ->where_in('name', array('Admin', 'Super Admin'))
+            ->get()
+            ->result_array();
+
+        if (empty($default_roles)) {
+            return $permission_category_id;
+        }
+
+        $existing_rows = $this->db
+            ->select('role_id')
+            ->from('roles_permissions')
+            ->where('perm_cat_id', $permission_category_id)
+            ->get()
+            ->result_array();
+
+        $existing_role_ids = array_map('intval', array_column($existing_rows, 'role_id'));
+        $insert_rows = array();
+
+        foreach ($default_roles as $role) {
+            $role_id = (int) $role['id'];
+
+            if ($role_id <= 0) {
+                continue;
+            }
+
+            if (in_array($role_id, $existing_role_ids, true)) {
+                $this->db
+                    ->where('role_id', $role_id)
+                    ->where('perm_cat_id', $permission_category_id)
+                    ->update('roles_permissions', array(
+                        'can_view'   => 1,
+                        'can_add'    => 0,
+                        'can_edit'   => 1,
+                        'can_delete' => 0,
+                    ));
+                continue;
+            }
+
+            $insert_rows[] = array(
+                'role_id'     => $role_id,
+                'perm_cat_id' => $permission_category_id,
+                'can_view'    => 1,
+                'can_add'     => 0,
+                'can_edit'    => 1,
+                'can_delete'  => 0,
+                'created_at'  => $created_at,
+            );
+        }
+
+        if (!empty($insert_rows)) {
+            $this->db->insert_batch('roles_permissions', $insert_rows);
+        }
+
+        return $permission_category_id;
+    }
+
     public function getInsertBatch($role_id, $to_be_insert = array(), $to_be_update = array(), $to_be_delete = array()) {
         $this->db->trans_start();
         $this->db->trans_strict(FALSE);

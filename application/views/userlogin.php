@@ -22,6 +22,10 @@
             .bgoffsetbgno{background: transparent; border-right:0 !important; box-shadow: 0px 0px 12px rgba(0, 0, 0, 0.29); border-radius: 4px;}
 
             .loginradius{border-radius: 4px;}
+            .whatsapp-support-box{margin-top:15px;padding:14px 16px;background:#e9f9ef;border-radius:4px;color:#1f3b2a;border:1px solid #c5efd3;}
+            .whatsapp-support-box p{margin:0 0 10px;}
+            .whatsapp-support-btn{display:inline-block;background:#25d366;color:#fff !important;padding:9px 14px;border-radius:4px;font-weight:500;text-decoration:none;}
+            .whatsapp-support-btn:hover,.whatsapp-support-btn:focus{background:#1ebc59;color:#fff !important;text-decoration:none;}
 
         </style>
     </head>
@@ -102,6 +106,17 @@ if ($this->session->flashdata('message')) {
                                         <div>
                                             <a href="<?php echo site_url('site/login') ?>"> <i class="fa fa-user" aria-hidden="true"></i> Admin Login </a>
                                         </div>
+                                        <?php if (!empty($support_whatsapp_url)) { ?>
+                                        <div class="whatsapp-support-box">
+                                            <p><strong>Need help?</strong> Contact the school on WhatsApp.</p>
+                                            <a class="whatsapp-support-btn" href="<?php echo $support_whatsapp_url; ?>" target="_blank" rel="noopener">
+                                                <i class="fa fa-whatsapp"></i> Chat on WhatsApp
+                                            </a>
+                                            <?php if (!empty($support_whatsapp_number)) { ?>
+                                            <div style="margin-top:8px;font-size:12px;"><?php echo $support_whatsapp_number; ?></div>
+                                            <?php } ?>
+                                        </div>
+                                        <?php } ?>
                                     </div>
                                 </div>
                             </div>

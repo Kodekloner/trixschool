@@ -190,8 +190,23 @@ class Site extends Public_Controller
                     $name           = $result->name;
                     $resetPassLink  = site_url('admin/resetpassword') . "/" . $verification_code;
                     $sender_details = array('resetPassLink' => $resetPassLink, 'name' => $name, 'username' => $result->email, 'email' => $email);
-                    $this->mailsmsconf->mailsms('forgot_password', $sender_details);
-                    $this->session->set_flashdata('message', $this->lang->line('please_check_your_email_to_recover_your_password'));
+                    $mail_sent = $this->mailsmsconf->mailsms('forgot_password', $sender_details);
+
+                    if ($mail_sent === false) {
+                        $is_development = defined('ENVIRONMENT') && ENVIRONMENT === 'development';
+                        $mailer_hint    = trim((string) $this->mailer->get_last_hint());
+                        $mailer_error   = trim((string) $this->mailer->get_last_error());
+
+                        if ($is_development && $mailer_hint !== '') {
+                            $this->session->set_flashdata('message', $mailer_hint);
+                        } elseif ($is_development && $mailer_error !== '') {
+                            $this->session->set_flashdata('message', 'Password reset email could not be sent. ' . $mailer_error);
+                        } else {
+                            $this->session->set_flashdata('message', 'Password reset email could not be sent. Please contact the administrator.');
+                        }
+                    } else {
+                        $this->session->set_flashdata('message', $this->lang->line('please_check_your_email_to_recover_your_password'));
+                    }
                 } else {
                     $this->session->set_flashdata('disable_message', $this->lang->line('your_account_is_disabled_please_contact_to_administrator'));
                 }
@@ -359,6 +374,16 @@ class Site extends Public_Controller
         $notices            = $this->cms_program_model->getByCategory($notice_content, array('start' => 0, 'limit' => 5));
         $data['notice']     = $notices;
         $data['school']     = $school[0];
+        $whatsapp_number    = preg_replace('/[^0-9]/', '', (string) ($school[0]['whatsapp_support_number'] ?? ''));
+        $whatsapp_enabled   = !empty($school[0]['whatsapp_support_enabled']) && $whatsapp_number !== '';
+        $whatsapp_message   = trim((string) ($school[0]['whatsapp_support_message'] ?? ''));
+
+        if ($whatsapp_message === '') {
+            $whatsapp_message = 'Hello ' . $school[0]['name'] . ', I need help with the student/parent portal.';
+        }
+
+        $data['support_whatsapp_number'] = $whatsapp_number;
+        $data['support_whatsapp_url']    = $whatsapp_enabled ? ('https://wa.me/' . $whatsapp_number . '?text=' . rawurlencode($whatsapp_message)) : '';
         $is_captcha         = $this->captchalib->is_captcha('userlogin');
         $data["is_captcha"] = $is_captcha;
         if ($is_captcha) {
