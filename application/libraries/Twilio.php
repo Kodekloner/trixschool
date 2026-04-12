@@ -130,8 +130,24 @@ class TwilioRestResponse {
         $this->QueryString = $matches[2];
         $this->ResponseText = $text;
         $this->HttpStatus = $status;
-        if ($this->HttpStatus != 204)
+        $this->IsError = ($this->HttpStatus < 200 || $this->HttpStatus >= 300);
+
+        if ($this->HttpStatus != 204) {
             $this->ResponseXml = @simplexml_load_string($text);
+        }
+
+        $decoded = json_decode($text, true);
+        if (is_array($decoded)) {
+            if (!empty($decoded['message'])) {
+                $this->ErrorMessage = $decoded['message'];
+            } elseif (!empty($decoded['error_message'])) {
+                $this->ErrorMessage = $decoded['error_message'];
+            }
+        }
+
+        if ($this->IsError && empty($this->ErrorMessage)) {
+            $this->ErrorMessage = !empty($this->ResponseText) ? $this->ResponseText : 'Twilio request failed.';
+        }
         
     }
 

@@ -901,6 +901,10 @@ class Mailsms extends Admin_Controller
 
     public function test_sms()
     {
+        if (!$this->rbac->hasPrivilege('sms_setting', 'can_view') && !$this->rbac->hasPrivilege('sms', 'can_view')) {
+            access_denied();
+        }
+
         $this->form_validation->set_rules('mobile', $this->lang->line('mobile_number'), 'required');
 
         if ($this->form_validation->run() == false) {
@@ -909,10 +913,22 @@ class Mailsms extends Admin_Controller
             );
             $array = array('status' => 'fail', 'error' => $msg, 'message' => '');
         } else {
+            $message = 'Smart School SMS Test Successful.';
+            $status  = $this->smsgateway->sendSMS($this->input->post('mobile'), $message);
 
-            $this->smsgateway->sendSMS($this->input->post('mobile'), ('Smart School SMS Test Successful.'));
+            if ($status) {
+                $array = array('status' => 'success', 'error' => '', 'message' => 'Test SMS sent successfully. Please check the recipient phone.');
+            } else {
+                $error_message = 'Unable to send test SMS. Please review your SMS gateway settings and try again.';
+                if (defined('ENVIRONMENT') && ENVIRONMENT === 'development') {
+                    $gateway_error = $this->smsgateway->getLastError();
+                    if (!empty($gateway_error)) {
+                        $error_message .= ' ' . $gateway_error;
+                    }
+                }
 
-            $array = array('status' => 'success', 'error' => '', 'message' => 'Test SMS Sent Successfully. Please check your mobile if you have received.');
+                $array = array('status' => 'fail', 'error' => array('mobile' => $error_message), 'message' => '');
+            }
         }
         echo json_encode($array);
     }

@@ -4,7 +4,7 @@
             <i class="fa fa-gears"></i> <?php echo $this->lang->line('system_settings'); ?><small><?php echo $this->lang->line('setting1'); ?></small>
 
             <small class="pull-right">
-                <a type="button" onclick="sms_test()" class="btn btn-primary btn-sm">SMS Test--r</a>
+                <a type="button" onclick="sms_test()" class="btn btn-primary btn-sm"><?php echo $this->lang->line('sms_test'); ?></a>
             </small></h1>
     </section> 
     <!-- Main content -->
@@ -124,7 +124,7 @@
                                                 <div class="form-group">
                                                     <label class="col-sm-5 control-label"><?php echo $this->lang->line('authentication_token'); ?></label>
                                                     <div class="col-sm-7">
-                                                        <input type="text" class="form-control" name="twilio_auth_token" value="<?php echo $twilio_result->password; ?>">
+                                                        <input type="password" class="form-control" name="twilio_auth_token" value="<?php echo $twilio_result->password; ?>">
                                                         <span class="text text-danger twilio_auth_token_error"></span>
                                                     </div>
                                                 </div>

@@ -9,6 +9,7 @@ class Smsgateway
 
     private $_CI;
     private $sch_setting;
+    private $last_error = '';
 
     public function __construct()
     {
@@ -21,6 +22,50 @@ class Smsgateway
         $this->_CI->load->model('accountant_model');
         $this->_CI->load->model('smsconfig_model');
         $this->sch_setting = $this->_CI->setting_model->get();
+    }
+
+    public function getLastError()
+    {
+        return $this->last_error;
+    }
+
+    private function clearLastError()
+    {
+        $this->last_error = '';
+    }
+
+    private function setLastError($message)
+    {
+        $this->last_error = trim((string) $message);
+    }
+
+    private function sendTwilioMessage($sms_detail, $send_to, $message)
+    {
+        $params = array(
+            'mode'        => 'live',
+            'account_sid' => $sms_detail->api_id,
+            'auth_token'  => $sms_detail->password,
+            'api_version' => '2010-04-01',
+            'number'      => $sms_detail->contact,
+        );
+
+        try {
+            $this->_CI->load->library('twilio', $params);
+            $response = $this->_CI->twilio->sms($sms_detail->contact, $send_to, $message);
+
+            if (!empty($response) && empty($response->IsError)) {
+                return true;
+            }
+
+            $error_message = !empty($response->ErrorMessage) ? $response->ErrorMessage : 'Twilio SMS request failed.';
+            $this->setLastError($error_message);
+            log_message('error', 'Twilio SMS send failed: ' . $error_message);
+        } catch (Exception $e) {
+            $this->setLastError($e->getMessage());
+            log_message('error', 'Twilio SMS exception: ' . $e->getMessage());
+        }
+
+        return false;
     }
 
     public function sentNotification($send_to, $detail, $subject, $template = '')
@@ -36,10 +81,21 @@ class Smsgateway
         }
     }
  
-    public function sendSMS($send_to, $detail, $template_id, $template = '')
+    public function sendSMS($send_to, $detail = '', $template_id = '', $template = '')
     {
+        $this->clearLastError();
+
+        if (empty($send_to)) {
+            $this->setLastError('Recipient phone number is required.');
+            return false;
+        }
 
         $sms_detail = $this->_CI->smsconfig_model->getActiveSMS();
+
+        if (empty($sms_detail)) {
+            $this->setLastError('No active SMS gateway is configured.');
+            return false;
+        }
 
         if ($template != "") {
             $msg = $this->getContent($detail, $template, $sms_detail->type); 
@@ -47,44 +103,24 @@ class Smsgateway
             $msg = $detail;
         }
        
-        if (!empty($sms_detail)) {
-            if ($sms_detail->type == 'clickatell') {
+        if ($sms_detail->type == 'clickatell') {
 
-                $params = array(
-                    'apiToken' => $sms_detail->api_id,
-                );
-                $this->_CI->load->library('clickatell', $params);
-                try {
-                    $result = $this->_CI->clickatell->sendMessage(['to' => [$send_to], 'content' => $msg]);
-                    foreach ($result['messages'] as $message) {
+            $params = array(
+                'apiToken' => $sms_detail->api_id,
+            );
+            $this->_CI->load->library('clickatell', $params);
+            try {
+                $result = $this->_CI->clickatell->sendMessage(['to' => [$send_to], 'content' => $msg]);
+                foreach ($result['messages'] as $message) {
 
-                    }
-                    return true;
-                } catch (Exception $e) {
-                    return true;
                 }
-            } else if ($sms_detail->type == 'twilio') {
-
-                $params = array(
-                    'mode'        => 'sandbox',
-                    'account_sid' => $sms_detail->api_id,
-                    'auth_token'  => $sms_detail->password,
-                    'api_version' => '2010-04-01',
-                    'number'      => $sms_detail->contact,
-                );
-
-                $this->_CI->load->library('twilio', $params);
-
-                $from     = $sms_detail->contact;
-                $to       = $send_to;
-                $message  = $msg;
-                $response = $this->_CI->twilio->sms($from, $to, $message);
-                if ($response->IsError) {
-                    return true;
-                } else {
-                    return true;
-                }
-            } else if ($sms_detail->type == 'msg_nineone') {
+                return true;
+            } catch (Exception $e) {
+                return true;
+            }
+        } else if ($sms_detail->type == 'twilio') {
+            return $this->sendTwilioMessage($sms_detail, $send_to, $msg);
+        } else if ($sms_detail->type == 'msg_nineone') {
                 $params = array(
                     'authkey'    => $sms_detail->authkey,
                     'senderid'   => $sms_detail->senderid,
@@ -160,9 +196,8 @@ class Smsgateway
                 $to      = $send_to;
                 $message = $msg;
                 $this->_CI->customsms->sendSMS($to, $message);
-            } else {
+        } else {
 
-            }
         }
         return true;
     }
