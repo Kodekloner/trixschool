@@ -248,6 +248,8 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
     <script src="../assets/js/vfs_fonts.js"></script>
 
     <script>
+        var canPublishResult = <?php echo $canPublishResult ? 'true' : 'false'; ?>;
+
         $(document).ready(function() {
             var rolefirstold = '<?php echo $rolefirst; ?>';
             if (rolefirstold == 'parent') {
@@ -351,7 +353,6 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
             var rolefirstold = '<?php echo $rolefirst; ?>';
             var staffid = "<?php echo $id; ?>";
             console.log(rolefirstold);
-            var canPublishResult = <?php echo $canPublishResult ? 'true' : 'false'; ?>;
             if (rolefirstold == 'parent') {
                 var staffid = localStorage.getItem('kidid');
                 console.log(staffid);
