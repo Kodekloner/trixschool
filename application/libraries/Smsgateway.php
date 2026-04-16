@@ -39,6 +39,21 @@ class Smsgateway
         $this->last_error = trim((string) $message);
     }
 
+    private function failGateway($gateway, $message)
+    {
+        $gateway_label = strtoupper(str_replace('_', ' ', (string) $gateway));
+        $error_message = trim((string) $message);
+
+        if ($error_message === '') {
+            $error_message = 'Unknown SMS gateway error.';
+        }
+
+        $this->setLastError($error_message);
+        log_message('error', $gateway_label . ' SMS send failed: ' . $error_message);
+
+        return false;
+    }
+
     private function sendTwilioMessage($sms_detail, $send_to, $message)
     {
         $params = array(
@@ -58,14 +73,10 @@ class Smsgateway
             }
 
             $error_message = !empty($response->ErrorMessage) ? $response->ErrorMessage : 'Twilio SMS request failed.';
-            $this->setLastError($error_message);
-            log_message('error', 'Twilio SMS send failed: ' . $error_message);
+            return $this->failGateway('twilio', $error_message);
         } catch (Exception $e) {
-            $this->setLastError($e->getMessage());
-            log_message('error', 'Twilio SMS exception: ' . $e->getMessage());
+            return $this->failGateway('twilio', $e->getMessage());
         }
-
-        return false;
     }
 
     public function sentNotification($send_to, $detail, $subject, $template = '')
@@ -86,15 +97,13 @@ class Smsgateway
         $this->clearLastError();
 
         if (empty($send_to)) {
-            $this->setLastError('Recipient phone number is required.');
-            return false;
+            return $this->failGateway('system', 'Recipient phone number is required.');
         }
 
         $sms_detail = $this->_CI->smsconfig_model->getActiveSMS();
 
         if (empty($sms_detail)) {
-            $this->setLastError('No active SMS gateway is configured.');
-            return false;
+            return $this->failGateway('system', 'No active SMS gateway is configured.');
         }
 
         if ($template != "") {
@@ -102,25 +111,21 @@ class Smsgateway
         } else {
             $msg = $detail;
         }
-       
-        if ($sms_detail->type == 'clickatell') {
 
-            $params = array(
-                'apiToken' => $sms_detail->api_id,
-            );
-            $this->_CI->load->library('clickatell', $params);
-            try {
+        try {
+            if ($sms_detail->type == 'clickatell') {
+                $params = array(
+                    'apiToken' => $sms_detail->api_id,
+                );
+                $this->_CI->load->library('clickatell', $params);
                 $result = $this->_CI->clickatell->sendMessage(['to' => [$send_to], 'content' => $msg]);
                 foreach ($result['messages'] as $message) {
 
                 }
                 return true;
-            } catch (Exception $e) {
-                return true;
-            }
-        } else if ($sms_detail->type == 'twilio') {
-            return $this->sendTwilioMessage($sms_detail, $send_to, $msg);
-        } else if ($sms_detail->type == 'msg_nineone') {
+            } else if ($sms_detail->type == 'twilio') {
+                return $this->sendTwilioMessage($sms_detail, $send_to, $msg);
+            } else if ($sms_detail->type == 'msg_nineone') {
                 $params = array(
                     'authkey'    => $sms_detail->authkey,
                     'senderid'   => $sms_detail->senderid,
@@ -196,9 +201,13 @@ class Smsgateway
                 $to      = $send_to;
                 $message = $msg;
                 $this->_CI->customsms->sendSMS($to, $message);
-        } else {
-
+            } else {
+                return $this->failGateway($sms_detail->type, 'Unsupported SMS gateway configuration.');
+            }
+        } catch (Exception $e) {
+            return $this->failGateway($sms_detail->type, $e->getMessage());
         }
+
         return true;
     }
  
