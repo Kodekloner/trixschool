@@ -4,11 +4,7 @@
 <div class="content-wrapper">
     <section class="content-header">
         <h1>
-            <i class="fa fa-gears"></i> <?php echo $this->lang->line('system_settings'); ?><small><?php echo $this->lang->line('setting1'); ?></small>
-
-            <small class="pull-right">
-                <a type="button" onclick="sms_test()" class="btn btn-primary btn-sm"><?php echo $this->lang->line('sms_test'); ?></a>  
-            </small></h1>
+            <i class="fa fa-gears"></i> <?php echo $this->lang->line('system_settings'); ?><small><?php echo $this->lang->line('setting1'); ?></small></h1>
     </section> 
     <!-- Main content -->
     <section class="content">
@@ -17,6 +13,9 @@
                 <div class="nav-tabs-custom theme-shadow">
                     <div class="box-header with-border">
                        <h3 class="box-title titlefix"></i> <?php echo $this->lang->line('online_admission_setting'); ?></h3>
+                       <div class="box-tools pull-right">
+                           <a type="button" onclick="sms_test()" class="btn btn-primary btn-sm"><?php echo $this->lang->line('sms_test'); ?></a>
+                       </div>
                     </div>
                     <ul class="nav nav-tabs">
                         <li class="active"><a href="#tab_1" data-toggle="tab"><?php echo $this->lang->line('online_admission_form_setting'); ?></a></li>
