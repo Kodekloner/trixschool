@@ -1,11 +1,7 @@
 <div class="content-wrapper">
     <section class="content-header">
         <h1>
-            <i class="fa fa-gears"></i> <?php echo $this->lang->line('system_settings'); ?><small><?php echo $this->lang->line('setting1'); ?></small>
-
-            <small class="pull-right">
-                <a type="button" onclick="sms_test()" class="btn btn-primary btn-sm"><?php echo $this->lang->line('sms_test'); ?></a>
-            </small></h1>
+            <i class="fa fa-gears"></i> <?php echo $this->lang->line('system_settings'); ?><small><?php echo $this->lang->line('setting1'); ?></small></h1>
     </section> 
     <!-- Main content -->
     <section class="content">
@@ -14,6 +10,9 @@
                 <div class="nav-tabs-custom theme-shadow">
                     <div class="box-header with-border">
                        <h3 class="box-title titlefix"></i> <?php echo $this->lang->line('sms_setting'); ?></h3>
+                       <div class="box-tools pull-right">
+                           <a type="button" onclick="sms_test()" class="btn btn-primary btn-sm"><?php echo $this->lang->line('sms_test'); ?></a>
+                       </div>
                     </div>
                     <ul class="nav nav-tabs">
                         <li class="active"><a href="#tab_1" data-toggle="tab"><?php echo $this->lang->line('clickatell_sms_gateway'); ?></a></li>
@@ -762,7 +761,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal">×</button>
-                <h4 class="modal-title">Test SMS --r</h4>
+                <h4 class="modal-title"><?php echo $this->lang->line('sms_test'); ?></h4>
             </div>
             <div class="modal-body pt0 pb0">
                 <div class="row">
@@ -773,7 +772,7 @@
 
                                     <div class="col-md-12">
                                         <div class="form-group">
-                                            <label for="pwd">Mobile Number --r</label><small class="req"> *</small>  
+                                            <label for="pwd"><?php echo $this->lang->line('mobile_number'); ?></label><small class="req"> *</small>  
                                             <input type="text" id="title" autocomplete="off" class="form-control" value="" name="mobile">
                                             <span id="name_add_error" class="text-danger"></span>
                                         </div>
@@ -785,7 +784,7 @@
                         <div class="box-footer">
                             <div class="pull-right paddA10">
 
-                                <button type="submit" class="btn btn-info pull-right">Send --r</button>
+                                <button type="submit" class="btn btn-info pull-right"><?php echo $this->lang->line('send'); ?></button>
                             </div>
                         </div>
                         </form>  
