@@ -341,13 +341,15 @@ class Smsconfig extends Admin_Controller
         }
      }
 
-      public function africastalking(){
+    public function africastalking(){
         $this->requireSmsSettingEdit();
 
         $this->form_validation->set_error_delimiters('', '');
 
+        $environment_label = 'Environment';
         $this->form_validation->set_rules('africastalking_username', $this->lang->line('africastalking_username'), 'required');
         $this->form_validation->set_rules('africastalking_apikey', $this->lang->line('africastalking_apikey'), 'required');
+        $this->form_validation->set_rules('africastalking_environment', $environment_label, 'required|in_list[live,sandbox]');
         $this->form_validation->set_rules('africastalking_short_code', $this->lang->line('africastalking_short_code'), 'required');
         $this->form_validation->set_rules('africastalking_status', $this->lang->line('status'), 'required');
 
@@ -355,9 +357,10 @@ class Smsconfig extends Admin_Controller
 
             $data = array(
                 'type'      => 'africastalking',
-                'username'   => $this->input->post('africastalking_username'),
-                'api_id'  => $this->input->post('africastalking_apikey'),
-                'senderid'    => $this->input->post('africastalking_short_code'),
+                'username'  => $this->input->post('africastalking_username'),
+                'api_id'    => $this->input->post('africastalking_apikey'),
+                'url'       => $this->input->post('africastalking_environment'),
+                'senderid'  => $this->input->post('africastalking_short_code'),
                 'is_active' => $this->input->post('africastalking_status'),
             );
             $this->smsconfig_model->add($data);
@@ -366,10 +369,11 @@ class Smsconfig extends Admin_Controller
         } else {
 
             $data = array(
-                'africastalking_username'  => form_error('africastalking_username'),
-                'africastalking_apikey' => form_error('africastalking_apikey'),
+                'africastalking_username'    => form_error('africastalking_username'),
+                'africastalking_apikey'      => form_error('africastalking_apikey'),
+                'africastalking_environment' => form_error('africastalking_environment'),
                 'africastalking_short_code'  => form_error('africastalking_short_code'),
-                'africastalking_status'    => form_error('africastalking_status'),
+                'africastalking_status'      => form_error('africastalking_status'),
 
             );
 

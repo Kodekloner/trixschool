@@ -917,7 +917,14 @@ class Mailsms extends Admin_Controller
             $status  = $this->smsgateway->sendSMS($this->input->post('mobile'), $message);
 
             if ($status) {
-                $array = array('status' => 'success', 'error' => '', 'message' => 'Test SMS sent successfully. Please check the recipient phone.');
+                $success_message = 'Test SMS sent successfully. Please check the recipient phone.';
+                $sms_detail      = $this->smsconfig_model->getActiveSMS();
+
+                if (!empty($sms_detail) && $sms_detail->type === 'africastalking' && strtolower(trim((string) $sms_detail->url)) === 'sandbox') {
+                    $success_message = 'Test SMS accepted by Africa\'s Talking sandbox. Check the Africa\'s Talking simulator or sandbox dashboard, not the recipient phone.';
+                }
+
+                $array = array('status' => 'success', 'error' => '', 'message' => $success_message);
             } else {
                 $error_message = 'Unable to send test SMS. Please review your SMS gateway settings and try again.';
                 if (defined('ENVIRONMENT') && ENVIRONMENT === 'development') {
