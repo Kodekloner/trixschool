@@ -679,11 +679,23 @@
                             <form role="form" id="africastalking" action="<?php echo site_url('smsconfig/africastalking') ?>" class="form-horizontal" method="post">
                                 <div class="box-body"> 
                                     <div class="row">
-                                        <div class="minheight170">
+                                            <div class="minheight170">
                                             <div class="col-md-7">
                                                 <?php 
                                                 $africastalking_result = check_in_array('africastalking', $smslist);
+                                                $africastalking_environment = strtolower((string) $africastalking_result->url) === 'sandbox' ? 'sandbox' : 'live';
                                                 ?>
+                                                <div class="form-group">
+                                                    <label class="col-sm-5 control-label">Environment<small class="req"> *</small></label>
+                                                    <div class="col-sm-7">
+                                                        <select class="form-control" name="africastalking_environment">
+                                                            <option value="live" <?php if ($africastalking_environment === 'live') { echo "selected=selected"; } ?>>Live</option>
+                                                            <option value="sandbox" <?php if ($africastalking_environment === 'sandbox') { echo "selected=selected"; } ?>>Test / Sandbox</option>
+                                                        </select>
+                                                        <span class="text text-danger africastalking_environment_error"></span>
+                                                        <p class="help-block">Sandbox sends to Africa's Talking's simulator, not a real phone. Use username <strong>sandbox</strong> with a sandbox API key.</p>
+                                                    </div>
+                                                </div>
                                                 <div class="form-group">
                                                     <label class="col-sm-5 control-label"><?php echo $this->lang->line('username'); ?><small class="req"> *</small></label>
                                                     <div class="col-sm-7">
@@ -743,7 +755,7 @@
                                     <div class="col-md-offset-3">
                                         <?php if ($this->rbac->hasPrivilege('sms_setting', 'can_edit')) {
                                             ?>
-                                            <button type="submit" class="btn btn-primary btnleftinfo"><?php echo $this->lang->line('save'); ?></button>&nbsp;&nbsp;<span class="nexmo_loader"></span>
+                                            <button type="submit" class="btn btn-primary btnleftinfo"><?php echo $this->lang->line('save'); ?></button>&nbsp;&nbsp;<span class="africastalking_loader"></span>
                                         <?php } ?>
                                     </div>    
                                 </div>

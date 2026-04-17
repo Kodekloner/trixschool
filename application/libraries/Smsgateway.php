@@ -185,10 +185,16 @@ class Smsgateway
                     'from'         => $sms_detail->senderid,
                     'api_key'      => $sms_detail->api_id,
                     'api_username' => $sms_detail->username,
+                    'environment'  => $sms_detail->url,
 
                 );
                 $this->_CI->load->library('africastalking_lib', $params);
-                $this->_CI->africastalking_lib->sendSms($to, $msg);
+                $result = $this->_CI->africastalking_lib->sendSms($to, $msg);
+                if ($result === false) {
+                    return $this->failGateway('africastalking', $this->_CI->africastalking_lib->getLastError());
+                }
+
+                return true;
 
             } else if ($sms_detail->type == 'custom') {
 
