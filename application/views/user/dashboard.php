@@ -512,14 +512,16 @@ $total_amount           = "0";
                     $total_fine_amount     = $total_fine_amount + $fee_fine;
                     $feetype_balance       = $fee_value->amount - ($fee_paid + $fee_discount);
                     $total_balance_amount  = $total_balance_amount + $feetype_balance;
-                    if (($fee_value->due_date != "0000-00-00" && $fee_value->due_date != null) && (strtotime($fee_value->due_date) < strtotime(date('Y-m-d')))) {
+                    $has_due_date          = !empty($fee_value->due_date) && $fee_value->due_date != "0000-00-00";
+                    $is_overdue            = $has_due_date && (strtotime($fee_value->due_date) < strtotime(date('Y-m-d')));
+                    if ($is_overdue) {
 
                         $total_fees_fine_amount = $total_fees_fine_amount + $fee_value->fine_amount;
                     }
 
                     ?>
                               <?php
-if ($feetype_balance > 0 && strtotime($fee_value->due_date) < strtotime(date('Y-m-d'))) {
+if ($feetype_balance > 0 && $is_overdue) {
                         ?>
                               <tr class="danger">
                                  <?php
@@ -535,7 +537,7 @@ echo $fee_value->name;
                                  <td><?php echo $fee_value->code; ?></td>
                                  <td class="text text-left">
                                     <?php
-if ($fee_value->due_date == "0000-00-00") {
+if (!$has_due_date) {
 
                     } else {
 
@@ -557,7 +559,7 @@ if ($feetype_balance == 0) {
                                  <td class="text text-right">
 
                                       <?php echo $fee_value->amount;
-                    if (($fee_value->due_date != "0000-00-00" && $fee_value->due_date != null) && (strtotime($fee_value->due_date) < strtotime(date('Y-m-d')))) {
+                    if ($is_overdue) {
                         ?>
 <span class="text text-danger"><?php echo " + " . ($fee_value->fine_amount); ?></span>
     <?php
