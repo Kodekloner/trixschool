@@ -189,7 +189,9 @@ if (!empty($student['image'])) {
                                                         $fee_fine = $fee_fine + $fee_deposits_value->amount_fine;
                                                     }
                                                 }
-												if (($fee_value->due_date != "0000-00-00" && $fee_value->due_date != NULL) && (strtotime($fee_value->due_date) < strtotime(date('Y-m-d')))) {
+                                                $has_due_date = !empty($fee_value->due_date) && $fee_value->due_date != "0000-00-00";
+                                                $is_overdue = $has_due_date && (strtotime($fee_value->due_date) < strtotime(date('Y-m-d')));
+                                                if ($is_overdue) {
 
                                                 $total_fees_fine_amount=$total_fees_fine_amount+$fee_value->fine_amount;
                                            }
@@ -201,7 +203,7 @@ if (!empty($student['image'])) {
                                                 $total_balance_amount = $total_balance_amount + $feetype_balance;
                                                 ?>
                                                 <?php
-                                                if ($feetype_balance > 0 && strtotime($fee_value->due_date) < strtotime(date('Y-m-d'))) {
+                                                if ($feetype_balance > 0 && $is_overdue) {
                                                     ?>
                                                     <tr class="danger font12">
                                                         <?php
@@ -219,7 +221,7 @@ if (!empty($student['image'])) {
                                                     <td align="left" class="text text-center">
 
                                                         <?php
-                                                        if ($fee_value->due_date == "0000-00-00") {
+                                                        if (!$has_due_date) {
 
                                                         } else {
 
@@ -240,7 +242,7 @@ if (!empty($student['image'])) {
 
                                                     </td>
                                                     <td class="text text-right"><?php echo $fee_value->amount;
- if (($fee_value->due_date != "0000-00-00" && $fee_value->due_date != NULL) && (strtotime($fee_value->due_date) < strtotime(date('Y-m-d')))) {
+ if ($is_overdue) {
     ?>
 <span class="text text-danger"><?php echo " + ".($fee_value->fine_amount); ?></span>
     <?php
@@ -529,7 +531,7 @@ if (!empty($student['image'])) {
                 errorMsg("<?php echo $this->lang->line('please_select_record'); ?>");
             } else {
                 $.ajax({
-                    url: '<?php echo site_url("user/user/printFeesByGroupArray") ?>',
+                    url: '<?php echo site_url("user/user/printSelectedReceipts") ?>',
                     type: 'post',
                     data: {'data': JSON.stringify(array_to_print)},
                      beforeSend: function () {

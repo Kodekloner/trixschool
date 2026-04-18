@@ -358,6 +358,48 @@ class User extends Student_Controller
         $this->load->view('student/printFeesByGroupArray', $data);
     }
 
+    public function printSelectedReceipts()
+    {
+        $record      = $this->input->post('data');
+        $record_array = json_decode($record);
+        $receipts    = array();
+
+        if (is_array($record_array) || is_object($record_array)) {
+            foreach ($record_array as $value) {
+                $fee_groups_feetype_id = $value->fee_groups_feetype_id;
+                $fee_master_id         = $value->fee_master_id;
+                $fee_session_group_id  = $value->fee_session_group_id;
+                $feeList               = $this->studentfeemaster_model->getDueFeeByFeeSessionGroupFeetype($fee_session_group_id, $fee_master_id, $fee_groups_feetype_id);
+
+                if (empty($feeList) || empty($feeList->amount_detail) || $feeList->amount_detail === "0") {
+                    continue;
+                }
+
+                $fee_deposits = json_decode($feeList->amount_detail);
+                if (!is_object($fee_deposits)) {
+                    continue;
+                }
+
+                foreach ($fee_deposits as $sub_invoice_id => $deposit_record) {
+                    $receipts[] = array(
+                        'feeList'        => $feeList,
+                        'record'         => $deposit_record,
+                        'sub_invoice_id' => $sub_invoice_id,
+                    );
+                }
+            }
+        }
+
+        if (empty($receipts)) {
+            echo '<div class="alert alert-danger">No receipt found for the selected fee record(s).</div>';
+            return;
+        }
+
+        $data['receipts']    = $receipts;
+        $data['sch_setting'] = $this->sch_setting_detail;
+        $this->load->view('print/printFeesByNameArray', $data);
+    }
+
     public function getcollectfee()
     {
         $setting_result      = $this->setting_model->get();
