@@ -3,8 +3,6 @@ if (!defined('BASEPATH')) {
     exit('No direct script access allowed');
 }
 
-require_once APPPATH . 'third_party/omnipay/vendor/autoload.php';
-
 class Payment extends Student_Controller
 {
 
@@ -17,9 +15,6 @@ class Payment extends Student_Controller
     {
         parent::__construct();
         $this->load->library('Customlib');
-        $this->load->library('Paypal_payment');
-        $this->load->library('Stripe_payment');
-        $this->load->library('Twocheckout_payment');
         $this->payment_method     = $this->paymentsetting_model->get();
         $this->school_name        = $this->customlib->getAppName();
         $this->school_setting     = $this->setting_model->get();
@@ -69,7 +64,7 @@ class Payment extends Student_Controller
                         // $total_amount_balance += $result->student_fees_master_amount - ($amount_paid + $amount_discount);
                     }
 
-                    if (($result->due_date != "0000-00-00" && $result->due_date != null) && (strtotime($result->due_date) < strtotime(date('Y-m-d'))) && $fees_balance > 0) {
+                    if (!empty($result->due_date) && $result->due_date != "0000-00-00" && (strtotime($result->due_date) < strtotime(date('Y-m-d'))) && $fees_balance > 0) {
 
                         $fine_amount_balance = $result->fine_amount;
 
@@ -297,7 +292,7 @@ class Payment extends Student_Controller
             $fine_amount_balance = 0;
             $amount_detail       = json_decode($result->amount_detail);
 
-            if (strtotime($result->due_date) < strtotime(date('Y-m-d'))) {
+            if (!empty($result->due_date) && $result->due_date != "0000-00-00" && strtotime($result->due_date) < strtotime(date('Y-m-d'))) {
                 $fine_amount_balance = $result->fine_amount;
             }
 
