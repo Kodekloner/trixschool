@@ -357,8 +357,25 @@ class Onlinestudent_model extends MY_Model
 
     public function paymentSuccess($payment)
     {
+        $existing = $this->db->where("transaction_id", $payment['transaction_id'])->get("online_admission_payment")->row();
+        if (!empty($existing)) {
+            $this->db->update("online_admissions", array("paid_status" => 1, "form_status" => 1), array("id" => $payment['admission_id']));
+            return $existing->id;
+        }
+
+        $this->db->trans_start();
         $this->db->update("online_admissions", array("paid_status" => 1, "form_status" => 1), array("id" => $payment['admission_id']));
         $this->db->insert("online_admission_payment", $payment);
+        $insert_id = $this->db->insert_id();
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return false;
+        }
+
+        $this->db->trans_commit();
+        return $insert_id;
     }
 
     public function getclassbyclasssectionid($class_section_id)

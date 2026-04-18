@@ -152,21 +152,51 @@ class Paymentsettings extends Admin_Controller {
     public function paystack() {
         $this->form_validation->set_error_delimiters('', '');
 
-        $this->form_validation->set_rules('paystack_secretkey', $this->lang->line('key'), 'trim|required|xss_clean');
+        $this->form_validation->set_rules('paystack_gateway_mode', $this->lang->line('mode'), 'trim|required|callback_valid_paystack_gateway_mode');
+        $this->form_validation->set_rules('paystack_secretkey', $this->lang->line('key'), 'trim|required|callback_valid_paystack_secretkey|xss_clean');
 
         if ($this->form_validation->run()) {
             $data = array(
                 'api_secret_key' => $this->input->post('paystack_secretkey'),
+                'gateway_mode' => (int) $this->input->post('paystack_gateway_mode'),
                 'payment_type' => 'paystack',
             );
             $this->paymentsetting_model->add($data);
             echo json_encode(array('st' => 0, 'msg' => $this->lang->line('update_message')));
         } else {
             $data = array(
+                'paystack_gateway_mode' => form_error('paystack_gateway_mode'),
                 'paystack_secretkey' => form_error('paystack_secretkey'),
             );
             echo json_encode(array('st' => 1, 'msg' => $data));
         }
+    }
+
+    public function valid_paystack_gateway_mode($mode)
+    {
+        if ($mode === "0" || $mode === "1") {
+            return true;
+        }
+
+        $this->form_validation->set_message('valid_paystack_gateway_mode', 'Please select a valid %s');
+        return false;
+    }
+
+    public function valid_paystack_secretkey($secret_key)
+    {
+        $mode = $this->input->post('paystack_gateway_mode');
+
+        if ($mode === "0" && strpos($secret_key, 'sk_test_') !== 0) {
+            $this->form_validation->set_message('valid_paystack_secretkey', 'Test / Sandbox mode requires a Paystack test secret key that starts with sk_test_.');
+            return false;
+        }
+
+        if ($mode === "1" && strpos($secret_key, 'sk_live_') !== 0) {
+            $this->form_validation->set_message('valid_paystack_secretkey', 'Live mode requires a Paystack live secret key that starts with sk_live_.');
+            return false;
+        }
+
+        return true;
     }
 
     public function instamojo() {
