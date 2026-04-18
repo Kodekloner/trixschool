@@ -384,6 +384,11 @@ class Studentfeemaster_model extends MY_Model
 
     }
 
+    public function hasPaymentDescription($description)
+    {
+        return $this->db->like('amount_detail', $description)->count_all_results('student_fees_deposite') > 0;
+    }
+
     public function fee_deposit($data, $send_to, $student_fees_discount_id = null)
     {
         $this->db->where('student_fees_master_id', $data['student_fees_master_id']);

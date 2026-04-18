@@ -304,11 +304,25 @@
                                                 ?>
 
                                                 <div class="form-group">
+                                                    <label class="control-label col-md-5 col-sm-12 col-xs-12" for="paystack_gateway_mode">
+                                                        <?php echo $this->lang->line('mode'); ?><small class="req"> *</small>
+                                                    </label>
+                                                    <div class="col-md-7 col-sm-7 col-xs-12">
+                                                        <select name="paystack_gateway_mode" id="paystack_gateway_mode" class="form-control col-md-7 col-xs-12">
+                                                            <option value="0" <?php echo (isset($paystack_result->gateway_mode) && (int) $paystack_result->gateway_mode === 0) ? "selected" : ""; ?>>Test / Sandbox</option>
+                                                            <option value="1" <?php echo (isset($paystack_result->gateway_mode) && (int) $paystack_result->gateway_mode === 1) ? "selected" : ""; ?>>Live</option>
+                                                        </select>
+                                                        <span class="text text-danger paystack_gateway_mode_error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="form-group">
                                                     <label class="control-label col-md-5 col-sm-12 col-xs-12" for="exampleInputEmail1">
                                                         <?php echo $this->lang->line('paystack_secret_key'); ?><small class="req"> *</small>
                                                     </label>
                                                     <div class="col-md-7 col-sm-7 col-xs-12">
                                                         <input  name="paystack_secretkey" placeholder="" type="text" class="form-control col-md-7 col-xs-12"  value="<?php echo isset($paystack_result->api_secret_key) ? $paystack_result->api_secret_key : ""; ?>" />
+                                                        <p class="help-block">Use <code>sk_test_...</code> for Test / Sandbox and <code>sk_live_...</code> for Live. Paystack uses the same API URL for both modes; the secret key decides the environment.</p>
                                                         <span class=" text text-danger paystack_secretkey_error"></span>
                                                     </div>  </div>
 
