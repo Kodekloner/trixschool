@@ -531,7 +531,7 @@ if (!empty($student['image'])) {
                 errorMsg("<?php echo $this->lang->line('please_select_record'); ?>");
             } else {
                 $.ajax({
-                    url: '<?php echo site_url("user/user/printFeesByGroupArray") ?>',
+                    url: '<?php echo site_url("user/user/printSelectedReceipts") ?>',
                     type: 'post',
                     data: {'data': JSON.stringify(array_to_print)},
                      beforeSend: function () {
