@@ -441,10 +441,11 @@
                                         ?>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
-                                                        <label for="exampleInputEmail1"><?php echo $this->lang->line('guardian_phone'); ?></label><small class="req"> *</small>
-                                                        <input id="guardian_phone" name="guardian_phone" placeholder="" type="text" class="form-control"  value="<?php echo set_value('guardian_phone'); ?>" />
-                                                        <span class="text-danger"><?php echo form_error('guardian_phone'); ?></span>
-                                                    </div>
+	                                                        <label for="exampleInputEmail1"><?php echo $this->lang->line('guardian_phone'); ?></label><small class="req"> *</small>
+	                                                        <input id="guardian_phone" name="guardian_phone" placeholder="" type="text" class="form-control"  value="<?php echo set_value('guardian_phone'); ?>" />
+	                                                        <span class="help-block" style="margin-bottom:0;">Use the parent's WhatsApp number. For Nigeria, 080... will open as 23480...</span>
+	                                                        <span class="text-danger"><?php echo form_error('guardian_phone'); ?></span>
+	                                                    </div>
                                                 </div>
                                             <?php }
                                     if($sch_setting->guardian_occupation){

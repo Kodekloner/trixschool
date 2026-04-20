@@ -28,9 +28,20 @@ foreach ($unread_notifications as $notice_key => $notice_value) {
          <a href="<?php echo site_url('user/notification') ?>"><?php echo $notice_value->title; ?></a>
       </div>
       <?php
+	}
+	?>
+	      <?php
+$guardian_whatsapp_phone = preg_replace('/[^0-9]/', '', (string) ($student['guardian_phone'] ?? ''));
+if (!empty($sch_setting->guardian_phone) && $guardian_whatsapp_phone === '') {
+    ?>
+	      <div class="alert alert-warning" role="alert">
+	         Please update the guardian WhatsApp phone number so the school can reach the parent/guardian quickly.
+	         <a href="<?php echo site_url('user/user/edit'); ?>" class="alert-link">Update profile</a>
+	      </div>
+	      <?php
 }
 ?>
-      <div class="row">
+	      <div class="row">
          <div class="col-md-3">
             <div class="box box-primary">
                <div class="box-body box-profile">

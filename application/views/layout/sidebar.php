@@ -1490,7 +1490,7 @@ online_course_offline_payment', 'can_view')) ||
                                 <li class="<?php echo set_Submenu('language/index'); ?>"><a href="<?php echo base_url(); ?>admin/language"><i class="fa fa-angle-double-right"></i> <?php echo $this->lang->line('languages'); ?></a></li>
                             <?php
                             }
-                            if ($this->rbac->hasPrivilege('user_status')) {
+                            if ($this->rbac->hasPrivilege('user_status') || $this->rbac->hasPrivilege('whatsapp_messaging', 'can_view')) {
                             ?>
                                 <li class="<?php echo set_Submenu('users/index'); ?>"><a href="<?php echo base_url(); ?>admin/users"><i class="fa fa-angle-double-right"></i> <?php echo $this->lang->line('users'); ?></a></li>
                             <?php

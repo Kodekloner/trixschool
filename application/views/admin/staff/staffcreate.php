@@ -179,6 +179,7 @@
                                                 <div class="form-group">
                                                     <label for="exampleInputEmail1"><?php echo $this->lang->line('phone'); ?></label>
                                                     <input id="mobileno" name="contactno" placeholder="" type="text" class="form-control"  value="<?php echo set_value('contactno') ?>" />
+                                                    <span class="help-block" style="margin-bottom:0;">Use the staff WhatsApp number for school messaging.</span>
                                                     <span class="text-danger"><?php echo form_error('contactno'); ?></span>
                                                 </div>
                                             </div> 
@@ -534,4 +535,4 @@
 
 
 </script>
-<script type="text/javascript" src="<?php echo base_url(); ?>backend/dist/js/savemode.js"></script>    
+<script type="text/javascript" src="<?php echo base_url(); ?>backend/dist/js/savemode.js"></script>

@@ -374,16 +374,6 @@ class Site extends Public_Controller
         $notices            = $this->cms_program_model->getByCategory($notice_content, array('start' => 0, 'limit' => 5));
         $data['notice']     = $notices;
         $data['school']     = $school[0];
-        $whatsapp_number    = preg_replace('/[^0-9]/', '', (string) ($school[0]['whatsapp_support_number'] ?? ''));
-        $whatsapp_enabled   = !empty($school[0]['whatsapp_support_enabled']) && $whatsapp_number !== '';
-        $whatsapp_message   = trim((string) ($school[0]['whatsapp_support_message'] ?? ''));
-
-        if ($whatsapp_message === '') {
-            $whatsapp_message = 'Hello ' . $school[0]['name'] . ', I need help with the student/parent portal.';
-        }
-
-        $data['support_whatsapp_number'] = $whatsapp_number;
-        $data['support_whatsapp_url']    = $whatsapp_enabled ? ('https://wa.me/' . $whatsapp_number . '?text=' . rawurlencode($whatsapp_message)) : '';
         $is_captcha         = $this->captchalib->is_captcha('userlogin');
         $data["is_captcha"] = $is_captcha;
         if ($is_captcha) {

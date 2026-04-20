@@ -547,10 +547,11 @@ if (findSelected($inserted_fields, 'guardian_phone')  && ($sch_setting_detail->g
     ?>
                                                 <div class="col-md-6">
                                                     <div class="form-group">
-                                                        <label for="exampleInputEmail1"><?php echo $this->lang->line('guardian_phone'); ?></label><small class="req"> *</small>
-                                                        <input id="guardian_phone" name="guardian_phone" placeholder="" type="text" class="form-control"  value="<?php echo set_value('guardian_phone', $student['guardian_phone']); ?>" />
-                                                        <span class="text-danger"><?php echo form_error('guardian_phone'); ?></span>
-                                                    </div>
+	                                                        <label for="exampleInputEmail1"><?php echo $this->lang->line('guardian_phone'); ?></label><small class="req"> *</small>
+	                                                        <input id="guardian_phone" name="guardian_phone" placeholder="" type="text" class="form-control"  value="<?php echo set_value('guardian_phone', $student['guardian_phone']); ?>" />
+	                                                        <span class="help-block" style="margin-bottom:0;">Use your WhatsApp number so the school can reach you quickly.</span>
+	                                                        <span class="text-danger"><?php echo form_error('guardian_phone'); ?></span>
+	                                                    </div>
                                                 </div>
 
 <?php
