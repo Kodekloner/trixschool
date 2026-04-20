@@ -190,6 +190,7 @@
                                                     <label for="exampleInputEmail1"><?php echo $this->lang->line('phone'); ?></label>
                                                     <input id="mobileno" name="contactno" placeholder="" type="text" class="form-control"  value="<?php echo set_value('contactno', $staff["contact_no"]); ?>" />
                                                     <input id="editid" name="editid" placeholder="" type="hidden" class="form-control"  value="<?php echo $staff["id"]; ?>" />
+                                                    <span class="help-block" style="margin-bottom:0;">Use the staff WhatsApp number for school messaging.</span>
 
                                                     <span class="text-danger"><?php echo form_error('contactno'); ?></span>
                                                 </div>
@@ -781,4 +782,4 @@
 
     });
 </script>
-<script type="text/javascript" src="<?php echo base_url(); ?>backend/dist/js/savemode.js"></script>    
+<script type="text/javascript" src="<?php echo base_url(); ?>backend/dist/js/savemode.js"></script>

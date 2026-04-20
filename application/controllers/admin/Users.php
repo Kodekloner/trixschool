@@ -12,11 +12,15 @@ class Users extends Admin_Controller
         parent::__construct();
         $this->load->model("classteacher_model");
         $this->sch_setting_detail = $this->setting_model->getSetting();
+        $this->role_model->ensureWhatsappMessagingPermissionSetup();
     }
 
     public function index()
     {
-        if (!$this->rbac->hasPrivilege('superadmin', 'can_view')) {
+        $can_manage_users = $this->rbac->hasPrivilege('superadmin', 'can_view');
+        $can_message_whatsapp = $this->rbac->hasPrivilege('whatsapp_messaging', 'can_view');
+
+        if (!$can_manage_users && !$can_message_whatsapp) {
             access_denied();
         }
         $this->session->set_userdata('top_menu', 'System Settings');
@@ -28,6 +32,8 @@ class Users extends Admin_Controller
         $data['studentList'] = $studentList;
         $data['parentList']  = $parentList;
         $data['staffList']   = $staffList;
+        $data['can_manage_users'] = $can_manage_users;
+        $data['whatsapp_messaging_can_view'] = $can_message_whatsapp;
 
         $this->load->view('layout/header', $data);
         $this->load->view('admin/users/userList', $data);

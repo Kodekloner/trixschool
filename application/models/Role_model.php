@@ -260,11 +260,11 @@ class Role_model extends MY_Model {
         return $permission_category_id;
     }
 
-    public function ensureWhatsappSupportPermissionSetup() {
+    public function ensureWhatsappMessagingPermissionSetup() {
         $created_at = date('Y-m-d H:i:s');
 
         $permission_group = $this->db
-            ->where('short_code', 'system_settings')
+            ->where('short_code', 'communicate')
             ->get('permission_group')
             ->row_array();
 
@@ -272,27 +272,36 @@ class Role_model extends MY_Model {
             $permission_group_id = (int) $permission_group['id'];
         } else {
             $this->db->insert('permission_group', array(
-                'name'       => 'System Settings',
-                'short_code' => 'system_settings',
+                'name'       => 'Communicate',
+                'short_code' => 'communicate',
                 'is_active'  => 1,
-                'system'     => 1,
+                'system'     => 0,
                 'created_at' => $created_at,
             ));
             $permission_group_id = (int) $this->db->insert_id();
         }
 
         $permission_category = $this->db
+            ->where('short_code', 'whatsapp_messaging')
+            ->get('permission_category')
+            ->row_array();
+
+        $legacy_permission_category = $this->db
             ->where('short_code', 'whatsapp_support_setting')
             ->get('permission_category')
             ->row_array();
 
+        if (empty($permission_category['id']) && !empty($legacy_permission_category['id'])) {
+            $permission_category = $legacy_permission_category;
+        }
+
         $permission_data = array(
             'perm_group_id' => $permission_group_id,
-            'name'          => 'WhatsApp Support Setting',
-            'short_code'    => 'whatsapp_support_setting',
+            'name'          => 'WhatsApp Messaging',
+            'short_code'    => 'whatsapp_messaging',
             'enable_view'   => 1,
             'enable_add'    => 0,
-            'enable_edit'   => 1,
+            'enable_edit'   => 0,
             'enable_delete' => 0,
         );
 
@@ -306,6 +315,15 @@ class Role_model extends MY_Model {
             $permission_category_id = (int) $this->db->insert_id();
         }
 
+        if (!empty($legacy_permission_category['id']) && (int) $legacy_permission_category['id'] !== $permission_category_id) {
+            $this->db
+                ->where('perm_cat_id', (int) $legacy_permission_category['id'])
+                ->delete('roles_permissions');
+            $this->db
+                ->where('id', (int) $legacy_permission_category['id'])
+                ->delete('permission_category');
+        }
+
         if ($permission_category_id <= 0) {
             return 0;
         }
@@ -313,7 +331,7 @@ class Role_model extends MY_Model {
         $default_roles = $this->db
             ->select('id')
             ->from('roles')
-            ->where_in('name', array('Admin', 'Super Admin'))
+            ->where_in('name', array('Admin', 'Super Admin', 'Head Teacher'))
             ->get()
             ->result_array();
 
@@ -345,7 +363,7 @@ class Role_model extends MY_Model {
                     ->update('roles_permissions', array(
                         'can_view'   => 1,
                         'can_add'    => 0,
-                        'can_edit'   => 1,
+                        'can_edit'   => 0,
                         'can_delete' => 0,
                     ));
                 continue;
@@ -356,7 +374,7 @@ class Role_model extends MY_Model {
                 'perm_cat_id' => $permission_category_id,
                 'can_view'    => 1,
                 'can_add'     => 0,
-                'can_edit'    => 1,
+                'can_edit'    => 0,
                 'can_delete'  => 0,
                 'created_at'  => $created_at,
             );

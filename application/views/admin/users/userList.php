@@ -2,6 +2,41 @@
     
     .table .pull-right {text-align: initial; width: auto; float: right !important;}
 </style>
+<?php
+$can_manage_users = !empty($can_manage_users);
+$whatsapp_messaging_can_view = !empty($whatsapp_messaging_can_view);
+$school_name = isset($sch_setting->name) ? $sch_setting->name : '';
+
+$format_whatsapp_number = function ($phone) {
+    $digits = preg_replace('/[^0-9]/', '', (string) $phone);
+
+    if (strlen($digits) === 11 && substr($digits, 0, 1) === '0') {
+        $digits = '234' . substr($digits, 1);
+    }
+
+    return $digits;
+};
+
+$render_whatsapp_button = function ($phone, $person_name, $person_type) use ($whatsapp_messaging_can_view, $format_whatsapp_number, $school_name) {
+    if (!$whatsapp_messaging_can_view) {
+        return '';
+    }
+
+    $number = $format_whatsapp_number($phone);
+    if ($number === '' || strlen($number) < 8) {
+        return ' <span class="label label-warning">WhatsApp phone needed</span>';
+    }
+
+    $message = 'Hello ' . trim((string) $person_name) . ', this is ' . $school_name . '.';
+    if ($person_type === 'parent') {
+        $message .= ' We are contacting you about your child from the school.';
+    }
+
+    $url = 'https://wa.me/' . $number . '?text=' . rawurlencode($message);
+
+    return ' <a class="btn btn-xs btn-success" href="' . html_escape($url) . '" target="_blank" rel="noopener" title="Message on WhatsApp"><i class="fa fa-whatsapp"></i> WhatsApp</a>';
+};
+?>
 
 <div class="content-wrapper">  
     <section class="content-header">
@@ -39,7 +74,9 @@
                                         <th><?php echo $this->lang->line('class'); ?></th>
                                         <th><?php echo $this->lang->line('father_name'); ?></th>
                                         <th><?php echo $this->lang->line('mobile_no'); ?></th>
+                                        <?php if ($can_manage_users) { ?>
                                         <th class="text-right"><?php echo $this->lang->line('action'); ?></th>
+                                        <?php } ?>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -58,12 +95,14 @@
                                                 <td><?php echo $student['class'] . "(" . $student['section'] . ")" ?></td>
                                                 <td><?php echo $student['father_name']; ?></td>
                                                 <td><?php echo $student['mobileno']; ?></td>
+                                                <?php if ($can_manage_users) { ?>
                                                 <td class="relative">
                                                     <div class="material-switch pull-right">
                                                         <input id="student<?php echo $student['user_tbl_id'] ?>" name="someSwitchOption001" type="checkbox" data-role="student" class="chk" data-rowid="<?php echo $student['user_tbl_id'] ?>" value="checked" <?php if ($student['user_tbl_active'] == "yes") echo "checked='checked'"; ?> />
                                                         <label for="student<?php echo $student['user_tbl_id'] ?>" class="label-success"></label>
                                                     </div>
                                                 </td>
+                                                <?php } ?>
                                             </tr>
                                             <?php
                                             $count++;
@@ -82,7 +121,9 @@
                                         <th><?php echo $this->lang->line('guardian_name'); ?></th>
                                         <th><?php echo $this->lang->line('guardian_phone'); ?></th>
                                         <th><?php echo $this->lang->line('username'); ?></th>
+                                        <?php if ($can_manage_users) { ?>
                                         <th class="text-right"><?php echo $this->lang->line('action'); ?></th>
+                                        <?php } ?>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -93,9 +134,10 @@
                                         foreach ($parentList as $parent) {
                                             ?>
                                             <tr>
-                                                <td><?php echo $parent->guardian_name; ?></td>
-                                                <td><?php echo $parent->guardian_phone; ?></td>
+                                                <td><?php echo html_escape($parent->guardian_name); ?></td>
+                                                <td><?php echo html_escape($parent->guardian_phone); ?><?php echo $render_whatsapp_button($parent->guardian_phone, $parent->guardian_name, 'parent'); ?></td>
                                                 <td><?php echo $parent->username; ?></td>
+                                                <?php if ($can_manage_users) { ?>
                                                 <td class="relative">
                                                     <div class="material-switch pull-right">
                                                         <input id="parent<?php echo $parent->id ?>" name="someSwitchOption001" type="checkbox" class="chk" data-rowid="<?php echo $parent->parent_id ?>" data-role="parent" value="checked" <?php if ($parent->is_active == "yes") echo "checked='checked'"; ?> />
@@ -103,6 +145,7 @@
                                                     </div>
 
                                                 </td>
+                                                <?php } ?>
                                             </tr>    
 
                                             <?php
@@ -127,8 +170,10 @@
                                         <th><?php echo $this->lang->line('designation'); ?></th>
                                         <th><?php echo $this->lang->line('department'); ?></th>
                                         <th><?php echo $this->lang->line('phone'); ?></th>
+                                        <?php if ($can_manage_users) { ?>
                                         <th class="text-right"><?php echo $this->lang->line('action'); ?>
                                         </th>
+                                        <?php } ?>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -144,13 +189,15 @@
                                                 <td class="mailbox-name"> <?php echo $staff['role'] ?></td>
                                                 <td class="mailbox-name"> <?php echo $staff['designation'] ?></td>
                                                 <td class="mailbox-name"> <?php echo $staff['department'] ?></td>
-                                                <td class="mailbox-name"> <?php echo $staff['contact_no'] ?></td>
+                                                <td class="mailbox-name"> <?php echo html_escape($staff['contact_no']) ?><?php echo $render_whatsapp_button($staff['contact_no'], $staff['name'], 'staff'); ?></td>
+                                                <?php if ($can_manage_users) { ?>
                                                 <td class="relative">
                                                     <div class="material-switch pull-right">
                                                         <input id="staff<?php echo $staff['id'] ?>" name="someSwitchOption001" type="checkbox" class="chk" data-rowid="<?php echo $staff['id'] ?>" data-role="staff" value="checked" <?php if ($staff['is_active'] == 1) echo "checked='checked'"; ?> />
                                                         <label for="staff<?php echo $staff['id'] ?>" class="label-success"></label>
                                                     </div>
                                                 </td>
+                                                <?php } ?>
                                             </tr>
                                             <?php
                                         }
