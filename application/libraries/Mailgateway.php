@@ -45,8 +45,10 @@ class Mailgateway {
         $msg = $this->getLoginCredentialContent($sender_details['credential_for'], $sender_details, $template);
         $send_to = $sender_details['email'];
         if (!empty($this->_CI->mail_config) && $send_to != "") {
-            $this->_CI->mailer->send_mail($send_to, $subject, $msg);
+            return $this->_CI->mailer->send_mail($send_to, $subject, $msg);
         }
+
+        return false;
     }
 
     public function sentAddFeeMail($detail, $template, $subject) {

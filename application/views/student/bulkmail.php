@@ -57,6 +57,9 @@
                                     <?php
                                     if (isset($resultlist)) {
                                         ?> 
+                                    <input type="hidden" name="bulk_action" id="bulk_action" value="selected">
+                                    <input type="hidden" name="class_id" value="<?php echo isset($class_id) ? $class_id : set_value('class_id'); ?>">
+                                    <input type="hidden" name="section_id" value="<?php echo isset($section_id) ? $section_id : set_value('section_id'); ?>">
 									<div class="row">
 										<div class="col-md-12 col-sm-12">
 											<div class="col-sm-2">
@@ -172,7 +175,11 @@
                                             <?php
                                             if (!empty($resultlist)) {
                                                 ?>                              
-                                                <button type="submit" class="btn btn-primary pull-right btn-sm mt10" id="load" data-loading-text="<i class='fa fa-spinner fa-spin '></i> Please wait..."> <?php echo $this->lang->line('send') ?></button>
+                                                <button type="submit" class="btn btn-primary pull-right btn-sm mt10 bulk-action-btn" data-action="selected" id="load" data-loading-text="<i class='fa fa-spinner fa-spin '></i> Please wait..."> <?php echo $this->lang->line('send') ?></button>
+                                                <?php if ($this->rbac->hasPrivilege('whatsapp_messaging', 'can_view')) { ?>
+                                                    <button type="submit" class="btn btn-success pull-right btn-sm mt10 bulk-action-btn" data-action="all_parent_whatsapp" data-loading-text="<i class='fa fa-spinner fa-spin '></i> Please wait..." style="margin-right:5px;"><i class="fa fa-whatsapp"></i> Send Parent WhatsApp To All</button>
+                                                <?php } ?>
+                                                <button type="submit" class="btn btn-info pull-right btn-sm mt10 bulk-action-btn" data-action="all_parent_email" data-loading-text="<i class='fa fa-spinner fa-spin '></i> Please wait..." style="margin-right:5px;"><i class="fa fa-envelope"></i> Send Parent Emails To All</button>
                                                 <?php
                                             }
                                             ?>
@@ -241,11 +248,16 @@
     });
 </script>
 <script type="text/javascript">
+    $(".bulk-action-btn").click(function () {
+        $("#bulk_action").val($(this).data("action"));
+    });
+
     $("#bulkmail").submit(function (e) {
         e.preventDefault(); // avoid to execute the actual submit of the form.
         var checkCount = $("input[name='student[]']:checked").length;
+        var bulkAction = $("#bulk_action").val() || "selected";
 
-        if (checkCount == 0)
+        if (bulkAction == "selected" && checkCount == 0)
         {
             alert("<?php echo $this->lang->line('atleast_one_student_should_be_select'); ?>");
 
@@ -254,7 +266,11 @@
 
                 var form = $(this);
                 var url = form.attr('action');
-                var submit_button = form.find(':submit');
+                var submit_button = $(document.activeElement);
+
+                if (!submit_button.is(':submit')) {
+                    submit_button = form.find(':submit').first();
+                }
 
                 $.ajax({
                     type: "POST",
@@ -290,6 +306,7 @@
                     },
                     complete: function () {
                         submit_button.button('reset');
+                        $("#bulk_action").val("selected");
                     }
                 });
             

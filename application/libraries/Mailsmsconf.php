@@ -11,10 +11,33 @@ class Mailsmsconf {
         $this->CI->config->load("mailsms");
         $this->CI->load->library('smsgateway');
         $this->CI->load->library('mailgateway');
+        $this->CI->load->library('whatsappgateway');
         $this->CI->load->model('examresult_model');
         $this->CI->load->model('student_model');
         $this->config_mailsms = $this->CI->config->item('mailsms');
         $this->sch_setting = $this->CI->setting_model->getSetting();
+    }
+
+    private function requestedChannels($sender_details) {
+        if (empty($sender_details['send_channels'])) {
+            return array();
+        }
+
+        $channels = $sender_details['send_channels'];
+
+        if (!is_array($channels)) {
+            $channels = explode(',', $channels);
+        }
+
+        return array_filter(array_map('strtolower', array_map('trim', $channels)));
+    }
+
+    private function shouldSendChannel($channel, $default_enabled, $requested_channels) {
+        if (!empty($requested_channels)) {
+            return in_array($channel, $requested_channels, true);
+        }
+
+        return (bool) $default_enabled;
     }
  
     public function mailsms($send_for, $sender_details, $date = null, $exam_schedule_array = null) {
@@ -39,13 +62,23 @@ class Mailsmsconf {
                 $this->sendResult($chk_mail_sms, $sender_details, $chk_mail_sms['template'], $chk_mail_sms['subject'],$chk_mail_sms['template_id']);
             } elseif ($send_for == "login_credential") {
 
-                if ($chk_mail_sms['mail'] && $chk_mail_sms['template'] != "") {
+                $requested_channels = $this->requestedChannels($sender_details);
+                $result             = array('mail' => false, 'sms' => false, 'whatsapp' => false);
 
-                    $this->CI->mailgateway->sendLoginCredential($chk_mail_sms, $sender_details, $chk_mail_sms['template'] , $chk_mail_sms['subject']);
+                if ($this->shouldSendChannel('mail', $chk_mail_sms['mail'], $requested_channels) && $chk_mail_sms['template'] != "") {
+                    $result['mail'] = $this->CI->mailgateway->sendLoginCredential($chk_mail_sms, $sender_details, $chk_mail_sms['template'] , $chk_mail_sms['subject']);
                 }
-                if ($chk_mail_sms['sms'] && $chk_mail_sms['template'] != "" && !empty($sms_detail)) {
-                    $this->CI->smsgateway->sendLoginCredential($chk_mail_sms, $sender_details, $chk_mail_sms['template'],$chk_mail_sms['template_id']);
+
+                if ($this->shouldSendChannel('sms', $chk_mail_sms['sms'], $requested_channels) && $chk_mail_sms['template'] != "" && !empty($sms_detail)) {
+                    $result['sms'] = $this->CI->smsgateway->sendLoginCredential($chk_mail_sms, $sender_details, $chk_mail_sms['template'],$chk_mail_sms['template_id']);
                 }
+
+                $send_whatsapp = $this->shouldSendChannel('whatsapp', $this->CI->whatsappgateway->shouldAutoSendLoginCredential($sender_details), $requested_channels);
+                if ($send_whatsapp) {
+                    $result['whatsapp'] = $this->CI->whatsappgateway->sendLoginCredential($sender_details, $chk_mail_sms['template']);
+                }
+
+                return $result;
             } elseif ($send_for == "fee_submission") {
 
                 if ($chk_mail_sms['mail'] && $chk_mail_sms['template'] != "") {

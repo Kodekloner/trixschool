@@ -2388,6 +2388,7 @@ class Student extends Admin_Controller
             } else {
                 $data['class_id']   = $this->input->post('class_id');
                 $data['section_id'] = $this->input->post('section_id');
+                $section            = ($section === '') ? null : $section;
                 $resultlist         = $this->student_model->searchByClassSection($class, $section);
                 $data['resultlist'] = $resultlist;
             }
@@ -2403,45 +2404,162 @@ class Student extends Admin_Controller
      */
     public function sendbulkmail()
     {
+        $bulk_action        = $this->input->post('bulk_action');
+        $bulk_action        = empty($bulk_action) ? 'selected' : $bulk_action;
+        $all_parent_actions = array('all_parent_email', 'all_parent_whatsapp', 'all_parent_email_whatsapp');
+        $is_all_parent_send = in_array($bulk_action, $all_parent_actions, true);
 
-        $this->form_validation->set_rules('student[]', $this->lang->line('student'), 'trim|required|xss_clean');
-        $this->form_validation->set_rules('message_to', $this->lang->line('message_to'), 'trim|required|xss_clean');
-        $this->form_validation->set_rules('notification_type', $this->lang->line('notification_type'), 'trim|required|xss_clean');
+        if ($is_all_parent_send) {
+            $this->form_validation->set_rules('class_id', $this->lang->line('class'), 'trim|required|xss_clean');
+        } else {
+            $this->form_validation->set_rules('student[]', $this->lang->line('student'), 'trim|required|xss_clean');
+            $this->form_validation->set_rules('message_to', $this->lang->line('message_to'), 'trim|required|xss_clean');
+            $this->form_validation->set_rules('notification_type', $this->lang->line('notification_type'), 'trim|required|xss_clean');
+        }
 
         if ($this->form_validation->run() == false) {
             $msg = array(
+                'class_id'          => form_error('class_id'),
                 'student[]'         => form_error('student[]'),
                 'message_to'        => form_error('message_to'),
                 'notification_type' => form_error('notification_type'),
             );
             $array = array('status' => 0, 'error' => $msg, 'message' => '');
         } else {
-            $students          = $this->input->post('student');
+            if (($bulk_action == 'all_parent_whatsapp' || $bulk_action == 'all_parent_email_whatsapp') && !$this->rbac->hasPrivilege('whatsapp_messaging', 'can_view')) {
+                echo json_encode(array('status' => 0, 'error' => array('permission' => 'You do not have permission to send WhatsApp messages.'), 'message' => ''));
+                return;
+            }
+
+            $students          = array();
             $message_to        = $this->input->post('message_to');
             $notification_type = $this->input->post('notification_type');
+
+            if ($is_all_parent_send) {
+                $class_id   = $this->input->post('class_id');
+                $section_id = $this->input->post('section_id');
+                $section_id = ($section_id === '') ? null : $section_id;
+                $resultlist = $this->student_model->searchByClassSection($class_id, $section_id);
+
+                if (!empty($resultlist)) {
+                    foreach ($resultlist as $student) {
+                        $students[] = $student['id'];
+                    }
+                }
+
+                $message_to        = 2;
+                $notification_type = 2;
+            } else {
+                $students = $this->input->post('student');
+            }
+
+            $summary = array(
+                'total_students'       => count($students),
+                'mail_sent'            => 0,
+                'mail_failed'          => 0,
+                'whatsapp_sent'        => 0,
+                'whatsapp_failed'      => 0,
+                'skipped_no_email'     => 0,
+                'skipped_no_phone'     => 0,
+                'skipped_no_credential' => 0,
+                'skipped_duplicate'    => 0,
+            );
+            $processed_parent = array();
 
             foreach ($students as $students_value) {
 
                 $student_detail = $this->user_model->student_information($students_value);
-                $parent_detail  = $this->user_model->read_single_child($students_value);
+                $parent_detail  = $this->user_model->getParentLoginDetails($students_value);
 
-                if ($message_to = 1 || $message_to = 3) {
+                if (empty($student_detail)) {
+                    $summary['skipped_no_credential']++;
+                    continue;
+                }
+
+                if (($notification_type == 2 || $notification_type == 3) && ($message_to == 1 || $message_to == 3) && !$is_all_parent_send) {
                     $student_login_detail = array('id' => $students_value, 'credential_for' => 'student', 'username' => $student_detail[0]->username, 'password' => $student_detail[0]->password, 'contact_no' => $student_detail[0]->mobileno, 'email' => $student_detail[0]->email);
                     $this->mailsmsconf->mailsms('login_credential', $student_login_detail);
                 }
 
-                if ($notification_type = 1 || $notification_type = 3) {
+                if (($notification_type == 1 || $notification_type == 3) && !$is_all_parent_send) {
                     $sender_details = array('student_id' => $students_value, 'contact_no' => $student_detail[0]->guardian_phone, 'email' => $student_detail[0]->guardian_email);
                     $this->mailsmsconf->mailsms('student_admission', $sender_details);
                 }
 
-                if ($message_to = 2 || $message_to = 3) {
-                    $parent_login_detail = array('id' => $students_value, 'credential_for' => 'parent', 'username' => $parent_detail->username, 'password' => $parent_detail->password, 'contact_no' => $student_detail[0]->guardian_phone, 'email' => $student_detail[0]->guardian_email);
-                    $this->mailsmsconf->mailsms('login_credential', $parent_login_detail);
+                if (($notification_type == 2 || $notification_type == 3) && ($message_to == 2 || $message_to == 3)) {
+                    if (empty($parent_detail) || empty($parent_detail['username']) || empty($parent_detail['password'])) {
+                        $summary['skipped_no_credential']++;
+                        continue;
+                    }
+
+                    if ($is_all_parent_send) {
+                        $parent_key = !empty($parent_detail['id']) ? 'parent_' . $parent_detail['id'] : 'email_' . $student_detail[0]->guardian_email;
+
+                        if (isset($processed_parent[$parent_key])) {
+                            $summary['skipped_duplicate']++;
+                            continue;
+                        }
+
+                        $processed_parent[$parent_key] = true;
+                    }
+
+                    $send_channels = array();
+
+                    if ($bulk_action == 'all_parent_email' || $bulk_action == 'all_parent_email_whatsapp') {
+                        $send_channels[] = 'mail';
+                    }
+
+                    if ($bulk_action == 'all_parent_whatsapp' || $bulk_action == 'all_parent_email_whatsapp') {
+                        $send_channels[] = 'whatsapp';
+                    }
+
+                    $parent_login_detail = array(
+                        'id'             => $students_value,
+                        'credential_for' => 'parent',
+                        'username'       => $parent_detail['username'],
+                        'password'       => $parent_detail['password'],
+                        'contact_no'     => $student_detail[0]->guardian_phone,
+                        'email'          => $student_detail[0]->guardian_email,
+                    );
+
+                    if (!empty($send_channels)) {
+                        $parent_login_detail['send_channels'] = $send_channels;
+                    }
+
+                    $mail_requested     = in_array('mail', $send_channels, true);
+                    $whatsapp_requested = in_array('whatsapp', $send_channels, true);
+
+                    if ($mail_requested && empty($parent_login_detail['email'])) {
+                        $summary['skipped_no_email']++;
+                    }
+
+                    if ($whatsapp_requested && empty($parent_login_detail['contact_no'])) {
+                        $summary['skipped_no_phone']++;
+                    }
+
+                    $send_result = $this->mailsmsconf->mailsms('login_credential', $parent_login_detail);
+
+                    if (!empty($send_result['mail'])) {
+                        $summary['mail_sent']++;
+                    } elseif ($mail_requested && !empty($parent_login_detail['email'])) {
+                        $summary['mail_failed']++;
+                    }
+
+                    if (!empty($send_result['whatsapp'])) {
+                        $summary['whatsapp_sent']++;
+                    } elseif ($whatsapp_requested && !empty($parent_login_detail['contact_no'])) {
+                        $summary['whatsapp_failed']++;
+                    }
                 }
             }
 
-            $array = array('status' => 1, 'error' => '', 'message' => $this->lang->line('delete_message'));
+            if ($is_all_parent_send) {
+                $message = 'Parent credential sending completed. Email sent: ' . $summary['mail_sent'] . '. Email failed: ' . $summary['mail_failed'] . '. WhatsApp sent: ' . $summary['whatsapp_sent'] . '. WhatsApp failed: ' . $summary['whatsapp_failed'] . '. Missing email: ' . $summary['skipped_no_email'] . '. Missing phone: ' . $summary['skipped_no_phone'] . '. Missing credentials: ' . $summary['skipped_no_credential'] . '. Duplicates skipped: ' . $summary['skipped_duplicate'] . '.';
+            } else {
+                $message = $this->lang->line('delete_message');
+            }
+
+            $array = array('status' => 1, 'error' => '', 'message' => $message, 'summary' => $summary);
         }
         echo json_encode($array);
     }
