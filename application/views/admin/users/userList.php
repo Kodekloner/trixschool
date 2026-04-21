@@ -6,6 +6,7 @@
 $can_manage_users = !empty($can_manage_users);
 $whatsapp_messaging_can_view = !empty($whatsapp_messaging_can_view);
 $school_name = isset($sch_setting->name) ? $sch_setting->name : '';
+$show_parent_tab = !empty($parentList) || !empty($sch_setting->guardian_name) || $whatsapp_messaging_can_view;
 
 $format_whatsapp_number = function ($phone) {
     $digits = preg_replace('/[^0-9]/', '', (string) $phone);
@@ -53,9 +54,9 @@ $render_whatsapp_button = function ($phone, $person_name, $person_type) use ($wh
                     <ul class="nav nav-tabs pull-right">
 
                         <li><a href="#tab_staff" data-toggle="tab"><?php echo $this->lang->line('staff') ?></a></li>
-                        <?php if($sch_setting->guardian_name){ ?>
-<li><a href="#tab_parent" data-toggle="tab"><?php echo $this->lang->line('parent') ?></a></li>
-                      <?php  }?>
+                        <?php if ($show_parent_tab) { ?>
+                        <li><a href="#tab_parent" data-toggle="tab"><?php echo $this->lang->line('parent') ?></a></li>
+                        <?php } ?>
                                                 
                         <li class="active"><a href="#tab_students" data-toggle="tab"><?php echo $this->lang->line('student') ?></a></li>
 

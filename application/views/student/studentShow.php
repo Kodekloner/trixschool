@@ -256,15 +256,27 @@ if ($this->rbac->hasPrivilege('student_timeline', 'can_add')) {
                         <?php if ($student["is_active"] == "yes") {
     ?>
                             <?php
-if ($this->rbac->hasPrivilege('disable_student', 'can_view')) {
+$can_disable_student              = $this->rbac->hasPrivilege('disable_student', 'can_view');
+$can_send_whatsapp_credentials    = $this->rbac->hasPrivilege('whatsapp_messaging', 'can_view');
+if ($can_disable_student || $can_send_whatsapp_credentials) {
         ?>
                                 <li class="pull-right dropdown">
                                     <a href="#" class="dropdown-toggle" type="button" data-toggle="dropdown"><i class="fa fa-ellipsis-v"></i></a>
                                     <ul class="dropdown-menu">
+                                        <?php if ($can_disable_student) {?>
                                         <li><a style="cursor: pointer;" onclick="send_password()"><?php echo $this->lang->line('send_student_password'); ?></a></li>
                                         <li><a style="cursor: pointer;" onclick="send_parent_password()"> <?php echo $this->lang->line('send_parent_password'); ?></a></li>
+                                        <?php }?>
+                                        <?php if ($can_send_whatsapp_credentials) {?>
+                                        <li><a style="cursor: pointer;" onclick="send_parent_password_whatsapp()"><i class="fa fa-whatsapp"></i> Send Parent Password via WhatsApp</a></li>
+                                        <?php }?>
                                     </ul>
                                 </li>
+                                <?php
+}
+
+    if ($can_disable_student) {
+        ?>
 
                                 <li class="pull-right">
                                     <a style="cursor: pointer;" onclick="disable_student('<?php echo $student["id"] ?>')"  class="text-red" data-toggle="tooltip" data-placement="bottom" title="<?php echo $this->lang->line("disable"); ?>">
@@ -2309,6 +2321,59 @@ foreach ($reason as $value) {
         });
     }
 
+    function format_whatsapp_phone(phone) {
+        var number = (phone || '').replace(/\D/g, '');
+
+        if (number.length === 11 && number.charAt(0) === '0') {
+            number = '234' + number.substr(1);
+        }
+
+        return number;
+    }
+
+    function send_parent_password_whatsapp(username, password) {
+        var base_url = <?php echo json_encode(base_url()); ?>;
+        var school_name = <?php echo json_encode(isset($sch_setting->name) ? $sch_setting->name : 'School'); ?>;
+        var student_name = <?php echo json_encode($this->customlib->getFullName($student["firstname"], $student["middlename"], $student["lastname"], $sch_setting->middlename, $sch_setting->lastname)); ?>;
+        var default_username = <?php echo json_encode(isset($guardian_credential['username']) ? $guardian_credential['username'] : ''); ?>;
+        var default_password = <?php echo json_encode(isset($guardian_credential['password']) ? $guardian_credential['password'] : ''); ?>;
+        var contact_no = <?php echo json_encode(isset($student['guardian_phone']) ? $student['guardian_phone'] : ''); ?>;
+        var whatsapp_number = format_whatsapp_phone(contact_no);
+
+        username = typeof username === 'undefined' ? default_username : username;
+        password = typeof password === 'undefined' ? default_password : password;
+
+        if (!username || !password) {
+            errorMsg('Parent login credentials are not available.');
+            return;
+        }
+
+        if (!whatsapp_number) {
+            errorMsg('Guardian WhatsApp phone number is missing.');
+            return;
+        }
+
+        var message = 'Hello Parent/Guardian,\n\n'
+            + 'Your login details for ' + school_name + ' portal are:\n'
+            + 'Student: ' + student_name + '\n'
+            + 'Username: ' + username + '\n'
+            + 'Password: ' + password + '\n\n'
+            + 'Login: ' + base_url + 'site/userlogin\n\n'
+            + 'Please change your password after login.';
+        var whatsapp_url = 'https://wa.me/' + whatsapp_number + '?text=' + encodeURIComponent(message);
+        var whatsapp_window = window.open(whatsapp_url, '_blank');
+
+        if (whatsapp_window) {
+            whatsapp_window.opener = null;
+        } else {
+            window.location.href = whatsapp_url;
+        }
+    }
+
+    function html_escape(value) {
+        return $('<div/>').text(value || '').html();
+    }
+
 
     $(document).on('click', '.schedule_modal', function () {
         $('.modal-title_logindetail').html("");
@@ -2316,6 +2381,7 @@ foreach ($reason as $value) {
         var base_url = '<?php echo base_url() ?>';
         var student_id = '<?php echo $student["id"] ?>';
         var student_name = '<?php echo $this->customlib->getFullName($student["firstname"], $student["middlename"], $student["lastname"], $sch_setting->middlename, $sch_setting->lastname); ?>';
+        var can_send_whatsapp_credentials = <?php echo $this->rbac->hasPrivilege('whatsapp_messaging', 'can_view') ? 'true' : 'false'; ?>;
 
         $.ajax({
             type: "post",
@@ -2333,16 +2399,24 @@ foreach ($reason as $value) {
                 data += '<th>' + "<?php echo $this->lang->line('user_type'); ?>" + '</th>';
                 data += '<th class="text text-center">' + "<?php echo $this->lang->line('username'); ?>" + '</th>';
                 data += '<th class="text text-center">' + "<?php echo $this->lang->line('password'); ?>" + '</th>';
+                data += '<th class="text text-center">Action</th>';
                 data += '</tr>';
                 data += '</thead>';
                 data += '<tbody>';
                 $.each(response, function (i, obj)
                 {
+                    var role = (obj.role || '').toLowerCase();
+
                     data += '<tr>';
                     data += '<td><b>' + firstToUpperCase(obj.role) + '</b></td>';
                     data += '<input type=hidden name=userid id=userid value=' + obj.id + '>';
                     data += '<td class="text text-center">' + obj.username + '</td> ';
                     data += '<td class="text text-center">' + obj.password + '</td> ';
+                    data += '<td class="text text-center">';
+                    if (can_send_whatsapp_credentials && (role === 'parent' || role === 'guardian')) {
+                        data += '<button type="button" class="btn btn-xs btn-success sendParentCredentialWhatsapp" data-username="' + html_escape(obj.username) + '" data-password="' + html_escape(obj.password) + '"><i class="fa fa-whatsapp"></i> WhatsApp</button>';
+                    }
+                    data += '</td>';
                     data += '</tr>';
                 });
                 data += '</tbody>';
@@ -2354,6 +2428,10 @@ foreach ($reason as $value) {
                 $("#scheduleModal").modal('show');
             }
         });
+    });
+
+    $(document).on('click', '.sendParentCredentialWhatsapp', function () {
+        send_parent_password_whatsapp($(this).data('username'), $(this).data('password'));
     });
 
     function firstToUpperCase(str) {
