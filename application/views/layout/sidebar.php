@@ -772,7 +772,7 @@
                 if (($this->rbac->hasPrivilege('notice_board', 'can_view') ||
                     $this->rbac->hasPrivilege('email', 'can_view') ||
                     $this->rbac->hasPrivilege('sms', 'can_view') ||
-                    $this->rbac->hasPrivilege('whatsapp_setting', 'can_view') ||
+                    $this->rbac->hasPrivilege('whatsapp_messaging', 'can_view') ||
                     $this->rbac->hasPrivilege('email_sms_log', 'can_view'))) {
                 ?>
                     <li class="treeview <?php echo set_Topmenu('Communicate'); ?>">
@@ -799,9 +799,9 @@
                                 <li class="<?php echo set_Submenu('mailsms/compose_sms'); ?>"><a href="<?php echo base_url(); ?>admin/mailsms/compose_sms"><i class="fa fa-angle-double-right"></i> <?php echo $this->lang->line('send') . " " . $this->lang->line('sms') ?></a></li>
                             <?php
                             }
-                            if ($this->rbac->hasPrivilege('whatsapp_setting', 'can_view')) {
+                            if ($this->rbac->hasPrivilege('whatsapp_messaging', 'can_view')) {
                             ?>
-                                <li class="<?php echo set_Submenu('admin/whatsappsettings'); ?>"><a href="<?php echo base_url(); ?>admin/whatsappsettings"><i class="fa fa-angle-double-right"></i> WhatsApp Settings</a></li>
+                                <li class="<?php echo set_Submenu('mailsms/compose_whatsapp'); ?>"><a href="<?php echo base_url(); ?>admin/mailsms/compose_whatsapp"><i class="fa fa-angle-double-right"></i> Send WhatsApp</a></li>
                             <?php
                             }
                             if ($this->rbac->hasPrivilege('email_sms_log', 'can_view')) {
@@ -1424,6 +1424,7 @@ online_course_offline_payment', 'can_view')) ||
                     $this->rbac->hasPrivilege('notification_setting', 'can_edit') ||
                     $this->rbac->hasPrivilege('sms_setting', 'can_edit') ||
                     $this->rbac->hasPrivilege('email_setting', 'can_edit') ||
+                    $this->rbac->hasPrivilege('whatsapp_setting', 'can_view') ||
                     $this->rbac->hasPrivilege('payment_methods', 'can_edit') ||
                     $this->rbac->hasPrivilege('languages', 'can_view') ||
                     $this->rbac->hasPrivilege('languages', 'can_add') ||
@@ -1461,6 +1462,11 @@ online_course_offline_payment', 'can_view')) ||
                             if ($this->rbac->hasPrivilege('email_setting', 'can_view')) {
                             ?>
                                 <li class="<?php echo set_Submenu('emailconfig/index'); ?>"><a href="<?php echo base_url(); ?>emailconfig"><i class="fa fa-angle-double-right"></i> <?php echo $this->lang->line('email_setting'); ?></a></li>
+                            <?php
+                            }
+                            if ($this->rbac->hasPrivilege('whatsapp_setting', 'can_view')) {
+                            ?>
+                                <li class="<?php echo set_Submenu('admin/whatsappsettings'); ?>"><a href="<?php echo base_url(); ?>admin/whatsappsettings"><i class="fa fa-angle-double-right"></i> WhatsApp Settings</a></li>
                             <?php
                             }
 

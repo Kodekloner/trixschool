@@ -65,6 +65,33 @@ class Whatsappgateway {
         return false;
     }
 
+    public function sendMessage($phone, $message, $title = '') {
+        if (!$this->isEnabled()) {
+            log_message('debug', 'WhatsApp gateway skipped: gateway is disabled.');
+            return false;
+        }
+
+        $send_to = $this->normalizePhone($phone);
+
+        if ($send_to === '') {
+            log_message('error', 'WhatsApp send failed: recipient phone number is empty.');
+            return false;
+        }
+
+        $provider = strtolower((string) $this->configValue('provider', 'meta_cloud'));
+
+        if ($provider === 'meta_cloud') {
+            return $this->sendMetaCloudText($send_to, $message);
+        }
+
+        if ($provider === 'custom_webhook') {
+            return $this->sendCustomWebhookMessage($send_to, $message, $title);
+        }
+
+        log_message('error', 'WhatsApp send failed: unsupported provider ' . $provider);
+        return false;
+    }
+
     private function prepareLoginCredentialDetails($sender_details) {
         $credential_for = isset($sender_details['credential_for']) ? $sender_details['credential_for'] : '';
         $school         = $this->_CI->setting_model->getSetting();
@@ -160,6 +187,61 @@ class Whatsappgateway {
             'to'         => $send_to,
             'message'    => $this->renderTemplate($sender_details, $template),
             'parameters' => $sender_details,
+        );
+
+        $headers = array('Content-Type: application/json');
+
+        if ($token !== '') {
+            $headers[] = 'Authorization: Bearer ' . $token;
+        }
+
+        return $this->postJson($url, $payload, $headers);
+    }
+
+    private function sendMetaCloudText($send_to, $message) {
+        $meta_config     = $this->configValue('meta_cloud', array());
+        $phone_number_id = isset($meta_config['phone_number_id']) ? trim($meta_config['phone_number_id']) : '';
+        $access_token    = isset($meta_config['access_token']) ? trim($meta_config['access_token']) : '';
+        $api_version     = isset($meta_config['graph_api_version']) ? trim($meta_config['graph_api_version']) : 'v20.0';
+
+        if ($phone_number_id === '' || $access_token === '') {
+            log_message('error', 'WhatsApp Meta Cloud send failed: phone number ID or access token is missing.');
+            return false;
+        }
+
+        $payload = array(
+            'messaging_product' => 'whatsapp',
+            'recipient_type'    => 'individual',
+            'to'                => $send_to,
+            'type'              => 'text',
+            'text'              => array(
+                'preview_url' => false,
+                'body'        => $message,
+            ),
+        );
+
+        $url = 'https://graph.facebook.com/' . $api_version . '/' . $phone_number_id . '/messages';
+
+        return $this->postJson($url, $payload, array(
+            'Authorization: Bearer ' . $access_token,
+            'Content-Type: application/json',
+        ));
+    }
+
+    private function sendCustomWebhookMessage($send_to, $message, $title = '') {
+        $webhook_config = $this->configValue('custom_webhook', array());
+        $url            = isset($webhook_config['url']) ? trim($webhook_config['url']) : '';
+        $token          = isset($webhook_config['bearer_token']) ? trim($webhook_config['bearer_token']) : '';
+
+        if ($url === '') {
+            log_message('error', 'WhatsApp custom webhook send failed: webhook URL is missing.');
+            return false;
+        }
+
+        $payload = array(
+            'to'      => $send_to,
+            'title'   => $title,
+            'message' => $message,
         );
 
         $headers = array('Content-Type: application/json');
