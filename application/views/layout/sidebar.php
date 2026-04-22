@@ -772,6 +772,7 @@
                 if (($this->rbac->hasPrivilege('notice_board', 'can_view') ||
                     $this->rbac->hasPrivilege('email', 'can_view') ||
                     $this->rbac->hasPrivilege('sms', 'can_view') ||
+                    $this->rbac->hasPrivilege('whatsapp_setting', 'can_view') ||
                     $this->rbac->hasPrivilege('email_sms_log', 'can_view'))) {
                 ?>
                     <li class="treeview <?php echo set_Topmenu('Communicate'); ?>">
@@ -796,6 +797,11 @@
                             if ($this->rbac->hasPrivilege('sms', 'can_view')) {
                             ?>
                                 <li class="<?php echo set_Submenu('mailsms/compose_sms'); ?>"><a href="<?php echo base_url(); ?>admin/mailsms/compose_sms"><i class="fa fa-angle-double-right"></i> <?php echo $this->lang->line('send') . " " . $this->lang->line('sms') ?></a></li>
+                            <?php
+                            }
+                            if ($this->rbac->hasPrivilege('whatsapp_setting', 'can_view')) {
+                            ?>
+                                <li class="<?php echo set_Submenu('admin/whatsappsettings'); ?>"><a href="<?php echo base_url(); ?>admin/whatsappsettings"><i class="fa fa-angle-double-right"></i> WhatsApp Settings</a></li>
                             <?php
                             }
                             if ($this->rbac->hasPrivilege('email_sms_log', 'can_view')) {

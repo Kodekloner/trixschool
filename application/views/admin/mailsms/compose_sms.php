@@ -1,3 +1,14 @@
+<?php
+$compose_notifications = isset($compose_notifications) ? $compose_notifications : array(
+    'custom' => array(
+        'label'     => 'Custom',
+        'subject'   => '',
+        'template'  => '',
+        'variables' => '',
+        'audience'  => array('student', 'parent', 'roles'),
+    ),
+);
+?>
 <link rel="stylesheet" href="<?php echo base_url(); ?>backend/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css">
 <script src="<?php echo base_url(); ?>backend/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.all.min.js"></script>
 <div class="content-wrapper">
@@ -28,6 +39,19 @@
                                 <div class="box-body">
                                     <div class="row">
                                         <div class="col-md-8">
+                                            <div class="form-group">
+                                                <label>SMS Template</label><small class="req"> *</small>
+                                                <select class="form-control" name="group_template_type" id="group_template_type">
+                                                    <?php foreach ($compose_notifications as $notification_key => $notification_value) { ?>
+                                                        <option value="<?php echo $notification_key; ?>"><?php echo $notification_value['label']; ?></option>
+                                                    <?php } ?>
+                                                </select>
+                                                <span class="help-block">Choose a notification template, or select Custom to write a new SMS/push message. Templates are copied here only and are still managed from Notification Setting.</span>
+                                            </div>
+                                            <div class="alert alert-info" id="notification_template_notice" style="display:none;">
+                                                <strong>Template copied from Notification Setting.</strong> You can edit this message before sending; it will not update the saved template.
+                                                <div id="notification_template_variables" class="mt5"></div>
+                                            </div>
                                             <div class="form-group">
                                                 <label><?php echo $this->lang->line('title'); ?></label> <small class="req">*</small>
                                                 <input autofocus="" class="form-control" name="group_title">
@@ -60,12 +84,12 @@
                                             <div class="form-group">
                                                 <label for="exampleInputEmail1"><?php echo $this->lang->line('message_to'); ?></label><small class="req"> *</small>
                                                 <div class="well minheight303">
-                                                    <div class="checkbox mt0">
+                                                    <div class="checkbox mt0 compose-audience compose-audience-student">
                                                         <label><input type="checkbox" name="user[]" value="student"> <b><?php echo $this->lang->line('students'); ?></b> </label>
                                                     </div>
                                                     <?php if($sch_setting->guardian_name){
                                                         ?>
-                                                         <div class="checkbox">
+                                                         <div class="checkbox compose-audience compose-audience-parent">
                                                         <label><input type="checkbox" name="user[]" value="parent"> <b><?php echo $this->lang->line('guardians'); ?></b></label>
                                                     </div>
                                                         <?php
@@ -75,7 +99,7 @@
                                                     foreach ($roles as $role_key => $role_value) {
                                                         ?>
 
-                                                        <div class="checkbox">
+                                                        <div class="checkbox compose-audience compose-audience-role">
                                                             <label><input type="checkbox" name="user[]" value="<?php echo $role_value['id']; ?>"> <b><?php echo $role_value['name']; ?></b></label>
                                                         </div>
 
@@ -782,6 +806,9 @@
                     errorMsg(message);
                 } else {
                     $('#group_form')[0].reset();
+                    $('#group_template_type').val('custom');
+                    lastGroupTemplateType = 'custom';
+                    applyGroupNotificationTemplate(false);
 
                     successMsg(data.msg);
                 }
@@ -793,6 +820,70 @@
             }
         })
 
+    });
+
+    var composeNotifications = <?php echo json_encode($compose_notifications, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+    var lastGroupTemplateType = 'custom';
+
+    function updateGroupSmsCounter() {
+        var message = $('#group_msg_text').val() || '';
+        $('.tot_count_group_msg_text').html("<?php echo $this->lang->line('character') . " " . $this->lang->line('count') ?>: " + message.length);
+    }
+
+    function toggleComposeAudience(config) {
+        var audience = config.audience || [];
+
+        $('.compose-audience').hide();
+        $('.compose-audience input[type="checkbox"]').prop('checked', false);
+
+        if ($.inArray('student', audience) !== -1) {
+            $('.compose-audience-student').show();
+        }
+        if ($.inArray('parent', audience) !== -1) {
+            $('.compose-audience-parent').show();
+        }
+        if ($.inArray('roles', audience) !== -1) {
+            $('.compose-audience-role').show();
+        }
+    }
+
+    function applyGroupNotificationTemplate(clearPreviousTemplate) {
+        var selectedTemplate = $('#group_template_type').val() || 'custom';
+        var config = composeNotifications[selectedTemplate] || composeNotifications.custom;
+
+        toggleComposeAudience(config);
+
+        if (selectedTemplate === 'custom') {
+            $('#notification_template_notice').hide();
+            $('#notification_template_variables').html('');
+            $('.compose-audience').show();
+
+            if (clearPreviousTemplate && lastGroupTemplateType !== 'custom') {
+                $('input[name="group_title"]').val('');
+                $('#group_msg_text').val('');
+            }
+        } else {
+            $('input[name="group_title"]').val(config.subject || config.label || '');
+            $('#group_msg_text').val(config.template || '');
+            $('#notification_template_notice').show();
+            if (config.variables) {
+                $('#notification_template_variables').html('<small><strong>Available variables:</strong> <span></span></small>');
+                $('#notification_template_variables span').text(config.variables);
+            } else {
+                $('#notification_template_variables').html('');
+            }
+        }
+
+        lastGroupTemplateType = selectedTemplate;
+        updateGroupSmsCounter();
+    }
+
+    $(document).on('change', '#group_template_type', function () {
+        applyGroupNotificationTemplate(true);
+    });
+
+    $(document).ready(function () {
+        applyGroupNotificationTemplate(false);
     });
 
 

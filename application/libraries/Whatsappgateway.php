@@ -11,11 +11,11 @@ class Whatsappgateway {
 
     public function __construct() {
         $this->_CI = &get_instance();
-        $this->_CI->config->load('whatsapp');
         $this->_CI->load->model('setting_model');
         $this->_CI->load->model('student_model');
         $this->_CI->load->model('staff_model');
-        $this->config = $this->_CI->config->item('whatsapp');
+        $this->_CI->load->model('whatsappconfig_model');
+        $this->config = $this->_CI->whatsappconfig_model->getGatewayConfig();
 
         if (!is_array($this->config)) {
             $this->config = array();
