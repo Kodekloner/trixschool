@@ -265,6 +265,7 @@ class Mailsms extends Admin_Controller
         $data['roles']         = $this->role_model->get();
         $data['birthDaysList'] = $birthDaysList;
         $data['sch_setting']   = $this->sch_setting_detail;
+        $data['compose_notifications'] = $this->getComposeNotificationTemplates();
         $this->load->view('layout/header');
         $this->load->view('admin/mailsms/compose_sms', $data);
         $this->load->view('layout/footer');
@@ -641,6 +642,7 @@ class Mailsms extends Admin_Controller
 
             $message       = $this->input->post('group_message');
             $message_title = $this->input->post('group_title');
+            $current_session_name = $this->setting_model->getCurrentSessionName();
             $data          = array(
                 'is_group'    => 1,
                 'title'       => $message_title,
@@ -660,13 +662,26 @@ class Mailsms extends Admin_Controller
 
                     if (!empty($student_array)) {
                         foreach ($student_array as $student_key => $student_value) {
+                            $student_name = $this->customlib->getFullName(
+                                $student_value['firstname'],
+                                $student_value['middlename'],
+                                $student_value['lastname'],
+                                $this->sch_setting_detail->middlename,
+                                $this->sch_setting_detail->lastname
+                            );
 
-                            $array = array(
+                            $array = array_merge($student_value, array(
                                 'user_id'  => $student_value['id'],
                                 'email'    => $student_value['email'],
                                 'mobileno' => $student_value['mobileno'],
                                 'app_key'  => $student_value['app_key'],
-                            );
+                                'display_name' => $student_name,
+                                'student_name' => $student_name,
+                                'name' => $student_name,
+                                'url' => site_url('site/userlogin'),
+                                'school_name' => $this->sch_setting_detail->name,
+                                'current_session_name' => $current_session_name,
+                            ));
                             $user_array[] = $array;
                         }
                     }
@@ -674,12 +689,29 @@ class Mailsms extends Admin_Controller
                     $parent_array = $this->student_model->get();
                     if (!empty($parent_array)) {
                         foreach ($parent_array as $parent_key => $parent_value) {
-                            $array = array(
+                            $parent_login = $this->user_model->getParentLoginDetails($parent_value['id']);
+                            $student_name = $this->customlib->getFullName(
+                                $parent_value['firstname'],
+                                $parent_value['middlename'],
+                                $parent_value['lastname'],
+                                $this->sch_setting_detail->middlename,
+                                $this->sch_setting_detail->lastname
+                            );
+
+                            $array = array_merge($parent_value, array(
                                 'user_id'  => $parent_value['id'],
                                 'email'    => $parent_value['guardian_email'],
                                 'mobileno' => $parent_value['guardian_phone'],
                                 'app_key'  => $parent_value['parent_app_key'],
-                            );
+                                'display_name' => $parent_value['guardian_name'],
+                                'name' => $parent_value['guardian_name'],
+                                'student_name' => $student_name,
+                                'username' => isset($parent_login['username']) ? $parent_login['username'] : '',
+                                'password' => isset($parent_login['password']) ? $parent_login['password'] : '',
+                                'url' => site_url('site/userlogin'),
+                                'school_name' => $this->sch_setting_detail->name,
+                                'current_session_name' => $current_session_name,
+                            ));
                             $user_array[] = $array;
                         }
                     }
@@ -688,11 +720,19 @@ class Mailsms extends Admin_Controller
                     $staff = $this->staff_model->getEmployeeByRoleID($users_value);
                     if (!empty($staff)) {
                         foreach ($staff as $staff_key => $staff_value) {
-                            $array = array(
+                            $staff_name = trim($staff_value['name'] . ' ' . $staff_value['surname']);
+                            $array = array_merge($staff_value, array(
                                 'user_id'  => $staff_value['id'],
                                 'email'    => $staff_value['email'],
                                 'mobileno' => $staff_value['contact_no'],
-                            );
+                                'app_key'  => isset($staff_value['app_key']) ? $staff_value['app_key'] : '',
+                                'display_name' => $staff_name,
+                                'name' => $staff_name,
+                                'username' => !empty($staff_value['employee_id']) ? $staff_value['employee_id'] : $staff_value['email'],
+                                'url' => site_url('site/userlogin'),
+                                'school_name' => $this->sch_setting_detail->name,
+                                'current_session_name' => $current_session_name,
+                            ));
                             $user_array[] = $array;
                         }
                     }
@@ -702,17 +742,19 @@ class Mailsms extends Admin_Controller
             if (!empty($user_array)) {
 
                 foreach ($user_array as $user_mail_key => $user_mail_value) {
+                    $personal_title   = $this->renderComposeTemplate($message_title, $user_mail_value);
+                    $personal_message = $this->renderComposeTemplate($message, $user_mail_value);
                     if (in_array("sms", $sms_mail)) {
                         if ($user_mail_value['mobileno'] != "") {
-                            $this->smsgateway->sendSMS($user_mail_value['mobileno'],$message, $template_id,"" );
+                            $this->smsgateway->sendSMS($user_mail_value['mobileno'], $personal_message, $template_id, "");
                         }
                     }
                     if (in_array("push", $sms_mail)) {
                         $push_array = array(
-                            'title' => $message_title,
-                            'body'  => $message,
+                            'title' => $personal_title,
+                            'body'  => $personal_message,
                         );
-                        if ($user_mail_value['app_key'] != "") {
+                        if (!empty($user_mail_value['app_key'])) {
                             $this->pushnotification->send($user_mail_value['app_key'], $push_array, "mail_sms");
                         }
                     }
