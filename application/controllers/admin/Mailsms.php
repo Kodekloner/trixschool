@@ -14,6 +14,7 @@ class Mailsms extends Admin_Controller
         $this->load->library('smsgateway');
         $this->load->library('mailsmsconf');
         $this->load->model("classteacher_model");
+        $this->load->model("notificationsetting_model");
         $this->mailer;
         $this->sch_setting_detail = $this->setting_model->getSetting();
     }
@@ -108,9 +109,113 @@ class Mailsms extends Admin_Controller
         $data['roles']         = $this->role_model->get();
         $data['birthDaysList'] = $birthDaysList;
         $data['sch_setting']   = $this->sch_setting_detail;
+        $data['compose_notifications'] = $this->getComposeNotificationTemplates();
         $this->load->view('layout/header');
         $this->load->view('admin/mailsms/compose', $data);
         $this->load->view('layout/footer');
+    }
+
+    private function getComposeNotificationTemplates()
+    {
+        $templates = array(
+            'custom' => array(
+                'label'     => 'Custom',
+                'subject'   => '',
+                'template'  => '',
+                'variables' => '',
+                'audience'  => array('student', 'parent', 'roles'),
+            ),
+            'student_admission' => array(
+                'label'     => 'Student Admission',
+                'subject'   => '',
+                'template'  => '',
+                'variables' => '',
+                'audience'  => array('student', 'parent'),
+            ),
+            'exam_result' => array(
+                'label'     => 'Exam Result',
+                'subject'   => '',
+                'template'  => '',
+                'variables' => '',
+                'audience'  => array('student', 'parent'),
+            ),
+            'fee_submission' => array(
+                'label'     => 'Fee Submission',
+                'subject'   => '',
+                'template'  => '',
+                'variables' => '',
+                'audience'  => array('parent'),
+            ),
+            'absent_attendence' => array(
+                'label'     => 'Absent Attendance',
+                'subject'   => '',
+                'template'  => '',
+                'variables' => '',
+                'audience'  => array('parent'),
+            ),
+            'login_credential' => array(
+                'label'     => 'Login Credential',
+                'subject'   => '',
+                'template'  => '',
+                'variables' => '',
+                'audience'  => array('student', 'parent', 'roles'),
+            ),
+            'homework' => array(
+                'label'     => 'Homework',
+                'subject'   => '',
+                'template'  => '',
+                'variables' => '',
+                'audience'  => array('student', 'parent'),
+            ),
+            'fees_reminder' => array(
+                'label'     => 'Fees Reminder',
+                'subject'   => '',
+                'template'  => '',
+                'variables' => '',
+                'audience'  => array('parent'),
+            ),
+            'online_examination_publish_exam' => array(
+                'label'     => 'Online examination publish exam',
+                'subject'   => '',
+                'template'  => '',
+                'variables' => '',
+                'audience'  => array('student'),
+            ),
+            'online_examination_publish_result' => array(
+                'label'     => 'Online examination publish result',
+                'subject'   => '',
+                'template'  => '',
+                'variables' => '',
+                'audience'  => array('student', 'parent'),
+            ),
+            'online_admission_form_submission' => array(
+                'label'     => 'Online Admission form submission',
+                'subject'   => '',
+                'template'  => '',
+                'variables' => '',
+                'audience'  => array('student', 'parent'),
+            ),
+            'online_admission_fees_submission' => array(
+                'label'     => 'Online Admission fees submission',
+                'subject'   => '',
+                'template'  => '',
+                'variables' => '',
+                'audience'  => array('parent'),
+            ),
+        );
+
+        $notification_settings = $this->notificationsetting_model->get();
+        if (!empty($notification_settings)) {
+            foreach ($notification_settings as $setting) {
+                if (isset($templates[$setting->type])) {
+                    $templates[$setting->type]['subject']   = $setting->subject;
+                    $templates[$setting->type]['template']  = $setting->template;
+                    $templates[$setting->type]['variables'] = $setting->variables;
+                }
+            }
+        }
+
+        return $templates;
     }
 
     public function compose_sms()
@@ -376,6 +481,7 @@ class Mailsms extends Admin_Controller
             }
             $message       = $this->input->post('group_message');
             $message_title = $this->input->post('group_title');
+            $current_session_name = $this->setting_model->getCurrentSessionName();
             $data          = array(
                 'is_group'   => 1,
                 'title'      => $message_title,
@@ -393,12 +499,25 @@ class Mailsms extends Admin_Controller
                     $student_array = $this->student_model->get();
                     if (!empty($student_array)) {
                         foreach ($student_array as $student_key => $student_value) {
+                            $student_name = $this->customlib->getFullName(
+                                $student_value['firstname'],
+                                $student_value['middlename'],
+                                $student_value['lastname'],
+                                $this->sch_setting_detail->middlename,
+                                $this->sch_setting_detail->lastname
+                            );
 
-                            $array = array(
+                            $array = array_merge($student_value, array(
                                 'user_id'  => $student_value['id'],
                                 'email'    => $student_value['email'],
                                 'mobileno' => $student_value['mobileno'],
-                            );
+                                'display_name' => $student_name,
+                                'student_name' => $student_name,
+                                'name' => $student_name,
+                                'url' => site_url('site/userlogin'),
+                                'school_name' => $this->sch_setting_detail->name,
+                                'current_session_name' => $current_session_name,
+                            ));
                             $user_array[] = $array;
                         }
                     }
@@ -406,11 +525,28 @@ class Mailsms extends Admin_Controller
                     $parent_array = $this->student_model->get();
                     if (!empty($parent_array)) {
                         foreach ($parent_array as $parent_key => $parent_value) {
-                            $array = array(
+                            $parent_login = $this->user_model->getParentLoginDetails($parent_value['id']);
+                            $student_name = $this->customlib->getFullName(
+                                $parent_value['firstname'],
+                                $parent_value['middlename'],
+                                $parent_value['lastname'],
+                                $this->sch_setting_detail->middlename,
+                                $this->sch_setting_detail->lastname
+                            );
+
+                            $array = array_merge($parent_value, array(
                                 'user_id'  => $parent_value['id'],
                                 'email'    => $parent_value['guardian_email'],
                                 'mobileno' => $parent_value['guardian_phone'],
-                            );
+                                'display_name' => $parent_value['guardian_name'],
+                                'name' => $parent_value['guardian_name'],
+                                'student_name' => $student_name,
+                                'username' => isset($parent_login['username']) ? $parent_login['username'] : '',
+                                'password' => isset($parent_login['password']) ? $parent_login['password'] : '',
+                                'url' => site_url('site/userlogin'),
+                                'school_name' => $this->sch_setting_detail->name,
+                                'current_session_name' => $current_session_name,
+                            ));
                             $user_array[] = $array;
                         }
                     }
@@ -419,11 +555,18 @@ class Mailsms extends Admin_Controller
                     $staff = $this->staff_model->getEmployeeByRoleID($users_value);
                     if (!empty($staff)) {
                         foreach ($staff as $staff_key => $staff_value) {
-                            $array = array(
+                            $staff_name = trim($staff_value['name'] . ' ' . $staff_value['surname']);
+                            $array = array_merge($staff_value, array(
                                 'user_id'  => $staff_value['id'],
                                 'email'    => $staff_value['email'],
                                 'mobileno' => $staff_value['contact_no'],
-                            );
+                                'display_name' => $staff_name,
+                                'name' => $staff_name,
+                                'username' => !empty($staff_value['employee_id']) ? $staff_value['employee_id'] : $staff_value['email'],
+                                'url' => site_url('site/userlogin'),
+                                'school_name' => $this->sch_setting_detail->name,
+                                'current_session_name' => $current_session_name,
+                            ));
                             $user_array[] = $array;
                         }
                     }
@@ -435,7 +578,9 @@ class Mailsms extends Admin_Controller
                     if (!empty($this->mail_config)) {
                         foreach ($user_array as $user_mail_key => $user_mail_value) {
                             if ($user_mail_value['email'] != "") {
-                                $this->mailer->send_mail($user_mail_value['email'], $message_title, $message, $_FILES);
+                                $personal_title   = $this->renderComposeTemplate($message_title, $user_mail_value);
+                                $personal_message = $this->renderComposeTemplate($message, $user_mail_value);
+                                $this->mailer->send_mail($user_mail_value['email'], $personal_title, $personal_message, $_FILES);
                             }
                         }
                     }
@@ -443,7 +588,8 @@ class Mailsms extends Admin_Controller
                 if ($send_sms) {
                     foreach ($user_array as $user_mail_key => $user_mail_value) {
                         if ($user_mail_value['mobileno'] != "") {
-                            $this->smsgateway->sendSMS($user_mail_value['mobileno'], "", ($message));
+                            $personal_message = $this->renderComposeTemplate($message, $user_mail_value);
+                            $this->smsgateway->sendSMS($user_mail_value['mobileno'], "", ($personal_message));
                         }
                     }
                 }
@@ -461,6 +607,22 @@ class Mailsms extends Admin_Controller
 
             echo json_encode(array('status' => 1, 'msg' => $data));
         }
+    }
+
+    private function renderComposeTemplate($template, $values)
+    {
+        if ($template === "" || empty($values) || !is_array($values)) {
+            return $template;
+        }
+
+        $replace = array();
+        foreach ($values as $key => $value) {
+            if (is_scalar($value) || $value === null) {
+                $replace['{{' . $key . '}}'] = (string) $value;
+            }
+        }
+
+        return strtr($template, $replace);
     }
 
     public function send_group_sms()
