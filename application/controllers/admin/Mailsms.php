@@ -12,6 +12,7 @@ class Mailsms extends Admin_Controller
         parent::__construct();
 
         $this->load->library('smsgateway');
+        $this->load->library('whatsappgateway');
         $this->load->library('mailsmsconf');
         $this->load->model("classteacher_model");
         $this->load->model("notificationsetting_model");
@@ -268,6 +269,26 @@ class Mailsms extends Admin_Controller
         $data['compose_notifications'] = $this->getComposeNotificationTemplates();
         $this->load->view('layout/header');
         $this->load->view('admin/mailsms/compose_sms', $data);
+        $this->load->view('layout/footer');
+    }
+
+    public function compose_whatsapp()
+    {
+        if (!$this->rbac->hasPrivilege('whatsapp_messaging', 'can_view')) {
+            access_denied();
+        }
+
+        $this->session->set_userdata('top_menu', 'Communicate');
+        $this->session->set_userdata('sub_menu', 'mailsms/compose_whatsapp');
+
+        $data['title'] = 'Send WhatsApp';
+        $data['roles'] = $this->role_model->get();
+        $data['sch_setting'] = $this->sch_setting_detail;
+        $data['compose_notifications'] = $this->getComposeNotificationTemplates();
+        $data['whatsapp_enabled'] = $this->whatsappgateway->isEnabled();
+
+        $this->load->view('layout/header');
+        $this->load->view('admin/mailsms/compose_whatsapp', $data);
         $this->load->view('layout/footer');
     }
 
@@ -616,6 +637,7 @@ class Mailsms extends Admin_Controller
             return $template;
         }
 
+        $values = $this->suppressStoredPasswordHashes($values);
         $replace = array();
         foreach ($values as $key => $value) {
             if (is_scalar($value) || $value === null) {
@@ -624,6 +646,202 @@ class Mailsms extends Admin_Controller
         }
 
         return strtr($template, $replace);
+    }
+
+    private function suppressStoredPasswordHashes($values)
+    {
+        foreach ($values as $key => $value) {
+            if (stripos((string) $key, 'password') !== false && $this->looksLikeStoredPasswordHash($value)) {
+                $values[$key] = '';
+            }
+        }
+
+        return $values;
+    }
+
+    private function looksLikeStoredPasswordHash($value)
+    {
+        if (!is_scalar($value) || $value === '') {
+            return false;
+        }
+
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return false;
+        }
+
+        if (function_exists('password_get_info')) {
+            $info = password_get_info($value);
+            if (!empty($info['algo']) || (!empty($info['algoName']) && $info['algoName'] !== 'unknown')) {
+                return true;
+            }
+        }
+
+        return preg_match('/^\$(2y|2a|2b|argon2i|argon2id)\$/', $value) === 1;
+    }
+
+    private function getGroupComposeRecipients($userlisting)
+    {
+        $user_array = array();
+        $current_session_name = $this->setting_model->getCurrentSessionName();
+
+        if (empty($userlisting)) {
+            return $user_array;
+        }
+
+        foreach ($userlisting as $users_key => $users_value) {
+            if ($users_value == "student") {
+                $student_array = $this->student_model->get();
+                if (!empty($student_array)) {
+                    foreach ($student_array as $student_key => $student_value) {
+                        $student_name = $this->customlib->getFullName(
+                            $student_value['firstname'],
+                            $student_value['middlename'],
+                            $student_value['lastname'],
+                            $this->sch_setting_detail->middlename,
+                            $this->sch_setting_detail->lastname
+                        );
+
+                        $user_array[] = array_merge($student_value, array(
+                            'user_id' => $student_value['id'],
+                            'email' => $student_value['email'],
+                            'mobileno' => $student_value['mobileno'],
+                            'app_key' => isset($student_value['app_key']) ? $student_value['app_key'] : '',
+                            'display_name' => $student_name,
+                            'student_name' => $student_name,
+                            'name' => $student_name,
+                            'url' => site_url('site/userlogin'),
+                            'school_name' => $this->sch_setting_detail->name,
+                            'current_session_name' => $current_session_name,
+                        ));
+                    }
+                }
+            } else if ($users_value == "parent") {
+                $parent_array = $this->student_model->get();
+                if (!empty($parent_array)) {
+                    foreach ($parent_array as $parent_key => $parent_value) {
+                        $parent_login = $this->user_model->getParentLoginDetails($parent_value['id']);
+                        $student_name = $this->customlib->getFullName(
+                            $parent_value['firstname'],
+                            $parent_value['middlename'],
+                            $parent_value['lastname'],
+                            $this->sch_setting_detail->middlename,
+                            $this->sch_setting_detail->lastname
+                        );
+
+                        $user_array[] = array_merge($parent_value, array(
+                            'user_id' => $parent_value['id'],
+                            'email' => $parent_value['guardian_email'],
+                            'mobileno' => $parent_value['guardian_phone'],
+                            'app_key' => isset($parent_value['parent_app_key']) ? $parent_value['parent_app_key'] : '',
+                            'display_name' => $parent_value['guardian_name'],
+                            'name' => $parent_value['guardian_name'],
+                            'student_name' => $student_name,
+                            'username' => isset($parent_login['username']) ? $parent_login['username'] : '',
+                            'password' => isset($parent_login['password']) ? $parent_login['password'] : '',
+                            'url' => site_url('site/userlogin'),
+                            'school_name' => $this->sch_setting_detail->name,
+                            'current_session_name' => $current_session_name,
+                        ));
+                    }
+                }
+            } else if (is_numeric($users_value)) {
+                $staff = $this->staff_model->getEmployeeByRoleID($users_value);
+                if (!empty($staff)) {
+                    foreach ($staff as $staff_key => $staff_value) {
+                        $staff_name = trim($staff_value['name'] . ' ' . $staff_value['surname']);
+                        $user_array[] = array_merge($staff_value, array(
+                            'user_id' => $staff_value['id'],
+                            'email' => $staff_value['email'],
+                            'mobileno' => $staff_value['contact_no'],
+                            'app_key' => isset($staff_value['app_key']) ? $staff_value['app_key'] : '',
+                            'display_name' => $staff_name,
+                            'name' => $staff_name,
+                            'username' => !empty($staff_value['employee_id']) ? $staff_value['employee_id'] : $staff_value['email'],
+                            'url' => site_url('site/userlogin'),
+                            'school_name' => $this->sch_setting_detail->name,
+                            'current_session_name' => $current_session_name,
+                        ));
+                    }
+                }
+            }
+        }
+
+        return $user_array;
+    }
+
+    public function send_group_whatsapp()
+    {
+        $this->form_validation->set_error_delimiters('<li>', '</li>');
+        $this->form_validation->set_rules('group_title', $this->lang->line('title'), 'required');
+        $this->form_validation->set_rules('group_message', $this->lang->line('message'), 'required');
+        $this->form_validation->set_rules('user[]', $this->lang->line('message') . " " . $this->lang->line('to'), 'required');
+
+        if (!$this->rbac->hasPrivilege('whatsapp_messaging', 'can_view')) {
+            access_denied();
+        }
+
+        if (!$this->form_validation->run()) {
+            $data = array(
+                'group_title' => form_error('group_title'),
+                'group_message' => form_error('group_message'),
+                'user[]' => form_error('user[]'),
+            );
+
+            echo json_encode(array('status' => 1, 'msg' => $data));
+            return;
+        }
+
+        if (!$this->whatsappgateway->isEnabled()) {
+            echo json_encode(array('status' => 1, 'msg' => array('whatsapp' => '<li>WhatsApp sending is disabled. Enable it from System Settings > WhatsApp Settings.</li>')));
+            return;
+        }
+
+        $message = $this->input->post('group_message');
+        $message_title = $this->input->post('group_title');
+        $user_array = $this->getGroupComposeRecipients($this->input->post('user[]'));
+
+        $data = array(
+            'is_group' => 1,
+            'title' => $message_title,
+            'message' => $message,
+            'send_mail' => 0,
+            'send_sms' => 0,
+            'group_list' => json_encode(array()),
+            'created_at' => date('Y-m-d H:i:s'),
+        );
+        $this->messages_model->add($data);
+
+        $sent = 0;
+        $failed = 0;
+
+        if (!empty($user_array)) {
+            foreach ($user_array as $user_mail_key => $user_mail_value) {
+                if (!empty($user_mail_value['mobileno'])) {
+                    $personal_title = $this->renderComposeTemplate($message_title, $user_mail_value);
+                    $personal_message = $this->renderComposeTemplate($message, $user_mail_value);
+
+                    if ($this->whatsappgateway->sendMessage($user_mail_value['mobileno'], $personal_message, $personal_title)) {
+                        $sent++;
+                    } else {
+                        $failed++;
+                    }
+                }
+            }
+        }
+
+        if ($sent === 0) {
+            echo json_encode(array('status' => 1, 'msg' => array('whatsapp' => '<li>No WhatsApp message was sent. Check recipient phone numbers and WhatsApp provider settings.</li>')));
+            return;
+        }
+
+        $message = 'WhatsApp message sent successfully. Sent: ' . $sent;
+        if ($failed > 0) {
+            $message .= ', Failed: ' . $failed;
+        }
+
+        echo json_encode(array('status' => 0, 'msg' => $message));
     }
 
     public function send_group_sms()

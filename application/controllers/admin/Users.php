@@ -241,14 +241,18 @@ class Users extends Admin_Controller
         if (!empty($resultlist->data)) {
             foreach ($resultlist->data as $resultlist_key => $student) { 
 
+                $student_username = "";
+                $student_password = "";
+                $parent_username  = "";
+                $parent_password  = "";
 
-            $studentlist = $this->user_model->getUserLoginDetails($student->id);
-            $parentlist = $this->user_model->getParentLoginDetails($student->id);
-                if ( $studentlist["role"] == "student") {
-                    $student_username = $studentlist["username"];
-                    $student_password = $studentlist["password"];
-                    $parent_username  = $parentlist["username"];
-                    $parent_password  = $parentlist["password"];
+                $studentlist = $this->user_model->getUserLoginDetails($student->id);
+                $parentlist = $this->user_model->getParentLoginDetails($student->id);
+                if (!empty($studentlist) && isset($studentlist["role"]) && $studentlist["role"] == "student") {
+                    $student_username = isset($studentlist["username"]) ? $studentlist["username"] : "";
+                    $student_password = isset($studentlist["password"]) ? $studentlist["password"] : "";
+                    $parent_username  = isset($parentlist["username"]) ? $parentlist["username"] : "";
+                    $parent_password  = isset($parentlist["password"]) ? $parentlist["password"] : "";
                 }
 
                 $viewbtn = "<a  href='".base_url()."student/view/".$student->id."'>".$this->customlib->getFullName($student->firstname,$student->middlename,$student->lastname,$sch_setting->middlename,$sch_setting->lastname)."</a>";
@@ -257,26 +261,26 @@ class Users extends Admin_Controller
                 $row[] = $student->admission_no ;
                 $row[] = $viewbtn ;
 
-                if (isset($student_username)) {
+                if ($student_username !== "") {
                    $row[] = $student_username ;  
                 }else{
                      $row[]="" ;
                 }
 
-                if (isset($student_password)) {
-                   $row[] = $student_password ;  
+                if ($student_password !== "") {
+                   $row[] = $this->hideStoredPasswordHash($student_password);
                 }else{
                      $row[]="" ;
                 }
 
-                if (isset($parent_username)) {
+                if ($parent_username !== "") {
                    $row[] = $parent_username ;  
                 }else{
                      $row[]="" ;
                 }
 
-                if (isset($parent_password)) {
-                   $row[] = $parent_password ;  
+                if ($parent_password !== "") {
+                   $row[] = $this->hideStoredPasswordHash($parent_password);
                 }else{
                      $row[]="" ;
                 } 
@@ -292,6 +296,33 @@ class Users extends Admin_Controller
             "data"            => $dt_data,
         );
         echo json_encode($json_data); 
+    }
+
+    private function hideStoredPasswordHash($value)
+    {
+        return $this->looksLikeStoredPasswordHash($value) ? '' : $value;
+    }
+
+    private function looksLikeStoredPasswordHash($value)
+    {
+        if (!is_scalar($value) || $value === '') {
+            return false;
+        }
+
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return false;
+        }
+
+        if (function_exists('password_get_info')) {
+            $info = password_get_info($value);
+            if (!empty($info['algo']) || (!empty($info['algoName']) && $info['algoName'] !== 'unknown')) {
+                return true;
+            }
+        }
+
+        return preg_match('/^\$(2y|2a|2b|argon2i|argon2id)\$/', $value) === 1;
     }
 
 
