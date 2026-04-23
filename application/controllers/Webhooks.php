@@ -9,6 +9,7 @@ class Webhooks extends CI_Controller {
     public function __construct() {
         parent::__construct();
         $this->load->model('incomingemail_model');
+        $this->load->model('supportticket_model');
         $this->load->helper('security');
     }
 
@@ -93,9 +94,18 @@ class Webhooks extends CI_Controller {
         }
 
         $record_id = $this->incomingemail_model->saveFromWebhook($record);
+        $support_ticket_id = null;
+
+        if ($message_type === 'Notification'
+            && strtolower((string) $record['ses_notification_type']) === 'received'
+            && $this->db->table_exists('support_tickets')
+            && $this->db->table_exists('support_messages')) {
+            $support_ticket_id = $this->supportticket_model->processIncomingEmail($record_id);
+        }
+
         log_message('info', 'SES inbound webhook stored message #' . $record_id . ' (' . $message_type . ')');
 
-        return $this->respond_json(array('status' => 'ok', 'id' => $record_id), 200);
+        return $this->respond_json(array('status' => 'ok', 'id' => $record_id, 'support_ticket_id' => $support_ticket_id), 200);
     }
 
     protected function buildIncomingEmailRecord($sns_payload, $message_data, $raw_payload)
@@ -104,6 +114,7 @@ class Webhooks extends CI_Controller {
         $receipt      = (isset($message_data['receipt']) && is_array($message_data['receipt'])) ? $message_data['receipt'] : array();
         $action       = (isset($receipt['action']) && is_array($receipt['action'])) ? $receipt['action'] : array();
         $common       = (isset($mail['commonHeaders']) && is_array($mail['commonHeaders'])) ? $mail['commonHeaders'] : array();
+        $headers      = $this->normalizeSesHeaders($mail, $common);
         $raw_content  = isset($message_data['content']) ? (string) $message_data['content'] : '';
         $parsed_email = $this->extractEmailBodies($raw_content);
 
@@ -117,7 +128,7 @@ class Webhooks extends CI_Controller {
             'subject'               => isset($common['subject']) ? $common['subject'] : null,
             'destinations'          => isset($mail['destination']) ? $mail['destination'] : array(),
             'recipients'            => isset($receipt['recipients']) ? $receipt['recipients'] : array(),
-            'headers'               => $common,
+            'headers'               => $headers,
             'mail_timestamp'        => $this->normalizeTimestamp(isset($mail['timestamp']) ? $mail['timestamp'] : null),
             'receipt_timestamp'     => $this->normalizeTimestamp(isset($receipt['timestamp']) ? $receipt['timestamp'] : null),
             'action_type'           => isset($action['type']) ? $action['type'] : null,
@@ -137,6 +148,41 @@ class Webhooks extends CI_Controller {
             'status'                => 'received',
             'error_message'         => null,
         );
+    }
+
+    protected function normalizeSesHeaders($mail, $common)
+    {
+        $headers = array();
+
+        if (isset($mail['headers']) && is_array($mail['headers'])) {
+            foreach ($mail['headers'] as $header) {
+                if (!is_array($header) || empty($header['name'])) {
+                    continue;
+                }
+
+                $name = strtolower(trim((string) $header['name']));
+                $value = isset($header['value']) ? $header['value'] : '';
+
+                if ($name === '') {
+                    continue;
+                }
+
+                if (isset($headers[$name])) {
+                    $headers[$name] .= "\n" . $value;
+                } else {
+                    $headers[$name] = $value;
+                }
+            }
+        }
+
+        foreach ($common as $name => $value) {
+            $name = strtolower(trim((string) $name));
+            if ($name !== '' && !isset($headers[$name])) {
+                $headers[$name] = $value;
+            }
+        }
+
+        return $headers;
     }
 
     protected function getVerdictStatus($receipt, $key)

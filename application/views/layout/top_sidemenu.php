@@ -77,6 +77,10 @@
 
                 <li role="presentation"><a style="color:#282828; font-family: 'Roboto-Bold';padding:6px 20px;" role="menuitem" tabindex="-1" href="<?php echo base_url(); ?>admin/complaint"><i class="fa fa-calendar-check-o"></i><?php echo $this->lang->line('complain'); ?></a></li>
 
+            <?php } if ($this->rbac->hasPrivilege('support_ticket', 'can_view')) { ?>
+
+                <li role="presentation"><a style="color:#282828; font-family: 'Roboto-Bold';padding:6px 20px;" role="menuitem" tabindex="-1" href="<?php echo base_url(); ?>admin/support"><i class="fa fa-life-ring"></i> Support Tickets</a></li>
+
             <?php } if ($this->rbac->hasPrivilege('upload_content', 'can_view')) { ?>
                 <li role="presentation"><a style="color:#282828; font-family: 'Roboto-Bold';padding:6px 20px;" role="menuitem" tabindex="-1" href="<?php echo base_url(); ?>admin/content"><i class="fa fa-download"></i><?php echo $this->lang->line('upload_content'); ?></a></li>
 

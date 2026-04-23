@@ -1,6 +1,6 @@
 # SES Inbound Email Setup
 
-This scaffold adds a public webhook endpoint that accepts Amazon SNS messages for Amazon SES inbound email notifications.
+This adds a public webhook endpoint that accepts Amazon SNS messages for Amazon SES inbound email notifications and turns received emails into support tickets.
 
 ## Endpoint
 
@@ -26,6 +26,11 @@ Inbound email events are stored in the `incoming_emails` table with:
 - extracted text/html bodies when available
 - attachment filenames when they can be detected from the MIME content
 
+Received email notifications are also converted into:
+
+- `support_tickets` for the admin inbox
+- `support_messages` for the ticket conversation history
+
 ## AWS setup
 
 1. Verify the receiving domain or subdomain in SES.
@@ -42,7 +47,10 @@ SES notification contents reference:
 
 ## Database setup
 
-This scaffold includes migration `126_add_incoming_emails.php`.
+This setup includes migrations:
+
+- `126_add_incoming_emails.php`
+- `127_add_support_tickets.php`
 
 To apply it in this project:
 
@@ -50,8 +58,16 @@ To apply it in this project:
 2. Visit `https://your-domain/index.php/migrate`
 3. Set `migration_enabled` back to `FALSE`
 
+If you are applying SQL manually, run `docs/support_email_migration.sql` after the incoming email migration.
+
+## Admin inbox
+
+- URL: `https://your-domain/admin/support`
+- Permission short code: `support_ticket`
+- Default Admin/Super Admin permissions are inserted by the support ticket migration.
+
 ## Notes
 
 - SNS subscription auto-confirmation is enabled by default.
 - If you set `ses_inbound_allowed_topic_arn`, the webhook will reject other SNS topics.
-- The scaffold stores inbound messages; it does not yet add an admin UI for browsing or replying to them.
+- Replies are sent through the existing Email Settings SMTP configuration, so Amazon SES SMTP credentials can be used there.

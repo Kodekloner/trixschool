@@ -22,6 +22,7 @@
                     $this->rbac->hasPrivilege('postal_dispatch', 'can_view') ||
                     $this->rbac->hasPrivilege('postal_receive', 'can_view') ||
                     $this->rbac->hasPrivilege('complaint', 'can_view') ||
+                    $this->rbac->hasPrivilege('support_ticket', 'can_view') ||
                     $this->rbac->hasPrivilege('setup_font_office', 'can_view'))) {
             ?>
 
@@ -67,6 +68,13 @@
                             ?>
 
                                 <li class="<?php echo set_Submenu('admin/complaint'); ?>"><a href="<?php echo base_url(); ?>admin/complaint"><i class="fa fa-angle-double-right"></i> <?php echo $this->lang->line('complain'); ?></a></li>
+
+                            <?php
+                            }
+                            if ($this->rbac->hasPrivilege('support_ticket', 'can_view')) {
+                            ?>
+
+                                <li class="<?php echo set_Submenu('admin/support'); ?>"><a href="<?php echo base_url(); ?>admin/support"><i class="fa fa-angle-double-right"></i> Support Tickets</a></li>
 
                             <?php
                             }
