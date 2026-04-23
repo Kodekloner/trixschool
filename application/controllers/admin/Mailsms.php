@@ -637,6 +637,7 @@ class Mailsms extends Admin_Controller
             return $template;
         }
 
+        $values = $this->suppressStoredPasswordHashes($values);
         $replace = array();
         foreach ($values as $key => $value) {
             if (is_scalar($value) || $value === null) {
@@ -645,6 +646,39 @@ class Mailsms extends Admin_Controller
         }
 
         return strtr($template, $replace);
+    }
+
+    private function suppressStoredPasswordHashes($values)
+    {
+        foreach ($values as $key => $value) {
+            if (stripos((string) $key, 'password') !== false && $this->looksLikeStoredPasswordHash($value)) {
+                $values[$key] = '';
+            }
+        }
+
+        return $values;
+    }
+
+    private function looksLikeStoredPasswordHash($value)
+    {
+        if (!is_scalar($value) || $value === '') {
+            return false;
+        }
+
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return false;
+        }
+
+        if (function_exists('password_get_info')) {
+            $info = password_get_info($value);
+            if (!empty($info['algo']) || (!empty($info['algoName']) && $info['algoName'] !== 'unknown')) {
+                return true;
+            }
+        }
+
+        return preg_match('/^\$(2y|2a|2b|argon2i|argon2id)\$/', $value) === 1;
     }
 
     private function getGroupComposeRecipients($userlisting)
