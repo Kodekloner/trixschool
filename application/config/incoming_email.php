@@ -1,6 +1,6 @@
 <?php
 
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
 /*
 |--------------------------------------------------------------------------
@@ -11,7 +11,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 | inbound notifications. Keep the token empty to disable token checking.
 |
 */
-$config['ses_inbound_webhook_token'] = '';
+$config['ses_inbound_webhook_token'] = 'BJd7QY49pP8ZlG9MRAi7Ewvf1P89a6hsckAwhCC7M5tdC1S64vThh9T45PpYTB1F';
 
 /*
 |--------------------------------------------------------------------------
@@ -21,7 +21,7 @@ $config['ses_inbound_webhook_token'] = '';
 | Optionally restrict the inbound webhook to one SNS topic ARN.
 |
 */
-$config['ses_inbound_allowed_topic_arn'] = '';
+$config['ses_inbound_allowed_topic_arn'] = 'arn:aws:sns:us-east-2:487461038503:schoollift-support-inbound';
 
 /*
 |--------------------------------------------------------------------------
@@ -33,4 +33,3 @@ $config['ses_inbound_allowed_topic_arn'] = '';
 |
 */
 $config['ses_inbound_auto_confirm'] = true;
-
