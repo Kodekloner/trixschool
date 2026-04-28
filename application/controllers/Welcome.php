@@ -10,8 +10,8 @@ class Welcome extends Front_Controller
         parent::__construct();
         $this->load->config('form-builder');
         $this->load->config('app-config');
-        $this->load->library(array('mailer', 'form_builder', 'mailsmsconf'));
-        $this->load->model(array('frontcms_setting_model', 'complaint_Model', 'Visitors_model', 'onlinestudent_model', 'filetype_model', 'customfield_model'));
+        $this->load->library(array('mailer', 'form_builder', 'mailsmsconf', 'whatsappgateway'));
+        $this->load->model(array('frontcms_setting_model', 'complaint_Model', 'Visitors_model', 'onlinestudent_model', 'filetype_model', 'customfield_model', 'supportticket_model'));
         $this->blood_group = $this->config->item('bloodgroup');
         $this->load->library('Ajax_pagination');
         $this->load->library('module_lib');
@@ -139,6 +139,8 @@ class Welcome extends Front_Controller
                             'note'    => $this->input->post('description') . " (Sent from online front site)",
                         );
                         $visitor_id = $this->Visitors_model->add($cont_data);
+                        $ticket     = $this->createContactSupportTicket();
+                        $this->sendContactTicketWhatsappNotification($ticket);
                     }
 
                     if ($record['form_name'] == 'complain') {
@@ -174,6 +176,105 @@ class Welcome extends Front_Controller
         }
 
         $this->load_theme('pages/page');
+    }
+
+    protected function createContactSupportTicket()
+    {
+        if (!$this->db->table_exists('support_tickets') || !$this->db->table_exists('support_messages')) {
+            log_message('error', 'Contact form submitted but support ticket tables are missing.');
+            return false;
+        }
+
+        return $this->supportticket_model->createFromContactForm(array(
+            'name'    => $this->input->post('name', true),
+            'email'   => $this->input->post('email', true),
+            'phone'   => $this->input->post('contact_no', true),
+            'subject' => $this->input->post('subject', true),
+            'message' => $this->input->post('description', true),
+        ));
+    }
+
+    protected function sendContactTicketWhatsappNotification($ticket)
+    {
+        if (empty($ticket) || !$this->whatsappgateway->isEnabled()) {
+            return false;
+        }
+
+        $phone = $this->getSupportWhatsappNumber();
+        if ($phone === '') {
+            return false;
+        }
+
+        $message = $this->buildSupportWhatsappMessage($ticket);
+        return $this->whatsappgateway->sendMessage($phone, $message, 'New Support Ticket');
+    }
+
+    protected function getSupportWhatsappNumber()
+    {
+        $setting = $this->sch_setting_detail;
+
+        if (!empty($setting)
+            && !empty($setting->whatsapp_support_enabled)
+            && !empty($setting->whatsapp_support_number)) {
+            return trim((string) $setting->whatsapp_support_number);
+        }
+
+        if (!empty($this->front_setting) && !empty($this->front_setting->whatsapp_url)) {
+            return $this->extractWhatsappNumberFromUrl($this->front_setting->whatsapp_url);
+        }
+
+        return '';
+    }
+
+    protected function buildSupportWhatsappMessage($ticket)
+    {
+        $setting = $this->sch_setting_detail;
+        $template = '';
+
+        if (!empty($setting) && !empty($setting->whatsapp_support_message)) {
+            $template = (string) $setting->whatsapp_support_message;
+        }
+
+        if (trim($template) === '') {
+            $template = "New support ticket {{ticket_number}}\nName: {{name}}\nEmail: {{email}}\nSubject: {{subject}}\nView: {{url}}";
+        }
+
+        $values = array(
+            'ticket_number' => isset($ticket['ticket_number']) ? $ticket['ticket_number'] : '',
+            'name'          => isset($ticket['requester_name']) ? $ticket['requester_name'] : '',
+            'email'         => isset($ticket['requester_email']) ? $ticket['requester_email'] : '',
+            'subject'       => isset($ticket['subject']) ? $ticket['subject'] : '',
+            'url'           => site_url('admin/support/view/' . (int) $ticket['id']),
+            'school_name'   => (!empty($this->school_details) && isset($this->school_details->name)) ? $this->school_details->name : '',
+        );
+
+        foreach ($values as $key => $value) {
+            $template = str_replace('{{' . $key . '}}', (string) $value, $template);
+        }
+
+        return $template;
+    }
+
+    protected function extractWhatsappNumberFromUrl($url)
+    {
+        $url = trim((string) $url);
+        if ($url === '') {
+            return '';
+        }
+
+        $parts = parse_url($url);
+        if (!empty($parts['query'])) {
+            parse_str($parts['query'], $query);
+            if (!empty($query['phone'])) {
+                return preg_replace('/\D+/', '', (string) $query['phone']);
+            }
+        }
+
+        if (preg_match('/(?:wa\.me|whatsapp\.com\/send)\/?([0-9]+)/i', $url, $matches)) {
+            return preg_replace('/\D+/', '', $matches[1]);
+        }
+
+        return '';
     }
 
     public function ajaxPaginationData()

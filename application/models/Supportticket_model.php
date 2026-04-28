@@ -169,6 +169,73 @@ class Supportticket_model extends CI_Model
         return $message_id;
     }
 
+    public function createFromContactForm($data)
+    {
+        if (!$this->db->table_exists($this->ticket_table) || !$this->db->table_exists($this->message_table)) {
+            log_message('error', 'Contact support ticket could not be created: support ticket tables are missing.');
+            return false;
+        }
+
+        $requester_email = $this->normalizeEmail(isset($data['email']) ? $data['email'] : '');
+        if ($requester_email === '') {
+            return false;
+        }
+
+        $requester_name = trim((string) (isset($data['name']) ? $data['name'] : ''));
+        if ($requester_name === '') {
+            $requester_name = $requester_email;
+        }
+
+        $subject = $this->normalizeSubject(isset($data['subject']) ? $data['subject'] : 'Contact Form Request');
+        $message = trim((string) (isset($data['message']) ? $data['message'] : ''));
+        $phone   = trim((string) (isset($data['phone']) ? $data['phone'] : ''));
+        $now     = date('Y-m-d H:i:s');
+
+        $this->db->trans_start();
+
+        $ticket = $this->createTicket(array(
+            'source'                   => 'contact_form',
+            'requester_name'           => $requester_name,
+            'requester_email'          => $requester_email,
+            'requester_phone'          => $phone !== '' ? $phone : null,
+            'subject'                  => $subject,
+            'message_id'               => null,
+            'incoming_email_id'        => null,
+            'last_incoming_email_id'   => null,
+            'last_message_at'          => $now,
+            'last_customer_message_at' => $now,
+        ));
+
+        if (!empty($ticket)) {
+            $this->db->insert($this->message_table, array(
+                'support_ticket_id'     => (int) $ticket['id'],
+                'incoming_email_id'     => null,
+                'direction'             => 'incoming',
+                'sender_type'           => 'requester',
+                'sender_staff_id'       => null,
+                'sender_name'           => $requester_name,
+                'sender_email'          => $requester_email,
+                'recipients_json'       => null,
+                'subject'               => $subject,
+                'body_text'             => $message !== '' ? $message : null,
+                'body_html'             => null,
+                'message_id'            => null,
+                'in_reply_to'           => null,
+                'references_header'     => null,
+                'attachment_count'      => 0,
+                'attachment_names_json' => null,
+                'delivery_status'       => 'received',
+                'error_message'         => null,
+                'created_at'            => $now,
+                'updated_at'            => $now,
+            ));
+        }
+
+        $this->db->trans_complete();
+
+        return ($this->db->trans_status() && !empty($ticket)) ? $this->get($ticket['id']) : false;
+    }
+
     public function processIncomingEmail($incoming_email_id)
     {
         $incoming_email_id = (int) $incoming_email_id;
@@ -339,10 +406,10 @@ class Supportticket_model extends CI_Model
 
         $payload = array(
             'ticket_number'             => $temp_ticket_number,
-            'source'                    => 'email',
+            'source'                    => isset($data['source']) ? $data['source'] : 'email',
             'requester_name'            => isset($data['requester_name']) ? $data['requester_name'] : null,
             'requester_email'           => isset($data['requester_email']) ? $data['requester_email'] : null,
-            'requester_phone'           => null,
+            'requester_phone'           => isset($data['requester_phone']) ? $data['requester_phone'] : null,
             'subject'                   => isset($data['subject']) ? $data['subject'] : 'Support Request',
             'status'                    => 'open',
             'priority'                  => 'normal',
