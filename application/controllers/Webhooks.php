@@ -52,7 +52,7 @@ class Webhooks extends CI_Controller {
         $auto_confirm       = (bool) $this->config->item('ses_inbound_auto_confirm', 'incoming_email');
         $provided_token     = trim((string) $this->input->get('token', true));
         $raw_payload        = file_get_contents('php://input');
-        $sns_payload        = json_decode($raw_payload, true);
+        $decoded_payload    = json_decode($raw_payload, true);
 
         if ($this->input->method(true) !== 'POST') {
             return $this->respond_json(array('status' => 'error', 'message' => 'Method not allowed'), 405);
@@ -63,10 +63,12 @@ class Webhooks extends CI_Controller {
             return $this->respond_json(array('status' => 'error', 'message' => 'Forbidden'), 403);
         }
 
-        if (!is_array($sns_payload)) {
+        if (!is_array($decoded_payload)) {
             log_message('error', 'SES inbound webhook rejected: invalid JSON payload.');
             return $this->respond_json(array('status' => 'error', 'message' => 'Invalid payload'), 400);
         }
+
+        list($sns_payload, $message_data) = $this->normalizeInboundPayload($decoded_payload);
 
         if ($allowed_topic_arn !== '' && isset($sns_payload['TopicArn']) && $sns_payload['TopicArn'] !== $allowed_topic_arn) {
             log_message('error', 'SES inbound webhook rejected: unexpected topic ARN ' . $sns_payload['TopicArn']);
@@ -74,12 +76,6 @@ class Webhooks extends CI_Controller {
         }
 
         $message_type = isset($sns_payload['Type']) ? (string) $sns_payload['Type'] : '';
-        $message_body = isset($sns_payload['Message']) ? (string) $sns_payload['Message'] : '';
-        $message_data = json_decode($message_body, true);
-
-        if (!is_array($message_data)) {
-            $message_data = array();
-        }
 
         $record = $this->buildIncomingEmailRecord($sns_payload, $message_data, $raw_payload);
 
@@ -96,7 +92,7 @@ class Webhooks extends CI_Controller {
         $record_id = $this->incomingemail_model->saveFromWebhook($record);
         $support_ticket_id = null;
 
-        if ($message_type === 'Notification'
+        if (strtolower($message_type) === 'notification'
             && strtolower((string) $record['ses_notification_type']) === 'received'
             && $this->db->table_exists('support_tickets')
             && $this->db->table_exists('support_messages')) {
@@ -108,6 +104,66 @@ class Webhooks extends CI_Controller {
         return $this->respond_json(array('status' => 'ok', 'id' => $record_id, 'support_ticket_id' => $support_ticket_id), 200);
     }
 
+    protected function normalizeInboundPayload($decoded_payload)
+    {
+        if ($this->isSesNotificationPayload($decoded_payload)) {
+            return array($this->buildSnsPayloadFromHeaders(), $decoded_payload);
+        }
+
+        $message_body = isset($decoded_payload['Message']) ? (string) $decoded_payload['Message'] : '';
+        $message_data = json_decode($message_body, true);
+
+        if (!is_array($message_data)) {
+            $message_data = array();
+        }
+
+        return array($decoded_payload, $message_data);
+    }
+
+    protected function isSesNotificationPayload($payload)
+    {
+        return is_array($payload) && (isset($payload['notificationType']) || isset($payload['mail']) || isset($payload['receipt']));
+    }
+
+    protected function buildSnsPayloadFromHeaders()
+    {
+        $type = $this->getRequestHeader('X-Amz-Sns-Message-Type');
+        if ($type === '') {
+            $type = 'Notification';
+        }
+
+        return array(
+            'Type'      => $type,
+            'MessageId' => $this->nullableHeader('X-Amz-Sns-Message-Id'),
+            'TopicArn'  => $this->nullableHeader('X-Amz-Sns-Topic-Arn'),
+        );
+    }
+
+    protected function nullableHeader($name)
+    {
+        $value = $this->getRequestHeader($name);
+        return $value !== '' ? $value : null;
+    }
+
+    protected function getRequestHeader($name)
+    {
+        $server_key = 'HTTP_' . strtoupper(str_replace('-', '_', $name));
+        if (isset($_SERVER[$server_key])) {
+            return trim((string) $_SERVER[$server_key]);
+        }
+
+        if (function_exists('getallheaders')) {
+            $headers = getallheaders();
+            foreach ($headers as $header_name => $value) {
+                if (strcasecmp($header_name, $name) === 0) {
+                    return trim((string) $value);
+                }
+            }
+        }
+
+        return '';
+    }
+
     protected function buildIncomingEmailRecord($sns_payload, $message_data, $raw_payload)
     {
         $mail         = (isset($message_data['mail']) && is_array($message_data['mail'])) ? $message_data['mail'] : array();
@@ -115,7 +171,7 @@ class Webhooks extends CI_Controller {
         $action       = (isset($receipt['action']) && is_array($receipt['action'])) ? $receipt['action'] : array();
         $common       = (isset($mail['commonHeaders']) && is_array($mail['commonHeaders'])) ? $mail['commonHeaders'] : array();
         $headers      = $this->normalizeSesHeaders($mail, $common);
-        $raw_content  = isset($message_data['content']) ? (string) $message_data['content'] : '';
+        $raw_content  = $this->normalizeRawEmailContent(isset($message_data['content']) ? (string) $message_data['content'] : '', $action);
         $parsed_email = $this->extractEmailBodies($raw_content);
 
         return array(
@@ -148,6 +204,47 @@ class Webhooks extends CI_Controller {
             'status'                => 'received',
             'error_message'         => null,
         );
+    }
+
+    protected function normalizeRawEmailContent($content, $action)
+    {
+        $content = (string) $content;
+        if (trim($content) === '') {
+            return '';
+        }
+
+        $encoding = '';
+        if (isset($action['encoding'])) {
+            $encoding = strtolower(trim((string) $action['encoding']));
+        }
+
+        if ($encoding === 'base64') {
+            $decoded = $this->decodeBase64Content($content);
+            return ($decoded === false) ? $content : $decoded;
+        }
+
+        $decoded = $this->decodeBase64Content($content);
+        if ($decoded !== false && $this->looksLikeMimeContent($decoded)) {
+            return $decoded;
+        }
+
+        return $content;
+    }
+
+    protected function decodeBase64Content($content)
+    {
+        $compact = preg_replace('/\s+/', '', (string) $content);
+        if ($compact === '') {
+            return false;
+        }
+
+        return base64_decode($compact, true);
+    }
+
+    protected function looksLikeMimeContent($content)
+    {
+        $content = ltrim((string) $content);
+        return (bool) preg_match('/^(Return-Path|Received|From|Date|Subject|To|Content-Type|MIME-Version|Message-ID):/i', $content);
     }
 
     protected function normalizeSesHeaders($mail, $common)

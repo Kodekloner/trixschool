@@ -13,9 +13,15 @@ class Incomingemail_model extends CI_Model
         return $this->db->where('sns_message_id', $sns_message_id)->get($this->table)->row_array();
     }
 
+    public function getBySesMessageId($ses_message_id)
+    {
+        return $this->db->where('ses_message_id', $ses_message_id)->get($this->table)->row_array();
+    }
+
     public function saveFromWebhook(array $data)
     {
         $sns_message_id = isset($data['sns_message_id']) ? trim((string) $data['sns_message_id']) : '';
+        $ses_message_id = isset($data['ses_message_id']) ? trim((string) $data['ses_message_id']) : '';
         $now            = date('Y-m-d H:i:s');
 
         $payload = array(
@@ -23,7 +29,7 @@ class Incomingemail_model extends CI_Model
             'sns_message_id'        => $sns_message_id !== '' ? $sns_message_id : null,
             'sns_topic_arn'         => isset($data['sns_topic_arn']) ? $data['sns_topic_arn'] : null,
             'ses_notification_type' => isset($data['ses_notification_type']) ? $data['ses_notification_type'] : null,
-            'ses_message_id'        => isset($data['ses_message_id']) ? $data['ses_message_id'] : null,
+            'ses_message_id'        => $ses_message_id !== '' ? $ses_message_id : null,
             'source'                => isset($data['source']) ? $data['source'] : null,
             'subject'               => isset($data['subject']) ? $data['subject'] : null,
             'destinations_json'     => $this->encodeJson(isset($data['destinations']) ? $data['destinations'] : array()),
@@ -58,6 +64,14 @@ class Incomingemail_model extends CI_Model
             }
         }
 
+        if ($ses_message_id !== '') {
+            $existing = $this->getBySesMessageId($ses_message_id);
+            if (!empty($existing)) {
+                $this->db->where('id', $existing['id'])->update($this->table, $payload);
+                return (int) $existing['id'];
+            }
+        }
+
         $payload['created_at'] = $now;
         $this->db->insert($this->table, $payload);
         return (int) $this->db->insert_id();
@@ -73,4 +87,3 @@ class Incomingemail_model extends CI_Model
         return ($json === false) ? null : $json;
     }
 }
-

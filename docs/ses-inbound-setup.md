@@ -41,6 +41,8 @@ Received email notifications are also converted into:
 6. Add an SNS action to the receipt rule that publishes to your SNS topic.
 7. Optionally add an S3 action before the SNS action if you also want raw email copies stored in S3.
 
+The webhook accepts both the normal SNS JSON envelope and SNS raw message delivery. If raw message delivery is enabled, the SES notification body is still converted into a support ticket.
+
 SES notification contents reference:
 
 - https://docs.aws.amazon.com/ses/latest/dg/receiving-email-notifications-contents.html
