@@ -139,7 +139,7 @@ class Welcome extends Front_Controller
                             'note'    => $this->input->post('description') . " (Sent from online front site)",
                         );
                         $visitor_id = $this->Visitors_model->add($cont_data);
-                        $ticket     = $this->createContactSupportTicket();
+                        $ticket     = $this->createFormSupportTicket('contact_form', 'Contact Form Request');
                         $this->sendContactTicketWhatsappNotification($ticket);
                     }
 
@@ -154,6 +154,8 @@ class Welcome extends Front_Controller
                             'description'    => $this->input->post('description'),
                         );
                         $complaint_id = $this->complaint_Model->add($complaint_data);
+                        $ticket       = $this->createFormSupportTicket('complaint_form', 'Website Complaint');
+                        $this->sendContactTicketWhatsappNotification($ticket);
                     }
 
                     $email_subject = $record['email_title'];
@@ -178,18 +180,24 @@ class Welcome extends Front_Controller
         $this->load_theme('pages/page');
     }
 
-    protected function createContactSupportTicket()
+    protected function createFormSupportTicket($source, $default_subject)
     {
         if (!$this->db->table_exists('support_tickets') || !$this->db->table_exists('support_messages')) {
-            log_message('error', 'Contact form submitted but support ticket tables are missing.');
+            log_message('error', 'Website form submitted but support ticket tables are missing.');
             return false;
         }
 
+        $subject = trim((string) $this->input->post('subject', true));
+        if ($subject === '') {
+            $subject = $default_subject;
+        }
+
         return $this->supportticket_model->createFromContactForm(array(
+            'source'  => $source,
             'name'    => $this->input->post('name', true),
             'email'   => $this->input->post('email', true),
             'phone'   => $this->input->post('contact_no', true),
-            'subject' => $this->input->post('subject', true),
+            'subject' => $subject,
             'message' => $this->input->post('description', true),
         ));
     }

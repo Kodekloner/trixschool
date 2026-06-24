@@ -172,7 +172,7 @@ class Supportticket_model extends CI_Model
     public function createFromContactForm($data)
     {
         if (!$this->db->table_exists($this->ticket_table) || !$this->db->table_exists($this->message_table)) {
-            log_message('error', 'Contact support ticket could not be created: support ticket tables are missing.');
+            log_message('error', 'Website support ticket could not be created: support ticket tables are missing.');
             return false;
         }
 
@@ -189,12 +189,16 @@ class Supportticket_model extends CI_Model
         $subject = $this->normalizeSubject(isset($data['subject']) ? $data['subject'] : 'Contact Form Request');
         $message = trim((string) (isset($data['message']) ? $data['message'] : ''));
         $phone   = trim((string) (isset($data['phone']) ? $data['phone'] : ''));
+        $source  = trim((string) (isset($data['source']) ? $data['source'] : 'contact_form'));
+        if (!in_array($source, array('contact_form', 'complaint_form'), true)) {
+            $source = 'contact_form';
+        }
         $now     = date('Y-m-d H:i:s');
 
         $this->db->trans_start();
 
         $ticket = $this->createTicket(array(
-            'source'                   => 'contact_form',
+            'source'                   => $source,
             'requester_name'           => $requester_name,
             'requester_email'          => $requester_email,
             'requester_phone'          => $phone !== '' ? $phone : null,

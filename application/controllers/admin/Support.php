@@ -11,6 +11,7 @@ class Support extends Admin_Controller
         parent::__construct();
         $this->load->library('form_validation');
         $this->load->library('mailer');
+        $this->config->load('incoming_email', true);
         $this->load->model('supportticket_model');
         $this->load->model('staff_model');
         $this->load->model('setting_model');
@@ -37,6 +38,7 @@ class Support extends Admin_Controller
         $data['filters']          = $filters;
         $data['status_options']   = $this->statusOptions();
         $data['priority_options'] = $this->priorityOptions();
+        $data['inbound_email_address'] = $this->getInboundEmailAddress();
 
         $this->load->view('layout/header');
         $this->load->view('admin/support/index', $data);
@@ -204,6 +206,20 @@ class Support extends Admin_Controller
     protected function buildReplyBody($message, $ticket)
     {
         return trim($message) . "\n\n--\nTicket: " . $ticket['ticket_number'];
+    }
+
+    protected function getInboundEmailAddress()
+    {
+        $local_part = strtolower(trim((string) $this->config->item('ses_inbound_recipient_local_part', 'incoming_email')));
+        $domain     = isset($_SERVER['HTTP_HOST']) ? strtolower(trim((string) $_SERVER['HTTP_HOST'])) : '';
+        $domain     = preg_replace('/:\d+$/', '', $domain);
+        $domain     = preg_replace('/^www\./i', '', $domain);
+
+        if ($local_part === '' || $domain === '') {
+            return '';
+        }
+
+        return $local_part . '@' . $domain;
     }
 
     protected function requireSupportTables()

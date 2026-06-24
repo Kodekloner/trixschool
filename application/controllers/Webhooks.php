@@ -5,6 +5,8 @@ if (!defined('BASEPATH')) {
 }
 
 class Webhooks extends CI_Controller {
+
+    protected $database_group_configs = null;
 	
     public function __construct() {
         parent::__construct();
@@ -50,6 +52,7 @@ class Webhooks extends CI_Controller {
         $configured_token   = trim((string) $this->config->item('ses_inbound_webhook_token', 'incoming_email'));
         $allowed_topic_arn  = trim((string) $this->config->item('ses_inbound_allowed_topic_arn', 'incoming_email'));
         $auto_confirm       = (bool) $this->config->item('ses_inbound_auto_confirm', 'incoming_email');
+        $recipient_local_part = strtolower(trim((string) $this->config->item('ses_inbound_recipient_local_part', 'incoming_email')));
         $provided_token     = trim((string) $this->input->get('token', true));
         $raw_payload        = file_get_contents('php://input');
         $decoded_payload    = json_decode($raw_payload, true);
@@ -70,38 +73,178 @@ class Webhooks extends CI_Controller {
 
         list($sns_payload, $message_data) = $this->normalizeInboundPayload($decoded_payload);
 
-        if ($allowed_topic_arn !== '' && isset($sns_payload['TopicArn']) && $sns_payload['TopicArn'] !== $allowed_topic_arn) {
-            log_message('error', 'SES inbound webhook rejected: unexpected topic ARN ' . $sns_payload['TopicArn']);
+        $topic_arn = isset($sns_payload['TopicArn']) ? trim((string) $sns_payload['TopicArn']) : '';
+        if ($allowed_topic_arn !== '' && ($topic_arn === '' || !hash_equals($allowed_topic_arn, $topic_arn))) {
+            log_message('error', 'SES inbound webhook rejected: unexpected topic ARN ' . $topic_arn);
             return $this->respond_json(array('status' => 'error', 'message' => 'Unexpected topic'), 403);
         }
 
         $message_type = isset($sns_payload['Type']) ? (string) $sns_payload['Type'] : '';
+        $normalized_message_type = strtolower($message_type);
 
-        $record = $this->buildIncomingEmailRecord($sns_payload, $message_data, $raw_payload);
-
-        if ($message_type === 'SubscriptionConfirmation' && $auto_confirm && !empty($sns_payload['SubscribeURL'])) {
-            $confirmed = $this->confirmSnsSubscription($sns_payload['SubscribeURL']);
-            $record['status'] = $confirmed ? 'subscription_confirmed' : 'subscription_pending';
-            if (!$confirmed) {
-                $record['error_message'] = 'SNS subscription confirmation failed.';
+        if ($normalized_message_type === 'subscriptionconfirmation') {
+            $confirmed = false;
+            if ($auto_confirm && !empty($sns_payload['SubscribeURL'])) {
+                $confirmed = $this->confirmSnsSubscription($sns_payload['SubscribeURL']);
             }
-        } elseif ($message_type === 'UnsubscribeConfirmation') {
-            $record['status'] = 'unsubscribed';
+
+            log_message($confirmed ? 'info' : 'error', 'SES inbound SNS subscription ' . ($confirmed ? 'confirmed.' : 'is pending confirmation.'));
+            return $this->respond_json(array(
+                'status'    => $confirmed ? 'subscription_confirmed' : 'subscription_pending',
+                'confirmed' => $confirmed,
+            ), 200);
         }
 
-        $record_id = $this->incomingemail_model->saveFromWebhook($record);
+        if ($normalized_message_type === 'unsubscribeconfirmation') {
+            log_message('error', 'SES inbound SNS subscription was unsubscribed.');
+            return $this->respond_json(array('status' => 'unsubscribed'), 200);
+        }
+
+        if ($normalized_message_type !== 'notification') {
+            return $this->respond_json(array('status' => 'ignored', 'message' => 'Unsupported SNS message type'), 200);
+        }
+
+        if ($recipient_local_part === '') {
+            log_message('error', 'SES inbound routing failed: recipient local part is not configured.');
+            return $this->respond_json(array('status' => 'error', 'message' => 'Inbound recipient is not configured'), 500);
+        }
+
+        $school_route = $this->resolveSchoolRoute($message_data, $recipient_local_part);
+        if (empty($school_route)) {
+            log_message('error', 'SES inbound notification ignored: no configured school database matched the envelope recipients.');
+            return $this->respond_json(array('status' => 'ignored', 'message' => 'No school route matched'), 200);
+        }
+
+        if (!$this->activateSchoolDatabase($school_route['database_group'])) {
+            log_message('error', 'SES inbound routing failed: could not connect to database group ' . $school_route['database_group']);
+            return $this->respond_json(array('status' => 'error', 'message' => 'School database unavailable'), 503);
+        }
+
+        if (!$this->requiredInboundTablesExist()) {
+            log_message('error', 'SES inbound routing failed: support tables are missing for ' . $school_route['database_group']);
+            return $this->respond_json(array('status' => 'error', 'message' => 'School support tables are missing'), 503);
+        }
+
+        $record            = $this->buildIncomingEmailRecord($sns_payload, $message_data, $raw_payload);
+        $record_id         = $this->incomingemail_model->saveFromWebhook($record);
         $support_ticket_id = null;
 
-        if (strtolower($message_type) === 'notification'
-            && strtolower((string) $record['ses_notification_type']) === 'received'
-            && $this->db->table_exists('support_tickets')
-            && $this->db->table_exists('support_messages')) {
+        if (strtolower((string) $record['ses_notification_type']) === 'received') {
             $support_ticket_id = $this->supportticket_model->processIncomingEmail($record_id);
         }
 
-        log_message('info', 'SES inbound webhook stored message #' . $record_id . ' (' . $message_type . ')');
+        log_message('info', 'SES inbound webhook routed ' . $school_route['recipient'] . ' to ' . $school_route['database_group'] . ' and stored message #' . $record_id);
 
-        return $this->respond_json(array('status' => 'ok', 'id' => $record_id, 'support_ticket_id' => $support_ticket_id), 200);
+        return $this->respond_json(array(
+            'status'            => 'ok',
+            'school_domain'     => $school_route['database_group'],
+            'recipient'         => $school_route['recipient'],
+            'id'                => $record_id,
+            'support_ticket_id' => $support_ticket_id,
+        ), 200);
+    }
+
+    protected function resolveSchoolRoute($message_data, $recipient_local_part)
+    {
+        $mail    = (isset($message_data['mail']) && is_array($message_data['mail'])) ? $message_data['mail'] : array();
+        $receipt = (isset($message_data['receipt']) && is_array($message_data['receipt'])) ? $message_data['receipt'] : array();
+        $destinations = array_merge(
+            isset($mail['destination']) && is_array($mail['destination']) ? $mail['destination'] : array(),
+            isset($receipt['recipients']) && is_array($receipt['recipients']) ? $receipt['recipients'] : array()
+        );
+        $routes = array();
+
+        foreach ($destinations as $destination) {
+            if (!is_string($destination)) {
+                continue;
+            }
+
+            $email = strtolower(trim((string) $destination));
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                continue;
+            }
+
+            list($local_part, $domain) = explode('@', $email, 2);
+            $domain = preg_replace('/^www\./i', '', strtolower(trim($domain)));
+
+            if ($local_part !== $recipient_local_part || !$this->isConfiguredDatabaseGroup($domain)) {
+                continue;
+            }
+
+            $routes[$domain] = array(
+                'recipient'      => $email,
+                'database_group' => $domain,
+            );
+        }
+
+        if (count($routes) !== 1) {
+            if (count($routes) > 1) {
+                log_message('error', 'SES inbound routing rejected a message addressed to more than one school admin address.');
+            }
+            return array();
+        }
+
+        return reset($routes);
+    }
+
+    protected function isConfiguredDatabaseGroup($group_name)
+    {
+        return $this->getDatabaseGroupConfig($group_name) !== null;
+    }
+
+    protected function getDatabaseGroupConfig($group_name)
+    {
+        if ($this->database_group_configs === null) {
+            $active_group = 'default';
+            $query_builder = true;
+            $db = array();
+            $database_configs = array();
+            include APPPATH . 'config/database.php';
+
+            $this->database_group_configs = array();
+            foreach ($database_configs as $name => $settings) {
+                if (is_array($settings) && !empty($settings['dbdriver'])) {
+                    $this->database_group_configs[strtolower((string) $name)] = $settings;
+                }
+            }
+
+            foreach ($db as $name => $settings) {
+                if (is_array($settings) && !empty($settings['dbdriver'])) {
+                    $normalized_name = strtolower((string) $name);
+                    if (!isset($this->database_group_configs[$normalized_name])) {
+                        $this->database_group_configs[$normalized_name] = $settings;
+                    }
+                }
+            }
+        }
+
+        $normalized_group = strtolower((string) $group_name);
+        return isset($this->database_group_configs[$normalized_group])
+            ? $this->database_group_configs[$normalized_group]
+            : null;
+    }
+
+    protected function activateSchoolDatabase($database_group)
+    {
+        $database_config = $this->getDatabaseGroupConfig($database_group);
+        if ($database_config === null) {
+            return false;
+        }
+
+        $school_db = $this->load->database($database_config, true);
+        if (!is_object($school_db) || empty($school_db->conn_id)) {
+            return false;
+        }
+
+        $this->db = $school_db;
+        return true;
+    }
+
+    protected function requiredInboundTablesExist()
+    {
+        return $this->db->table_exists('incoming_emails')
+            && $this->db->table_exists('support_tickets')
+            && $this->db->table_exists('support_messages');
     }
 
     protected function normalizeInboundPayload($decoded_payload)
