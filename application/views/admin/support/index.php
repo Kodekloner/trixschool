@@ -20,6 +20,11 @@ $format_date = function ($value) {
                 <div class="box box-primary">
                     <div class="box-header with-border">
                         <h3 class="box-title">Support Tickets</h3>
+                        <?php if (!empty($inbound_email_address)) { ?>
+                            <div class="box-tools pull-right">
+                                <span class="text-muted"><i class="fa fa-envelope"></i> <?php echo html_escape($inbound_email_address); ?></span>
+                            </div>
+                        <?php } ?>
                     </div>
                     <div class="box-body">
                         <div class="row">
