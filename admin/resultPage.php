@@ -1,4 +1,14 @@
 <?php
+require_once('../helper/resultpage_helper.php');
+
+$resultSubTypeRaw = $_GET['reltype'] ?? 'termly';
+$resultSubType = normalize_result_page_reltype($resultSubTypeRaw);
+
+if ($resultSubType === '') {
+    http_response_code(400);
+    exit('Invalid result type.');
+}
+
 include('../database/config.php');
 require_once('../helper/defaultcomment_helper.php');
 ?>
@@ -155,8 +165,7 @@ $classsectionactual = $_GET['classsectionactual'];
 $classid = $_GET['classid'];
 
 $term = $_GET['term'];
-$resultSubTypeRaw = strtolower(trim($_GET['reltype'] ?? 'termly'));
-$resultSubType = ($resultSubTypeRaw === 'midterm' || $resultSubTypeRaw === 'mid-term') ? 'midterm' : 'termly';
+$term2 = '';
 
 if ($term == '1st') {
     $term2 = 'first term';
@@ -308,6 +317,10 @@ $studsection = $rowGetsections['section'];
                     <?php if ($reltypemain == 'midterm') { ?>
                         <div align="center">
                             <h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo $term; ?> TERM, MID TERM</span> <?php echo $session_name; ?> SESSION <span><?php $studsectionid; ?></span></h5>
+                        </div>
+                    <?php } elseif ($reltypemain == 'cummulative') { ?>
+                        <div align="center">
+                            <h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF CUMULATIVE ACADEMIC PERFORMANCE FOR <?php echo $session_name; ?> SESSION <span><?php $studsectionid; ?></span></h5>
                         </div>
                     <?php } else { ?>
                         <div align="center">
@@ -2987,10 +3000,10 @@ $studsection = $rowGetsections['section'];
                                                                             )
                                                                             GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
                                 $resultgetscoretotalscorpositon = mysqli_query($link, $sqlgetscoretotalscorpositon);
-                                $rowgetscoretotalscorpositon = mysqli_fetch_assoc($resultgetscoretotalscorpositon);
+                                $rowgetscoretotalscorpositon = mysqli_fetch_assoc($resultgetscoretotalscorpositon) ?: [];
                                 $row_cntgetscoretotalscorpositon = mysqli_num_rows($resultgetscoretotalscorpositon);
 
-                                $gettotalscorpositon = $rowgetscoretotalscorpositon['n'];
+                                $gettotalscorpositon = (int) ($rowgetscoretotalscorpositon['n'] ?? 0);
 
                                 function addOrdinalNumberSuffix($num)
                                 {
@@ -3043,7 +3056,9 @@ $studsection = $rowGetsections['section'];
                                 <div class="row" style="margin: 10px;">
                                     <div class="col-4">
                                         <h5 style="color: #000000;"> CLASS POSITION: <b><?php
-                                                                                        echo addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
+                                                                                        echo $gettotalscorpositon > 0
+                                                                                            ? addOrdinalNumberSuffix($gettotalscorpositon) . "\t"
+                                                                                            : 'N/A';
 
                                                                                         if ($gettotalscorpositon % 10 == 0) {
                                                                                             echo "\n";
@@ -5086,7 +5101,7 @@ $studsection = $rowGetsections['section'];
                         } else {
                             echo 'No result type has been set for this class';
                         }
-                    } else {
+                    } elseif ($reltypemain == 'cummulative') {
                         if ($reltype == 'alphabetic') {
                         ?>
                             <div class="container-motto">
@@ -5096,14 +5111,17 @@ $studsection = $rowGetsections['section'];
                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
 
-                                $sqlgettotalgrade = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'";
+                                $sqlgettotalgrade = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'";
                                 $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                 $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
 
-                                $gettotgrade = floatval(round($rowgettotalgrade['average'] / $row_cntgetsubscore, 2));
+                                $gettotgrade = safe_result_average($rowgettotalgrade['average'] ?? 0, $row_cntgetsubscore);
+                                if ($row_cntgetsubscore <= 0) {
+                                    $row_cntgettotalgrade = 0;
+                                }
 
-                                $gettotscore = $rowgettotalgrade['average'];
+                                $gettotscore = (float) ($rowgettotalgrade['average'] ?? 0);
 
                                 $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                 $resultgetClasscount = mysqli_query($link, $sqlgetClasscount);
@@ -5115,7 +5133,7 @@ $studsection = $rowGetsections['section'];
                                 $rowgetsubscoreALL = mysqli_fetch_assoc($resultgetsubscoreALL);
                                 $row_cntgetsubscoreALL = mysqli_num_rows($resultgetsubscoreALL);
 
-                                $sqlgettotclassscor = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' ORDER BY exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
+                                $sqlgettotclassscor = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore, COUNT(*) AS scoreCount FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'";
                                 $resultgettotclassscor = mysqli_query($link, $sqlgettotclassscor);
                                 $rowgettotclassscor = mysqli_fetch_assoc($resultgettotclassscor);
                                 $row_cntgettotclassscor = mysqli_num_rows($resultgettotclassscor);
@@ -5123,23 +5141,26 @@ $studsection = $rowGetsections['section'];
                                 $totsubjects = $row_cntClasscount * $row_cntgetsubscore;
                                 $totsubjectsALL = $row_cntClasscount * $row_cntgetsubscoreALL;
 
-                                $decStubsubavg = round($rowgettotclassscor['totalScore'] / $totsubjectsALL, 2);
+                                $decStubsubavg = safe_result_average(
+                                    $rowgettotclassscor['totalScore'] ?? 0,
+                                    $rowgettotclassscor['scoreCount'] ?? 0
+                                );
 
-                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
+                                $sqlsunnyhihhscoreuname = "SELECT StudentID, SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC LIMIT 1";
                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
-                                $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
+                                $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname) ?: [];
                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
 
-                                $sunhihscrun = round($rowsunnyhihhscoreuname['total'], 2);
+                                $sunhihscrun = round((float) ($rowsunnyhihhscoreuname['total'] ?? 0), 2);
 
-                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
+                                $sqlsunnylowwscoreuname = "SELECT StudentID, SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total ASC LIMIT 1";
                                 $resultsunnylowwscoreuname = mysqli_query($link, $sqlsunnylowwscoreuname);
-                                $rowsunnylowwscoreuname = mysqli_fetch_assoc($resultsunnylowwscoreuname);
+                                $rowsunnylowwscoreuname = mysqli_fetch_assoc($resultsunnylowwscoreuname) ?: [];
                                 $row_cntsunnylowwscoreuname = mysqli_num_rows($resultsunnylowwscoreuname);
 
-                                $sunlowscrun = round($rowsunnylowwscoreuname['total'], 2);
+                                $sunlowscrun = round((float) ($rowsunnylowwscoreuname['total'] ?? 0), 2);
 
-                                if ($row_cntgettotalgrade > 0) {
+                                if ($row_cntgetsubscore > 0) {
                                     $sqlgettotgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE gradingstructure.Type = 'term' AND $gettotgrade >= RangeStart AND $gettotgrade <= RangeEnd AND ClassID = '$classid'");
                                     $resultgettotgradstuc = mysqli_query($link, $sqlgettotgradstuc);
                                     $rowgettotgradstuc = mysqli_fetch_assoc($resultgettotgradstuc);
@@ -5154,6 +5175,7 @@ $studsection = $rowGetsections['section'];
                                     }
                                 } else {
                                     $gettotgrade = 'NA';
+                                    $totscorgrade = 'NA';
                                 }
                                 ?>
                                 <div class="row" style="margin: 10px;">
@@ -5208,12 +5230,12 @@ $studsection = $rowGetsections['section'];
                                     <tbody>
                                         <?php
 
-                                        $sqlsub = ("SELECT subjects.name AS name, subjects.id as id FROM `subject_group_class_sections` INNER JOIN subject_group_subjects ON subject_group_class_sections.subject_group_id=subject_group_subjects.subject_group_id INNER JOIN subjects ON subject_group_subjects.subject_id=subjects.id WHERE subject_group_class_sections.class_section_id = '$classsection' AND subject_group_class_sections.session_id='$session' AND subject_group_subjects.session_id='$session'");
+                                        $sqlsub = ("SELECT DISTINCT subjects.name AS name, subjects.id AS id FROM subjects INNER JOIN score ON score.SubjectID = subjects.id WHERE (score.exam != '0' OR score.ca1 != '0' OR score.ca2 != '0' OR score.ca3 != '0' OR score.ca4 != '0' OR score.ca5 != '0' OR score.ca6 != '0' OR score.ca7 != '0' OR score.ca8 != '0' OR score.ca9 != '0' OR score.ca10 != '0') AND score.StudentID = '$id' AND score.SubjectID != '0' AND score.ClassID = '$classid' AND score.Session = '$session' AND score.SectionID = '$classsectionactual' ORDER BY subjects.name");
                                         $resultsub = mysqli_query($link, $sqlsub);
                                         $rowGetsub = mysqli_fetch_assoc($resultsub);
                                         $row_cntsub = mysqli_num_rows($resultsub);
 
-                                        $sqlgetscorecheck = ("SELECT * FROM `score` WHERE StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
+                                        $sqlgetscorecheck = ("SELECT DISTINCT SubjectID FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                         $resultgetscorecheck = mysqli_query($link, $sqlgetscorecheck);
                                         $rowgetscorecheck = mysqli_fetch_assoc($resultgetscorecheck);
                                         $row_cntgetscorecheck = mysqli_num_rows($resultgetscorecheck);
@@ -5243,36 +5265,21 @@ $studsection = $rowGetsections['section'];
                                                     $rowgetscoreCUMFirst = mysqli_fetch_assoc($resultgetscoreCUMFirst);
                                                     $row_cntgetscoreCUMFirst = mysqli_num_rows($resultgetscoreCUMFirst);
 
-                                                    if ($row_cntgetscoreCUMFirst == NULL) {
-
-                                                        $totalCUMFirst = 0;
-                                                    } else {
-                                                        $totalCUMFirst = round($rowgetscoreCUMFirst['Total'], 2);
-                                                    }
+                                                    $totalCUMFirst = round((float) ($rowgetscoreCUMFirst['Total'] ?? 0), 2);
 
                                                     $sqlgetscoreCUMsec = ("SELECT SUM(`exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '2nd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                     $resultgetscoreCUMsec = mysqli_query($link, $sqlgetscoreCUMsec);
                                                     $rowgetscoreCUMsec = mysqli_fetch_assoc($resultgetscoreCUMsec);
                                                     $row_cntgetscoreCUMsec = mysqli_num_rows($resultgetscoreCUMsec);
 
-                                                    if ($row_cntgetscoreCUMsec == NULL) {
-
-                                                        $totalCUMsec = 0;
-                                                    } else {
-                                                        $totalCUMsec = round($rowgetscoreCUMsec['Total'], 2);
-                                                    }
+                                                    $totalCUMsec = round((float) ($rowgetscoreCUMsec['Total'] ?? 0), 2);
 
                                                     $sqlgetscoreCUMthr = ("SELECT SUM(`exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '3rd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                     $resultgetscoreCUMthr = mysqli_query($link, $sqlgetscoreCUMthr);
                                                     $rowgetscoreCUMthr = mysqli_fetch_assoc($resultgetscoreCUMthr);
                                                     $row_cntgetscoreCUMthr = mysqli_num_rows($resultgetscoreCUMthr);
 
-                                                    if ($row_cntgetscoreCUMthr == NULL) {
-
-                                                        $totalCUMthr = 0;
-                                                    } else {
-                                                        $totalCUMthr = round($rowgetscoreCUMthr['Total'], 2);
-                                                    }
+                                                    $totalCUMthr = round((float) ($rowgetscoreCUMthr['Total'] ?? 0), 2);
 
                                                     $total = $totalCUMFirst + $totalCUMsec + $totalCUMthr;
 
@@ -5281,7 +5288,7 @@ $studsection = $rowGetsections['section'];
                                                     $rowgettermtodivide = mysqli_fetch_assoc($resultgettermtodivide);
                                                     $row_cntgettermtodivide = mysqli_num_rows($resultgettermtodivide);
 
-                                                    $subavg =  round(($total / $row_cntgettermtodivide), 2);
+                                                    $subavg = safe_result_average($total, $row_cntgettermtodivide);
 
                                                     $sqlgetgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $subavg >= RangeStart AND $subavg <= RangeEnd AND ClassID = '$classid'");
                                                     $resultgetgradstuc = mysqli_query($link, $sqlgetgradstuc);
@@ -5420,10 +5427,15 @@ $studsection = $rowGetsections['section'];
                                                         $row_cntrelset = mysqli_num_rows($resultrelset);
 
                                                         if ($row_cntrelset > 0) {
-                                                            $sqlgetscore = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND term = '3rd' AND sectionid = '$classsectionactual'");
-                                                            $resultgetscore = mysqli_query($link, $sqlgetscore);
-                                                            $rowgetscore = mysqli_fetch_assoc($resultgetscore);
-                                                            $row_cntgetscore = mysqli_num_rows($resultgetscore);
+                                                            $rowgetscore = get_latest_scored_result_domain_row(
+                                                                $link,
+                                                                'affective',
+                                                                $id,
+                                                                $classid,
+                                                                $classsectionactual,
+                                                                $session
+                                                            );
+                                                            $row_cntgetscore = $rowgetscore ? 1 : 0;
 
                                                             if ($row_cntgetscore > 0) {
                                                                 if ($rowGetrelset['NumberofAD'] == '1') {
@@ -5943,10 +5955,15 @@ $studsection = $rowGetsections['section'];
                                                         $row_cntrelset = mysqli_num_rows($resultrelset);
 
                                                         if ($row_cntrelset > 0) {
-                                                            $sqlgetscore = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND term = '3rd' AND sectionid = '$classsectionactual'");
-                                                            $resultgetscore = mysqli_query($link, $sqlgetscore);
-                                                            $rowgetscore = mysqli_fetch_assoc($resultgetscore);
-                                                            $row_cntgetscore = mysqli_num_rows($resultgetscore);
+                                                            $rowgetscore = get_latest_scored_result_domain_row(
+                                                                $link,
+                                                                'psycomotor',
+                                                                $id,
+                                                                $classid,
+                                                                $classsectionactual,
+                                                                $session
+                                                            );
+                                                            $row_cntgetscore = $rowgetscore ? 1 : 0;
 
                                                             if ($row_cntgetscore > 0) {
                                                                 if ($rowGetrelset['NumberofP'] == '1') {
@@ -6589,14 +6606,17 @@ $studsection = $rowGetsections['section'];
                                 $rowgetsubscore = mysqli_fetch_assoc($resultgetsubscore);
                                 $row_cntgetsubscore = mysqli_num_rows($resultgetsubscore);
 
-                                $sqlgettotalgrade = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'";
+                                $sqlgettotalgrade = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS average FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'";
                                 $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
                                 $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
                                 $row_cntgettotalgrade = mysqli_num_rows($resultgettotalgrade);
 
-                                $gettotgrade = floatval(round($rowgettotalgrade['average'] / $row_cntgetsubscore, 2));
+                                $gettotgrade = safe_result_average($rowgettotalgrade['average'] ?? 0, $row_cntgetsubscore);
+                                if ($row_cntgetsubscore <= 0) {
+                                    $row_cntgettotalgrade = 0;
+                                }
 
-                                $gettotscore = $rowgettotalgrade['average'];
+                                $gettotscore = (float) ($rowgettotalgrade['average'] ?? 0);
 
                                 $sqlgetClasscount = ("SELECT DISTINCT(StudentID) FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                 $resultgetClasscount = mysqli_query($link, $sqlgetClasscount);
@@ -6608,7 +6628,7 @@ $studsection = $rowGetsections['section'];
                                 $rowgetsubscoreALL = mysqli_fetch_assoc($resultgetsubscoreALL);
                                 $row_cntgetsubscoreALL = mysqli_num_rows($resultgetsubscoreALL);
 
-                                $sqlgettotclassscor = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' ORDER BY exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10";
+                                $sqlgettotclassscor = "SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS totalScore, COUNT(*) AS scoreCount FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'";
                                 $resultgettotclassscor = mysqli_query($link, $sqlgettotclassscor);
                                 $rowgettotclassscor = mysqli_fetch_assoc($resultgettotclassscor);
                                 $row_cntgettotclassscor = mysqli_num_rows($resultgettotclassscor);
@@ -6616,21 +6636,24 @@ $studsection = $rowGetsections['section'];
                                 $totsubjects = $row_cntClasscount * $row_cntgetsubscore;
                                 $totsubjectsALL = $row_cntClasscount * $row_cntgetsubscoreALL;
 
-                                $decStubsubavg = round($rowgettotclassscor['totalScore'] / $totsubjectsALL, 2);
+                                $decStubsubavg = safe_result_average(
+                                    $rowgettotclassscor['totalScore'] ?? 0,
+                                    $rowgettotclassscor['scoreCount'] ?? 0
+                                );
 
-                                $sqlsunnyhihhscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total DESC LIMIT 1";
+                                $sqlsunnyhihhscoreuname = "SELECT StudentID, SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total DESC LIMIT 1";
                                 $resultsunnyhihhscoreuname = mysqli_query($link, $sqlsunnyhihhscoreuname);
-                                $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname);
+                                $rowsunnyhihhscoreuname = mysqli_fetch_assoc($resultsunnyhihhscoreuname) ?: [];
                                 $row_cntsunnyhihhscoreuname = mysqli_num_rows($resultsunnyhihhscoreuname);
 
-                                $sunhihscrun = round($rowsunnyhihhscoreuname['total'], 2);
+                                $sunhihscrun = round((float) ($rowsunnyhihhscoreuname['total'] ?? 0), 2);
 
-                                $sqlsunnylowwscoreuname = "SELECT DISTINCT(StudentID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10),COUNT(ID), SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID order by total ASC LIMIT 1";
+                                $sqlsunnylowwscoreuname = "SELECT StudentID, SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) / COUNT(ID) AS total FROM score WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' GROUP BY StudentID ORDER BY total ASC LIMIT 1";
                                 $resultsunnylowwscoreuname = mysqli_query($link, $sqlsunnylowwscoreuname);
-                                $rowsunnylowwscoreuname = mysqli_fetch_assoc($resultsunnylowwscoreuname);
+                                $rowsunnylowwscoreuname = mysqli_fetch_assoc($resultsunnylowwscoreuname) ?: [];
                                 $row_cntsunnylowwscoreuname = mysqli_num_rows($resultsunnylowwscoreuname);
 
-                                $sunlowscrun = round($rowsunnylowwscoreuname['total'], 2);
+                                $sunlowscrun = round((float) ($rowsunnylowwscoreuname['total'] ?? 0), 2);
 
                                 $sqlgetscoretotalscorpositon = "SELECT * FROM (SELECT *, @n := @n + 1 n FROM (SELECT SUM(exam + ca1 + ca2 + ca3 + ca4 + ca5 + ca6 + ca7 + ca8 + ca9 + ca10) AS total, StudentID FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual' AND SubjectID IN 
                                                                             (
@@ -6647,10 +6670,10 @@ $studsection = $rowGetsections['section'];
                                                                             )
                                                                                 GROUP BY StudentID ORDER BY total DESC) as sunny, (SELECT @n := 0) as m) as sunito WHERE sunito.StudentID='$id'";
                                 $resultgetscoretotalscorpositon = mysqli_query($link, $sqlgetscoretotalscorpositon);
-                                $rowgetscoretotalscorpositon = mysqli_fetch_assoc($resultgetscoretotalscorpositon);
+                                $rowgetscoretotalscorpositon = mysqli_fetch_assoc($resultgetscoretotalscorpositon) ?: [];
                                 $row_cntgetscoretotalscorpositon = mysqli_num_rows($resultgetscoretotalscorpositon);
 
-                                $gettotalscorpositon = $rowgetscoretotalscorpositon['n'];
+                                $gettotalscorpositon = (int) ($rowgetscoretotalscorpositon['n'] ?? 0);
 
                                 function addOrdinalNumberSuffix($num)
                                 {
@@ -6707,7 +6730,9 @@ $studsection = $rowGetsections['section'];
 
                                     <div class="col-4">
                                         <h5 style="color: #000000;"> CLASS POSITION: <b><?php
-                                                                                        echo addOrdinalNumberSuffix($gettotalscorpositon) . "\t";
+                                                                                        echo $gettotalscorpositon > 0
+                                                                                            ? addOrdinalNumberSuffix($gettotalscorpositon) . "\t"
+                                                                                            : 'N/A';
 
                                                                                         if ($gettotalscorpositon % 10 == 0) {
                                                                                             echo "\n";
@@ -6748,12 +6773,12 @@ $studsection = $rowGetsections['section'];
                                     <tbody>
                                         <?php
 
-                                        $sqlsub = ("SELECT subjects.name AS name, subjects.id as id FROM `subject_group_class_sections` INNER JOIN subject_group_subjects ON subject_group_class_sections.subject_group_id=subject_group_subjects.subject_group_id INNER JOIN subjects ON subject_group_subjects.subject_id=subjects.id WHERE subject_group_class_sections.class_section_id = '$classsection' AND subject_group_class_sections.session_id='$session' AND subject_group_subjects.session_id='$session'");
+                                        $sqlsub = ("SELECT DISTINCT subjects.name AS name, subjects.id AS id FROM subjects INNER JOIN score ON score.SubjectID = subjects.id WHERE (score.exam != '0' OR score.ca1 != '0' OR score.ca2 != '0' OR score.ca3 != '0' OR score.ca4 != '0' OR score.ca5 != '0' OR score.ca6 != '0' OR score.ca7 != '0' OR score.ca8 != '0' OR score.ca9 != '0' OR score.ca10 != '0') AND score.StudentID = '$id' AND score.SubjectID != '0' AND score.ClassID = '$classid' AND score.Session = '$session' AND score.SectionID = '$classsectionactual' ORDER BY subjects.name");
                                         $resultsub = mysqli_query($link, $sqlsub);
                                         $rowGetsub = mysqli_fetch_assoc($resultsub);
                                         $row_cntsub = mysqli_num_rows($resultsub);
 
-                                        $sqlgetscorecheck = ("SELECT * FROM `score` WHERE StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
+                                        $sqlgetscorecheck = ("SELECT DISTINCT SubjectID FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND SubjectID != '0' AND ClassID = '$classid' AND Session = '$session' AND SectionID = '$classsectionactual'");
                                         $resultgetscorecheck = mysqli_query($link, $sqlgetscorecheck);
                                         $rowgetscorecheck = mysqli_fetch_assoc($resultgetscorecheck);
                                         $row_cntgetscorecheck = mysqli_num_rows($resultgetscorecheck);
@@ -6782,36 +6807,21 @@ $studsection = $rowGetsections['section'];
                                                     $rowgetscoreCUMFirst = mysqli_fetch_assoc($resultgetscoreCUMFirst);
                                                     $row_cntgetscoreCUMFirst = mysqli_num_rows($resultgetscoreCUMFirst);
 
-                                                    if ($row_cntgetscoreCUMFirst == NULL) {
-
-                                                        $totalCUMFirst = 0;
-                                                    } else {
-                                                        $totalCUMFirst = round($rowgetscoreCUMFirst['Total'], 2);
-                                                    }
+                                                    $totalCUMFirst = round((float) ($rowgetscoreCUMFirst['Total'] ?? 0), 2);
 
                                                     $sqlgetscoreCUMsec = ("SELECT SUM(`exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '2nd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                     $resultgetscoreCUMsec = mysqli_query($link, $sqlgetscoreCUMsec);
                                                     $rowgetscoreCUMsec = mysqli_fetch_assoc($resultgetscoreCUMsec);
                                                     $row_cntgetscoreCUMsec = mysqli_num_rows($resultgetscoreCUMsec);
 
-                                                    if ($row_cntgetscoreCUMsec == NULL) {
-
-                                                        $totalCUMsec = 0;
-                                                    } else {
-                                                        $totalCUMsec = round($rowgetscoreCUMsec['Total'], 2);
-                                                    }
+                                                    $totalCUMsec = round((float) ($rowgetscoreCUMsec['Total'] ?? 0), 2);
 
                                                     $sqlgetscoreCUMthr = ("SELECT SUM(`exam` + `ca1` + `ca2` + `ca3` + `ca4` + `ca5` + `ca6` + `ca7` + `ca8` + `ca9` + `ca10`) AS Total FROM `score` WHERE (`exam` !='0' OR `ca1` !='0' OR `ca2` !='0' OR `ca3` !='0' OR `ca4` !='0' OR `ca5` !='0' OR `ca6` !='0' OR `ca7` !='0' OR `ca8` !='0' OR `ca9` !='0' OR `ca10` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND Session = '$session' AND Term = '3rd' AND SectionID = '$classsectionactual' AND SubjectID='$subid'");
                                                     $resultgetscoreCUMthr = mysqli_query($link, $sqlgetscoreCUMthr);
                                                     $rowgetscoreCUMthr = mysqli_fetch_assoc($resultgetscoreCUMthr);
                                                     $row_cntgetscoreCUMthr = mysqli_num_rows($resultgetscoreCUMthr);
 
-                                                    if ($row_cntgetscoreCUMthr == NULL) {
-
-                                                        $totalCUMthr = 0;
-                                                    } else {
-                                                        $totalCUMthr = round($rowgetscoreCUMthr['Total'], 2);
-                                                    }
+                                                    $totalCUMthr = round((float) ($rowgetscoreCUMthr['Total'] ?? 0), 2);
 
                                                     $total = $totalCUMFirst + $totalCUMsec + $totalCUMthr;
 
@@ -6820,7 +6830,7 @@ $studsection = $rowGetsections['section'];
                                                     $rowgettermtodivide = mysqli_fetch_assoc($resultgettermtodivide);
                                                     $row_cntgettermtodivide = mysqli_num_rows($resultgettermtodivide);
 
-                                                    $subavg =  round(($total / $row_cntgettermtodivide), 2);
+                                                    $subavg = safe_result_average($total, $row_cntgettermtodivide);
 
                                                     $sqlgetgradstuc = ("SELECT * FROM `gradingstructure` INNER JOIN assigngradingtclass ON gradingstructure.GradingTitle = assigngradingtclass.GradingTitle WHERE $subavg >= RangeStart AND $subavg <= RangeEnd AND ClassID = '$classid'");
                                                     $resultgetgradstuc = mysqli_query($link, $sqlgetgradstuc);
@@ -6958,6 +6968,32 @@ $studsection = $rowGetsections['section'];
                                         </div>
                                     </div>
                                     <?php
+                                    $cumulativeAffectiveScoreRow = get_latest_scored_result_domain_row(
+                                        $link,
+                                        'affective',
+                                        $id,
+                                        $classid,
+                                        $classsectionactual,
+                                        $session
+                                    );
+                                    $cumulativePsycomotorScoreRow = get_latest_scored_result_domain_row(
+                                        $link,
+                                        'psycomotor',
+                                        $id,
+                                        $classid,
+                                        $classsectionactual,
+                                        $session
+                                    );
+                                    $hasCumulativeAffectiveScore = $cumulativeAffectiveScoreRow !== null;
+                                    $hasCumulativePsycomotorScore = $cumulativePsycomotorScoreRow !== null;
+
+                                    for ($domainIndex = 1; $domainIndex <= 15; $domainIndex++) {
+                                        ${'ad' . $domainIndex . 'title'} = null;
+                                        ${'domain' . $domainIndex} = null;
+                                        ${'p' . $domainIndex . 'title'} = null;
+                                        ${'psycomotor' . $domainIndex} = null;
+                                    }
+
                                     $sqlGetGradingSystem = "SELECT * FROM `assignsaftoclass` INNER JOIN affective_domain_settings ON assignsaftoclass.AffectiveDomainSettingsId=affective_domain_settings.id WHERE assignsaftoclass.ClassID='$classid'";
                                     $queryGetGradingSystem = mysqli_query($link, $sqlGetGradingSystem);
                                     $rowGetGradingSystem = mysqli_fetch_assoc($queryGetGradingSystem);
@@ -6967,24 +7003,18 @@ $studsection = $rowGetsections['section'];
                                         if ($rowGetGradingSystem['NumberofAD'] == '1') {
                                             $ad1title = $rowGetGradingSystem['AD1Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativeAffectiveScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativeAffectiveScore) {
                                                 $domain1 = $rowGetstudent_session["domain1"];
                                             }
                                         } elseif ($rowGetGradingSystem['NumberofAD'] == '2') {
                                             $ad1title = $rowGetGradingSystem['AD1Title'];
                                             $ad2title = $rowGetGradingSystem['AD2Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativeAffectiveScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativeAffectiveScore) {
                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                 $domain2 = $rowGetstudent_session["domain2"];
                                             }
@@ -6993,12 +7023,9 @@ $studsection = $rowGetsections['section'];
                                             $ad2title = $rowGetGradingSystem['AD2Title'];
                                             $ad3title = $rowGetGradingSystem['AD3Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativeAffectiveScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativeAffectiveScore) {
                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                 $domain2 = $rowGetstudent_session["domain2"];
                                                 $domain3 = $rowGetstudent_session["domain3"];
@@ -7009,12 +7036,9 @@ $studsection = $rowGetsections['section'];
                                             $ad3title = $rowGetGradingSystem['AD3Title'];
                                             $ad4title = $rowGetGradingSystem['AD4Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativeAffectiveScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativeAffectiveScore) {
                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                 $domain2 = $rowGetstudent_session["domain2"];
                                                 $domain3 = $rowGetstudent_session["domain3"];
@@ -7027,12 +7051,9 @@ $studsection = $rowGetsections['section'];
                                             $ad4title = $rowGetGradingSystem['AD4Title'];
                                             $ad5title = $rowGetGradingSystem['AD5Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativeAffectiveScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativeAffectiveScore) {
                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                 $domain2 = $rowGetstudent_session["domain2"];
                                                 $domain3 = $rowGetstudent_session["domain3"];
@@ -7047,12 +7068,9 @@ $studsection = $rowGetsections['section'];
                                             $ad5title = $rowGetGradingSystem['AD5Title'];
                                             $ad6title = $rowGetGradingSystem['AD6Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativeAffectiveScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativeAffectiveScore) {
                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                 $domain2 = $rowGetstudent_session["domain2"];
                                                 $domain3 = $rowGetstudent_session["domain3"];
@@ -7069,12 +7087,9 @@ $studsection = $rowGetsections['section'];
                                             $ad6title = $rowGetGradingSystem['AD6Title'];
                                             $ad7title = $rowGetGradingSystem['AD7Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativeAffectiveScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativeAffectiveScore) {
                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                 $domain2 = $rowGetstudent_session["domain2"];
                                                 $domain3 = $rowGetstudent_session["domain3"];
@@ -7093,12 +7108,9 @@ $studsection = $rowGetsections['section'];
                                             $ad7title = $rowGetGradingSystem['AD7Title'];
                                             $ad8title = $rowGetGradingSystem['AD8Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativeAffectiveScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativeAffectiveScore) {
                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                 $domain2 = $rowGetstudent_session["domain2"];
                                                 $domain3 = $rowGetstudent_session["domain3"];
@@ -7119,12 +7131,9 @@ $studsection = $rowGetsections['section'];
                                             $ad8title = $rowGetGradingSystem['AD8Title'];
                                             $ad9title = $rowGetGradingSystem['AD9Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativeAffectiveScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativeAffectiveScore) {
                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                 $domain2 = $rowGetstudent_session["domain2"];
                                                 $domain3 = $rowGetstudent_session["domain3"];
@@ -7147,12 +7156,9 @@ $studsection = $rowGetsections['section'];
                                             $ad9title = $rowGetGradingSystem['AD9Title'];
                                             $ad10title = $rowGetGradingSystem['AD10Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativeAffectiveScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativeAffectiveScore) {
                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                 $domain2 = $rowGetstudent_session["domain2"];
                                                 $domain3 = $rowGetstudent_session["domain3"];
@@ -7177,12 +7183,9 @@ $studsection = $rowGetsections['section'];
                                             $ad10title = $rowGetGradingSystem['AD10Title'];
                                             $ad11title = $rowGetGradingSystem['AD11Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativeAffectiveScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativeAffectiveScore) {
                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                 $domain2 = $rowGetstudent_session["domain2"];
                                                 $domain3 = $rowGetstudent_session["domain3"];
@@ -7209,12 +7212,9 @@ $studsection = $rowGetsections['section'];
                                             $ad11title = $rowGetGradingSystem['AD11Title'];
                                             $ad12title = $rowGetGradingSystem['AD12Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativeAffectiveScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativeAffectiveScore) {
                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                 $domain2 = $rowGetstudent_session["domain2"];
                                                 $domain3 = $rowGetstudent_session["domain3"];
@@ -7243,12 +7243,9 @@ $studsection = $rowGetsections['section'];
                                             $ad12title = $rowGetGradingSystem['AD12Title'];
                                             $ad13title = $rowGetGradingSystem['AD13Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativeAffectiveScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativeAffectiveScore) {
                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                 $domain2 = $rowGetstudent_session["domain2"];
                                                 $domain3 = $rowGetstudent_session["domain3"];
@@ -7279,12 +7276,9 @@ $studsection = $rowGetsections['section'];
                                             $ad13title = $rowGetGradingSystem['AD13Title'];
                                             $ad14title = $rowGetGradingSystem['AD14Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativeAffectiveScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativeAffectiveScore) {
                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                 $domain2 = $rowGetstudent_session["domain2"];
                                                 $domain3 = $rowGetstudent_session["domain3"];
@@ -7317,12 +7311,9 @@ $studsection = $rowGetsections['section'];
                                             $ad14title = $rowGetGradingSystem['AD14Title'];
                                             $ad15title = $rowGetGradingSystem['AD15Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `affective_domain_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativeAffectiveScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativeAffectiveScore) {
                                                 $domain1 = $rowGetstudent_session["domain1"];
                                                 $domain2 = $rowGetstudent_session["domain2"];
                                                 $domain3 = $rowGetstudent_session["domain3"];
@@ -7351,24 +7342,18 @@ $studsection = $rowGetsections['section'];
                                         if ($rowGetGradingSystem['NumberofP'] == '1') {
                                             $p1title = $rowGetGradingSystem['P1Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativePsycomotorScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativePsycomotorScore) {
                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                             }
                                         } elseif ($rowGetGradingSystem['NumberofP'] == '2') {
                                             $p1title = $rowGetGradingSystem['P1Title'];
                                             $p2title = $rowGetGradingSystem['P2Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativePsycomotorScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativePsycomotorScore) {
                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
                                             }
@@ -7377,12 +7362,9 @@ $studsection = $rowGetsections['section'];
                                             $p2title = $rowGetGradingSystem['P2Title'];
                                             $p3title = $rowGetGradingSystem['P3Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativePsycomotorScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativePsycomotorScore) {
                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
                                                 $psycomotor3 = $rowGetstudent_session["psycomotor3"];
@@ -7393,12 +7375,9 @@ $studsection = $rowGetsections['section'];
                                             $p3title = $rowGetGradingSystem['P3Title'];
                                             $p4title = $rowGetGradingSystem['P4Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativePsycomotorScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativePsycomotorScore) {
                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
                                                 $psycomotor3 = $rowGetstudent_session["psycomotor3"];
@@ -7411,12 +7390,9 @@ $studsection = $rowGetsections['section'];
                                             $p4title = $rowGetGradingSystem['P4Title'];
                                             $p5title = $rowGetGradingSystem['P5Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativePsycomotorScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativePsycomotorScore) {
                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
                                                 $psycomotor3 = $rowGetstudent_session["psycomotor3"];
@@ -7431,12 +7407,9 @@ $studsection = $rowGetsections['section'];
                                             $p5title = $rowGetGradingSystem['P5Title'];
                                             $p6title = $rowGetGradingSystem['P6Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativePsycomotorScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativePsycomotorScore) {
                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
                                                 $psycomotor3 = $rowGetstudent_session["psycomotor3"];
@@ -7453,12 +7426,9 @@ $studsection = $rowGetsections['section'];
                                             $p6title = $rowGetGradingSystem['P6Title'];
                                             $p7title = $rowGetGradingSystem['P7Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativePsycomotorScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativePsycomotorScore) {
                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
                                                 $psycomotor3 = $rowGetstudent_session["psycomotor3"];
@@ -7477,12 +7447,9 @@ $studsection = $rowGetsections['section'];
                                             $p7title = $rowGetGradingSystem['P7Title'];
                                             $p8title = $rowGetGradingSystem['P8Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativePsycomotorScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativePsycomotorScore) {
                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
                                                 $psycomotor3 = $rowGetstudent_session["psycomotor3"];
@@ -7503,12 +7470,9 @@ $studsection = $rowGetsections['section'];
                                             $p8title = $rowGetGradingSystem['P8Title'];
                                             $p9title = $rowGetGradingSystem['P9Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativePsycomotorScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativePsycomotorScore) {
                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
                                                 $psycomotor3 = $rowGetstudent_session["psycomotor3"];
@@ -7531,12 +7495,9 @@ $studsection = $rowGetsections['section'];
                                             $p9title = $rowGetGradingSystem['P9Title'];
                                             $p10title = $rowGetGradingSystem['P10Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativePsycomotorScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativePsycomotorScore) {
                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
                                                 $psycomotor3 = $rowGetstudent_session["psycomotor3"];
@@ -7561,12 +7522,9 @@ $studsection = $rowGetsections['section'];
                                             $p10title = $rowGetGradingSystem['P10Title'];
                                             $p11title = $rowGetGradingSystem['P11Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativePsycomotorScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativePsycomotorScore) {
                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
                                                 $psycomotor3 = $rowGetstudent_session["psycomotor3"];
@@ -7593,12 +7551,9 @@ $studsection = $rowGetsections['section'];
                                             $p11title = $rowGetGradingSystem['P11Title'];
                                             $p12title = $rowGetGradingSystem['P12Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativePsycomotorScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativePsycomotorScore) {
                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
                                                 $psycomotor3 = $rowGetstudent_session["psycomotor3"];
@@ -7627,12 +7582,9 @@ $studsection = $rowGetsections['section'];
                                             $p12title = $rowGetGradingSystem['P12Title'];
                                             $p13title = $rowGetGradingSystem['P13Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativePsycomotorScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativePsycomotorScore) {
                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
                                                 $psycomotor3 = $rowGetstudent_session["psycomotor3"];
@@ -7663,12 +7615,9 @@ $studsection = $rowGetsections['section'];
                                             $p13title = $rowGetGradingSystem['P13Title'];
                                             $p14title = $rowGetGradingSystem['P14Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativePsycomotorScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativePsycomotorScore) {
                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
                                                 $psycomotor3 = $rowGetstudent_session["psycomotor3"];
@@ -7701,12 +7650,9 @@ $studsection = $rowGetsections['section'];
                                             $p14title = $rowGetGradingSystem['P14Title'];
                                             $p15title = $rowGetGradingSystem['P15Title'];
 
-                                            $sqlGetstudent_session = ("SELECT * FROM `psycomotor_score` WHERE studentid = '$id' AND classid = '$classid' AND session = '$session' AND sectionid = '$classsectionactual'");
-                                            $queryGetstudent_session = mysqli_query($link, $sqlGetstudent_session);
-                                            $rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session);
-                                            $countGetstudent_session = mysqli_num_rows($queryGetstudent_session);
+                                            $rowGetstudent_session = $cumulativePsycomotorScoreRow;
 
-                                            if ($row_cntgetscorecheck > 0) {
+                                            if ($hasCumulativePsycomotorScore) {
                                                 $psycomotor1 = $rowGetstudent_session["psycomotor1"];
                                                 $psycomotor2 = $rowGetstudent_session["psycomotor2"];
                                                 $psycomotor3 = $rowGetstudent_session["psycomotor3"];
@@ -7725,6 +7671,18 @@ $studsection = $rowGetsections['section'];
                                             }
                                         }
                                     }
+
+                                    if (!$hasCumulativeAffectiveScore) {
+                                        for ($domainIndex = 1; $domainIndex <= 15; $domainIndex++) {
+                                            ${'ad' . $domainIndex . 'title'} = null;
+                                        }
+                                    }
+
+                                    if (!$hasCumulativePsycomotorScore) {
+                                        for ($domainIndex = 1; $domainIndex <= 15; $domainIndex++) {
+                                            ${'p' . $domainIndex . 'title'} = null;
+                                        }
+                                    }
                                     ?>
                                     <div class="col-8">
 
@@ -7736,7 +7694,22 @@ $studsection = $rowGetsections['section'];
                                                             <th colspan="4">AFFECTIVE DOMAIN</th>
                                                             <th colspan="4">PSYCOMOTOR</th>
                                                         </tr>
-                                                        <?php if ($ad1title) { ?>
+                                                        <?php if (!$hasCumulativeAffectiveScore || !$hasCumulativePsycomotorScore) { ?>
+                                                            <tr>
+                                                                <td colspan="4" style="text-align: center;">
+                                                                    <?php if (!$hasCumulativeAffectiveScore) { ?>
+                                                                        <div class="alert alert-info mb-2" role="alert">No Result Yet</div>
+                                                                    <?php } ?>
+                                                                </td>
+                                                                <td colspan="4" style="text-align: center;">
+                                                                    <?php if (!$hasCumulativePsycomotorScore) { ?>
+                                                                        <div class="alert alert-info mb-2" role="alert">No Result Yet</div>
+                                                                    <?php } ?>
+                                                                </td>
+                                                            </tr>
+                                                        <?php }
+                                                        if ($hasCumulativeAffectiveScore || $hasCumulativePsycomotorScore) {
+                                                        if ($ad1title || $p1title) { ?>
                                                             <tr>
                                                                 <td><?php echo $ad1title; ?></td>
                                                                 <td><?php echo $domain1; ?></td>
@@ -7748,7 +7721,7 @@ $studsection = $rowGetsections['section'];
                                                                 <td><?php echo $psycomotor2; ?></td>
                                                             </tr>
                                                         <?php }
-                                                        if ($ad3title) { ?>
+                                                        if ($ad3title || $p3title) { ?>
                                                             <tr>
                                                                 <td><?php echo $ad3title; ?></td>
                                                                 <td><?php echo $domain3; ?></td>
@@ -7760,7 +7733,7 @@ $studsection = $rowGetsections['section'];
                                                                 <td><?php echo $psycomotor4; ?></td>
                                                             </tr>
                                                         <?php }
-                                                        if ($ad5title) { ?>
+                                                        if ($ad5title || $p5title) { ?>
                                                             <tr>
                                                                 <td><?php echo $ad5title; ?></td>
                                                                 <td><?php echo $domain5; ?></td>
@@ -7772,7 +7745,7 @@ $studsection = $rowGetsections['section'];
                                                                 <td><?php echo $psycomotor6; ?></td>
                                                             </tr>
                                                         <?php }
-                                                        if ($ad7title) { ?>
+                                                        if ($ad7title || $p7title) { ?>
                                                             <tr>
                                                                 <td><?php echo $ad7title; ?></td>
                                                                 <td><?php echo $domain7; ?></td>
@@ -7784,7 +7757,7 @@ $studsection = $rowGetsections['section'];
                                                                 <td><?php echo $psycomotor8; ?></td>
                                                             </tr>
                                                         <?php }
-                                                        if ($ad9title) { ?>
+                                                        if ($ad9title || $p9title) { ?>
                                                             <tr>
                                                                 <td><?php echo $ad9title; ?></td>
                                                                 <td><?php echo $domain9; ?></td>
@@ -7796,7 +7769,7 @@ $studsection = $rowGetsections['section'];
                                                                 <td><?php echo $psycomotor10; ?></td>
                                                             </tr>
                                                         <?php }
-                                                        if ($ad11title) { ?>
+                                                        if ($ad11title || $p11title) { ?>
                                                             <tr>
                                                                 <td><?php echo $ad11title; ?></td>
                                                                 <td><?php echo $domain11; ?></td>
@@ -7808,7 +7781,7 @@ $studsection = $rowGetsections['section'];
                                                                 <td><?php echo $psycomotor12; ?></td>
                                                             </tr>
                                                         <?php }
-                                                        if ($ad13title) { ?>
+                                                        if ($ad13title || $p13title) { ?>
                                                             <tr>
                                                                 <td><?php echo $ad13title; ?></td>
                                                                 <td><?php echo $domain13; ?></td>
@@ -7820,7 +7793,7 @@ $studsection = $rowGetsections['section'];
                                                                 <td><?php echo $psycomotor14; ?></td>
                                                             </tr>
                                                         <?php }
-                                                        if ($ad15title) { ?>
+                                                        if ($ad15title || $p15title) { ?>
                                                             <tr>
                                                                 <td><?php echo $ad15title; ?></td>
                                                                 <td><?php echo $domain15; ?></td>
@@ -7831,7 +7804,8 @@ $studsection = $rowGetsections['section'];
                                                                 <tb></tb>
                                                                 <tb></tb>
                                                             </tr>
-                                                        <?php } ?>
+                                                        <?php }
+                                                        } ?>
                                                     </table>
                                                 </div>
                                             </div>
