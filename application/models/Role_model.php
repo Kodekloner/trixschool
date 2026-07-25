@@ -158,10 +158,106 @@ class Role_model extends MY_Model {
     }
 
     public function getPermissions($group_id, $role_id) {
-        $sql = "SELECT permission_category.*,IFNULL(roles_permissions.id,0) as `roles_permissions_id`,roles_permissions.can_view,roles_permissions.can_add ,roles_permissions.can_edit ,roles_permissions.can_delete FROM `permission_category` LEFT JOIN roles_permissions on permission_category.id = roles_permissions.perm_cat_id and roles_permissions.role_id= $role_id WHERE permission_category.perm_group_id = $group_id ORDER BY `permission_category`.`id`";
-        $query = $this->db->query($sql);
+        $sql = "SELECT permission_category.*,
+                    IFNULL(roles_permissions.id, 0) AS roles_permissions_id,
+                    IFNULL(roles_permissions.can_view, 0) AS can_view,
+                    IFNULL(roles_permissions.can_add, 0) AS can_add,
+                    IFNULL(roles_permissions.can_edit, 0) AS can_edit,
+                    IFNULL(roles_permissions.can_delete, 0) AS can_delete
+                FROM permission_category
+                LEFT JOIN (
+                    SELECT
+                        perm_cat_id,
+                        MIN(id) AS id,
+                        MAX(IFNULL(can_view, 0)) AS can_view,
+                        MAX(IFNULL(can_add, 0)) AS can_add,
+                        MAX(IFNULL(can_edit, 0)) AS can_edit,
+                        MAX(IFNULL(can_delete, 0)) AS can_delete
+                    FROM roles_permissions
+                    WHERE role_id = ?
+                    GROUP BY perm_cat_id
+                ) AS roles_permissions
+                    ON permission_category.id = roles_permissions.perm_cat_id
+                WHERE permission_category.perm_group_id = ?
+                ORDER BY permission_category.id";
+        $query = $this->db->query($sql, array((int) $role_id, (int) $group_id));
 
         return $query->result();
+    }
+
+    /**
+     * Replace all permissions for a role from the compact checkbox payload.
+     *
+     * Permission categories and enabled operations are read from the database,
+     * so crafted POST fields cannot grant an operation disabled for a category.
+     * Replacing the role's rows also removes any historical duplicates.
+     */
+    public function replacePermissions($role_id, $posted_permissions = array()) {
+        $role_id = (int) $role_id;
+        if ($role_id <= 0 || !is_array($posted_permissions)) {
+            return FALSE;
+        }
+
+        $permission_categories = $this->db
+            ->select('id, enable_view, enable_add, enable_edit, enable_delete')
+            ->from('permission_category')
+            ->get()
+            ->result_array();
+
+        $permission_columns = array('can_view', 'can_add', 'can_edit', 'can_delete');
+        $insert_rows = array();
+        $created_at = date('Y-m-d H:i:s');
+
+        foreach ($permission_categories as $permission_category) {
+            $permission_category_id = (int) $permission_category['id'];
+            $posted_category = isset($posted_permissions[$permission_category_id])
+                && is_array($posted_permissions[$permission_category_id])
+                ? $posted_permissions[$permission_category_id]
+                : array();
+
+            $insert_row = array(
+                'role_id'     => $role_id,
+                'perm_cat_id' => $permission_category_id,
+                'can_view'    => 0,
+                'can_add'     => 0,
+                'can_edit'    => 0,
+                'can_delete'  => 0,
+                'created_at'  => $created_at,
+            );
+            $has_permission = FALSE;
+
+            foreach ($permission_columns as $permission_column) {
+                $enable_column = str_replace('can_', 'enable_', $permission_column);
+                if ((int) $permission_category[$enable_column] === 1
+                    && isset($posted_category[$permission_column])) {
+                    $insert_row[$permission_column] = 1;
+                    $has_permission = TRUE;
+                }
+            }
+
+            if ($has_permission) {
+                $insert_rows[] = $insert_row;
+            }
+        }
+
+        $this->db->trans_start();
+        $this->db->trans_strict(FALSE);
+
+        $this->db->where('role_id', $role_id);
+        $this->db->delete('roles_permissions');
+
+        if (!empty($insert_rows)) {
+            $this->db->insert_batch('roles_permissions', $insert_rows);
+        }
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === FALSE) {
+            $this->db->trans_rollback();
+            return FALSE;
+        }
+
+        return TRUE;
     }
 
     public function ensurePublishResultPermissionSetup() {

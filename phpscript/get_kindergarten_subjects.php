@@ -19,7 +19,7 @@ $assessment_id = $row['assessment_id'];
 $sql = "SELECT s.id, s.name 
         FROM kindergarten_assessment_subjects kas
         INNER JOIN subjects s ON kas.subject_id = s.id
-        WHERE kas.assessment_id = '$assessment_id'
+        WHERE kas.assessment_id = '$assessment_id' AND kas.is_active = 1
         ORDER BY kas.display_order, s.name";
 $res = mysqli_query($link, $sql);
 echo '<option value="0">Select Subject</option>';

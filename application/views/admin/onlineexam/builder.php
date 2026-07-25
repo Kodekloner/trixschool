@@ -1,0 +1,574 @@
+<?php
+$paper_types = array('objective' => 'Objective', 'theory' => 'Theory / Essay', 'practical' => 'Practical', 'oral' => 'Oral', 'aural' => 'Aural', 'project' => 'Project', 'custom' => 'Custom');
+$delivery_modes = array('cbt' => 'CBT / online', 'paper' => 'Paper / manual entry', 'hybrid' => 'Hybrid');
+$format_datetime = function ($value) {
+    return $value ? $this->customlib->dateyyyymmddToDateTimeformat($value, false) : '';
+};
+$paper_sections_json = array();
+$paper_types_json = array();
+foreach ($papers as $paper) {
+    $paper_types_json[(int) $paper['id']] = $paper['paper_type'];
+    $paper_sections_json[(int) $paper['id']] = array_map(function ($section) {
+        return array('id' => (int) $section['id'], 'title' => $section['title']);
+    }, $paper['sections']);
+}
+$authored_question_json = array();
+foreach ((array) $authored_questions as $authored_question) {
+    $definition = json_decode($authored_question['authoring_json'], true);
+    if (!is_array($definition)) {
+        continue;
+    }
+    $authored_question_json[(int) $authored_question['id']] = array(
+        'id' => (int) $authored_question['id'],
+        'paper_id' => (int) $authored_question['paper_id'],
+        'paper_section_id' => empty($authored_question['paper_section_id']) ? '' : (int) $authored_question['paper_section_id'],
+        'question' => $authored_question['question'],
+        'marks' => $authored_question['marks'],
+        'neg_marks' => $authored_question['neg_marks'],
+        'display_order' => (int) $authored_question['display_order'],
+        'is_compulsory' => (int) $authored_question['is_compulsory'],
+        'marking_scheme' => $authored_question['marking_scheme'],
+        'definition' => $definition,
+    );
+}
+?>
+<div class="content-wrapper">
+    <section class="content-header">
+        <h1><?php echo html_escape($exam->exam); ?> <small>Paper and section builder</small></h1>
+    </section>
+    <section class="content">
+        <?php if ($this->session->flashdata('msg')) { echo $this->session->flashdata('msg'); } ?>
+
+        <div class="box box-primary">
+            <div class="box-header with-border">
+                <h3 class="box-title">Academic assessment</h3>
+                <div class="box-tools">
+                    <span class="label label-<?php echo $exam->lifecycle_status === 'draft' ? 'warning' : 'success'; ?>"><?php echo html_escape(ucwords(str_replace('_', ' ', $exam->lifecycle_status))); ?></span>
+                    <span class="label label-default">Revision <?php echo (int) $exam->revision; ?></span>
+                </div>
+            </div>
+            <div class="box-body">
+                <div class="row">
+                    <div class="col-md-3"><strong>Session / Term</strong><br><?php echo html_escape($exam->session_name . ' / ' . strtoupper($exam->term) . ' Term'); ?></div>
+                    <div class="col-md-3"><strong>Class / Arms</strong><br><?php echo html_escape($exam->class_name . ' (' . implode(', ', $exam->section_names) . ')'); ?></div>
+                    <div class="col-md-3"><strong>Subject</strong><br><?php echo html_escape($exam->subject_name); ?></div>
+                    <div class="col-md-3"><strong>Result destination</strong><br><?php echo html_escape(ucwords(str_replace('_', ' ', $exam->result_adapter))); ?><?php if ($exam->target_component) { ?> / <?php echo html_escape(strtoupper($exam->target_component)); ?> (max <?php echo number_format($exam->target_max_score, 2); ?>)<?php } ?></div>
+                </div>
+            </div>
+            <div class="box-footer clearfix">
+                <a href="<?php echo site_url('admin/onlineexam'); ?>" class="btn btn-default btn-sm"><i class="fa fa-arrow-left"></i> Examination list</a>
+                <a href="<?php echo site_url('admin/onlineexam/assign/' . $exam->id); ?>" class="btn btn-default btn-sm"><i class="fa fa-users"></i> Candidate roster</a>
+                <a href="<?php echo site_url('admin/onlineexam/printpaper/' . $exam->id); ?>" target="_blank" class="btn btn-default btn-sm"><i class="fa fa-print"></i> Print paper</a>
+                <a href="<?php echo site_url('admin/onlineexam/evalution/' . $exam->id); ?>" class="btn btn-default btn-sm"><i class="fa fa-check-square-o"></i> Manual marking</a>
+                <?php if ($editable) { ?><a href="<?php echo site_url('admin/onlineexam/workflow/' . $exam->id); ?>" class="btn btn-default btn-sm"><i class="fa fa-pencil"></i> Edit context</a><?php } ?>
+            </div>
+        </div>
+
+        <?php if ($exam->lifecycle_status !== 'draft') { ?>
+        <div class="box box-default">
+            <div class="box-header with-border"><h3 class="box-title">Candidate feedback</h3></div>
+            <div class="box-body">
+                <p>Current online feedback: <strong><?php echo html_escape(ucwords($exam->feedback_status)); ?></strong>. This control never publishes the official report card.</p>
+                <form method="post" action="<?php echo site_url('admin/onlineexam/feedback/' . $exam->id); ?>">
+                    <?php echo $this->customlib->getCSRF(); ?>
+                    <input type="hidden" name="onlineexam_workflow_token" value="<?php echo html_escape($workflow_csrf); ?>">
+                    <input type="hidden" name="feedback_action" value="<?php echo $exam->feedback_status === 'released' ? 'hide' : 'release'; ?>">
+                    <button class="btn btn-<?php echo $exam->feedback_status === 'released' ? 'default' : 'info'; ?> pull-right"><i class="fa fa-<?php echo $exam->feedback_status === 'released' ? 'eye-slash' : 'eye'; ?>"></i> <?php echo $exam->feedback_status === 'released' ? 'Hide online feedback' : 'Release online feedback'; ?></button>
+                </form>
+            </div>
+        </div>
+        <?php } ?>
+
+        <?php if (!$editable) { ?>
+            <div class="alert alert-info"><i class="fa fa-lock"></i> This revision is frozen. Papers, sections, questions, marks, and result mappings cannot be edited.</div>
+        <?php } ?>
+
+        <?php if ($exam->result_adapter === 'british_outcome') {
+            $british_profile = !empty($result_profile) ? json_decode($result_profile['configuration_json'], true) : array('mode' => 'teacher_selection');
+            $british_ranges = array('Emerging' => array(0, 39.99), 'Expected' => array(40, 69.99), 'Exceeding' => array(70, 100));
+            foreach (isset($british_profile['outcomes']) ? $british_profile['outcomes'] : array() as $range) {
+                if (isset($british_ranges[$range['value']])) { $british_ranges[$range['value']] = array($range['min'], $range['max']); }
+            }
+        ?>
+        <div class="box box-purple" style="border-top-color:#605ca8">
+            <div class="box-header with-border"><h3 class="box-title">British outcome profile</h3></div>
+            <form method="post" action="<?php echo site_url('admin/onlineexam/britishProfileSave'); ?>">
+                <?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>">
+                <div class="box-body">
+                    <div class="row">
+                        <div class="col-md-4"><div class="form-group"><label>Conversion mode</label><select name="profile_mode" id="british_profile_mode" class="form-control" <?php echo $editable ? '' : 'disabled'; ?>><option value="teacher_selection" <?php echo $british_profile['mode'] === 'teacher_selection' ? 'selected' : ''; ?>>Teacher selects final outcome</option><option value="thresholds" <?php echo $british_profile['mode'] === 'thresholds' ? 'selected' : ''; ?>>Convert assessment percentage by thresholds</option></select></div></div>
+                        <div class="col-md-8"><p class="help-block">British academic results store Expected, Emerging, or Exceeding—not a numeric CA score. Threshold mode converts automatically; teacher-selection mode waits for a finalized outcome.</p></div>
+                    </div>
+                    <div id="british_thresholds" class="row" style="<?php echo $british_profile['mode'] === 'thresholds' ? '' : 'display:none'; ?>">
+                        <?php foreach ($british_ranges as $outcome => $range) { ?><div class="col-md-4"><div class="well well-sm"><strong><?php echo $outcome; ?></strong><div class="row"><div class="col-xs-6"><label>Minimum</label><input type="number" name="outcome_min[<?php echo $outcome; ?>]" min="0" max="100" step="0.01" class="form-control" value="<?php echo html_escape($range[0]); ?>"></div><div class="col-xs-6"><label>Maximum</label><input type="number" name="outcome_max[<?php echo $outcome; ?>]" min="0" max="100" step="0.01" class="form-control" value="<?php echo html_escape($range[1]); ?>"></div></div></div></div><?php } ?>
+                    </div>
+                </div>
+                <?php if ($editable) { ?><div class="box-footer"><button class="btn btn-primary pull-right"><i class="fa fa-save"></i> Save outcome profile</button></div><?php } ?>
+            </form>
+        </div>
+        <?php } ?>
+
+        <?php if ($exam->result_adapter === 'kindergarten_concept') {
+            $kindergarten_label_map = array();
+            foreach ($kindergarten_options as $mapping_option) {
+                $kindergarten_label_map[(int) $mapping_option['concept_id']] = array_values($mapping_option['result_labels']);
+            }
+        ?>
+        <div class="box box-purple" style="border-top-color:#605ca8">
+            <div class="box-header with-border"><h3 class="box-title">Kindergarten paper-to-concept mapping</h3></div>
+            <div class="box-body">
+                <p class="help-block">Each mapped paper or section produces one qualitative concept result using the assessment labels already configured for this class.</p>
+                <?php if (empty($kindergarten_options)) { ?><div class="alert alert-danger">No active Kindergarten concept for <?php echo html_escape($exam->subject_name); ?> is assigned to this class. Correct the Kindergarten Assessment Setting first.</div><?php } ?>
+                <?php if (!empty($kindergarten_mappings)) { ?>
+                <div class="table-responsive"><table class="table table-bordered table-condensed"><thead><tr><th>Assessment / Concept</th><th>Paper / Section</th><th>Conversion</th><?php if ($editable) { ?><th></th><?php } ?></tr></thead><tbody><?php foreach ($kindergarten_mappings as $mapping) { ?><tr><td><?php echo html_escape($mapping['assessment_name'] . ' / ' . $mapping['concept_text']); ?></td><td><?php echo html_escape($mapping['paper_title'] . ($mapping['section_title'] ? ' / ' . $mapping['section_title'] : '')); ?></td><td>Mapped paper/section percentage thresholds</td><?php if ($editable) { ?><td><form method="post" action="<?php echo site_url('admin/onlineexam/kindergartenMappingDelete'); ?>" onsubmit="return confirm('Remove this concept mapping?');"><?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>"><input type="hidden" name="mapping_id" value="<?php echo (int) $mapping['id']; ?>"><button class="btn btn-danger btn-xs"><i class="fa fa-remove"></i></button></form></td><?php } ?></tr><?php } ?></tbody></table></div>
+                <?php } ?>
+                <?php if ($editable && !empty($kindergarten_options) && !empty($papers)) { ?>
+                <form method="post" action="<?php echo site_url('admin/onlineexam/kindergartenMappingSave'); ?>" class="well well-sm">
+                    <?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>">
+                    <div class="row">
+                        <div class="col-md-3"><div class="form-group"><label>Paper</label><select name="paper_id" id="kg_paper_id" class="form-control"><?php foreach ($papers as $paper) { ?><option value="<?php echo (int) $paper['id']; ?>"><?php echo html_escape($paper['title']); ?></option><?php } ?></select></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Section (optional)</label><select name="paper_section_id" id="kg_section_id" class="form-control"><option value="">Whole paper</option></select></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Assessment concept</label><select name="concept_id" id="kg_concept_id" class="form-control"><?php foreach ($kindergarten_options as $mapping_option) { ?><option value="<?php echo (int) $mapping_option['concept_id']; ?>"><?php echo html_escape($mapping_option['assessment_name'] . ' / ' . $mapping_option['concept_text']); ?></option><?php } ?></select></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Conversion</label><select name="conversion_mode" id="kg_conversion_mode" class="form-control"><option value="thresholds">Mapped score thresholds</option></select></div></div>
+                    </div>
+                    <div id="kg_threshold_fields" class="row"></div>
+                    <button class="btn btn-primary pull-right"><i class="fa fa-link"></i> Save concept mapping</button><div class="clearfix"></div>
+                </form>
+                <?php } ?>
+            </div>
+        </div>
+        <?php } ?>
+
+        <div class="row">
+            <?php if ($editable) { ?>
+            <div class="col-md-4">
+                <div class="box box-info">
+                    <div class="box-header with-border"><h3 class="box-title">Add paper</h3></div>
+                    <form method="post" action="<?php echo site_url('admin/onlineexam/paperSave'); ?>">
+                        <?php echo $this->customlib->getCSRF(); ?>
+                        <input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>">
+                        <div class="box-body">
+                            <div class="row">
+                                <div class="col-sm-8"><div class="form-group"><label>Paper title *</label><input type="text" name="title" class="form-control" placeholder="e.g. Paper 1 — Objective" required></div></div>
+                                <div class="col-sm-4"><div class="form-group"><label>Code</label><input type="text" name="paper_code" class="form-control" placeholder="P1"></div></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6"><div class="form-group"><label>Paper type *</label><select name="paper_type" class="form-control"><?php foreach ($paper_types as $value => $label) { ?><option value="<?php echo $value; ?>"><?php echo $label; ?></option><?php } ?></select></div></div>
+                                <div class="col-sm-6"><div class="form-group"><label>Delivery *</label><select name="delivery_mode" class="form-control"><?php foreach ($delivery_modes as $value => $label) { ?><option value="<?php echo $value; ?>"><?php echo $label; ?></option><?php } ?></select></div></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-4"><div class="form-group"><label>Minutes *</label><input type="number" name="duration_minutes" min="1" value="60" class="form-control" required></div></div>
+                                <div class="col-sm-4"><div class="form-group"><label>Raw max *</label><input type="number" name="raw_max_score" min="0.01" step="0.01" value="100" class="form-control" required></div></div>
+                                <div class="col-sm-4"><div class="form-group"><label>Contribution *</label><div class="input-group"><input type="number" name="contribution_score" min="0.01" max="100" step="0.01" value="100" class="form-control" required><span class="input-group-addon">%</span></div></div></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6"><div class="form-group"><label>Starts</label><input type="text" name="starts_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($exam->exam_from)); ?>"></div></div>
+                                <div class="col-sm-6"><div class="form-group"><label>Ends</label><input type="text" name="ends_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($exam->exam_to)); ?>"></div></div>
+                            </div>
+                            <div class="form-group"><label>Instructions</label><textarea name="instructions" rows="4" class="form-control"></textarea></div>
+                            <div class="row"><div class="col-sm-6"><div class="form-group"><label>Display order</label><input type="number" name="display_order" min="0" value="0" class="form-control"></div></div><div class="col-sm-6"><div class="form-group"><label>&nbsp;</label><div><label><input type="checkbox" name="is_active" value="1" checked> Active paper</label></div></div></div></div>
+                        </div>
+                        <div class="box-footer"><button class="btn btn-info pull-right" type="submit"><i class="fa fa-plus"></i> Add paper</button></div>
+                    </form>
+                </div>
+            </div>
+            <?php } ?>
+
+            <div class="col-md-<?php echo $editable ? '8' : '12'; ?>">
+                <?php if (empty($papers)) { ?>
+                    <div class="alert alert-warning">No paper has been created. Add Objective, Theory, Practical, Oral, Project, or another paper part.</div>
+                <?php } ?>
+                <?php foreach ($papers as $paper) { ?>
+                    <div class="box box-solid box-default">
+                        <div class="box-header with-border">
+                            <h3 class="box-title"><?php echo html_escape($paper['title']); ?> <?php if ($paper['paper_code']) { ?><small><?php echo html_escape($paper['paper_code']); ?></small><?php } ?></h3>
+                            <div class="box-tools">
+                                <span class="label label-info"><?php echo html_escape($paper_types[$paper['paper_type']]); ?></span>
+                                <span class="label label-default"><?php echo html_escape($delivery_modes[$paper['delivery_mode']]); ?></span>
+                                <span class="badge"><?php echo (int) $paper['question_count']; ?> question(s)</span>
+                                <?php if ($editable) { ?><button type="button" class="btn btn-box-tool" data-toggle="collapse" data-target="#paper-edit-<?php echo (int) $paper['id']; ?>"><i class="fa fa-pencil"></i></button><?php } ?>
+                            </div>
+                        </div>
+                        <div class="box-body">
+                            <div class="row">
+                                <div class="col-sm-3"><strong>Raw maximum</strong><br><?php echo number_format($paper['raw_max_score'], 2); ?></div>
+                                <div class="col-sm-3"><strong>Contribution</strong><br><?php echo number_format($paper['contribution_score'], 2); ?>%</div>
+                                <div class="col-sm-3"><strong>Duration</strong><br><?php echo (int) $paper['duration_minutes']; ?> minutes</div>
+                                <div class="col-sm-3"><strong>Schedule</strong><br><small><?php echo html_escape($format_datetime($paper['starts_at'])); ?><br><?php echo html_escape($format_datetime($paper['ends_at'])); ?></small></div>
+                            </div>
+                            <?php if ($paper['instructions']) { ?><div class="well well-sm" style="margin-top:12px;margin-bottom:8px"><?php echo nl2br(html_escape(strip_tags($paper['instructions']))); ?></div><?php } ?>
+
+                            <h4>Sections</h4>
+                            <?php if (empty($paper['sections'])) { ?><p class="text-muted">No named section. Questions may still be assigned directly to this paper.</p><?php } ?>
+                            <ul class="list-group">
+                                <?php foreach ($paper['sections'] as $section) { ?>
+                                    <li class="list-group-item">
+                                        <span class="badge"><?php echo (int) $section['question_count']; ?> questions</span>
+                                        <strong><?php echo html_escape($section['title']); ?></strong> — <?php echo html_escape(ucwords(str_replace('_', ' ', $section['answer_rule']))); ?><?php if ($section['answer_count']) { ?> <?php echo (int) $section['answer_count']; ?><?php } ?>
+                                        <?php if ($editable) { ?>
+                                        <form method="post" action="<?php echo site_url('admin/onlineexam/paperSectionDelete'); ?>" class="pull-right" style="margin-right:8px" onsubmit="return confirm('Remove this section? Questions in it must be reassigned.');">
+                                            <?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>"><input type="hidden" name="paper_id" value="<?php echo (int) $paper['id']; ?>"><input type="hidden" name="paper_section_id" value="<?php echo (int) $section['id']; ?>"><button class="btn btn-danger btn-xs"><i class="fa fa-remove"></i></button>
+                                        </form>
+                                        <?php } ?>
+                                    </li>
+                                <?php } ?>
+                            </ul>
+
+                            <?php if ($editable) { ?>
+                            <form method="post" action="<?php echo site_url('admin/onlineexam/paperSectionSave'); ?>" class="well well-sm">
+                                <?php echo $this->customlib->getCSRF(); ?>
+                                <input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>"><input type="hidden" name="paper_id" value="<?php echo (int) $paper['id']; ?>">
+                                <div class="row">
+                                    <div class="col-sm-3"><input type="text" name="title" class="form-control" placeholder="Section A" required></div>
+                                    <div class="col-sm-3"><select name="answer_rule" class="form-control"><option value="all">Answer all</option><option value="answer_any">Answer any N</option><option value="compulsory_plus_choice">Compulsory + choice</option></select></div>
+                                    <div class="col-sm-2"><input type="number" name="answer_count" min="0" value="0" class="form-control" title="Number to answer"></div>
+                                    <div class="col-sm-3"><input type="text" name="instructions" class="form-control" placeholder="Section instructions"></div>
+                                    <div class="col-sm-1"><input type="hidden" name="display_order" value="<?php echo count($paper['sections']); ?>"><button class="btn btn-default" title="Add section"><i class="fa fa-plus"></i></button></div>
+                                </div>
+                            </form>
+                            <?php } ?>
+                        </div>
+
+                        <?php if ($editable) { ?>
+                        <div id="paper-edit-<?php echo (int) $paper['id']; ?>" class="collapse">
+                            <form method="post" action="<?php echo site_url('admin/onlineexam/paperSave'); ?>" class="box-footer">
+                                <?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>"><input type="hidden" name="paper_id" value="<?php echo (int) $paper['id']; ?>">
+                                <div class="row">
+                                    <div class="col-sm-3"><div class="form-group"><label>Title</label><input type="text" name="title" class="form-control" value="<?php echo html_escape($paper['title']); ?>" required></div></div>
+                                    <div class="col-sm-1"><div class="form-group"><label>Code</label><input type="text" name="paper_code" class="form-control" value="<?php echo html_escape($paper['paper_code']); ?>"></div></div>
+                                    <div class="col-sm-2"><div class="form-group"><label>Type</label><select name="paper_type" class="form-control"><?php foreach ($paper_types as $value => $label) { ?><option value="<?php echo $value; ?>" <?php echo $paper['paper_type'] === $value ? 'selected' : ''; ?>><?php echo $label; ?></option><?php } ?></select></div></div>
+                                    <div class="col-sm-2"><div class="form-group"><label>Delivery</label><select name="delivery_mode" class="form-control"><?php foreach ($delivery_modes as $value => $label) { ?><option value="<?php echo $value; ?>" <?php echo $paper['delivery_mode'] === $value ? 'selected' : ''; ?>><?php echo $label; ?></option><?php } ?></select></div></div>
+                                    <div class="col-sm-1"><div class="form-group"><label>Minutes</label><input type="number" name="duration_minutes" min="1" class="form-control" value="<?php echo (int) $paper['duration_minutes']; ?>"></div></div>
+                                    <div class="col-sm-1"><div class="form-group"><label>Raw max</label><input type="number" name="raw_max_score" min="0.01" step="0.01" class="form-control" value="<?php echo html_escape($paper['raw_max_score']); ?>"></div></div>
+                                    <div class="col-sm-1"><div class="form-group"><label>Contrib.</label><input type="number" name="contribution_score" min="0.01" max="100" step="0.01" class="form-control" value="<?php echo html_escape($paper['contribution_score']); ?>"></div></div>
+                                    <div class="col-sm-1"><div class="form-group"><label>Order</label><input type="number" name="display_order" min="0" class="form-control" value="<?php echo (int) $paper['display_order']; ?>"></div></div>
+                                </div>
+                                <div class="row"><div class="col-sm-3"><input type="text" name="starts_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($paper['starts_at'])); ?>"></div><div class="col-sm-3"><input type="text" name="ends_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($paper['ends_at'])); ?>"></div><div class="col-sm-4"><input type="text" name="instructions" class="form-control" value="<?php echo html_escape(strip_tags($paper['instructions'])); ?>" placeholder="Instructions"></div><div class="col-sm-1"><label><input type="checkbox" name="is_active" value="1" <?php echo $paper['is_active'] ? 'checked' : ''; ?>> Active</label></div><div class="col-sm-1"><button class="btn btn-primary btn-sm">Save</button></div></div>
+                            </form>
+                            <form method="post" action="<?php echo site_url('admin/onlineexam/paperDelete'); ?>" class="box-footer" onsubmit="return confirm('Remove this paper and all of its draft sections/question assignments?');">
+                                <?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>"><input type="hidden" name="paper_id" value="<?php echo (int) $paper['id']; ?>"><button class="btn btn-danger btn-xs"><i class="fa fa-trash"></i> Delete paper</button>
+                            </form>
+                        </div>
+                        <?php } ?>
+                    </div>
+                <?php } ?>
+            </div>
+        </div>
+
+        <?php if ($editable && !empty($papers)) { ?>
+        <div class="box box-primary" id="author-question">
+            <div class="box-header with-border">
+                <h3 class="box-title" id="workflow-author-title">Create a structured question</h3>
+                <div class="box-tools"><button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button></div>
+            </div>
+            <?php if (!empty($authored_question_json)) { ?>
+            <div class="box-body no-padding"><div class="table-responsive"><table class="table table-condensed table-striped" style="margin-bottom:0"><thead><tr><th>Structured question</th><th>Paper / section</th><th>Type</th><th>Marks</th><th></th></tr></thead><tbody><?php foreach ((array) $authored_questions as $authored_question) { if (!isset($authored_question_json[(int) $authored_question['id']])) { continue; } $definition = $authored_question_json[(int) $authored_question['id']]['definition']; ?><tr><td><?php echo html_escape(mb_substr(trim(strip_tags($authored_question['question'])), 0, 100)); ?></td><td><?php echo html_escape($authored_question['paper_title'] . (!empty($authored_question['section_title']) ? ' / ' . $authored_question['section_title'] : '')); ?></td><td><?php echo html_escape(isset($native_question_types[$definition['presentation_type']]) ? $native_question_types[$definition['presentation_type']] : $definition['question_type']); ?></td><td><?php echo number_format((float) $authored_question['marks'], 2); ?></td><td><button type="button" class="btn btn-default btn-xs workflow-edit-authored" data-assignment-id="<?php echo (int) $authored_question['id']; ?>"><i class="fa fa-pencil"></i> Edit</button></td></tr><?php } ?></tbody></table></div></div>
+            <?php } ?>
+            <form method="post" action="<?php echo site_url('admin/onlineexam/workflowQuestionAuthor'); ?>" id="workflow-author-form">
+                <?php echo $this->customlib->getCSRF(); ?>
+                <input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>">
+                <input type="hidden" name="onlineexam_workflow_token" value="<?php echo html_escape($workflow_csrf); ?>">
+                <input type="hidden" name="onlineexam_question_id" value="">
+                <div class="box-body">
+                    <p class="help-block">This creates the question in the existing bank, assigns it to this assessment, and preserves its structured answer definition when the revision is frozen.</p>
+                    <div class="row">
+                        <div class="col-md-3"><div class="form-group"><label>Destination paper *</label><select name="paper_id" id="author_paper_id" class="form-control" required><option value="">Select paper</option><?php foreach ($papers as $paper) { ?><option value="<?php echo (int) $paper['id']; ?>"><?php echo html_escape($paper['title']); ?></option><?php } ?></select></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Section</label><select name="paper_section_id" id="author_section_id" class="form-control"><option value="">No named section</option></select></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Question type *</label><select name="authored_question_type" id="author_question_type" class="form-control" required><option value="">Select type</option><?php foreach ($native_question_types as $value => $label) { ?><option value="<?php echo html_escape($value); ?>"><?php echo html_escape($label); ?></option><?php } ?></select></div></div>
+                        <div class="col-md-2"><div class="form-group"><label>Difficulty</label><select name="question_level" class="form-control"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div></div>
+                    </div>
+
+                    <div class="workflow-passage-fields well well-sm" style="display:none">
+                        <div class="row">
+                            <div class="col-md-3"><div class="form-group"><label>Passage group key *</label><input type="text" name="passage_group_key" maxlength="64" class="form-control" placeholder="e.g. passage-1"><p class="help-block">Use the same key and text for every child question in this passage.</p></div></div>
+                            <div class="col-md-3"><div class="form-group"><label>Passage title *</label><input type="text" name="passage_title" maxlength="191" class="form-control" placeholder="Read the passage below"></div></div>
+                            <div class="col-md-3"><div class="form-group"><label>Child response *</label><select name="passage_response_type" id="passage_response_type" class="form-control"><option value="singlechoice">Single choice</option><option value="multichoice">Multiple choice</option><option value="true_false">True / False</option><option value="short_answer">Short answer</option><option value="numeric">Numeric</option><option value="long_answer">Long answer</option></select></div></div>
+                        </div>
+                        <div class="form-group"><label>Passage text *</label><textarea name="passage_text" rows="6" class="form-control" placeholder="Enter the source passage once; questions with the same group key display beneath it."></textarea></div>
+                    </div>
+
+                    <div class="form-group"><label>Question / prompt *</label><textarea name="question_text" rows="4" class="form-control" required></textarea></div>
+
+                    <div class="workflow-author-fields workflow-choice-fields" style="display:none">
+                        <div class="row">
+                            <div class="col-md-8"><div class="form-group"><label>Options *</label><textarea name="answer_options" rows="6" class="form-control" placeholder="Enter one option per line"></textarea></div></div>
+                            <div class="col-md-4"><div class="form-group"><label>Correct option number(s) *</label><input type="text" name="correct_choice" class="form-control" placeholder="1 or 1,3"><p class="help-block">For single choice enter one option number. For multiple choice separate all correct option numbers with commas.</p></div></div>
+                        </div>
+                    </div>
+                    <div class="workflow-author-fields workflow-true-false-fields" style="display:none"><div class="form-group"><label>Correct answer *</label><select name="true_false_answer" class="form-control"><option value="">Select</option><option value="true">True</option><option value="false">False</option></select></div></div>
+                    <div class="workflow-author-fields workflow-short-answer-fields" style="display:none"><div class="form-group"><label>Accepted answers *</label><textarea name="accepted_answers" rows="4" class="form-control" placeholder="Enter one accepted answer per line"></textarea><p class="help-block">Comparison ignores surrounding spaces and letter case.</p></div></div>
+                    <div class="workflow-author-fields workflow-numeric-fields" style="display:none"><div class="row"><div class="col-md-6"><div class="form-group"><label>Correct numeric value *</label><input type="number" step="any" name="numeric_answer" class="form-control"></div></div><div class="col-md-6"><div class="form-group"><label>Accepted tolerance *</label><input type="number" step="any" min="0" name="numeric_tolerance" value="0" class="form-control"><p class="help-block">Example: answer 12.5 with tolerance 0.1 accepts 12.4 through 12.6.</p></div></div></div></div>
+                    <div class="workflow-author-fields workflow-matching-fields" style="display:none"><div class="form-group"><label>Matching pairs *</label><textarea name="matching_pairs" rows="6" class="form-control" placeholder="Nigeria => Abuja&#10;Ghana => Accra"></textarea><p class="help-block">Enter one pair per line using <code>Left =&gt; Right</code>. Candidates receive a dropdown for each left item.</p></div></div>
+                    <div class="workflow-author-fields workflow-ordering-fields" style="display:none"><div class="form-group"><label>Items in the correct order *</label><textarea name="ordering_items" rows="6" class="form-control" placeholder="First step&#10;Second step&#10;Third step"></textarea><p class="help-block">The candidate sees a shuffled choice list and selects the item for each position.</p></div></div>
+                    <div class="workflow-author-fields workflow-manual-fields" style="display:none"><div class="alert alert-info">This response is marked by an authorized teacher. File, oral, and aural types also enable a secure candidate attachment.</div></div>
+
+                    <div class="row">
+                        <div class="col-md-2"><div class="form-group"><label>Marks *</label><input type="number" name="marks" min="0.01" max="10000" step="0.01" value="1" class="form-control" required></div></div>
+                        <div class="col-md-2"><div class="form-group"><label>Negative mark</label><input type="number" name="neg_marks" min="0" step="0.01" value="0" class="form-control" <?php echo empty($exam->is_neg_marking) ? 'disabled' : ''; ?>></div></div>
+                        <div class="col-md-2"><div class="form-group"><label>Display order</label><input type="number" name="display_order" min="0" value="0" class="form-control"></div></div>
+                        <div class="col-md-2"><div class="form-group"><label>&nbsp;</label><div><label><input type="checkbox" name="is_compulsory" value="1"> Compulsory</label></div></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Marking scheme / rubric</label><textarea name="marking_scheme" rows="3" class="form-control" placeholder="Required for manually marked responses"></textarea></div></div>
+                    </div>
+                </div>
+                <div class="box-footer"><button type="button" class="btn btn-default workflow-author-reset" style="display:none"><i class="fa fa-times"></i> Cancel editing</button><button type="submit" class="btn btn-primary pull-right workflow-author-submit"><i class="fa fa-plus"></i> Create and assign question</button><div class="clearfix"></div></div>
+            </form>
+        </div>
+        <?php } ?>
+
+        <?php if (!empty($papers)) { ?>
+        <div class="box box-success">
+            <div class="box-header with-border"><h3 class="box-title">Question bank — <?php echo html_escape($exam->subject_name . ', ' . $exam->class_name); ?></h3></div>
+            <div class="box-body">
+                <div class="alert alert-info">Select the destination paper and optional section, then assign or update questions below. The server restricts results to this assessment’s class and subject.</div>
+                <div class="row">
+                    <div class="col-md-3"><div class="form-group"><label>Destination paper *</label><select id="builder_paper_id" class="form-control"><option value="">Select paper</option><?php foreach ($papers as $paper) { ?><option value="<?php echo (int) $paper['id']; ?>"><?php echo html_escape($paper['title']); ?></option><?php } ?></select></div></div>
+                    <div class="col-md-3"><div class="form-group"><label>Section</label><select id="builder_section_id" class="form-control"><option value="">No named section</option></select></div></div>
+                    <div class="col-md-3"><div class="form-group"><label>Keyword</label><input type="text" id="builder_keyword" class="form-control"></div></div>
+                    <div class="col-md-2"><div class="form-group"><label>Question type</label><select id="builder_question_type" class="form-control"><option value="">All types</option><?php foreach ($question_type as $value => $label) { ?><option value="<?php echo html_escape($value); ?>"><?php echo html_escape($label); ?></option><?php } ?></select></div></div>
+                    <div class="col-md-1"><div class="form-group"><label>&nbsp;</label><button type="button" id="builder_search" class="btn btn-success btn-block"><i class="fa fa-search"></i></button></div></div>
+                </div>
+                <div id="builder_question_results"></div>
+                <div id="builder_question_pagination" class="clearfix"></div>
+            </div>
+        </div>
+        <?php } ?>
+
+        <div class="box box-warning">
+            <div class="box-header with-border"><h3 class="box-title">Freeze and publish assessment</h3></div>
+            <div class="box-body">
+                <p>Publishing freezes an immutable copy of the questions, marks, paper rules, and result destination. It does <strong>not</strong> publish the official report card.</p>
+                <?php if (!empty($publish_errors) && in_array($exam->lifecycle_status, array('draft', 'scheduled'), true)) { ?>
+                    <ul class="text-danger"><?php foreach ($publish_errors as $error) { ?><li><?php echo html_escape($error); ?></li><?php } ?></ul>
+                <?php } ?>
+            </div>
+            <div class="box-footer">
+                <?php if ($exam->lifecycle_status === 'draft') { ?>
+                    <form method="post" action="<?php echo site_url('admin/onlineexam/lifecycle/' . $exam->id); ?>" onsubmit="return confirm('Freeze this revision and release the assessment to candidates?');">
+                        <?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="workflow_action" value="publish"><button class="btn btn-warning pull-right" <?php echo empty($publish_errors) ? '' : 'disabled'; ?>><i class="fa fa-lock"></i> Freeze and publish</button>
+                    </form>
+                <?php } elseif (in_array($exam->lifecycle_status, array('scheduled', 'published', 'in_progress', 'marking', 'completed'), true)) { ?>
+                    <form method="post" action="<?php echo site_url('admin/onlineexam/lifecycle/' . $exam->id); ?>" onsubmit="return confirm('Open a new editable revision? The frozen revision and all earlier attempts will remain unchanged.');">
+                        <?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="workflow_action" value="new_revision"><button class="btn btn-default pull-right"><i class="fa fa-code-fork"></i> Create new revision</button>
+                    </form>
+                <?php } ?>
+                <div class="clearfix"></div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+(function ($) {
+    'use strict';
+    var examId = <?php echo (int) $exam->id; ?>;
+    var workflowToken = <?php echo json_encode($workflow_csrf); ?>;
+    var paperSections = <?php echo json_encode($paper_sections_json); ?>;
+    var paperTypes = <?php echo json_encode($paper_types_json); ?>;
+    var negativeMarkingEnabled = <?php echo empty($exam->is_neg_marking) ? 'false' : 'true'; ?>;
+    var authoredQuestions = <?php echo json_encode($authored_question_json, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+    var kindergartenLabels = <?php echo isset($kindergarten_label_map) ? json_encode($kindergarten_label_map) : '{}'; ?>;
+    $('form[method="post"]').each(function () {
+        if (!$(this).find('input[name="onlineexam_workflow_token"]').length) {
+            $(this).append($('<input>', {type: 'hidden', name: 'onlineexam_workflow_token', value: workflowToken}));
+        }
+    });
+
+    function updateSections() {
+        var paperId = parseInt($('#builder_paper_id').val(), 10);
+        var select = $('#builder_section_id').empty().append($('<option>', {value: '', text: 'No named section'}));
+        $.each(paperSections[paperId] || [], function (_, section) {
+            select.append($('<option>', {value: section.id, text: section.title}));
+        });
+    }
+
+    function updateAuthorSections() {
+        var paperId = parseInt($('#author_paper_id').val(), 10);
+        var select = $('#author_section_id').empty().append($('<option>', {value: '', text: 'No named section'}));
+        $.each(paperSections[paperId] || [], function (_, section) {
+            select.append($('<option>', {value: section.id, text: section.title}));
+        });
+        var allowNegative = negativeMarkingEnabled && paperTypes[paperId] === 'objective';
+        $('#workflow-author-form input[name="neg_marks"]').prop('disabled', !allowNegative);
+        if (!allowNegative) { $('#workflow-author-form input[name="neg_marks"]').val('0'); }
+    }
+
+    function updateAuthorFields() {
+        var selectedType = $('#author_question_type').val();
+        var isPassage = selectedType === 'grouped_passage';
+        var responseType = isPassage ? $('#passage_response_type').val() : selectedType;
+        $('.workflow-passage-fields').toggle(isPassage)
+            .find('input, textarea, select').prop('required', isPassage);
+        $('.workflow-author-fields').hide().find('input, textarea, select').prop('required', false);
+        $('textarea[name="marking_scheme"]').prop('required', false);
+
+        if (responseType === 'singlechoice' || responseType === 'multichoice') {
+            $('.workflow-choice-fields').show().find('textarea, input').prop('required', true);
+            $('input[name="correct_choice"]').attr('placeholder', responseType === 'singlechoice' ? 'e.g. 2' : 'e.g. 1,3');
+        } else if (responseType === 'true_false') {
+            $('.workflow-true-false-fields').show().find('select').prop('required', true);
+        } else if (responseType === 'short_answer') {
+            $('.workflow-short-answer-fields').show().find('textarea').prop('required', true);
+        } else if (responseType === 'numeric') {
+            $('.workflow-numeric-fields').show().find('input').prop('required', true);
+        } else if (responseType === 'matching') {
+            $('.workflow-matching-fields').show().find('textarea').prop('required', true);
+        } else if (responseType === 'ordering') {
+            $('.workflow-ordering-fields').show().find('textarea').prop('required', true);
+        } else if ($.inArray(responseType, ['long_answer', 'file_upload', 'oral', 'aural', 'practical', 'project']) !== -1) {
+            $('.workflow-manual-fields').show();
+            $('textarea[name="marking_scheme"]').prop('required', true);
+        }
+    }
+
+    function resetAuthorForm() {
+        var form = $('#workflow-author-form')[0];
+        if (!form) { return; }
+        form.reset();
+        $('#workflow-author-form input[name="onlineexam_question_id"]').val('');
+        $('#workflow-author-title').text('Create a structured question');
+        $('.workflow-author-submit').html('<i class="fa fa-plus"></i> Create and assign question');
+        $('.workflow-author-reset').hide();
+        updateAuthorSections();
+        updateAuthorFields();
+    }
+
+    function editAuthoredQuestion(assignmentId) {
+        var record = authoredQuestions[assignmentId], form = $('#workflow-author-form');
+        if (!record || !record.definition) { errorMsg('The structured question definition could not be loaded.'); return; }
+        resetAuthorForm();
+        var definition = record.definition, options = definition.options || {}, correct = definition.correct_answer;
+        form.find('input[name="onlineexam_question_id"]').val(record.id);
+        form.find('[name="paper_id"]').val(record.paper_id);
+        updateAuthorSections();
+        form.find('[name="paper_section_id"]').val(record.paper_section_id || '');
+        var presentationType = definition.presentation_type === 'grouped_passage' ? 'grouped_passage' : definition.question_type;
+        form.find('[name="authored_question_type"]').val(presentationType);
+        form.find('[name="passage_response_type"]').val(definition.question_type);
+        updateAuthorFields();
+        form.find('[name="question_text"]').val(record.question || '');
+        form.find('[name="marks"]').val(record.marks);
+        form.find('[name="neg_marks"]').val(record.neg_marks || 0);
+        form.find('[name="display_order"]').val(record.display_order || 0);
+        form.find('[name="is_compulsory"]').prop('checked', parseInt(record.is_compulsory || 0, 10) === 1);
+        form.find('[name="marking_scheme"]').val(record.marking_scheme || '');
+
+        if (definition.passage) {
+            form.find('[name="passage_group_key"]').val(definition.passage.group_key || '');
+            form.find('[name="passage_title"]').val(definition.passage.title || '');
+            form.find('[name="passage_text"]').val(definition.passage.text || '');
+        }
+        if (definition.question_type === 'singlechoice' || definition.question_type === 'multichoice') {
+            var optionKeys = Object.keys(options), optionLabels = [];
+            $.each(optionKeys, function (_, key) { optionLabels.push(options[key]); });
+            form.find('[name="answer_options"]').val(optionLabels.join('\n'));
+            var correctKeys = $.isArray(correct) ? correct : [correct], correctNumbers = [];
+            $.each(correctKeys, function (_, key) { var index = $.inArray(key, optionKeys); if (index >= 0) { correctNumbers.push(index + 1); } });
+            form.find('[name="correct_choice"]').val(correctNumbers.join(','));
+        } else if (definition.question_type === 'true_false') {
+            form.find('[name="true_false_answer"]').val(correct);
+        } else if (definition.question_type === 'short_answer') {
+            form.find('[name="accepted_answers"]').val(($.isArray(correct) ? correct : [correct]).join('\n'));
+        } else if (definition.question_type === 'numeric') {
+            form.find('[name="numeric_answer"]').val(correct && correct.value !== undefined ? correct.value : '');
+            form.find('[name="numeric_tolerance"]').val(correct && correct.tolerance !== undefined ? correct.tolerance : 0);
+        } else if (definition.question_type === 'matching') {
+            var rightLabels = {}, pairs = [];
+            $.each(options.matching_right || [], function (_, item) { rightLabels[item.id] = item.label; });
+            $.each(options.matching_left || [], function (_, item) { pairs.push(item.label + ' => ' + (rightLabels[correct[item.id]] || '')); });
+            form.find('[name="matching_pairs"]').val(pairs.join('\n'));
+        } else if (definition.question_type === 'ordering') {
+            var itemLabels = {}, ordered = [];
+            $.each(options.dynamic || [], function (_, item) { itemLabels[item.id] = item.option; });
+            $.each($.isArray(correct) ? correct : [], function (_, itemId) { if (itemLabels[itemId] !== undefined) { ordered.push(itemLabels[itemId]); } });
+            form.find('[name="ordering_items"]').val(ordered.join('\n'));
+        }
+        $('#workflow-author-title').text('Edit structured question');
+        $('.workflow-author-submit').html('<i class="fa fa-save"></i> Save structured question');
+        $('.workflow-author-reset').show();
+        $('html, body').animate({scrollTop: $('#author-question').offset().top - 20}, 250);
+    }
+
+    function loadQuestions(page) {
+        $.ajax({
+            type: 'POST',
+            url: '<?php echo site_url('admin/onlineexam/searchQuestionByExamID'); ?>',
+            dataType: 'json',
+            data: {page: page || 1, exam_id: examId, search: '', keyword: $('#builder_keyword').val(), question_type: $('#builder_question_type').val(), question_level: '', class_id: '', section_id: '', is_quiz: 0, onlineexam_workflow_token: workflowToken},
+            success: function (response) {
+                $('#builder_question_results').html(response.content || '<div class="alert alert-warning">No matching questions.</div>');
+                $('#builder_question_pagination').html(response.navigation || '');
+            },
+            error: function () { errorMsg('The question bank could not be loaded.'); }
+        });
+    }
+
+    $('#builder_paper_id').on('change', updateSections);
+    $('#author_paper_id').on('change', updateAuthorSections);
+    $('#author_question_type, #passage_response_type').on('change', updateAuthorFields);
+    $(document).on('click', '.workflow-edit-authored', function () { editAuthoredQuestion(parseInt($(this).data('assignment-id'), 10)); });
+    $(document).on('click', '.workflow-author-reset', resetAuthorForm);
+    $('#builder_search').on('click', function () { loadQuestions(1); });
+    $(document).on('click', '#builder_question_pagination li.activee', function (event) { event.preventDefault(); loadQuestions($(this).attr('p')); });
+
+    $(document).on('click', '.workflow-question-save', function () {
+        var button = $(this);
+        var row = button.closest('.workflow-question-row');
+        var paperId = $('#builder_paper_id').val();
+        if (!paperId) { errorMsg('Select the destination paper first.'); return; }
+        button.button('loading');
+        $.post('<?php echo site_url('admin/onlineexam/workflowQuestionSave'); ?>', {
+            onlineexam_id: examId,
+            paper_id: paperId,
+            paper_section_id: $('#builder_section_id').val(),
+            question_id: button.data('question-id'),
+            marks: row.find('.question-marks').val(),
+            neg_marks: row.find('.question-neg-marks').val() || 0,
+            display_order: row.find('.question-order').val(),
+            is_compulsory: row.find('.question-compulsory').is(':checked') ? 1 : 0,
+            marking_scheme: row.find('.question-scheme').val()
+            ,onlineexam_workflow_token: workflowToken
+        }, null, 'json').done(function (response) {
+            if (response.status) { successMsg(response.message); loadQuestions(1); } else { errorMsg(response.message); }
+        }).fail(function () { errorMsg('Question assignment failed.'); }).always(function () { button.button('reset'); });
+    });
+
+    $(document).on('click', '.workflow-question-remove', function () {
+        if (!confirm('Remove this question from the draft assessment?')) { return; }
+        var button = $(this);
+        $.post('<?php echo site_url('admin/onlineexam/workflowQuestionDelete'); ?>', {onlineexam_id: examId, onlineexam_question_id: button.data('assignment-id'), onlineexam_workflow_token: workflowToken}, null, 'json').done(function (response) {
+            if (response.status) { successMsg(response.message); loadQuestions(1); } else { errorMsg(response.message); }
+        });
+    });
+
+    $('#british_profile_mode').on('change', function () { $('#british_thresholds').toggle($(this).val() === 'thresholds'); });
+    function updateKindergartenSections() {
+        var paperId = parseInt($('#kg_paper_id').val(), 10);
+        var select = $('#kg_section_id').empty().append($('<option>', {value: '', text: 'Whole paper'}));
+        $.each(paperSections[paperId] || [], function (_, section) { select.append($('<option>', {value: section.id, text: section.title})); });
+    }
+    function updateKindergartenThresholds() {
+        var container = $('#kg_threshold_fields').empty();
+        if ($('#kg_conversion_mode').val() !== 'thresholds') { container.hide(); return; }
+        var labels = kindergartenLabels[parseInt($('#kg_concept_id').val(), 10)] || [];
+        var width = labels.length ? Math.max(2, Math.floor(12 / labels.length)) : 3;
+        $.each(labels, function (index, label) {
+            var minimum = index === 0 ? 0 : (100 / labels.length * index).toFixed(2);
+            var maximum = index === labels.length - 1 ? 100 : (100 / labels.length * (index + 1) - 0.01).toFixed(2);
+            container.append('<div class="col-md-' + width + '"><div class="well well-sm"><strong>' + $('<div>').text(label).html() + '</strong><div class="row"><div class="col-xs-6"><label>Min</label><input type="number" class="form-control" name="label_min[]" min="0" max="100" step="0.01" value="' + minimum + '"></div><div class="col-xs-6"><label>Max</label><input type="number" class="form-control" name="label_max[]" min="0" max="100" step="0.01" value="' + maximum + '"></div></div></div></div>');
+        });
+        container.show();
+    }
+    $('#kg_paper_id').on('change', updateKindergartenSections);
+    $('#kg_concept_id, #kg_conversion_mode').on('change', updateKindergartenThresholds);
+    updateKindergartenSections();
+    updateKindergartenThresholds();
+    updateAuthorSections();
+    updateAuthorFields();
+
+    <?php if (!empty($papers)) { ?>
+    $('#builder_paper_id').val('<?php echo (int) $papers[0]['id']; ?>');
+    updateSections();
+    loadQuestions(1);
+    <?php } ?>
+})(jQuery);
+</script>

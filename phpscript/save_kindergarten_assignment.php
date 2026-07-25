@@ -1,5 +1,7 @@
 <?php
 include('../database/config.php');
+require_once('kindergarten_guard.php');
+kindergartenRequireStaff(true, true, 'can_edit');
 
 $assessment_id = intval($_POST['assessment_id']);
 $class_ids = isset($_POST['class_ids']) ? $_POST['class_ids'] : [];

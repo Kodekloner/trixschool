@@ -2,8 +2,9 @@
 include('../database/config.php');
 $index = $_POST['index'];
 $selected = isset($_POST['subject_id']) ? $_POST['subject_id'] : '';
+$assessmentSubjectId = isset($_POST['assessment_subject_id']) ? (int) $_POST['assessment_subject_id'] : 0;
 ?>
-<div class="subject-block card mb-3" data-index="<?php echo $index; ?>">
+<div class="subject-block card mb-3" data-index="<?php echo htmlspecialchars($index, ENT_QUOTES, 'UTF-8'); ?>" data-assessment-subject-id="<?php echo $assessmentSubjectId; ?>">
 	<div class="card-header d-flex justify-content-between align-items-center">
 		<select class="form-control subject-select" style="width:70%;" required>
 			<option value="0">Select Subject</option>

@@ -18,6 +18,7 @@ class Cron extends CI_Controller
         $setting_result = $this->setting_model->getSetting();
         $this->cron_key = $setting_result->cron_secret_key;
         $this->load->model('feereminder_model');
+        $this->load->model('onlineexamattempt_model');
     }
 
     public function index($key = '')
@@ -27,10 +28,23 @@ class Cron extends CI_Controller
 
             $this->autobackup($key);
             $this->feereminder($key);
+            $this->onlineexam($key);
         } else {
             echo "Invalid Key or Direct access is not allowed";
             return;
         }
+    }
+
+    /** Finalize elapsed CBT papers even when a candidate never reconnects. */
+    public function onlineexam($key = '')
+    {
+        if ($key == '' || $this->cron_key != $key) {
+            echo "Invalid Key or Direct access is not allowed";
+            return;
+        }
+        $result = $this->onlineexamattempt_model->processExpiredPapers(1000);
+        $result['lifecycle_reconciliation'] = $this->onlineexamattempt_model->refreshActiveAssessmentLifecycles(1000);
+        echo json_encode(array('online_examination' => $result));
     }
 
     public function autobackup($key = '')
