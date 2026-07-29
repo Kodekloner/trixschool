@@ -43,7 +43,11 @@
                                         foreach ($onlineexam as $exam) {
                                             ?>
                                             <tr>
-                                                <td class="mailbox-name"><?php echo $exam->exam; ?></td>
+                                                <td class="mailbox-name"><?php echo html_escape($exam->exam); ?>
+                                                    <?php if (isset($exam->workflow_version) && (int) $exam->workflow_version >= 2) { ?>
+                                                        <div class="text-muted small"><?php echo html_escape(strtoupper($exam->term) . ' · ' . ucwords(str_replace('_', ' ', $exam->purpose))); ?></div>
+                                                    <?php } ?>
+                                                </td>
 												<td class="mailbox-name text text-center"><?php
 if($exam->is_quiz){
     ?>
@@ -61,12 +65,16 @@ if($exam->is_quiz){
                                                 <td class="mailbox-name"><?php echo $exam->duration; ?></td>
 
                                                 
-                                                <td class="mailbox-name"><?php echo $exam->attempt; ?></td>
+                                                <td class="mailbox-name"><?php echo (isset($exam->workflow_version) && (int) $exam->workflow_version >= 2 && $exam->result_adapter !== 'unlinked_practice') ? 1 : (int) $exam->attempt; ?></td>
                                                 <td class="mailbox-name"><?php echo $exam->counter; ?></td>
 
                                                 <td class="mailbox-name">
                                                     <?php
-                                                    if ($exam->publish_result) {
+                                                    if (isset($exam->workflow_version) && (int) $exam->workflow_version >= 2) {
+                                                        echo $exam->candidate_attempt_status
+                                                            ? html_escape(ucwords(str_replace('_', ' ', $exam->candidate_attempt_status)))
+                                                            : $this->lang->line('available');
+                                                    } elseif ($exam->publish_result) {
                                                         echo $this->lang->line('result') . " " . $this->lang->line('published');
                                                     } else {
 

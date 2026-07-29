@@ -14,6 +14,7 @@
                             <?php echo $this->customlib->getCSRF(); ?>
                           
                             <input type="hidden" name="onlineexam_id" value="<?php echo $onlineexam->id; ?>">
+                            <?php $is_workflow = isset($onlineexam->workflow_version) && (int) $onlineexam->workflow_version === 2; ?>
                            
                                 <div class="col-md-6">
                                     <div class="form-group">
@@ -24,7 +25,7 @@
                                         foreach ($classlist as $class) {
                                             ?>
                                             <option value="<?php echo $class['id'] ?>" <?php
-                                            if(set_value('class_id') == $class['id']) {
+                                            if(set_value('class_id', $is_workflow ? $onlineexam->class_id : '') == $class['id']) {
                                                 echo "selected=selected";
                                             }
                                             ?>><?php echo $class['class'] ?></option>
@@ -42,6 +43,9 @@
                                         <label for="exampleInputEmail1"><?php echo $this->lang->line('section'); ?></label>
                                         <select  id="section_id" name="section_id" class="form-control" >
                                             <option value=""><?php echo $this->lang->line('select'); ?></option>
+                                            <?php if ($is_workflow && !empty($workflow_sections)) { foreach ($workflow_sections as $workflow_section) { if (in_array((int) $workflow_section['id'], array_map('intval', $onlineexam->section_ids), true)) { ?>
+                                                <option value="<?php echo (int) $workflow_section['id']; ?>" <?php echo set_select('section_id', $workflow_section['id']); ?>><?php echo html_escape($workflow_section['section']); ?></option>
+                                            <?php } } } ?>
                                         </select>
                                         <span class="text-danger"><?php echo form_error('section_id'); ?></span>
                                     </div>
@@ -59,6 +63,8 @@
                     </div>
                 
                 <form method="post" action="<?php echo site_url('admin/onlineexam/addstudent') ?>" id="assign_form">
+
+                    <?php if (!empty($is_workflow)) { ?><input type="hidden" name="onlineexam_workflow_token" value="<?php echo html_escape($workflow_csrf); ?>"><?php } ?>
 
 
                     <?php
@@ -184,10 +190,16 @@
 
 <script type="text/javascript">
     var date_format = '<?php echo $result = strtr($this->customlib->getSchoolDateFormat(), ['d' => 'dd', 'm' => 'mm', 'Y' => 'yyyy']) ?>';
-    var class_id = '<?php echo set_value('class_id', 0) ?>';
+    var is_workflow = <?php echo !empty($is_workflow) ? 'true' : 'false'; ?>;
+    var class_id = '<?php echo set_value('class_id', !empty($is_workflow) ? $onlineexam->class_id : 0) ?>';
     var section_id = '<?php echo set_value('section_id', 0) ?>';
-    getSectionByClass(class_id, section_id);
+    if (!is_workflow) {
+        getSectionByClass(class_id, section_id);
+    }
     $(document).on('change', '#class_id', function (e) {
+        if (is_workflow) {
+            return;
+        }
         $('#section_id').html("");
         var class_id = $(this).val();
         getSectionByClass(class_id, 0);

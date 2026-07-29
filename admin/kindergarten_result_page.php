@@ -200,6 +200,17 @@ require_once('../helper/defaultcomment_helper.php');
     INNER JOIN subjects s ON kas.subject_id = s.id
     INNER JOIN kindergarten_assessment_concepts kac ON kas.id = kac.assessment_subject_id
     WHERE kas.assessment_id = '$assessment_id'
+      AND (
+        (kas.is_active = 1 AND kac.is_active = 1)
+        OR EXISTS (
+            SELECT 1 FROM kindergarten_result kr
+            WHERE kr.student_id = '$student_id'
+              AND kr.session_id = '$session'
+              AND kr.term = '$term'
+              AND kr.assessment_id = '$assessment_id'
+              AND kr.concept_id = kac.id
+        )
+      )
     ORDER BY kas.display_order, kac.display_order
 ";
 	$res_items = mysqli_query($link, $sql_items);

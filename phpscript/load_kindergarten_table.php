@@ -29,6 +29,7 @@ $sql = "SELECT kac.id, kac.concept_text
         FROM kindergarten_assessment_concepts kac
         INNER JOIN kindergarten_assessment_subjects kas ON kac.assessment_subject_id = kas.id
         WHERE kas.assessment_id = '$assessment_id' AND kas.subject_id = '$subjectid'
+          AND kas.is_active = 1 AND kac.is_active = 1
         ORDER BY kac.display_order, kac.id";
 $concepts = mysqli_query($link, $sql);
 $conceptList = [];

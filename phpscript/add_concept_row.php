@@ -1,8 +1,9 @@
 <?php
 $subjectIndex = $_POST['subjectIndex'];
-$conceptText = isset($_POST['concept_text']) ? htmlspecialchars($_POST['concept_text']) : '';
+$conceptText = isset($_POST['concept_text']) ? htmlspecialchars($_POST['concept_text'], ENT_QUOTES, 'UTF-8') : '';
+$conceptId = isset($_POST['concept_id']) ? (int) $_POST['concept_id'] : 0;
 ?>
-<div class="concept-row form-group row" style="margin-bottom: 10px;">
+<div class="concept-row form-group row" style="margin-bottom: 10px;" data-concept-id="<?php echo $conceptId; ?>">
 	<div class="col-sm-10">
 		<input type="text" class="form-control concept-text" placeholder="Enter concept" value="<?php echo $conceptText; ?>">
 	</div>

@@ -19,7 +19,7 @@ $language_name = $language["short_code"];
                         <h3 class="box-title titlefix pt5">  <?php echo $this->lang->line('online') . " " . $this->lang->line('exam') . " " . $this->lang->line('list'); ?></h3>
                         <?php if ($this->rbac->hasPrivilege('online_examination', 'can_add')) {
                             ?>                        
-                        <button class="btn btn-primary btn-sm pull-right question-btn" data-recordid="0"><i class="fa fa-plus"></i> <?php echo $this->lang->line('add') . " " . $this->lang->line('exam') ?></button>
+                        <a class="btn btn-primary btn-sm pull-right" href="<?php echo site_url('admin/onlineexam/workflow'); ?>"><i class="fa fa-plus"></i> Add Nigerian Academic Assessment</a>
                     <?php
                      }
                      ?>
@@ -37,7 +37,7 @@ $language_name = $language["short_code"];
                                     <tr>
 
                                         <th><?php echo $this->lang->line('exam'); ?></th>
-										<th class="text-center"><?php echo $this->lang->line('quiz'); ?></th>
+										<th class="text-center">Type</th>
                                         <th class="text-center" width="150"><?php echo $this->lang->line('questions'); ?></th>
                                         <th class="text text-center"><?php echo $this->lang->line('attempt'); ?></th> 
                                         <th><?php echo $this->lang->line('exam') . " " . $this->lang->line('from') ?></th>

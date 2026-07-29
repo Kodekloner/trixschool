@@ -1,5 +1,8 @@
 <?php
 include('../database/config.php');
+require_once('../phpscript/kindergarten_guard.php');
+kindergartenRequireStaff(false, false, 'can_view');
+$kindergarten_csrf_token = kindergartenCsrfToken();
 ?>
 <!doctype html>
 <html lang="en">
@@ -130,6 +133,7 @@ include('../database/config.php');
 
 	<script>
 		$(document).ready(function() {
+			var kindergartenCsrfToken = <?php echo json_encode($kindergarten_csrf_token); ?>;
 			// Initial load of result labels (default 2)
 			loadResultLabels(2);
 
@@ -212,17 +216,22 @@ include('../database/config.php');
 				// Collect subjects & concepts
 				var subjects = [];
 				$('.subject-block').each(function() {
+					var assessmentSubjectId = $(this).data('assessment-subject-id') || 0;
 					var subjectId = $(this).find('.subject-select').val();
 					if (!subjectId || subjectId === '0') return;
 					var concepts = [];
 					$(this).find('.concept-text').each(function() {
 						var concept = $(this).val();
 						if (concept.trim() !== '') {
-							concepts.push(concept);
+							concepts.push({
+								id: $(this).closest('.concept-row').data('concept-id') || 0,
+								concept_text: concept
+							});
 						}
 					});
 					if (concepts.length > 0) {
 						subjects.push({
+							assessment_subject_id: assessmentSubjectId,
 							subject_id: subjectId,
 							concepts: concepts
 						});
@@ -242,7 +251,8 @@ include('../database/config.php');
 					url: '../phpscript/save_kindergarten_assessment.php',
 					method: 'POST',
 					data: {
-						data: JSON.stringify(data)
+						data: JSON.stringify(data),
+						csrf_token: kindergartenCsrfToken
 					},
 					success: function(response) {
 						$('.messagetoo').html(response);
@@ -291,20 +301,22 @@ include('../database/config.php');
 								method: 'POST',
 								data: {
 									index: i,
-									subject_id: subj.subject_id
+									subject_id: subj.subject_id,
+									assessment_subject_id: subj.assessment_subject_id
 								},
 								async: false,
 								success: function(block) {
 									$('#subjectsContainer').append(block);
 									var blockElem = $('#subjectsContainer .subject-block').last();
 									// Add concepts
-									$.each(subj.concepts, function(j, concept) {
+							$.each(subj.concepts, function(j, concept) {
 										$.ajax({
 											url: '../phpscript/add_concept_row.php',
 											method: 'POST',
 											data: {
 												subjectIndex: i,
-												concept_text: concept
+											concept_text: concept.concept_text || concept,
+											concept_id: concept.id || 0
 											},
 											async: false,
 											success: function(row) {
@@ -349,7 +361,8 @@ include('../database/config.php');
 					method: 'POST',
 					data: {
 						assessment_id: assessmentId,
-						class_ids: classIds
+						class_ids: classIds,
+						csrf_token: kindergartenCsrfToken
 					},
 					success: function(response) {
 						$('#assignModalBody').prepend(response);
@@ -369,7 +382,8 @@ include('../database/config.php');
 						url: '../phpscript/delete_kindergarten_assessment.php',
 						method: 'POST',
 						data: {
-							id: id
+							id: id,
+							csrf_token: kindergartenCsrfToken
 						},
 						success: function(response) {
 							$('.messagetoo').html(response);

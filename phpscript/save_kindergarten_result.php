@@ -15,7 +15,7 @@ $label_index = intval($_POST['label_index']);
 $sql = "SELECT kas.assessment_id 
         FROM kindergarten_assessment_concepts kac
         INNER JOIN kindergarten_assessment_subjects kas ON kac.assessment_subject_id = kas.id
-        WHERE kac.id = '$concept_id'";
+        WHERE kac.id = '$concept_id' AND kac.is_active = 1 AND kas.is_active = 1";
 $res = mysqli_query($link, $sql);
 if (mysqli_num_rows($res) == 0) {
 	echo "Invalid concept.";
