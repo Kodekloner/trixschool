@@ -34,6 +34,15 @@ if (!function_exists('safe_result_average')) {
     }
 }
 
+if (!function_exists('get_result_page_effective_term')) {
+    function get_result_page_effective_term($term, $reltype)
+    {
+        return normalize_result_page_reltype($reltype) === 'cummulative'
+            ? '3rd'
+            : trim((string) $term);
+    }
+}
+
 if (!function_exists('result_domain_row_has_score')) {
     function result_domain_row_has_score(array $row, $scorePrefix, $scoreCount = 15)
     {

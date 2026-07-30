@@ -16,6 +16,30 @@ $rolefirst = $_POST['rolefirst'] ?? '';
 
 $staffid = $_POST['staffid'] ?? 0;
 
+$validationError = get_publishresult_validation_error(
+    $session,
+    $term,
+    $reltype,
+    $classid,
+    $classsectionactual
+);
+
+if ($validationError !== '') {
+    echo '<div class="alert alert-warning" role="alert">'
+        . htmlspecialchars($validationError, ENT_QUOTES, 'UTF-8')
+        . '</div>';
+    exit;
+}
+
+$session = (int) $session;
+$classid = (int) $classid;
+$classsectionactual = (int) $classsectionactual;
+$staffid = (int) $staffid;
+$reltype = normalize_publishresult_reltype($reltype);
+$term = $reltype === 'cummulative'
+    ? '3rd'
+    : normalize_publishresult_term($term, $reltype);
+
 $reldate = date('Y-m-d');
 
 // Check if this class has a kindergarten assessment assigned

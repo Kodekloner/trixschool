@@ -21,6 +21,8 @@ assert_same('termly', normalize_result_page_reltype('termly'), 'Termly should re
 assert_same('cummulative', normalize_result_page_reltype('cummulative'), 'Legacy cumulative spelling should remain compatible.');
 assert_same('cummulative', normalize_result_page_reltype('cumulative'), 'Correct cumulative spelling should be accepted.');
 assert_same('', normalize_result_page_reltype('garbage'), 'Unknown result types should be rejected.');
+assert_same('3rd', get_result_page_effective_term('Select Term', 'cumulative'), 'Cumulative metadata should use third term.');
+assert_same('2nd', get_result_page_effective_term('2nd', 'termly'), 'Termly metadata should retain its selected term.');
 
 assert_same(0.0, safe_result_average(100, 0), 'A zero denominator should return a finite zero.');
 assert_same(77.0, safe_result_average(2695, 35), 'Student 179 cumulative average should be 77.');

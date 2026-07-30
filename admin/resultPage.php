@@ -164,7 +164,7 @@ $classsectionactual = $_GET['classsectionactual'];
 
 $classid = $_GET['classid'];
 
-$term = $_GET['term'];
+$term = get_result_page_effective_term($_GET['term'] ?? '', $resultSubType);
 $term2 = '';
 
 if ($term == '1st') {
