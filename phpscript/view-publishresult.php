@@ -20,6 +20,23 @@
     if (!can_staff_publish_result($link, $id ?? 0, $rolefirst)) {
         exit;
     }
+
+    $validationError = get_publishresult_validation_error(
+        $session,
+        $term,
+        $reltype,
+        $classid,
+        $classsectionactual
+    );
+
+    if ($validationError !== '') {
+        echo '<div class="alert alert-warning" role="alert">'
+            . htmlspecialchars($validationError, ENT_QUOTES, 'UTF-8')
+            . '</div>';
+        exit;
+    }
+
+    $reltype = normalize_publishresult_reltype($reltype);
     
     if($rolefirst == 'student'){
         
@@ -28,7 +45,7 @@
     {
         $rowGetstudent_session = find_publishresult_record($link, $session, $term, $reltype, $classid, $classsectionactual);
         $countGetstudent_session = !empty($rowGetstudent_session) ? 1 : 0;
-        $savedDate = $rowGetstudent_session['Date'] ?? '';
+        $savedDate = htmlspecialchars($rowGetstudent_session['Date'] ?? '', ENT_QUOTES, 'UTF-8');
         
         
         if($countGetstudent_session > 0)

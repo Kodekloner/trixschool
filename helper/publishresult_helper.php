@@ -5,7 +5,83 @@ if (!function_exists('normalize_publishresult_reltype')) {
     {
         $value = strtolower(trim((string) $value));
 
-        return in_array($value, ['midterm', 'termly', 'cummulative'], true) ? $value : '';
+        if ($value === 'midterm' || $value === 'mid-term') {
+            return 'midterm';
+        }
+
+        if ($value === 'termly') {
+            return 'termly';
+        }
+
+        if ($value === 'cummulative' || $value === 'cumulative') {
+            return 'cummulative';
+        }
+
+        return '';
+    }
+}
+
+if (!function_exists('normalize_publishresult_term')) {
+    function normalize_publishresult_term($value, $reltype)
+    {
+        $reltype = normalize_publishresult_reltype($reltype);
+
+        if ($reltype === 'cummulative') {
+            // The annual cumulative card is session-wide, but its term-specific
+            // attendance, comments and resumption metadata come from third term.
+            return '3rd';
+        }
+
+        $value = strtolower(trim((string) $value));
+
+        return in_array($value, ['1st', '2nd', '3rd'], true) ? $value : '';
+    }
+}
+
+if (!function_exists('is_valid_publishresult_date')) {
+    function is_valid_publishresult_date($value)
+    {
+        $value = trim((string) $value);
+        $date = DateTime::createFromFormat('!Y-m-d', $value);
+
+        return $date instanceof DateTime && $date->format('Y-m-d') === $value;
+    }
+}
+
+if (!function_exists('get_publishresult_validation_error')) {
+    function get_publishresult_validation_error(
+        $session,
+        $term,
+        $reltype,
+        $classId,
+        $sectionId,
+        $displayDate = null,
+        $allowLegacyGlobalScope = false
+    ) {
+        $normalizedReltype = normalize_publishresult_reltype($reltype);
+
+        if ($normalizedReltype === '') {
+            return 'Please select a valid result type.';
+        }
+
+        $classId = (int) $classId;
+        $sectionId = (int) $sectionId;
+        $hasExactScope = $classId > 0 && $sectionId > 0;
+        $hasLegacyGlobalScope = $allowLegacyGlobalScope && $classId === 0 && $sectionId === 0;
+
+        if ((int) $session <= 0 || (!$hasExactScope && !$hasLegacyGlobalScope)) {
+            return 'Please select a valid session, class and section.';
+        }
+
+        if ($normalizedReltype !== 'cummulative' && normalize_publishresult_term($term, $normalizedReltype) === '') {
+            return 'Please select a valid term.';
+        }
+
+        if ($displayDate !== null && !is_valid_publishresult_date($displayDate)) {
+            return 'Please select a valid publication date.';
+        }
+
+        return '';
     }
 }
 
@@ -198,27 +274,54 @@ if (!function_exists('can_staff_publish_result')) {
 }
 
 if (!function_exists('build_publishresult_where_clause')) {
-    function build_publishresult_where_clause($link, $session, $term, $reltype, $classId, $sectionId, $dateLimit = null)
+    function build_publishresult_where_clause(
+        $link,
+        $session,
+        $term,
+        $reltype,
+        $classId,
+        $sectionId,
+        $dateLimit = null,
+        $allowLegacyGlobalScope = false
+    )
     {
         $session = (int) $session;
         $classId = (int) $classId;
         $sectionId = (int) $sectionId;
         $reltype = normalize_publishresult_reltype($reltype);
-        $termSafe = mysqli_real_escape_string($link, trim((string) $term));
+        $term = normalize_publishresult_term($term, $reltype);
+        $validationError = get_publishresult_validation_error(
+            $session,
+            $term,
+            $reltype,
+            $classId,
+            $sectionId,
+            null,
+            $allowLegacyGlobalScope
+        );
+
+        if ($validationError !== '' || ($dateLimit !== null && !is_valid_publishresult_date($dateLimit))) {
+            return '1 = 0';
+        }
+
+        $termSafe = mysqli_real_escape_string($link, $term);
         $reltypeSafe = mysqli_real_escape_string($link, $reltype);
 
         $conditions = [
             "`Session` = '$session'",
             "`ClassID` = '$classId'",
             "`SectionID` = '$sectionId'",
-            "`ResultType` = '$reltypeSafe'",
         ];
 
-        if ($reltype !== 'cummulative') {
+        if ($reltype === 'cummulative') {
+            $cumulativeAliasSafe = mysqli_real_escape_string($link, 'cumulative');
+            $conditions[] = "`ResultType` IN ('$reltypeSafe', '$cumulativeAliasSafe')";
+        } else {
+            $conditions[] = "`ResultType` = '$reltypeSafe'";
             $conditions[] = "`Term` = '$termSafe'";
         }
 
-        if ($dateLimit !== null && trim((string) $dateLimit) !== '') {
+        if ($dateLimit !== null) {
             $dateLimitSafe = mysqli_real_escape_string($link, trim((string) $dateLimit));
             $conditions[] = "`Date` <= '$dateLimitSafe'";
         }
@@ -228,7 +331,16 @@ if (!function_exists('build_publishresult_where_clause')) {
 }
 
 if (!function_exists('find_publishresult_record')) {
-    function find_publishresult_record($link, $session, $term, $reltype, $classId, $sectionId, $dateLimit = null)
+    function find_publishresult_record(
+        $link,
+        $session,
+        $term,
+        $reltype,
+        $classId,
+        $sectionId,
+        $dateLimit = null,
+        $allowLegacyGlobalFallback = true
+    )
     {
         $whereClause = build_publishresult_where_clause($link, $session, $term, $reltype, $classId, $sectionId, $dateLimit);
         $sql = "SELECT *
@@ -238,7 +350,57 @@ if (!function_exists('find_publishresult_record')) {
                 LIMIT 1";
         $result = mysqli_query($link, $sql);
 
-        return ($result && mysqli_num_rows($result) > 0) ? mysqli_fetch_assoc($result) : null;
+        if ($result && mysqli_num_rows($result) > 0) {
+            return mysqli_fetch_assoc($result);
+        }
+
+        if (!$allowLegacyGlobalFallback || (int) $classId <= 0 || (int) $sectionId <= 0) {
+            return null;
+        }
+
+        if ($dateLimit !== null) {
+            $undatedExactWhereClause = build_publishresult_where_clause(
+                $link,
+                $session,
+                $term,
+                $reltype,
+                $classId,
+                $sectionId
+            );
+            $undatedExactSql = "SELECT `id`
+                                FROM `publishresult`
+                                WHERE $undatedExactWhereClause
+                                ORDER BY `id` DESC
+                                LIMIT 1";
+            $undatedExactResult = mysqli_query($link, $undatedExactSql);
+
+            // A scheduled exact publication must shadow an older global record
+            // until its own publication date arrives.
+            if ($undatedExactResult && mysqli_num_rows($undatedExactResult) > 0) {
+                return null;
+            }
+        }
+
+        $legacyWhereClause = build_publishresult_where_clause(
+            $link,
+            $session,
+            $term,
+            $reltype,
+            0,
+            0,
+            $dateLimit,
+            true
+        );
+        $legacySql = "SELECT *
+                      FROM `publishresult`
+                      WHERE $legacyWhereClause
+                      ORDER BY `id` DESC
+                      LIMIT 1";
+        $legacyResult = mysqli_query($link, $legacySql);
+
+        return ($legacyResult && mysqli_num_rows($legacyResult) > 0)
+            ? mysqli_fetch_assoc($legacyResult)
+            : null;
     }
 }
 
@@ -249,30 +411,50 @@ if (!function_exists('save_publishresult_record')) {
         $classId = (int) $classId;
         $sectionId = (int) $sectionId;
         $reltype = normalize_publishresult_reltype($reltype);
-        $termSafe = mysqli_real_escape_string($link, trim((string) $term));
-        $reltypeSafe = mysqli_real_escape_string($link, $reltype);
-        $displayDateSafe = mysqli_real_escape_string($link, trim((string) $displayDate));
+        $term = normalize_publishresult_term($term, $reltype);
+        $displayDate = trim((string) $displayDate);
 
-        $existing = find_publishresult_record($link, $session, $term, $reltype, $classId, $sectionId);
+        if (get_publishresult_validation_error(
+            $session,
+            $term,
+            $reltype,
+            $classId,
+            $sectionId,
+            $displayDate
+        ) !== '') {
+            return false;
+        }
+
+        $termSafe = mysqli_real_escape_string($link, $term);
+        $reltypeSafe = mysqli_real_escape_string($link, $reltype);
+        $displayDateSafe = mysqli_real_escape_string($link, $displayDate);
+
+        $existing = find_publishresult_record(
+            $link,
+            $session,
+            $term,
+            $reltype,
+            $classId,
+            $sectionId,
+            null,
+            false
+        );
 
         if (!empty($existing['id'])) {
             $publishId = (int) $existing['id'];
             $sql = "UPDATE `publishresult`
-                    SET `Date` = '$displayDateSafe'
+                    SET `Term` = '$termSafe',
+                        `ResultType` = '$reltypeSafe',
+                        `Date` = '$displayDateSafe'
                     WHERE `id` = '$publishId'";
 
             return mysqli_query($link, $sql);
         }
 
-        $columns = "`Session`, `ClassID`, `SectionID`, `ResultType`, `Date`";
-        $values = "'$session', '$classId', '$sectionId', '$reltypeSafe', '$displayDateSafe'";
-
-        if ($reltype !== 'cummulative') {
-            $columns = "`Session`, `Term`, `ClassID`, `SectionID`, `ResultType`, `Date`";
-            $values = "'$session', '$termSafe', '$classId', '$sectionId', '$reltypeSafe', '$displayDateSafe'";
-        }
-
-        $sql = "INSERT INTO `publishresult`($columns) VALUES ($values)";
+        $sql = "INSERT INTO `publishresult`
+                    (`Session`, `Term`, `ClassID`, `SectionID`, `ResultType`, `Date`)
+                VALUES
+                    ('$session', '$termSafe', '$classId', '$sectionId', '$reltypeSafe', '$displayDateSafe')";
 
         return mysqli_query($link, $sql);
     }

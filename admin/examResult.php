@@ -105,10 +105,10 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
 
                                     <div class="form-group col-sm">
                                         <select class="form-control" id="reltype">
-                                            <option>Result Type</option>
+                                            <option value="0">Result Type</option>
                                             <option value="midterm">Mid-Term</option>
                                             <option value="termly">Termly</option>
-                                            <option value="cummulative">Cummulative</option>
+                                            <option value="cummulative">Cumulative</option>
                                         </select>
                                         <!--They would need to select Term in-order to display the Exam Group Created for that term-->
                                     </div>
@@ -116,7 +116,7 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
 
                                     <div class="form-group col-sm" id="hideme">
                                         <select class="form-control" id="term">
-                                            <option>Select Term</option>
+                                            <option value="0">Select Term</option>
                                             <option value="1st">1st Term</option>
                                             <option value="2nd">2nd Term</option>
                                             <option value="3rd">3rd Term</option>
@@ -338,7 +338,7 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
             // alert(reltype);
 
             if (reltype == 'cummulative') {
-
+                $('#term').val('3rd');
                 $('#hideme').hide('slow');
             } else {
                 $('#hideme').show('slow');
@@ -369,6 +369,10 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
             var term = $("#term").val();
 
             var reltype = $("#reltype").val();
+
+            if (reltype == 'cummulative') {
+                term = '3rd';
+            }
 
 
 
@@ -474,6 +478,10 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
 
             var reltype = $("#reltype").val();
 
+            if (reltype == 'cummulative') {
+                term = '3rd';
+            }
+
             var classsectionactual = $("#classsection").val();
 
             var classid = $("#class").val();
@@ -499,6 +507,10 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
 
                             $('#submitstudentbtn').html('Save');
 
+                            if (maindata2.indexOf('alert-success') === -1) {
+                                return;
+                            }
+
                             $.ajax({
                                 url: '../../../phpscript/view-publishresult.php',
                                 method: 'POST',
@@ -512,11 +524,14 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
 
                                     $('#displaydte').val(datee);
 
-                                    $('#errmsgnewstudent').html('');
-
-
                                 }
                             });
+                        },
+                        error: function(xhr) {
+                            $('#submitstudentbtn').html('Save');
+                            $('#errmsgnewstudent').html(
+                                xhr.responseText || '<div class="alert alert-warning" role="alert">Result publication could not be saved.</div>'
+                            );
                         }
                     });
 
@@ -537,6 +552,10 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
 
                                 $('#submitstudentbtn').html('Save');
 
+                                if (maindata2.indexOf('alert-success') === -1) {
+                                    return;
+                                }
+
                                 $.ajax({
                                     url: '../../../phpscript/view-publishresult.php',
                                     method: 'POST',
@@ -550,11 +569,14 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
 
                                         $('#displaydte').val(datee);
 
-                                        $('#errmsgnewstudent').html('');
-
-
                                     }
                                 });
+                            },
+                            error: function(xhr) {
+                                $('#submitstudentbtn').html('Save');
+                                $('#errmsgnewstudent').html(
+                                    xhr.responseText || '<div class="alert alert-warning" role="alert">Result publication could not be saved.</div>'
+                                );
                             }
                         });
 

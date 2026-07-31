@@ -23,6 +23,22 @@
         exit;
     }
 
+    $validationError = get_publishresult_validation_error(
+        $session,
+        $term,
+        $reltype,
+        $classid,
+        $classsectionactual,
+        $displaydte
+    );
+
+    if ($validationError !== '') {
+        echo '<div class="alert alert-warning" role="alert">'
+            . htmlspecialchars($validationError, ENT_QUOTES, 'UTF-8')
+            . '</div>';
+        exit;
+    }
+
     $saved = save_publishresult_record($link, $session, $term, $reltype, $classid, $classsectionactual, $displaydte);
 
     if($saved)
@@ -33,8 +49,9 @@
     }
     else
     {
+        error_log('Unable to save publishresult record: ' . mysqli_error($link));
         echo '<div class="alert alert-warning" role="alert">
-                Not Updated Successfully.
+                Result publication could not be saved. Please try again or contact support.
             </div>';
     }
          
