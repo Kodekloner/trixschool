@@ -199,6 +199,80 @@ class Paymentsettings extends Admin_Controller {
         return true;
     }
 
+    public function monnify()
+    {
+        $monnify_result = $this->paymentsetting_model->getByType('monnify');
+        $has_stored_secret = $monnify_result && isset($monnify_result->api_secret_key) && trim((string) $monnify_result->api_secret_key) !== '';
+        $posted_gateway_mode = (string) $this->input->post('monnify_gateway_mode');
+        $posted_api_key = trim((string) $this->input->post('monnify_api_key'));
+        $can_reuse_stored_secret = $has_stored_secret
+            && isset($monnify_result->gateway_mode, $monnify_result->api_publishable_key)
+            && (string) $monnify_result->gateway_mode === $posted_gateway_mode
+            && hash_equals(trim((string) $monnify_result->api_publishable_key), $posted_api_key);
+        $secret_key_rules = $can_reuse_stored_secret ? 'trim|xss_clean' : 'trim|required|xss_clean';
+
+        $this->form_validation->set_error_delimiters('', '');
+        $this->form_validation->set_rules('monnify_gateway_mode', $this->lang->line('mode'), 'trim|required|callback_valid_monnify_gateway_mode');
+        $this->form_validation->set_rules('monnify_api_key', 'API Key', 'trim|required|callback_valid_monnify_api_key|xss_clean');
+        $this->form_validation->set_rules('monnify_secret_key', 'Secret Key', $secret_key_rules);
+        $this->form_validation->set_rules('monnify_contract_code', 'Contract Code', 'trim|required|alpha_numeric|xss_clean');
+
+        if ($this->form_validation->run()) {
+            $monnify_secret_key = trim((string) $this->input->post('monnify_secret_key'));
+            $data = array(
+                'payment_type' => 'monnify',
+                'api_publishable_key' => $posted_api_key,
+                'api_username' => $this->input->post('monnify_contract_code'),
+                'gateway_mode' => (int) $posted_gateway_mode,
+                'salt' => '',
+                'paypal_demo' => '',
+                'account_no' => '',
+                'paytm_website' => '',
+                'paytm_industrytype' => '',
+            );
+
+            if ($monnify_secret_key !== '') {
+                $data['api_secret_key'] = $monnify_secret_key;
+            }
+
+            $this->paymentsetting_model->add($data);
+            echo json_encode(array('st' => 0, 'msg' => $this->lang->line('update_message')));
+        } else {
+            echo json_encode(array('st' => 1, 'msg' => array(
+                'monnify_gateway_mode' => form_error('monnify_gateway_mode'),
+                'monnify_api_key' => form_error('monnify_api_key'),
+                'monnify_secret_key' => form_error('monnify_secret_key'),
+                'monnify_contract_code' => form_error('monnify_contract_code'),
+            )));
+        }
+    }
+
+    public function valid_monnify_gateway_mode($mode)
+    {
+        if ($mode === '0' || $mode === '1') {
+            return true;
+        }
+
+        $this->form_validation->set_message('valid_monnify_gateway_mode', 'Please select a valid %s');
+        return false;
+    }
+
+    public function valid_monnify_api_key($api_key)
+    {
+        $mode = $this->input->post('monnify_gateway_mode');
+        if ($mode === '0' && strpos($api_key, 'MK_TEST_') !== 0) {
+            $this->form_validation->set_message('valid_monnify_api_key', 'Test / Sandbox mode requires a Monnify test API key that starts with MK_TEST_.');
+            return false;
+        }
+
+        if ($mode === '1' && strpos($api_key, 'MK_PROD_') !== 0) {
+            $this->form_validation->set_message('valid_monnify_api_key', 'Live mode requires a Monnify production API key that starts with MK_PROD_.');
+            return false;
+        }
+
+        return true;
+    }
+
     public function instamojo() {
 
         $this->form_validation->set_error_delimiters('', '');

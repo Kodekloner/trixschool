@@ -159,6 +159,14 @@ class Payment extends Student_Controller
                     }
 
                     //=======================
+                } else if ($pay_method->payment_type == "monnify") {
+                    if ($pay_method->api_publishable_key == "" || $pay_method->api_secret_key == "" || $pay_method->api_username == "") {
+                        $this->session->set_flashdata('error', '<div class="alert alert-danger">Monnify settings not available</div>');
+                        redirect($_SERVER['HTTP_REFERER']);
+                    } else {
+                        $this->session->set_userdata("params", $params);
+                        redirect(base_url("students/monnify"));
+                    }
                 } else if ($pay_method->payment_type == "razorpay") {
 
                     if ($pay_method->api_secret_key == "" || $pay_method->api_publishable_key == "") {
@@ -366,6 +374,14 @@ class Payment extends Student_Controller
                 }
 
                 //=======================
+            } else if ($pay_method->payment_type == "monnify") {
+                if ($pay_method->api_publishable_key == "" || $pay_method->api_secret_key == "" || $pay_method->api_username == "") {
+                    $this->session->set_flashdata('error', '<div class="alert alert-danger">Monnify settings not available</div>');
+                    redirect($_SERVER['HTTP_REFERER']);
+                } else {
+                    $this->session->set_userdata("params", $params);
+                    redirect(base_url("students/monnify"));
+                }
             } else if ($pay_method->payment_type == "stripe") {
                 ///=====================
                 if ($pay_method->api_secret_key == "" || $pay_method->api_publishable_key == "") {
