@@ -38,6 +38,8 @@ class Checkout extends Front_Controller
                 redirect(base_url("onlineadmission/razorpay"));
             } elseif ($this->pay_method->payment_type == "paystack") {
                 redirect(base_url("onlineadmission/paystack"));
+            } elseif ($this->pay_method->payment_type == "monnify") {
+                redirect(base_url("onlineadmission/monnify"));
             } elseif ($this->pay_method->payment_type == "midtrans") {
                 redirect(base_url("onlineadmission/midtrans"));
             }elseif ($this->pay_method->payment_type == "ipayafrica") {
@@ -70,4 +72,3 @@ class Checkout extends Front_Controller
     }    
 
 }
- 

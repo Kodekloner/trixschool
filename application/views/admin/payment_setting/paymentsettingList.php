@@ -28,6 +28,7 @@
                         <li><a href="#tab_13" data-toggle="tab"><?php echo $this->lang->line('jazzcash'); ?></a></li>
                         <li><a href="#tab_14" data-toggle="tab"><?php echo $this->lang->line('billplz'); ?></a></li>
                         <li><a href="#tab_15" data-toggle="tab"><?php echo $this->lang->line('sslcommerz'); ?></a></li>
+                        <li><a href="#tab_16" data-toggle="tab">Monnify</a></li>
                     </ul> 
                     <div class="tab-content pb0">
                         <div class="tab-pane active" id="tab_1">
@@ -793,6 +794,74 @@
                                 </div>
                             </form>
                         </div>
+                        <div class="tab-pane" id="tab_16">
+                            <form role="form" id="monnify" action="<?php echo site_url('admin/paymentsettings/monnify') ?>" class="form-horizontal" method="post">
+                                <div class="box-body">
+                                    <div class="row">
+                                        <div class="col-md-7">
+                                            <?php $monnify_result = check_in_array('monnify', $paymentlist); ?>
+                                            <div class="form-group">
+                                                <label class="control-label col-md-5 col-sm-12 col-xs-12" for="monnify_gateway_mode">Mode<small class="req"> *</small></label>
+                                                <div class="col-md-7 col-sm-7 col-xs-12">
+                                                    <select name="monnify_gateway_mode" id="monnify_gateway_mode" class="form-control">
+                                                        <option value="0" <?php echo (isset($monnify_result->gateway_mode) && (int) $monnify_result->gateway_mode === 0) ? 'selected' : ''; ?>>Test / Sandbox</option>
+                                                        <option value="1" <?php echo (isset($monnify_result->gateway_mode) && (int) $monnify_result->gateway_mode === 1) ? 'selected' : ''; ?>>Live</option>
+                                                    </select>
+                                                    <span class="text text-danger monnify_gateway_mode_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="control-label col-md-5 col-sm-12 col-xs-12" for="monnify_api_key">API Key<small class="req"> *</small></label>
+                                                <div class="col-md-7 col-sm-7 col-xs-12">
+                                                    <input name="monnify_api_key" id="monnify_api_key" type="text" class="form-control" value="<?php echo html_escape(isset($monnify_result->api_publishable_key) ? $monnify_result->api_publishable_key : ''); ?>" />
+                                                    <span class="text text-danger monnify_api_key_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="control-label col-md-5 col-sm-12 col-xs-12" for="monnify_secret_key">Secret Key<small class="req"> *</small></label>
+                                                <div class="col-md-7 col-sm-7 col-xs-12">
+                                                    <input name="monnify_secret_key" id="monnify_secret_key" type="password" class="form-control" value="" autocomplete="new-password" />
+                                                    <?php if (isset($monnify_result->api_secret_key) && trim((string) $monnify_result->api_secret_key) !== '') { ?>
+                                                        <p class="help-block">A secret key is already saved. Leave this blank only while keeping the same mode and API key.</p>
+                                                    <?php } ?>
+                                                    <span class="text text-danger monnify_secret_key_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="control-label col-md-5 col-sm-12 col-xs-12" for="monnify_contract_code">Contract Code<small class="req"> *</small></label>
+                                                <div class="col-md-7 col-sm-7 col-xs-12">
+                                                    <input name="monnify_contract_code" id="monnify_contract_code" type="text" class="form-control" value="<?php echo html_escape(isset($monnify_result->api_username) ? $monnify_result->api_username : ''); ?>" />
+                                                    <span class="text text-danger monnify_contract_code_error"></span>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="control-label col-md-5 col-sm-12 col-xs-12">Webhook URL</label>
+                                                <div class="col-md-7 col-sm-7 col-xs-12">
+                                                    <input type="text" class="form-control" value="<?php echo html_escape(base_url('webhooks/monnify')); ?>" readonly />
+                                                    <p class="help-block">Add this URL under Developer &gt; Webhook URLs in your Monnify dashboard. Test mode uses <code>https://sandbox.monnify.com</code> and API keys beginning with <code>MK_TEST_</code>; live API keys must begin with <code>MK_PROD_</code>.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-5 text text-center disblock">
+                                            <a href="https://developers.monnify.com/" target="_blank" rel="noopener">
+                                                <h3>Monnify</h3>
+                                                <p>Moniepoint online payment gateway</p>
+                                                <p>https://developers.monnify.com</p>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="box-footer">
+                                    <div class="row">
+                                        <div class="col-md-6 col-sm-6 col-xs-12 col-md-offset-3">
+                                            <?php if ($this->rbac->hasPrivilege('payment_methods', 'can_edit')) { ?>
+                                                <button type="submit" class="btn btn-primary monnify_save" data-loading-text="<i class='fa fa-spinner fa-spin'></i> <?php echo $this->lang->line('save'); ?>"><?php echo $this->lang->line('save'); ?></button>
+                                            <?php } ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                     <!-- /.tab-content -->
                 </div>
@@ -869,6 +938,16 @@
                                         }
                                         ?>>
                                         <?php echo $this->lang->line('paystack'); ?>
+                                    </label>
+                                </div>
+                                <div class="radio">
+                                    <label>
+                                        <input type="radio" name="payment_setting" value="monnify" <?php
+                                        if ($radio_check == 'monnify') {
+                                            echo 'checked';
+                                        }
+                                        ?>>
+                                        Monnify
                                     </label>
                                 </div>
                                 <div class="radio">
@@ -1260,6 +1339,33 @@ function check_in_array($find, $array) {
             {
                 $(".custom_loader").html("");
             }, complete: function () {
+                $this.button('reset');
+            }
+        });
+        e.preventDefault();
+    });
+
+    $("#monnify").submit(function (e) {
+        $("[class$='_error']").html("");
+        var $this = $(".monnify_save");
+        $this.button('loading');
+
+        $.ajax({
+            type: "POST",
+            dataType: 'JSON',
+            url: $(this).attr('action'),
+            data: $("#monnify").serialize(),
+            success: function (data)
+            {
+                if (data.st === 1) {
+                    $.each(data.msg, function (key, value) {
+                        $('.' + key + "_error").html(value);
+                    });
+                } else {
+                    successMsg(data.msg);
+                }
+            },
+            complete: function () {
                 $this.button('reset');
             }
         });

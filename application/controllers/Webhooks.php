@@ -45,6 +45,87 @@ class Webhooks extends CI_Controller {
         }
     }
 
+    public function monnify()
+    {
+        if ($this->input->method(true) !== 'POST') {
+            return $this->respond_json(array('status' => 'error', 'message' => 'Method not allowed'), 405);
+        }
+
+        $config = $this->paymentsetting_model->getByType('monnify');
+        if (empty($config)) {
+            return $this->respond_json(array('status' => 'error', 'message' => 'Monnify is not configured'), 503);
+        }
+
+        $this->load->model('monnify_payment_model');
+        if (!$this->monnify_payment_model->isReady()) {
+            return $this->respond_json(array('status' => 'error', 'message' => 'Monnify payment storage is not ready'), 503);
+        }
+
+        $this->load->library('monnify_gateway', array(
+            'api_key' => $config->api_publishable_key,
+            'secret_key' => $config->api_secret_key,
+            'contract_code' => $config->api_username,
+            'gateway_mode' => (int) $config->gateway_mode,
+        ));
+
+        $raw_payload = file_get_contents('php://input');
+        $signature = $this->input->get_request_header('monnify-signature', true);
+        if (!$this->monnify_gateway->isValidWebhookSignature($raw_payload, $signature)) {
+            log_message('error', 'Monnify webhook rejected: invalid signature.');
+            return $this->respond_json(array('status' => 'error', 'message' => 'Invalid signature'), 401);
+        }
+
+        $payload = json_decode($raw_payload, true);
+        if (!is_array($payload) || empty($payload['eventType']) || empty($payload['eventData'])) {
+            return $this->respond_json(array('status' => 'error', 'message' => 'Invalid payload'), 400);
+        }
+
+        if (strtoupper($payload['eventType']) !== 'SUCCESSFUL_TRANSACTION') {
+            return $this->respond_json(array('status' => 'ignored', 'message' => 'Event type is not handled'), 200);
+        }
+
+        $payment_reference = isset($payload['eventData']['paymentReference'])
+            ? trim((string) $payload['eventData']['paymentReference'])
+            : '';
+        if ($payment_reference === '') {
+            return $this->respond_json(array('status' => 'error', 'message' => 'Payment reference is missing'), 400);
+        }
+
+        $payment = $this->monnify_payment_model->findByPaymentReference($payment_reference);
+        if (empty($payment)) {
+            return $this->respond_json(array('status' => 'ignored', 'message' => 'Unknown payment reference'), 200);
+        }
+        if ((int) $payment->gateway_mode !== (int) $config->gateway_mode) {
+            log_message('error', 'Monnify webhook mode mismatch for ' . $payment_reference . '.');
+            return $this->respond_json(array('status' => 'error', 'message' => 'Gateway mode mismatch'), 409);
+        }
+        if ($payment->status === 'processed') {
+            return $this->respond_json(array('status' => 'processed'), 200);
+        }
+
+        // Requery Monnify instead of trusting the webhook body as the source of payment truth.
+        $verification = $this->monnify_gateway->verifyTransaction($payment_reference);
+        if (empty($verification['success']) || empty($verification['response']['responseBody'])) {
+            log_message('error', 'Monnify webhook verification failed for ' . $payment_reference . '.');
+            return $this->respond_json(array('status' => 'error', 'message' => 'Transaction verification failed'), 503);
+        }
+
+        $result = $this->monnify_payment_model->fulfillVerifiedPayment(
+            $payment_reference,
+            $verification['response']['responseBody']
+        );
+        if (empty($result['success'])) {
+            log_message('error', 'Monnify webhook fulfillment failed for ' . $payment_reference . ': ' . $result['message']);
+            return $this->respond_json(array('status' => 'error', 'message' => $result['message']), 422);
+        }
+
+        if ($result['status'] === 'processing') {
+            return $this->respond_json(array('status' => 'processing'), 503);
+        }
+
+        return $this->respond_json(array('status' => $result['status']), 200);
+    }
+
     public function ses_inbound()
     {
         $this->config->load('incoming_email', true);

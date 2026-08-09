@@ -28,6 +28,13 @@ class Paymentsetting_model extends MY_Model {
         return $query->row();
     }
 
+    public function getByType($payment_type) {
+        return $this->db
+            ->where('payment_type', $payment_type)
+            ->get('payment_settings')
+            ->row();
+    }
+
     public function add($data) {
         $this->db->trans_start(); # Starting Transaction
         $this->db->trans_strict(false); # See Note 01. If you wish can remove as well
