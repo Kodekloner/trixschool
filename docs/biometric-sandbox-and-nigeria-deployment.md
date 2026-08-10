@@ -1,6 +1,6 @@
 # Biometric attendance sandbox and Nigeria deployment guide
 
-Last reviewed: 3 August 2026 (Africa/Lagos)
+Last reviewed: 10 August 2026 (Africa/Lagos)
 
 This guide covers two different stages:
 
@@ -84,30 +84,180 @@ The terminals should communicate with ZKBio Time, not directly with the current 
 
 ### Browser demonstration for school staff
 
-For a normal human demonstration, no command line is required:
+The website demonstration is the recommended interface for school owners, administrators, teachers, sales demonstrations, and staff training. It needs no terminal, face, fingerprint, RFID card, ZKBio Time installation, separate sandbox server, or command line.
 
-1. Sign in to the school staff interface with a role that can view Student Attendance.
-2. Open **Attendance > Biometric Demo**.
-3. Select a scenario.
-4. Keep the supplied synthetic student and terminal identifiers, or replace them with other synthetic labels.
-5. Select a date and click **Run demonstration**.
-6. Review the provider status, delivery sequence, event decisions, and expected entry/checkout summary.
-7. Expand **Show complete synthetic JSON** if a technical audience wants to inspect the event contract.
+The demonstration is available at:
 
-Available browser scenarios are:
+```text
+https://YOUR-SCHOOL-DOMAIN/admin/biometricdemo
+```
 
-- normal IN and OUT;
-- duplicate delivery;
-- delayed checkout;
-- out-of-order delivery;
-- unknown student;
-- unknown terminal;
-- malformed event;
-- HTTP 503 provider outage;
-- HTTP 429 rate limit;
-- HTTP 401 authentication failure.
+It also appears in the staff navigation as **Attendance > Biometric Demo**.
 
-Every result displays `persisted = false` and `database writes = 0`. The page never calls the live `/biometric` endpoint, because that endpoint creates real attendance and cannot currently represent a proper checkout.
+#### Access requirements
+
+Before demonstrating, confirm that:
+
+1. The latest `dev` deployment containing commit `2f12302` is installed.
+2. The server runs PHP 7.4 or newer.
+3. The staff user is authenticated.
+4. The `student_attendance` module is active for the school.
+5. The user's role has **Student Attendance > View** (`student_attendance.can_view`).
+6. `tools/biometric-sandbox/src/ScenarioFactory.php` exists in the deployed release because the website service reuses that safe scenario generator.
+
+No database migration or biometric setting is required. Biometric attendance may remain disabled in General Settings because the page does not use the live receiver.
+
+Do not make this page anonymous. “Anyone can demonstrate it” means any authenticated staff member whose role has been deliberately granted Student Attendance view permission. For a public sales demonstration, use a dedicated demo school account rather than exposing an unrestricted route.
+
+#### Safety rules before starting
+
+- Use the supplied code `DEMO/STUDENT/0001`, not a real admission number.
+- Use `SIM-IN-001` and `SIM-OUT-001`, not production serial numbers.
+- Do not open or post data to `/biometric` during the demonstration.
+- Do not enable a physical terminal merely to use this page.
+- Confirm the blue **Synthetic demonstration — no attendance is saved** banner is visible.
+- Remember that the displayed entry/checkout is an expected preview, not a saved attendance record.
+
+The form accepts other synthetic labels for presentation purposes, but identifiers are limited to letters, numbers, dots, slashes, underscores, and dashes. This validation prevents arbitrary HTML or script input from being displayed.
+
+#### First demonstration: a normal school day
+
+1. Sign in to the school staff portal.
+2. Open **Attendance** in the left navigation.
+3. Select **Biometric Demo**.
+4. Confirm the safety banner states that no attendance is saved.
+5. Select **Normal school day**.
+6. Leave these safe defaults in place:
+
+   ```text
+   Synthetic student code: DEMO/STUDENT/0001
+   IN terminal serial:      SIM-IN-001
+   OUT terminal serial:     SIM-OUT-001
+   ```
+
+7. Select the date for the demonstration. Times are interpreted in `Africa/Lagos`.
+8. Click **Run demonstration**.
+9. Confirm the result shows:
+
+   - provider HTTP status `200`;
+   - events received `2`;
+   - accepted `2`;
+   - duplicates, quarantined, and rejected all `0`;
+   - first entry `07:30:00`;
+   - final checkout `15:10:00`;
+   - outcome **Complete entry and checkout**.
+
+10. Review the event table. The first event should be an accepted `IN` event from `SIM-IN-001`; the second should be an accepted `OUT` event from `SIM-OUT-001`.
+11. Expand **Show complete synthetic JSON** when demonstrating the raw event contract to a technical audience.
+12. Point out the final confirmation: `persisted = false` and `database writes = 0`.
+
+#### Understanding the results screen
+
+The results page contains five useful areas:
+
+1. **Provider status** shows the simulated response from a ZKBio Time-style service. A `200` means events were returned; `401`, `429`, and `503` demonstrate failure handling.
+2. **Decision counters** show how many events were received, accepted, ignored as duplicates, quarantined, or rejected.
+3. **Expected attendance preview** derives the first valid IN and final valid OUT by occurrence time.
+4. **Provider delivery sequence** shows whether events arrive together, later, or only after a retry.
+5. **Synthetic device events and decisions** explains the validation result for every event.
+
+The complete JSON is useful for developers and integrators. It includes:
+
+- `sandbox: true`;
+- `persisted: false`;
+- `database_writes: 0`;
+- the simulated provider response;
+- delivery batches;
+- raw events;
+- normalized accepted events;
+- the expected daily attendance preview.
+
+#### Expected result for every website scenario
+
+| Website selection | Provider and counters | Expected preview or operator action | Pass condition |
+|---|---|---|---|
+| **Normal school day** | HTTP 200; received 2; accepted 2 | Entry 07:30, checkout 15:10 | Complete entry and checkout |
+| **Duplicate event delivery** | HTTP 200; received 3; accepted 2; duplicate 1 | Same entry and checkout as normal | Repeated vendor ID is ignored once and does not create a second attendance event |
+| **Delayed checkout event** | HTTP 200; two polling batches; accepted 2 eventually | First poll contains entry; later poll exposes checkout | Eventual preview is entry 07:30 and checkout 15:10 |
+| **Out-of-order delivery** | HTTP 200; received 2; accepted 2, even though OUT arrives first | Summary is reordered by `punch_time` | Preview still shows entry 07:30 and checkout 15:10 |
+| **Unknown student identity** | HTTP 200; received 1; quarantined 1 | No student attendance is created | Outcome is No attendance change |
+| **Unknown terminal** | HTTP 200; received 1; quarantined 1 | Event waits for device investigation/mapping | Outcome is No attendance change |
+| **Malformed event** | HTTP 200; received 1; rejected 1 | Invalid payload is not accepted | Outcome is No attendance change |
+| **Vendor server error (503)** | First poll HTTP 503; received 0; retry is shown | Preserve cursor and retry safely | No attendance change and retry guidance is displayed |
+| **API rate limit (429)** | First poll HTTP 429; received 0; retry is shown | Back off before retrying | No busy-loop and no attendance change |
+| **Authentication failure (401)** | HTTP 401; received 0; not blindly retryable | Stop polling and repair credentials | No attendance change and administrator guidance is displayed |
+
+Run all ten scenarios when performing acceptance testing. For a short non-technical demonstration, the four most useful scenarios are Normal, Duplicate, Delayed checkout, and Unknown student.
+
+#### Suggested ten-minute presentation script
+
+Use this sequence when presenting the system to a school:
+
+1. **Explain the architecture:** a student uses a fixed IN or OUT terminal; ZKBio Time supplies events; SchoolLift validates identity, device, timestamp, direction, and event ID.
+2. **Run Normal school day:** show the expected 07:30 entry and 15:10 checkout.
+3. **Run Duplicate event delivery:** explain why unstable internet may resend an event and why a stable vendor event ID must prevent double attendance.
+4. **Run Delayed checkout event:** explain that the student's checkout can arrive during a later poll without losing the morning entry.
+5. **Run Out-of-order delivery:** show why occurrence time, rather than arrival order, determines the daily summary.
+6. **Run Unknown student identity:** explain quarantine and operator mapping instead of silently creating a person.
+7. **Run Vendor server error or API rate limit:** explain safe retry, cursor preservation, and backoff.
+8. **Finish with the isolation notice:** show `persisted = false` and `database writes = 0`, then explain that a physical pilot is still required before procurement approval or production use.
+
+#### How to prove that no school attendance was changed
+
+The page is designed to prove its own isolation:
+
+- The controller loads the stateless `Biometricdemo_lib`; it does not load `Stuattendence_model`.
+- The service uses only the synthetic `ScenarioFactory` and in-memory arrays.
+- The form never calls `/biometric`.
+- Every result reports `persisted = false` and `database_writes = 0`.
+- Opening the page again with a fresh GET request shows no previous result because demonstration state is not stored.
+
+For a supervised acceptance demonstration, an administrator can also:
+
+1. Open the real Student Attendance or Biometric Attendance Log in another tab.
+2. Note the current row count or capture a screenshot.
+3. Run several website scenarios.
+4. Refresh the real report and confirm no new attendance or biometric-log row appeared.
+
+Do not insert a real student code to perform this proof; the supplied synthetic value is sufficient.
+
+#### Permission and security test
+
+Test both sides of the access rule:
+
+1. Sign in with a staff role that has Student Attendance view permission. Confirm **Attendance > Biometric Demo** is visible and the page loads.
+2. Sign in with a test role without that permission. Confirm the menu entry is hidden.
+3. While using the unprivileged role, visit `/admin/biometricdemo` directly. Confirm the application denies access.
+4. With an authorized account, leave the page open, sign out in another tab or let the session expire, then submit the old form. Confirm the request does not run normally.
+5. If the page reports that its demonstration token expired, refresh it and retry. The separate token is enforced even though global CodeIgniter CSRF protection is currently disabled.
+
+#### Website demonstration troubleshooting
+
+| Problem | Likely reason | Resolution |
+|---|---|---|
+| Biometric Demo is missing from Attendance | Student Attendance module inactive or role lacks `student_attendance.can_view` | Enable the module and grant only the required role permission, then sign in again |
+| Direct URL says access denied | Current role is not authorized | Use an authorized demo-school staff account or update the role deliberately |
+| “Session token is missing or expired” | Old page, expired session, back-button submission, or reused form | Refresh the page and run the scenario again |
+| Form rejects the student or serial label | Unsupported character or more than 64 characters | Use the safe defaults or letters, numbers, `.`, `/`, `_`, and `-` only |
+| Form rejects the date | Date is not a real `YYYY-MM-DD` value | Select a valid date with the browser date control |
+| Delay is rejected | Value is outside 0–300 seconds | Enter a whole number between 0 and 300 |
+| Page reports it cannot generate the demo | Missing scenario file, unsupported PHP, or deployment error | Confirm PHP 7.4+, deploy `tools/biometric-sandbox/src/ScenarioFactory.php`, and inspect the PHP/CodeIgniter error log |
+| Menu exists but old code still loads | Stale PHP OPcache or incomplete release | Deploy the complete commit and restart/clear PHP OPcache using the server's normal release procedure |
+| Real attendance changes after a demonstration | Someone used the live `/biometric` receiver or another attendance screen | Stop the test, preserve logs, identify the writer, and do not treat it as expected demo behaviour |
+
+#### Browser-demo completion record
+
+For an internal sign-off, record:
+
+- school/demo tenant hostname;
+- date and Africa/Lagos time;
+- application commit deployed;
+- tester and staff role;
+- browser and version;
+- each scenario run and its pass/fail result;
+- confirmation that the live attendance and biometric log were unchanged;
+- screenshots of Normal, Duplicate, Delayed, and one rejection/failure scenario;
+- defects or questions requiring production-integration work.
 
 The browser page is for demonstrations and staff training. Keep the standalone HTTP mock and command-line tests below for developers who need to test a future synchronizer against token and transaction endpoints.
 
