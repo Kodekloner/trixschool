@@ -2,6 +2,8 @@
 
 This isolated PHP tool simulates the part of ZKBio Time that an attendance synchronizer consumes. It does not load CodeIgniter, connect to the SchoolLift database, store biometric templates, or modify production attendance records.
 
+For non-technical demonstrations inside the school application, sign in with a role that has Student Attendance view access and open **Attendance > Biometric Demo**. That page runs the scenario generator in memory and never writes attendance. The standalone server documented here remains useful for automated tests and for developing the future ZKBio Time synchronizer.
+
 For the complete test procedure, production architecture, Nigerian device/software price references, installation steps, privacy controls, and acceptance checklist, see [`../../docs/biometric-sandbox-and-nigeria-deployment.md`](../../docs/biometric-sandbox-and-nigeria-deployment.md).
 
 Requirements: PHP 7.4 or newer with `allow_url_fopen` enabled for the simulator client. No Composer packages are required.

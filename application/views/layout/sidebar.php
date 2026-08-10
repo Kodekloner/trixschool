@@ -354,6 +354,11 @@
                                 <?php
                                 }
                             }
+                            if ($this->rbac->hasPrivilege('student_attendance', 'can_view')) {
+                            ?>
+                                <li class="<?php echo set_Submenu('biometricdemo/index'); ?>"><a href="<?php echo site_url('admin/biometricdemo'); ?>"><i class="fa fa-angle-double-right"></i> Biometric Demo</a></li>
+                            <?php
+                            }
                             if ($this->rbac->hasPrivilege('approve_leave', 'can_view')) {
                                 ?>
 
