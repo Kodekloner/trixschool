@@ -39,7 +39,9 @@ The no-device sandbox is under `tools/biometric-sandbox/`. It provides:
 
 The repository also has `tests/legacy_biometric_endpoint_test.php`. That test loads the real current `Biometric` controller and the real `Stuattendence_model::onlineattendence()` method behind in-memory CodeIgniter/database doubles. It proves the current entry behaviour without opening a MySQL connection.
 
-No production controller, model, configuration, or database was changed by this sandbox work.
+An authenticated website demonstration is available at **Attendance > Biometric Demo** (`/admin/biometricdemo`). It uses the same synthetic scenario generator directly inside CodeIgniter, so school staff can demonstrate the event flow without starting a command-line server. The page is restricted to logged-in staff with `student_attendance.can_view`, uses a separate enforced session token, and performs no student lookup, device connection, attendance insert, file-state update, or other database write.
+
+The website demonstration adds only a controller, a stateless demonstration library, a view, and an Attendance navigation link. It does not change the production biometric receiver, attendance model, configuration, or database schema. Direct web access to files under `tools/` is denied for Apache deployments by `tools/.htaccess`; other web servers should also exclude or deny that directory.
 
 ## What is not implemented yet
 
@@ -80,11 +82,43 @@ The terminals should communicate with ZKBio Time, not directly with the current 
 
 ## Part 1: no-device sandbox testing
 
+### Browser demonstration for school staff
+
+For a normal human demonstration, no command line is required:
+
+1. Sign in to the school staff interface with a role that can view Student Attendance.
+2. Open **Attendance > Biometric Demo**.
+3. Select a scenario.
+4. Keep the supplied synthetic student and terminal identifiers, or replace them with other synthetic labels.
+5. Select a date and click **Run demonstration**.
+6. Review the provider status, delivery sequence, event decisions, and expected entry/checkout summary.
+7. Expand **Show complete synthetic JSON** if a technical audience wants to inspect the event contract.
+
+Available browser scenarios are:
+
+- normal IN and OUT;
+- duplicate delivery;
+- delayed checkout;
+- out-of-order delivery;
+- unknown student;
+- unknown terminal;
+- malformed event;
+- HTTP 503 provider outage;
+- HTTP 429 rate limit;
+- HTTP 401 authentication failure.
+
+Every result displays `persisted = false` and `database writes = 0`. The page never calls the live `/biometric` endpoint, because that endpoint creates real attendance and cannot currently represent a proper checkout.
+
+The browser page is for demonstrations and staff training. Keep the standalone HTTP mock and command-line tests below for developers who need to test a future synchronizer against token and transaction endpoints.
+
 ### Requirements
 
-- PHP 7.4 or newer. The current development environment uses PHP 8.2.
+The website demonstration only requires the normal SchoolLift application and PHP 7.4 or newer. It does not require a separate port, `allow_url_fopen`, `proc_open`, MySQL changes, ZKBio Time, or a device.
+
+The standalone developer sandbox additionally requires:
+
 - PHP `allow_url_fopen=On` for the simulator HTTP client.
-- PHP `proc_open` available for the automated HTTP integration test.
+- PHP `proc_open` for the automated HTTP integration test.
 - An unused loopback port; the default is `8787`.
 
 Composer, MySQL, Docker, internet access, ZKBio Time, and a biometric device are not required.
@@ -98,7 +132,7 @@ php -r "echo 'allow_url_fopen=' . ini_get('allow_url_fopen') . PHP_EOL;"
 
 ### Safety boundary
 
-The sandbox uses synthetic data and does not load CodeIgniter. Its server binds to `127.0.0.1` by default, and its HTTP router independently rejects non-loopback clients. Runtime state is written only to `tools/biometric-sandbox/var/state.json`; that file is ignored by Git.
+Both interfaces use synthetic data. The website page loads CodeIgniter only to enforce login, permission, session-token, and normal layout controls; its demonstration service remains stateless. The standalone sandbox does not load CodeIgniter. Its server binds to `127.0.0.1` by default, and its HTTP router independently rejects non-loopback clients. Runtime state is written only to `tools/biometric-sandbox/var/state.json`; that file is ignored by Git.
 
 Do not point the sandbox or manual HTTP tests at a real SchoolLift hostname. `application/config/database.php` selects tenant database configuration from `HTTP_HOST` and does not provide a safe disposable local database boundary. Any future full-stack HTTP test must use an explicit test-only hostname and a cloned/synthetic database with credentials that cannot reach production.
 
@@ -107,6 +141,7 @@ Do not point the sandbox or manual HTTP tests at a real SchoolLift hostname. `ap
 From the repository root:
 
 ```bash
+php tests/biometric_web_demo_test.php
 php tools/biometric-sandbox/tests/run.php
 php tests/legacy_biometric_endpoint_test.php
 ```
@@ -114,13 +149,16 @@ php tests/legacy_biometric_endpoint_test.php
 Expected final lines:
 
 ```text
+biometric web demo tests passed (56 assertions)
 Biometric sandbox tests passed (40 assertions).
 legacy biometric endpoint tests passed
 ```
 
-The first command starts a temporary local server on a random free port, tests authentication, authorization, event injection, filtering, pagination, an outage/recovery cycle, state reset, and core scenario logic, then removes its temporary state.
+The first command tests every website scenario and verifies expected event decisions, entry/checkout previews, validation, and the explicit zero-write safety result without loading a database.
 
-The second command verifies the real legacy controller/model contract entirely in memory. Its successful checkout-related assertion is that the current code rejects a second same-day punch. That is a regression description, not the desired production checkout behaviour.
+The second command starts a temporary local server on a random free port, tests authentication, authorization, event injection, filtering, pagination, an outage/recovery cycle, state reset, and core scenario logic, then removes its temporary state.
+
+The third command verifies the real legacy controller/model contract entirely in memory. Its successful checkout-related assertion is that the current code rejects a second same-day punch. That is a regression description, not the desired production checkout behaviour.
 
 The current legacy receiver expects a different shape from the mock ZKBio Time API:
 
