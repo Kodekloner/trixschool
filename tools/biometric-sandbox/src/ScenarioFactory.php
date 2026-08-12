@@ -47,8 +47,7 @@ final class ScenarioFactory
         string $name,
         string $employee,
         string $date,
-        string $entrySerial,
-        string $exitSerial,
+        string $terminalSerial,
         int $delaySeconds = 5,
         ?DateTimeImmutable $now = null
     ): array {
@@ -62,8 +61,8 @@ final class ScenarioFactory
         $now = $now ?: new DateTimeImmutable('now', $this->timezone);
         $delaySeconds = max(0, min($delaySeconds, 86400));
 
-        $in = $this->transaction($employee, $day . ' 07:30:00', '0', $entrySerial, 'Main Gate - IN');
-        $out = $this->transaction($employee, $day . ' 15:10:00', '1', $exitSerial, 'Main Gate - OUT');
+        $in = $this->transaction($employee, $day . ' 07:30:00', '0', $terminalSerial, 'Main Gate Terminal');
+        $out = $this->transaction($employee, $day . ' 15:10:00', '1', $terminalSerial, 'Main Gate Terminal');
 
         switch ($name) {
             case 'normal':
@@ -100,7 +99,7 @@ final class ScenarioFactory
             case 'unknown-student':
                 return $this->result(
                     [
-                        $this->transaction('UNKNOWN-STUDENT', $day . ' 07:35:00', '0', $entrySerial, 'Main Gate - IN'),
+                        $this->transaction('UNKNOWN-STUDENT', $day . ' 07:35:00', '0', $terminalSerial, 'Main Gate Terminal'),
                     ],
                     'The device user code has no corresponding student mapping.'
                 );
@@ -118,7 +117,7 @@ final class ScenarioFactory
                     [[
                         'punch_time' => 'not-a-date',
                         'punch_state' => '9',
-                        'terminal_sn' => $entrySerial,
+                        'terminal_sn' => $terminalSerial,
                         'terminal_alias' => 'Malformed Terminal Event',
                         'verify_type' => 15,
                         'upload_time' => $day . ' 07:40:00',

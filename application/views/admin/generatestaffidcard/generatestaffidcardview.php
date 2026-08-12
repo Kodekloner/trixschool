@@ -84,6 +84,7 @@
                                                 <th><?php echo $this->lang->line('date_of_joining'); ?></th>
                                                 <th><?php echo $this->lang->line('phone'); ?></th>
                                                 <th><?php echo $this->lang->line('date_of_birth'); ?></th>
+                                                <th class="text-right">Card</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -116,7 +117,8 @@
                                                         <td><?php if(!empty($staff_value['date_of_joining'] && $staff_value['date_of_joining'] != '0000-00-00')){ echo $this->customlib->dateFormat($staff_value['date_of_joining']);} ?></td>
                                                        
                                                         <td><?php echo $staff_value['contact_no']; ?></td>
-														<td><?php echo $this->customlib->dateFormat($staff_value['dob']); ?></td>
+												<td><?php echo $this->customlib->dateFormat($staff_value['dob']); ?></td>
+                                                        <td class="text-right"><a class="btn btn-default btn-xs" target="_blank" rel="noopener" href="<?php echo site_url('admin/generatestaffidcard/generate/' . (int) $staff_value['id'] . '/' . (int) $idcardResult[0]->id); ?>"><i class="fa fa-id-card-o"></i> Generate</a></td>
                                                     </tr>
                                                     <?php
                                                     $count++;
@@ -180,7 +182,11 @@
                     url: '<?php echo site_url("admin/generatestaffidcard/generatemultiple") ?>',
                     type: 'post',
                     dataType: "html",
-                    data: {'data': JSON.stringify(array_to_print),'id_card': idCard },
+                    data: {
+                        'data': JSON.stringify(array_to_print),
+                        'id_card': idCard,
+                        'idcard_generation_csrf': <?php echo json_encode($idcard_generation_csrf); ?>
+                    },
                     success: function (response) {
                         Popup(response);
                     }
@@ -209,11 +215,30 @@
         frameDoc.document.write('</body>');
         frameDoc.document.write('</html>');
         frameDoc.document.close();
-        setTimeout(function () {
-            window.frames["frame1"].focus();
-            window.frames["frame1"].print();
-            frame1.remove();
-        }, 500);
+        var attempts = 0;
+        var printWhenReady = setInterval(function () {
+            attempts++;
+            var child = window.frames["frame1"];
+            var hasStudioCards = !!child.ID_CARD_RUNTIME_CONFIG;
+            var ready = !hasStudioCards || child.IDCARD_STUDIO_RENDER_READY === true;
+            var failed = hasStudioCards && !!child.IDCARD_STUDIO_RENDER_ERROR;
+            if (failed || attempts > 100) {
+                clearInterval(printWhenReady);
+                alert(child.IDCARD_STUDIO_RENDER_ERROR || 'The ID cards took too long to render. Try a smaller batch.');
+                frame1.remove();
+                return;
+            }
+            if (ready) {
+                clearInterval(printWhenReady);
+                child.focus();
+                if (hasStudioCards) {
+                    frame1.css({position: 'fixed', inset: '3%', width: '94%', height: '94%', zIndex: 100000, border: '1px solid #64748b', background: '#fff'});
+                } else {
+                    child.print();
+                    setTimeout(function () { frame1.remove(); }, 1000);
+                }
+            }
+        }, 100);
         return true;
     }
 </script>

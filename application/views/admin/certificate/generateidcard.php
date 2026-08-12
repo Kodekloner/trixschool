@@ -110,6 +110,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                                     if ($sch_setting->mobile_no) { ?>
                                                         <th><?php echo $this->lang->line('mobile_no'); ?></th>
                                                     <?php } ?>
+                                                    <th class="text-right">Card</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -143,9 +144,10 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                                             <?php if ($sch_setting->category) { ?>
                                                                 <td><?php echo $student['category']; ?></td>
                                                             <?php }
-                                                            if ($sch_setting->mobile_no) { ?>
-                                                                <td><?php echo $student['mobileno']; ?></td>
-                                                            <?php } ?>
+                                                    if ($sch_setting->mobile_no) { ?>
+                                                        <td><?php echo $student['mobileno']; ?></td>
+                                                    <?php } ?>
+                                                    <td class="text-right"><a class="btn btn-default btn-xs" target="_blank" rel="noopener" href="<?php echo site_url('admin/generateidcard/generate/' . (int) $student['id'] . '/' . (int) $student['class_id'] . '/' . (int) $idcardResult[0]->id); ?>"><i class="fa fa-id-card-o"></i> Generate</a></td>
                                                         </tr>
                                                 <?php
                                                         $count++;
@@ -267,6 +269,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                         'data': JSON.stringify(array_to_print),
                         'class_id': classId,
                         'id_card': idCard,
+                        'idcard_generation_csrf': <?php echo json_encode($idcard_generation_csrf); ?>,
                     },
                     success: function(response) {
 
@@ -304,11 +307,30 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
         frameDoc.document.write('</html>');
         frameDoc.document.close();
         
-        setTimeout(function() {
-            document.getElementById('printDiv').contentWindow.focus();
-            document.getElementById('printDiv').contentWindow.print();
-            frame1.remove();
-        }, 500);
+        var attempts = 0;
+        var printWhenReady = setInterval(function() {
+            attempts++;
+            var child = document.getElementById('printDiv').contentWindow;
+            var hasStudioCards = !!child.ID_CARD_RUNTIME_CONFIG;
+            var ready = !hasStudioCards || child.IDCARD_STUDIO_RENDER_READY === true;
+            var failed = hasStudioCards && !!child.IDCARD_STUDIO_RENDER_ERROR;
+            if (failed || attempts > 100) {
+                clearInterval(printWhenReady);
+                alert(child.IDCARD_STUDIO_RENDER_ERROR || 'The ID cards took too long to render. Try a smaller batch.');
+                frame1.remove();
+                return;
+            }
+            if (ready) {
+                clearInterval(printWhenReady);
+                child.focus();
+                if (hasStudioCards) {
+                    frame1.css({position: 'fixed', inset: '3%', width: '94%', height: '94%', zIndex: 100000, border: '1px solid #64748b', background: '#fff'});
+                } else {
+                    child.print();
+                    setTimeout(function () { frame1.remove(); }, 1000);
+                }
+            }
+        }, 100);
 
 
         return true;

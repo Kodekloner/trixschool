@@ -1,0 +1,565 @@
+.idstudio-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.idstudio-content {
+    padding: 10px;
+}
+
+.idstudio-alert {
+    display: none;
+    margin-bottom: 8px;
+}
+
+.idstudio-alert.is-visible {
+    display: block;
+}
+
+.idstudio-app {
+    --studio-border: #cbd5e1;
+    --studio-panel: #ffffff;
+    --studio-muted: #64748b;
+    --studio-ink: #172033;
+    --studio-accent: #2563eb;
+    min-height: calc(100vh - 145px);
+    overflow: hidden;
+    border: 1px solid var(--studio-border);
+    border-radius: 10px;
+    background: #e8edf4;
+    color: var(--studio-ink);
+    box-shadow: 0 6px 22px rgba(15, 23, 42, .08);
+}
+
+.idstudio-topbar {
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--studio-border);
+    background: #f8fafc;
+}
+
+.idstudio-title-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 230px;
+}
+
+.idstudio-title-group label,
+.idstudio-size-group label {
+    margin: 0;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.idstudio-size-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding-left: 10px;
+    border-left: 1px solid var(--studio-border);
+}
+
+.idstudio-size-group input {
+    width: 67px;
+    height: 30px;
+    margin-left: 2px;
+    padding: 3px 5px;
+    border: 1px solid var(--studio-border);
+    border-radius: 4px;
+}
+
+.idstudio-save-group {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-left: auto;
+}
+
+#idstudio-save-state {
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.idstudio-main {
+    display: grid;
+    grid-template-columns: 230px minmax(420px, 1fr) 270px;
+    min-height: calc(100vh - 205px);
+}
+
+.idstudio-left-panel,
+.idstudio-right-panel {
+    min-width: 0;
+    overflow-y: auto;
+    background: var(--studio-panel);
+}
+
+.idstudio-left-panel {
+    border-right: 1px solid var(--studio-border);
+}
+
+.idstudio-right-panel {
+    border-left: 1px solid var(--studio-border);
+}
+
+.idstudio-panel-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 36px;
+    padding: 8px 10px;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.idstudio-panel-heading:first-child {
+    border-top: 0;
+}
+
+.idstudio-tool-grid,
+.idstudio-align-grid,
+.idstudio-export-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 10px;
+}
+
+.idstudio-tool-grid button,
+.idstudio-align-grid button {
+    min-height: 42px;
+    border: 1px solid var(--studio-border);
+    border-radius: 5px;
+    background: #fff;
+    color: #334155;
+}
+
+.idstudio-tool-grid button:hover,
+.idstudio-align-grid button:hover,
+.idstudio-binding-list button:hover,
+.idstudio-assets button:hover {
+    border-color: var(--studio-accent);
+    color: var(--studio-accent);
+    background: #eff6ff;
+}
+
+.idstudio-tool-grid i,
+.idstudio-tool-grid span {
+    display: block;
+}
+
+.idstudio-tool-grid i {
+    margin-bottom: 3px;
+    font-size: 16px;
+}
+
+.idstudio-binding-list,
+.idstudio-assets {
+    max-height: 245px;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.idstudio-binding-list button,
+.idstudio-assets button {
+    display: block;
+    width: 100%;
+    margin-bottom: 5px;
+    padding: 6px 7px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    background: #fff;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#idstudio-upload-form {
+    padding: 10px 10px 0;
+}
+
+.idstudio-workspace {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.idstudio-workspace-toolbar {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--studio-border);
+    background: #f8fafc;
+}
+
+.idstudio-workspace-toolbar label {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.idstudio-zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+}
+
+#idstudio-zoom {
+    width: 120px;
+}
+
+#idstudio-zoom-label {
+    width: 42px;
+    font-size: 12px;
+    text-align: right;
+}
+
+.idstudio-scroll {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 480px;
+    overflow: auto;
+    padding: 56px;
+    background-color: #d8dee8;
+    background-image: linear-gradient(45deg, rgba(255,255,255,.28) 25%, transparent 25%), linear-gradient(-45deg, rgba(255,255,255,.28) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgba(255,255,255,.28) 75%), linear-gradient(-45deg, transparent 75%, rgba(255,255,255,.28) 75%);
+    background-size: 18px 18px;
+    background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+}
+
+.idstudio-stage {
+    position: relative;
+    width: max-content;
+    height: max-content;
+    margin: 0 auto;
+    transform-origin: top left;
+    box-shadow: 0 14px 36px rgba(15, 23, 42, .28);
+}
+
+.idstudio-stage .canvas-container {
+    background: #fff;
+}
+
+.idstudio-safe-area {
+    position: absolute;
+    inset: 12px;
+    z-index: 4;
+    border: 1px dashed rgba(220, 38, 38, .8);
+    pointer-events: none;
+}
+
+.idstudio-bleed-area {
+    position: absolute;
+    inset: -12px;
+    z-index: 3;
+    border: 1px dashed rgba(2, 132, 199, .9);
+    pointer-events: none;
+}
+
+.idstudio-bleed-area::before,
+.idstudio-safe-area::before {
+    position: absolute;
+    top: -17px;
+    left: 0;
+    padding: 1px 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,.9);
+    font-size: 9px;
+    line-height: 13px;
+}
+
+.idstudio-bleed-area::before { content: '3 mm bleed'; color: #0369a1; }
+.idstudio-safe-area::before { content: 'safe area'; color: #b91c1c; }
+
+.idstudio-safe-area.is-hidden {
+    display: none;
+}
+
+.idstudio-bleed-area.is-hidden { display: none; }
+
+.idstudio-scroll.is-panning,
+.idstudio-scroll.is-panning * { cursor: grabbing !important; user-select: none; }
+
+.idstudio-ruler {
+    position: sticky;
+    z-index: 8;
+    pointer-events: none;
+    color: #475569;
+    font-size: 9px;
+}
+
+.idstudio-ruler-x {
+    top: -56px;
+    height: 20px;
+    margin-bottom: -20px;
+    background: repeating-linear-gradient(to right, #64748b 0 1px, transparent 1px 10px);
+}
+
+.idstudio-ruler-y {
+    left: -56px;
+    float: left;
+    width: 20px;
+    height: 100%;
+    margin-right: -20px;
+    background: repeating-linear-gradient(to bottom, #64748b 0 1px, transparent 1px 10px);
+}
+
+.idstudio-statusbar {
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 5px 10px;
+    border-top: 1px solid var(--studio-border);
+    background: #f8fafc;
+    color: var(--studio-muted);
+    font-size: 11px;
+}
+
+.idstudio-empty,
+.idstudio-properties,
+.idstudio-print-settings,
+.idstudio-version-history {
+    margin: 10px;
+}
+
+.idstudio-properties label,
+.idstudio-print-settings label {
+    display: block;
+    margin-bottom: 7px;
+    color: #475569;
+    font-size: 11px;
+}
+
+.idstudio-property-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.idstudio-property-actions {
+    display: flex;
+    gap: 5px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.idstudio-layer-heading {
+    margin-top: 10px;
+}
+
+.idstudio-layers {
+    max-height: 230px;
+    margin: 0;
+    padding: 7px;
+    overflow-y: auto;
+    list-style: none;
+}
+
+.idstudio-layers li {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr) 24px 24px;
+    align-items: center;
+    gap: 3px;
+    min-height: 32px;
+    margin-bottom: 3px;
+    padding: 3px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.idstudio-layers li.is-active {
+    border-color: var(--studio-accent);
+    background: #eff6ff;
+}
+
+.idstudio-layers .layer-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.idstudio-layers button {
+    padding: 2px;
+    border: 0;
+    background: transparent;
+    color: #64748b;
+}
+
+.idstudio-print-settings summary,
+.idstudio-version-history summary {
+    margin-bottom: 8px;
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    background: #f8fafc;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.idstudio-version-history ul {
+    padding-left: 18px;
+}
+
+.idstudio-version-history li {
+    margin-bottom: 5px;
+}
+
+.idstudio-version-history small {
+    display: block;
+    color: #64748b;
+}
+
+@media (max-width: 1199px) {
+    .idstudio-topbar {
+        flex-wrap: wrap;
+    }
+
+    .idstudio-save-group {
+        margin-left: 0;
+    }
+
+    .idstudio-main {
+        grid-template-columns: 190px minmax(360px, 1fr) 235px;
+    }
+}
+
+@media (max-width: 991px) {
+    .idstudio-main {
+        grid-template-columns: 185px minmax(360px, 1fr);
+    }
+
+    .idstudio-right-panel {
+        grid-column: 1 / -1;
+        max-height: none;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        border-top: 1px solid var(--studio-border);
+        border-left: 0;
+    }
+
+    .idstudio-right-panel > * {
+        min-width: 0;
+    }
+}
+
+@media (max-width: 767px) {
+    .idstudio-page-header,
+    .idstudio-topbar,
+    .idstudio-size-group,
+    .idstudio-save-group {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .idstudio-title-group {
+        min-width: 0;
+    }
+
+    .idstudio-size-group {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding-left: 0;
+        border-left: 0;
+    }
+
+    .idstudio-size-group input {
+        width: 100%;
+    }
+
+    .idstudio-main {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .idstudio-left-panel,
+    .idstudio-right-panel {
+        border: 0;
+        border-bottom: 1px solid var(--studio-border);
+    }
+
+    .idstudio-left-panel {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-height: 310px;
+    }
+
+    .idstudio-left-panel .idstudio-panel-heading {
+        grid-column: 1 / -1;
+    }
+
+    .idstudio-binding-list,
+    .idstudio-assets {
+        max-height: 165px;
+    }
+
+    .idstudio-workspace-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .idstudio-zoom-controls {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .idstudio-scroll {
+        min-height: 410px;
+        padding: 38px 24px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .idstudio-property-actions,
+    .idstudio-export-grid { flex-wrap: wrap; }
+
+    .idstudio-right-panel {
+        display: block;
+    }
+}
+
+@media print {
+    .main-header,
+    .main-sidebar,
+    .content-header,
+    .idstudio-topbar,
+    .idstudio-left-panel,
+    .idstudio-right-panel,
+    .idstudio-workspace-toolbar,
+    .idstudio-statusbar {
+        display: none !important;
+    }
+
+    .content-wrapper,
+    .idstudio-content,
+    .idstudio-app,
+    .idstudio-main,
+    .idstudio-workspace,
+    .idstudio-scroll {
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        border: 0 !important;
+        background: #fff !important;
+        box-shadow: none !important;
+    }
+}

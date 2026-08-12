@@ -12,8 +12,7 @@ $options = getopt('', [
     'scenario:',
     'employee:',
     'date:',
-    'entry-serial:',
-    'exit-serial:',
+    'terminal-serial:',
     'delay-seconds:',
     'username:',
     'password:',
@@ -37,8 +36,7 @@ $scenarioName = (string) ($options['scenario'] ?? 'normal');
 $employee = (string) ($options['employee'] ?? 'TBSW/ST/0002');
 $timezone = new DateTimeZone('Africa/Lagos');
 $date = (string) ($options['date'] ?? (new DateTimeImmutable('now', $timezone))->format('Y-m-d'));
-$entrySerial = (string) ($options['entry-serial'] ?? 'SIM-IN-001');
-$exitSerial = (string) ($options['exit-serial'] ?? 'SIM-OUT-001');
+$terminalSerial = (string) ($options['terminal-serial'] ?? 'SIM-GATE-001');
 $delaySeconds = (int) ($options['delay-seconds'] ?? 5);
 $username = (string) ($options['username'] ?? 'sandbox_admin');
 $password = (string) ($options['password'] ?? 'sandbox_password');
@@ -52,8 +50,7 @@ try {
         $scenarioName,
         $employee,
         $date,
-        $entrySerial,
-        $exitSerial,
+        $terminalSerial,
         $delaySeconds
     );
 
@@ -160,8 +157,7 @@ Options:
   --base-url=http://127.0.0.1:8787
   --employee=TBSW/ST/0002
   --date=YYYY-MM-DD
-  --entry-serial=SIM-IN-001
-  --exit-serial=SIM-OUT-001
+  --terminal-serial=SIM-GATE-001
   --delay-seconds=5
   --keep-state                 Do not reset mock state before this run
   --allow-remote               Permit a non-loopback test server explicitly

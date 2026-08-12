@@ -46,6 +46,14 @@ class Stuattendence_model extends MY_Model
 
     public function add($data)
     {
+        $linked_biometric_day_id = null;
+        if (isset($data['id']) && $this->db->field_exists('biometric_day_id', 'student_attendences')) {
+            $linked_row = $this->db->select('biometric_day_id')->where('id', $data['id'])
+                ->get('student_attendences')->row_array();
+            if (!empty($linked_row['biometric_day_id'])) {
+                $linked_biometric_day_id = (int) $linked_row['biometric_day_id'];
+            }
+        }
         $this->db->trans_start(); # Starting Transaction
         $this->db->trans_strict(false); # See Note 01. If you wish can remove as well
         //=======================Code Start===========================
@@ -74,7 +82,10 @@ class Stuattendence_model extends MY_Model
             $this->db->trans_rollback();
             return false;
         } else {
-            //return $return_value;
+            if ($linked_biometric_day_id) {
+                $this->load->library('biometric_attendance_service');
+                $this->biometric_attendance_service->markManualOverride('student_attendences', $data['id']);
+            }
         }
     }
 

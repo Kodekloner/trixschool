@@ -1,5 +1,5 @@
--- SchoolLift consolidated tenant-database migrations (126 through 129).
--- Generated for deployment to every school database on 2026-08-04.
+-- SchoolLift consolidated tenant-database migrations (126 through 131).
+-- Generated for deployment to every school database on 2026-08-12.
 --
 -- IMPORTANT:
 --   * Select exactly one school database before importing this file.
@@ -18,6 +18,8 @@
 --   127_add_support_tickets.php
 --   128_localize_online_examination.php
 --   129_add_monnify_payments.php
+--   130_add_biometric_attendance.php
+--   131_add_id_card_design_studio.php
 --
 -- Supported targets: MySQL 5.7+/8.0 and compatible MariaDB releases.
 -- This is a schema/permission migration bundle, not a full database dump.
@@ -1014,6 +1016,728 @@ CREATE TABLE IF NOT EXISTS `monnify_payments` (
   KEY `idx_monnify_status` (`status`),
   KEY `idx_monnify_context` (`payment_context`,`context_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+-- BEGIN GENERATED MIGRATIONS 130-131
+
+-- ========================================================================
+
+-- Migration 130: production biometric attendance (single terminal)
+
+-- ========================================================================
+
+
+
+-- Migration 130/131 prerequisites. Every result set must be empty.
+
+SELECT required.`table_name`, required.`column_name` AS `missing_prerequisite`
+FROM (
+  SELECT 'student_attendences' AS `table_name`, 'id' AS `column_name`
+  UNION ALL SELECT 'staff_attendance', 'id'
+  UNION ALL SELECT 'id_card', 'id'
+  UNION ALL SELECT 'staff_id_card', 'id'
+  UNION ALL SELECT 'sch_settings', 'session_id'
+  UNION ALL SELECT 'attendence_type', 'id'
+  UNION ALL SELECT 'staff_attendance_type', 'id'
+) AS required
+LEFT JOIN INFORMATION_SCHEMA.COLUMNS AS actual
+  ON actual.TABLE_SCHEMA = DATABASE()
+ AND actual.TABLE_NAME = required.table_name
+ AND actual.COLUMN_NAME = required.column_name
+WHERE actual.COLUMN_NAME IS NULL
+ORDER BY required.table_name, required.column_name;
+
+SET @trix_bio_preflight_missing := (
+  SELECT COUNT(*)
+  FROM (
+    SELECT 'student_attendences' AS `table_name`, 'id' AS `column_name`
+    UNION ALL SELECT 'staff_attendance', 'id'
+    UNION ALL SELECT 'id_card', 'id'
+    UNION ALL SELECT 'staff_id_card', 'id'
+    UNION ALL SELECT 'sch_settings', 'session_id'
+    UNION ALL SELECT 'attendence_type', 'id'
+    UNION ALL SELECT 'staff_attendance_type', 'id'
+  ) AS required
+  LEFT JOIN INFORMATION_SCHEMA.COLUMNS AS actual
+    ON actual.TABLE_SCHEMA = DATABASE()
+   AND actual.TABLE_NAME = required.table_name
+   AND actual.COLUMN_NAME = required.column_name
+  WHERE actual.COLUMN_NAME IS NULL
+);
+SET @trix_schema_sql := IF(DATABASE() IS NOT NULL AND @trix_bio_preflight_missing = 0,
+  'SET @trix_bio_preflight_ok = 1',
+  'SELECT * FROM `SCHOOLLIFT_BIOMETRIC_ID_STUDIO_PREFLIGHT_FAILED`');
+PREPARE trix_bio_preflight_stmt FROM @trix_schema_sql;
+EXECUTE trix_bio_preflight_stmt;
+DEALLOCATE PREPARE trix_bio_preflight_stmt;
+
+CREATE TABLE IF NOT EXISTS `biometric_settings` (
+    `id` TINYINT UNSIGNED NOT NULL,
+    `mode` VARCHAR(20) NOT NULL DEFAULT 'disabled',
+    `timezone` VARCHAR(64) NOT NULL DEFAULT 'Africa/Lagos',
+    `student_late_after` TIME NOT NULL DEFAULT '08:00:00',
+    `staff_late_after` TIME NOT NULL DEFAULT '08:00:00',
+    `student_present_type_id` INT NOT NULL DEFAULT 1,
+    `student_late_type_id` INT NOT NULL DEFAULT 3,
+    `staff_present_type_id` INT NOT NULL DEFAULT 1,
+    `staff_late_type_id` INT NOT NULL DEFAULT 2,
+    `project_students` TINYINT(1) NOT NULL DEFAULT 1,
+    `project_staff` TINYINT(1) NOT NULL DEFAULT 1,
+    `retention_days` SMALLINT UNSIGNED NOT NULL DEFAULT 730,
+    `max_event_age_days` SMALLINT UNSIGNED NOT NULL DEFAULT 30,
+    `created_by` INT DEFAULT NULL,
+    `updated_by` INT DEFAULT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `biometric_integrations` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(100) NOT NULL,
+    `provider` VARCHAR(40) NOT NULL DEFAULT 'zkbio_time',
+    `endpoint_url` VARCHAR(500) DEFAULT NULL,
+    `token_prefix` VARCHAR(32) DEFAULT NULL,
+    `token_hash` CHAR(64) DEFAULT NULL,
+    `token_version` INT UNSIGNED NOT NULL DEFAULT 0,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `last_seen_at` DATETIME DEFAULT NULL,
+    `last_cursor` VARCHAR(191) DEFAULT NULL,
+    `last_error` VARCHAR(500) DEFAULT NULL,
+    `created_by` INT DEFAULT NULL,
+    `updated_by` INT DEFAULT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_biometric_integration_token_prefix` (`token_prefix`),
+    KEY `idx_biometric_integration_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `biometric_devices` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `integration_id` INT UNSIGNED DEFAULT NULL,
+    `serial_number` VARCHAR(100) NOT NULL,
+    `name` VARCHAR(100) NOT NULL,
+    `location` VARCHAR(191) DEFAULT NULL,
+    `device_type` VARCHAR(24) NOT NULL DEFAULT 'biometric',
+    `direction_mode` VARCHAR(20) NOT NULL DEFAULT 'bidirectional',
+    `firmware_version` VARCHAR(100) DEFAULT NULL,
+    `is_virtual` TINYINT(1) NOT NULL DEFAULT 0,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `last_seen_at` DATETIME DEFAULT NULL,
+    `created_by` INT DEFAULT NULL,
+    `updated_by` INT DEFAULT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_biometric_device_serial` (`serial_number`),
+    KEY `idx_biometric_device_integration` (`integration_id`),
+    KEY `idx_biometric_device_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `biometric_punch_state_mappings` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `integration_id` INT UNSIGNED NOT NULL,
+    `raw_punch_state` VARCHAR(32) NOT NULL,
+    `direction` VARCHAR(8) NOT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_biometric_punch_mapping` (`integration_id`, `raw_punch_state`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `biometric_identity_mappings` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `subject_type` VARCHAR(12) NOT NULL,
+    `subject_id` INT NOT NULL,
+    `external_person_code` VARCHAR(100) NOT NULL,
+    `valid_from` DATE DEFAULT NULL,
+    `valid_until` DATE DEFAULT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_by` INT DEFAULT NULL,
+    `updated_by` INT DEFAULT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_biometric_mapping_code` (`external_person_code`),
+    UNIQUE KEY `uq_biometric_mapping_subject` (`subject_type`, `subject_id`),
+    KEY `idx_biometric_mapping_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `biometric_gateway_batches` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `integration_id` INT UNSIGNED NOT NULL,
+    `batch_id` VARCHAR(100) NOT NULL,
+    `gateway_version` VARCHAR(40) DEFAULT NULL,
+    `provider_cursor` VARCHAR(191) DEFAULT NULL,
+    `request_hash` CHAR(64) NOT NULL,
+    `event_count` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    `accepted_count` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    `duplicate_count` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    `quarantined_count` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    `rejected_count` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'processing',
+    `results_json` LONGTEXT NULL,
+    `committed_at` DATETIME DEFAULT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_biometric_gateway_batch` (`integration_id`, `batch_id`),
+    KEY `idx_biometric_batch_created` (`integration_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `biometric_gateway_cursors` (
+    `integration_id` INT UNSIGNED NOT NULL,
+    `provider_cursor` VARCHAR(191) DEFAULT NULL,
+    `batch_id` VARCHAR(100) DEFAULT NULL,
+    `committed_at` DATETIME DEFAULT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`integration_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `biometric_attendance_days` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `subject_type` VARCHAR(12) NOT NULL,
+    `subject_id` INT NOT NULL,
+    `attendance_date` DATE NOT NULL,
+    `record_scope` VARCHAR(16) NOT NULL,
+    `academic_session_id` INT DEFAULT NULL,
+    `term` VARCHAR(225) DEFAULT NULL,
+    `first_in_at` DATETIME DEFAULT NULL,
+    `last_out_at` DATETIME DEFAULT NULL,
+    `duration_minutes` INT UNSIGNED DEFAULT NULL,
+    `attendance_status` VARCHAR(24) NOT NULL DEFAULT 'incomplete',
+    `attendance_type_id` INT DEFAULT NULL,
+    `missing_checkout` TINYINT(1) NOT NULL DEFAULT 0,
+    `manual_locked` TINYINT(1) NOT NULL DEFAULT 0,
+    `official_table` VARCHAR(40) DEFAULT NULL,
+    `official_attendance_id` INT DEFAULT NULL,
+    `projection_status` VARCHAR(24) NOT NULL DEFAULT 'not_applicable',
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_biometric_attendance_day` (`subject_type`, `subject_id`, `attendance_date`, `record_scope`),
+    KEY `idx_biometric_day_date` (`attendance_date`, `record_scope`),
+    KEY `idx_biometric_day_missing` (`missing_checkout`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `biometric_events` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `batch_id` BIGINT UNSIGNED DEFAULT NULL,
+    `integration_id` INT UNSIGNED DEFAULT NULL,
+    `device_id` INT UNSIGNED DEFAULT NULL,
+    `attendance_day_id` BIGINT UNSIGNED DEFAULT NULL,
+    `dedup_key` CHAR(64) NOT NULL,
+    `external_event_id` VARCHAR(191) NOT NULL,
+    `device_serial` VARCHAR(100) NOT NULL,
+    `person_code` VARCHAR(100) NOT NULL,
+    `subject_type` VARCHAR(12) DEFAULT NULL,
+    `subject_id` INT DEFAULT NULL,
+    `raw_punch_state` VARCHAR(32) DEFAULT NULL,
+    `direction` VARCHAR(8) DEFAULT NULL,
+    `verification_method` VARCHAR(24) NOT NULL DEFAULT 'unknown',
+    `source` VARCHAR(16) NOT NULL,
+    `operating_mode` VARCHAR(16) NOT NULL,
+    `occurred_at_utc` DATETIME NOT NULL,
+    `occurred_at_local` DATETIME NOT NULL,
+    `attendance_date` DATE NOT NULL,
+    `received_at` DATETIME NOT NULL,
+    `processing_status` VARCHAR(24) NOT NULL,
+    `projection_status` VARCHAR(24) NOT NULL DEFAULT 'not_applicable',
+    `failure_code` VARCHAR(64) DEFAULT NULL,
+    `failure_message` VARCHAR(500) DEFAULT NULL,
+    `payload_hash` CHAR(64) NOT NULL,
+    `metadata_json` TEXT NULL,
+    `processed_at` DATETIME DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_biometric_event_dedup` (`dedup_key`),
+    KEY `idx_biometric_event_external` (`integration_id`, `external_event_id`),
+    KEY `idx_biometric_event_date` (`attendance_date`, `operating_mode`),
+    KEY `idx_biometric_event_status` (`processing_status`),
+    KEY `idx_biometric_event_subject` (`subject_type`, `subject_id`, `attendance_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `biometric_exceptions` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `event_id` BIGINT UNSIGNED DEFAULT NULL,
+    `attendance_day_id` BIGINT UNSIGNED DEFAULT NULL,
+    `exception_code` VARCHAR(64) NOT NULL,
+    `message` VARCHAR(500) NOT NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'open',
+    `resolution_action` VARCHAR(32) DEFAULT NULL,
+    `resolution_note` TEXT NULL,
+    `resolved_by` INT DEFAULT NULL,
+    `resolved_at` DATETIME DEFAULT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_biometric_exception_status` (`status`, `created_at`),
+    KEY `idx_biometric_exception_event` (`event_id`),
+    KEY `idx_biometric_exception_day` (`attendance_day_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `biometric_reconciliation_actions` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `exception_id` BIGINT UNSIGNED NOT NULL,
+    `action` VARCHAR(32) NOT NULL,
+    `details_json` TEXT NULL,
+    `actor_id` INT DEFAULT NULL,
+    `created_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_biometric_reconciliation_exception` (`exception_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `biometric_scanner_stations` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `station_uuid` CHAR(32) NOT NULL,
+    `name` VARCHAR(100) NOT NULL,
+    `location` VARCHAR(191) DEFAULT NULL,
+    `device_id` INT UNSIGNED DEFAULT NULL,
+    `direction_mode` VARCHAR(20) NOT NULL DEFAULT 'bidirectional',
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `last_seen_at` DATETIME DEFAULT NULL,
+    `created_by` INT DEFAULT NULL,
+    `updated_by` INT DEFAULT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_biometric_scanner_uuid` (`station_uuid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `biometric_qr_credentials` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `credential_uuid` CHAR(32) NOT NULL,
+    `subject_type` VARCHAR(12) NOT NULL,
+    `subject_id` INT NOT NULL,
+    `token_hash` CHAR(64) NOT NULL,
+    `token_ciphertext` TEXT NOT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `issued_by` INT DEFAULT NULL,
+    `issued_at` DATETIME NOT NULL,
+    `expires_at` DATETIME DEFAULT NULL,
+    `revoked_by` INT DEFAULT NULL,
+    `revoked_at` DATETIME DEFAULT NULL,
+    `revoke_reason` VARCHAR(255) DEFAULT NULL,
+    `last_used_at` DATETIME DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_biometric_qr_uuid` (`credential_uuid`),
+    UNIQUE KEY `uq_biometric_qr_hash` (`token_hash`),
+    KEY `idx_biometric_qr_subject` (`subject_type`, `subject_id`, `is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `biometric_audit_logs` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `actor_id` INT DEFAULT NULL,
+    `action` VARCHAR(64) NOT NULL,
+    `entity_type` VARCHAR(40) DEFAULT NULL,
+    `entity_id` VARCHAR(64) DEFAULT NULL,
+    `before_json` TEXT NULL,
+    `after_json` TEXT NULL,
+    `ip_address` VARCHAR(45) DEFAULT NULL,
+    `created_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_biometric_audit_created` (`created_at`),
+    KEY `idx_biometric_audit_entity` (`entity_type`, `entity_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biometric_attendance_days' AND COLUMN_NAME = 'academic_session_id') = 0,
+  'ALTER TABLE `biometric_attendance_days` ADD COLUMN `academic_session_id` INT NULL',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_biometric_attendance_days_academic_session_id_stmt FROM @trix_schema_sql;
+EXECUTE trix_biometric_attendance_days_academic_session_id_stmt;
+DEALLOCATE PREPARE trix_biometric_attendance_days_academic_session_id_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biometric_attendance_days' AND COLUMN_NAME = 'term') = 0,
+  'ALTER TABLE `biometric_attendance_days` ADD COLUMN `term` VARCHAR(225) NULL',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_biometric_attendance_days_term_stmt FROM @trix_schema_sql;
+EXECUTE trix_biometric_attendance_days_term_stmt;
+DEALLOCATE PREPARE trix_biometric_attendance_days_term_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biometric_attendance_days' AND COLUMN_NAME = 'manual_locked') = 0,
+  'ALTER TABLE `biometric_attendance_days` ADD COLUMN `manual_locked` TINYINT(1) NOT NULL DEFAULT 0',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_biometric_attendance_days_manual_locked_stmt FROM @trix_schema_sql;
+EXECUTE trix_biometric_attendance_days_manual_locked_stmt;
+DEALLOCATE PREPARE trix_biometric_attendance_days_manual_locked_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biometric_attendance_days' AND COLUMN_NAME = 'official_table') = 0,
+  'ALTER TABLE `biometric_attendance_days` ADD COLUMN `official_table` VARCHAR(40) NULL',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_biometric_attendance_days_official_table_stmt FROM @trix_schema_sql;
+EXECUTE trix_biometric_attendance_days_official_table_stmt;
+DEALLOCATE PREPARE trix_biometric_attendance_days_official_table_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biometric_attendance_days' AND COLUMN_NAME = 'official_attendance_id') = 0,
+  'ALTER TABLE `biometric_attendance_days` ADD COLUMN `official_attendance_id` INT NULL',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_biometric_attendance_days_official_attendance_id_stmt FROM @trix_schema_sql;
+EXECUTE trix_biometric_attendance_days_official_attendance_id_stmt;
+DEALLOCATE PREPARE trix_biometric_attendance_days_official_attendance_id_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biometric_attendance_days' AND COLUMN_NAME = 'projection_status') = 0,
+  'ALTER TABLE `biometric_attendance_days` ADD COLUMN `projection_status` VARCHAR(24) NOT NULL DEFAULT ''not_applicable''',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_biometric_attendance_days_projection_status_stmt FROM @trix_schema_sql;
+EXECUTE trix_biometric_attendance_days_projection_status_stmt;
+DEALLOCATE PREPARE trix_biometric_attendance_days_projection_status_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biometric_events' AND COLUMN_NAME = 'payload_hash') = 0,
+  'ALTER TABLE `biometric_events` ADD COLUMN `payload_hash` CHAR(64) NULL',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_biometric_events_payload_hash_stmt FROM @trix_schema_sql;
+EXECUTE trix_biometric_events_payload_hash_stmt;
+DEALLOCATE PREPARE trix_biometric_events_payload_hash_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biometric_events' AND COLUMN_NAME = 'metadata_json') = 0,
+  'ALTER TABLE `biometric_events` ADD COLUMN `metadata_json` TEXT NULL',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_biometric_events_metadata_json_stmt FROM @trix_schema_sql;
+EXECUTE trix_biometric_events_metadata_json_stmt;
+DEALLOCATE PREPARE trix_biometric_events_metadata_json_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biometric_events' AND COLUMN_NAME = 'projection_status') = 0,
+  'ALTER TABLE `biometric_events` ADD COLUMN `projection_status` VARCHAR(24) NOT NULL DEFAULT ''not_applicable''',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_biometric_events_projection_status_stmt FROM @trix_schema_sql;
+EXECUTE trix_biometric_events_projection_status_stmt;
+DEALLOCATE PREPARE trix_biometric_events_projection_status_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'student_attendences' AND COLUMN_NAME = 'attendance_source') = 0,
+  'ALTER TABLE `student_attendences` ADD COLUMN `attendance_source` VARCHAR(24) NULL',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_student_attendences_attendance_source_stmt FROM @trix_schema_sql;
+EXECUTE trix_student_attendences_attendance_source_stmt;
+DEALLOCATE PREPARE trix_student_attendences_attendance_source_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'student_attendences' AND COLUMN_NAME = 'biometric_day_id') = 0,
+  'ALTER TABLE `student_attendences` ADD COLUMN `biometric_day_id` BIGINT UNSIGNED NULL',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_student_attendences_biometric_day_id_stmt FROM @trix_schema_sql;
+EXECUTE trix_student_attendences_biometric_day_id_stmt;
+DEALLOCATE PREPARE trix_student_attendences_biometric_day_id_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'staff_attendance' AND COLUMN_NAME = 'attendance_source') = 0,
+  'ALTER TABLE `staff_attendance` ADD COLUMN `attendance_source` VARCHAR(24) NULL',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_staff_attendance_attendance_source_stmt FROM @trix_schema_sql;
+EXECUTE trix_staff_attendance_attendance_source_stmt;
+DEALLOCATE PREPARE trix_staff_attendance_attendance_source_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'staff_attendance' AND COLUMN_NAME = 'biometric_day_id') = 0,
+  'ALTER TABLE `staff_attendance` ADD COLUMN `biometric_day_id` BIGINT UNSIGNED NULL',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_staff_attendance_biometric_day_id_stmt FROM @trix_schema_sql;
+EXECUTE trix_staff_attendance_biometric_day_id_stmt;
+DEALLOCATE PREPARE trix_staff_attendance_biometric_day_id_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'student_attendences' AND INDEX_NAME = 'idx_student_attendance_biometric_day') = 0,
+  'ALTER TABLE `student_attendences` ADD INDEX `idx_student_attendance_biometric_day` (`biometric_day_id`)',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_student_attendences_idx_student_attendance_biometric_day_stmt FROM @trix_schema_sql;
+EXECUTE trix_student_attendences_idx_student_attendance_biometric_day_stmt;
+DEALLOCATE PREPARE trix_student_attendences_idx_student_attendance_biometric_day_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'staff_attendance' AND INDEX_NAME = 'idx_staff_attendance_biometric_day') = 0,
+  'ALTER TABLE `staff_attendance` ADD INDEX `idx_staff_attendance_biometric_day` (`biometric_day_id`)',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_staff_attendance_idx_staff_attendance_biometric_day_stmt FROM @trix_schema_sql;
+EXECUTE trix_staff_attendance_idx_staff_attendance_biometric_day_stmt;
+DEALLOCATE PREPARE trix_staff_attendance_idx_staff_attendance_biometric_day_stmt;
+
+INSERT INTO `biometric_settings` (`id`, `mode`, `timezone`, `created_at`, `updated_at`)
+SELECT 1, 'disabled', 'Africa/Lagos', UTC_TIMESTAMP(), UTC_TIMESTAMP()
+WHERE NOT EXISTS (SELECT 1 FROM `biometric_settings` WHERE `id` = 1);
+
+INSERT INTO `biometric_devices`
+  (`integration_id`, `serial_number`, `name`, `location`, `device_type`, `direction_mode`, `is_virtual`, `is_active`, `created_at`, `updated_at`)
+SELECT NULL, 'SIM-GATE-001', 'Simulation Gate', 'Browser Test Terminal', 'biometric', 'bidirectional', 1, 1, UTC_TIMESTAMP(), UTC_TIMESTAMP()
+WHERE NOT EXISTS (SELECT 1 FROM `biometric_devices` WHERE `serial_number` = 'SIM-GATE-001');
+
+SET @trix_bio_permission_group_new_id := (SELECT COALESCE(MAX(`id`), 0) + 1 FROM `permission_group`);
+INSERT INTO `permission_group` (`id`, `name`, `short_code`, `is_active`, `system`, `created_at`)
+SELECT @trix_bio_permission_group_new_id, 'Attendance', 'student_attendance', 1, 0, UTC_TIMESTAMP()
+WHERE NOT EXISTS (SELECT 1 FROM `permission_group` WHERE `short_code` = 'student_attendance');
+SET @trix_bio_permission_group_id := (SELECT `id` FROM `permission_group` WHERE `short_code` = 'student_attendance' ORDER BY `id` LIMIT 1);
+SET @trix_bio_permission_new_id := (SELECT COALESCE(MAX(`id`), 0) + 1 FROM `permission_category`);
+INSERT INTO `permission_category` (`id`, `perm_group_id`, `name`, `short_code`, `enable_view`, `enable_add`, `enable_edit`, `enable_delete`, `created_at`)
+SELECT @trix_bio_permission_new_id, @trix_bio_permission_group_id, 'Biometric Attendance', 'biometric_attendance', 1, 1, 1, 1, UTC_TIMESTAMP()
+WHERE NOT EXISTS (SELECT 1 FROM `permission_category` WHERE `short_code` = 'biometric_attendance');
+SET @trix_bio_permission_id := (SELECT `id` FROM `permission_category` WHERE `short_code` = 'biometric_attendance' ORDER BY `id` LIMIT 1);
+SET @trix_bio_role_permission_next_id := (SELECT COALESCE(MAX(`id`), 0) FROM `roles_permissions`);
+INSERT INTO `roles_permissions` (`id`, `role_id`, `perm_cat_id`, `can_view`, `can_add`, `can_edit`, `can_delete`, `created_at`)
+SELECT (@trix_bio_role_permission_next_id := @trix_bio_role_permission_next_id + 1), r.`id`, @trix_bio_permission_id, 1, 1, 1, 1, UTC_TIMESTAMP()
+FROM `roles` r
+WHERE r.`name` IN ('Admin', 'Super Admin')
+  AND NOT EXISTS (SELECT 1 FROM `roles_permissions` rp WHERE rp.`role_id` = r.`id` AND rp.`perm_cat_id` = @trix_bio_permission_id);
+
+-- ========================================================================
+
+-- Migration 131: versioned ID Card Design Studio
+
+-- ========================================================================
+
+SET @trix_id_card_had_dimensions := (
+  SELECT IF(COUNT(*) = 2, 1, 0) FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'id_card' AND COLUMN_NAME IN ('card_width', 'card_height')
+);
+SET @trix_staff_id_card_had_dimensions := (
+  SELECT IF(COUNT(*) = 2, 1, 0) FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'staff_id_card' AND COLUMN_NAME IN ('card_width', 'card_height')
+);
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'id_card' AND COLUMN_NAME = 'card_unit') = 0,
+  'ALTER TABLE `id_card` ADD COLUMN `card_unit` VARCHAR(10) NOT NULL DEFAULT ''mm''',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_id_card_card_unit_stmt FROM @trix_schema_sql;
+EXECUTE trix_id_card_card_unit_stmt;
+DEALLOCATE PREPARE trix_id_card_card_unit_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'id_card' AND COLUMN_NAME = 'card_width') = 0,
+  'ALTER TABLE `id_card` ADD COLUMN `card_width` DECIMAL(10,2) NOT NULL DEFAULT 85.60',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_id_card_card_width_stmt FROM @trix_schema_sql;
+EXECUTE trix_id_card_card_width_stmt;
+DEALLOCATE PREPARE trix_id_card_card_width_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'id_card' AND COLUMN_NAME = 'card_height') = 0,
+  'ALTER TABLE `id_card` ADD COLUMN `card_height` DECIMAL(10,2) NOT NULL DEFAULT 53.98',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_id_card_card_height_stmt FROM @trix_schema_sql;
+EXECUTE trix_id_card_card_height_stmt;
+DEALLOCATE PREPARE trix_id_card_card_height_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'id_card' AND COLUMN_NAME = 'photo_style') = 0,
+  'ALTER TABLE `id_card` ADD COLUMN `photo_style` VARCHAR(20) NOT NULL DEFAULT ''round''',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_id_card_photo_style_stmt FROM @trix_schema_sql;
+EXECUTE trix_id_card_photo_style_stmt;
+DEALLOCATE PREPARE trix_id_card_photo_style_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'id_card' AND COLUMN_NAME = 'layout_json') = 0,
+  'ALTER TABLE `id_card` ADD COLUMN `layout_json` LONGTEXT NULL',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_id_card_layout_json_stmt FROM @trix_schema_sql;
+EXECUTE trix_id_card_layout_json_stmt;
+DEALLOCATE PREPARE trix_id_card_layout_json_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'staff_id_card' AND COLUMN_NAME = 'card_unit') = 0,
+  'ALTER TABLE `staff_id_card` ADD COLUMN `card_unit` VARCHAR(10) NOT NULL DEFAULT ''mm''',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_staff_id_card_card_unit_stmt FROM @trix_schema_sql;
+EXECUTE trix_staff_id_card_card_unit_stmt;
+DEALLOCATE PREPARE trix_staff_id_card_card_unit_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'staff_id_card' AND COLUMN_NAME = 'card_width') = 0,
+  'ALTER TABLE `staff_id_card` ADD COLUMN `card_width` DECIMAL(10,2) NOT NULL DEFAULT 85.60',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_staff_id_card_card_width_stmt FROM @trix_schema_sql;
+EXECUTE trix_staff_id_card_card_width_stmt;
+DEALLOCATE PREPARE trix_staff_id_card_card_width_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'staff_id_card' AND COLUMN_NAME = 'card_height') = 0,
+  'ALTER TABLE `staff_id_card` ADD COLUMN `card_height` DECIMAL(10,2) NOT NULL DEFAULT 53.98',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_staff_id_card_card_height_stmt FROM @trix_schema_sql;
+EXECUTE trix_staff_id_card_card_height_stmt;
+DEALLOCATE PREPARE trix_staff_id_card_card_height_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'staff_id_card' AND COLUMN_NAME = 'photo_style') = 0,
+  'ALTER TABLE `staff_id_card` ADD COLUMN `photo_style` VARCHAR(20) NOT NULL DEFAULT ''round''',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_staff_id_card_photo_style_stmt FROM @trix_schema_sql;
+EXECUTE trix_staff_id_card_photo_style_stmt;
+DEALLOCATE PREPARE trix_staff_id_card_photo_style_stmt;
+
+SET @trix_schema_sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'staff_id_card' AND COLUMN_NAME = 'layout_json') = 0,
+  'ALTER TABLE `staff_id_card` ADD COLUMN `layout_json` LONGTEXT NULL',
+  'SET @trix_noop = 1'
+);
+PREPARE trix_staff_id_card_layout_json_stmt FROM @trix_schema_sql;
+EXECUTE trix_staff_id_card_layout_json_stmt;
+DEALLOCATE PREPARE trix_staff_id_card_layout_json_stmt;
+
+UPDATE `id_card` SET `card_width` = 53.98, `card_height` = 85.60, `card_unit` = 'mm'
+WHERE @trix_id_card_had_dimensions = 0 AND `enable_vertical_card` = 1;
+UPDATE `staff_id_card` SET `card_width` = 53.98, `card_height` = 85.60, `card_unit` = 'mm'
+WHERE @trix_staff_id_card_had_dimensions = 0 AND `enable_vertical_card` = 1;
+
+CREATE TABLE IF NOT EXISTS `id_card_designs` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `subject_type` VARCHAR(16) NOT NULL,
+    `legacy_template_id` INT NOT NULL,
+    `title` VARCHAR(191) NOT NULL,
+    `width_mm` DECIMAL(8,3) NOT NULL DEFAULT 85.600,
+    `height_mm` DECIMAL(8,3) NOT NULL DEFAULT 53.980,
+    `orientation` VARCHAR(16) NOT NULL DEFAULT 'landscape',
+    `draft_version_id` BIGINT UNSIGNED DEFAULT NULL,
+    `published_version_id` BIGINT UNSIGNED DEFAULT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_by` INT DEFAULT NULL,
+    `updated_by` INT DEFAULT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `id_card_design_legacy_unique` (`subject_type`, `legacy_template_id`),
+    KEY `id_card_design_status_idx` (`subject_type`, `is_active`),
+    KEY `id_card_design_published_idx` (`published_version_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `id_card_design_versions` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `design_id` BIGINT UNSIGNED NOT NULL,
+    `version_no` INT UNSIGNED NOT NULL,
+    `state` VARCHAR(16) NOT NULL DEFAULT 'draft',
+    `schema_version` SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    `front_json` LONGTEXT NOT NULL,
+    `back_json` LONGTEXT NOT NULL,
+    `print_settings_json` LONGTEXT NOT NULL,
+    `checksum` CHAR(64) NOT NULL,
+    `created_by` INT DEFAULT NULL,
+    `published_by` INT DEFAULT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    `published_at` DATETIME DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `id_card_design_version_unique` (`design_id`, `version_no`),
+    KEY `id_card_design_version_state_idx` (`design_id`, `state`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `id_card_design_assets` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `design_id` BIGINT UNSIGNED NOT NULL,
+    `storage_key` VARCHAR(500) NOT NULL,
+    `original_name` VARCHAR(191) NOT NULL,
+    `mime_type` VARCHAR(100) NOT NULL,
+    `byte_size` INT UNSIGNED NOT NULL,
+    `pixel_width` INT UNSIGNED DEFAULT NULL,
+    `pixel_height` INT UNSIGNED DEFAULT NULL,
+    `sha256` CHAR(64) NOT NULL,
+    `created_by` INT DEFAULT NULL,
+    `created_at` DATETIME NOT NULL,
+    `deleted_at` DATETIME DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `id_card_design_asset_design_idx` (`design_id`, `deleted_at`),
+    KEY `id_card_design_asset_hash_idx` (`sha256`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `id_card_design_audit` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `design_id` BIGINT UNSIGNED NOT NULL,
+    `version_id` BIGINT UNSIGNED DEFAULT NULL,
+    `staff_id` INT DEFAULT NULL,
+    `action` VARCHAR(40) NOT NULL,
+    `summary_json` LONGTEXT DEFAULT NULL,
+    `created_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `id_card_design_audit_design_idx` (`design_id`, `created_at`),
+    KEY `id_card_design_audit_staff_idx` (`staff_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Migration 130/131 verification. Every result set below must be empty.
+
+SELECT required.`table_name` AS `missing_migration_table`
+FROM (
+  SELECT 'biometric_settings' AS `table_name`
+  UNION ALL SELECT 'biometric_integrations' AS `table_name`
+  UNION ALL SELECT 'biometric_devices' AS `table_name`
+  UNION ALL SELECT 'biometric_punch_state_mappings' AS `table_name`
+  UNION ALL SELECT 'biometric_identity_mappings' AS `table_name`
+  UNION ALL SELECT 'biometric_gateway_batches' AS `table_name`
+  UNION ALL SELECT 'biometric_gateway_cursors' AS `table_name`
+  UNION ALL SELECT 'biometric_attendance_days' AS `table_name`
+  UNION ALL SELECT 'biometric_events' AS `table_name`
+  UNION ALL SELECT 'biometric_exceptions' AS `table_name`
+  UNION ALL SELECT 'biometric_reconciliation_actions' AS `table_name`
+  UNION ALL SELECT 'biometric_scanner_stations' AS `table_name`
+  UNION ALL SELECT 'biometric_qr_credentials' AS `table_name`
+  UNION ALL SELECT 'biometric_audit_logs' AS `table_name`
+  UNION ALL SELECT 'id_card_designs' AS `table_name`
+  UNION ALL SELECT 'id_card_design_versions' AS `table_name`
+  UNION ALL SELECT 'id_card_design_assets' AS `table_name`
+  UNION ALL SELECT 'id_card_design_audit' AS `table_name`
+) AS required
+LEFT JOIN INFORMATION_SCHEMA.TABLES actual
+  ON actual.TABLE_SCHEMA = DATABASE() AND actual.TABLE_NAME = required.table_name
+WHERE actual.TABLE_NAME IS NULL
+ORDER BY required.table_name;
+
+SELECT required.`table_name`, required.`column_name` AS `missing_migration_column`
+FROM (
+  SELECT 'student_attendences' AS `table_name`, 'attendance_source' AS `column_name`
+  UNION ALL SELECT 'student_attendences', 'biometric_day_id'
+  UNION ALL SELECT 'staff_attendance', 'attendance_source'
+  UNION ALL SELECT 'staff_attendance', 'biometric_day_id'
+  UNION ALL SELECT 'id_card', 'card_unit'
+  UNION ALL SELECT 'id_card', 'card_width'
+  UNION ALL SELECT 'id_card', 'card_height'
+  UNION ALL SELECT 'id_card', 'photo_style'
+  UNION ALL SELECT 'id_card', 'layout_json'
+  UNION ALL SELECT 'staff_id_card', 'card_unit'
+  UNION ALL SELECT 'staff_id_card', 'card_width'
+  UNION ALL SELECT 'staff_id_card', 'card_height'
+  UNION ALL SELECT 'staff_id_card', 'photo_style'
+  UNION ALL SELECT 'staff_id_card', 'layout_json'
+) AS required
+LEFT JOIN INFORMATION_SCHEMA.COLUMNS actual
+  ON actual.TABLE_SCHEMA = DATABASE() AND actual.TABLE_NAME = required.table_name AND actual.COLUMN_NAME = required.column_name
+WHERE actual.COLUMN_NAME IS NULL
+ORDER BY required.table_name, required.column_name;
+
+SELECT 'biometric_settings' AS `missing_seed`, 1 AS `expected_id`
+WHERE NOT EXISTS (SELECT 1 FROM `biometric_settings` WHERE `id` = 1)
+UNION ALL SELECT 'SIM-GATE-001', 1 WHERE NOT EXISTS (SELECT 1 FROM `biometric_devices` WHERE `serial_number` = 'SIM-GATE-001')
+UNION ALL SELECT 'biometric_attendance_permission', 1 WHERE NOT EXISTS (SELECT 1 FROM `permission_category` WHERE `short_code` = 'biometric_attendance');
+
+-- END GENERATED MIGRATIONS 130-131
 
 -- ========================================================================
 -- Consolidated verification

@@ -316,7 +316,8 @@
             if ($this->module_lib->hasActive('student_attendance')) {
                 if (($this->rbac->hasPrivilege('student_attendance', 'can_view') ||
                     $this->rbac->hasPrivilege('student_attendance_report', 'can_view') ||
-                    $this->rbac->hasPrivilege('attendance_report', 'can_view'))) {
+                    $this->rbac->hasPrivilege('attendance_report', 'can_view') ||
+                    $this->rbac->hasPrivilege('biometric_attendance', 'can_view'))) {
                 ?>
                     <li class="treeview <?php echo set_Topmenu('Attendance'); ?>">
                         <a href="#">
@@ -354,9 +355,9 @@
                                 <?php
                                 }
                             }
-                            if ($this->rbac->hasPrivilege('student_attendance', 'can_view')) {
+                            if ($this->rbac->hasPrivilege('biometric_attendance', 'can_view')) {
                             ?>
-                                <li class="<?php echo set_Submenu('biometricdemo/index'); ?>"><a href="<?php echo site_url('admin/biometricdemo'); ?>"><i class="fa fa-angle-double-right"></i> Biometric Demo</a></li>
+                                <li class="<?php echo set_Submenu('biometricattendance/index'); ?>"><a href="<?php echo site_url('admin/biometricattendance'); ?>"><i class="fa fa-angle-double-right"></i> Biometric Attendance</a></li>
                             <?php
                             }
                             if ($this->rbac->hasPrivilege('approve_leave', 'can_view')) {
@@ -1162,6 +1163,7 @@ online_course_offline_payment', 'can_view')) ||
                             if ($this->rbac->hasPrivilege('student_id_card', 'can_view')) {
                             ?>
                                 <li class="<?php echo set_Submenu('admin/studentidcard'); ?>"><a href="<?php echo base_url('admin/studentidcard/'); ?>"><i class="fa fa-angle-double-right"></i><?php echo $this->lang->line('student'); ?> <?php echo $this->lang->line('icard'); ?></a></li>
+                                <li class="<?php echo set_Submenu('admin/idcardstudio/index/student'); ?>"><a href="<?php echo site_url('admin/idcardstudio/index/student'); ?>"><i class="fa fa-paint-brush"></i> Student ID Design Studio</a></li>
                             <?php
                             }
                             if ($this->rbac->hasPrivilege('generate_id_card', 'can_view')) {
@@ -1172,6 +1174,7 @@ online_course_offline_payment', 'can_view')) ||
                             if ($this->rbac->hasPrivilege('staff_id_card', 'can_view')) {
                             ?>
                                 <li class="<?php echo set_Submenu('admin/staffidcard'); ?>"><a href="<?php echo base_url('admin/staffidcard/'); ?>"><i class="fa fa-angle-double-right"></i><?php echo $this->lang->line('staff'); ?> <?php echo $this->lang->line('icard'); ?></a></li>
+                                <li class="<?php echo set_Submenu('admin/idcardstudio/index/staff'); ?>"><a href="<?php echo site_url('admin/idcardstudio/index/staff'); ?>"><i class="fa fa-paint-brush"></i> Staff ID Design Studio</a></li>
                             <?php
                             }
                             if ($this->rbac->hasPrivilege('generate_staff_id_card', 'can_view')) {
