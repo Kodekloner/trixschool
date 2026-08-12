@@ -54,6 +54,18 @@ $controller = file_get_contents(__DIR__ . '/../application/controllers/api/Biome
 biometric_contract_assert(strpos($controller, "'results' => array()") !== false, 'API errors must retain the results[] contract.');
 biometric_contract_assert(strpos($controller, 'authenticateToken') !== false, 'V2 API must authenticate bearer tokens.');
 
+$adminView = file_get_contents(__DIR__ . '/../application/views/admin/biometricattendance/index.php');
+$readyPosition = strpos($adminView, '$(function () {');
+$readyClosePosition = strrpos($adminView, "    });\n})(jQuery);");
+$mappingSelectPosition = strpos($adminView, "configureSubjectSelect('#bio-mapping-type', '#bio-mapping-subject')");
+$credentialSelectPosition = strpos($adminView, "configureSubjectSelect('#bio-credential-type', '#bio-credential-subject')");
+$hashTabPosition = strpos($adminView, ".tab('show')");
+biometric_contract_assert($readyPosition !== false, 'Biometric page behavior must wait for footer libraries to load.');
+biometric_contract_assert($readyClosePosition !== false && $readyClosePosition > $readyPosition, 'Biometric DOM-ready callback must close before its jQuery wrapper.');
+biometric_contract_assert($mappingSelectPosition !== false && $mappingSelectPosition > $readyPosition && $mappingSelectPosition < $readyClosePosition, 'Identity mapping Select2 must initialize inside DOM ready.');
+biometric_contract_assert($credentialSelectPosition !== false && $credentialSelectPosition > $readyPosition && $credentialSelectPosition < $readyClosePosition, 'QR credential Select2 must initialize inside DOM ready.');
+biometric_contract_assert($hashTabPosition !== false && $hashTabPosition > $readyPosition && $hashTabPosition < $readyClosePosition, 'Biometric hash tab activation must wait for Bootstrap inside DOM ready.');
+
 $serviceSource = file_get_contents(__DIR__ . '/../application/libraries/Biometric_attendance_service.php');
 biometric_contract_assert(strpos($serviceSource, 'PERIOD_ATTENDANCE_UNSUPPORTED') !== false, 'Period-wise schools must be guarded from daily student attendance projection.');
 biometric_contract_assert(strpos($serviceSource, 'attendanceTypeExists') !== false, 'Settings must validate configured attendance type IDs.');

@@ -212,6 +212,7 @@ $csrfField = '<input type="hidden" name="biometric_token" value="' . html_escape
 </div>
 <script>
 (function ($) {
+    $(function () {
     function configureSubjectSelect(typeSelector, subjectSelector) {
         var type = $(typeSelector), subject = $(subjectSelector);
         if (!type.length || !subject.length || !$.fn.select2) return;
@@ -238,6 +239,7 @@ $csrfField = '<input type="hidden" name="biometric_token" value="' . html_escape
             var video = document.createElement('video'); video.srcObject = stream; video.setAttribute('playsinline',''); await video.play(); status.text('Camera active — point it at the card QR.');
             var tries = 0; var timer = setInterval(async function () { tries++; try { var codes = await detector.detect(video); if (codes.length) { $('#bio-qr-token').val(codes[0].rawValue); clearInterval(timer); stream.getTracks().forEach(function(t){t.stop();}); status.text('Credential captured. Confirm direction, then submit.'); } else if (tries > 200) { clearInterval(timer); stream.getTracks().forEach(function(t){t.stop();}); status.text('No QR detected. Try again or enter it manually.'); } } catch (ignore) {} }, 150);
         } catch (error) { status.text('Camera could not start: ' + error.message); }
+    });
     });
 })(jQuery);
 </script>
