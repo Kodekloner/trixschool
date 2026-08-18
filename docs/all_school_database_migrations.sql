@@ -1,5 +1,5 @@
--- SchoolLift consolidated tenant-database migrations (126 through 131).
--- Generated for deployment to every school database on 2026-08-12.
+-- SchoolLift consolidated tenant-database migrations (126 through 133).
+-- Generated for deployment to every school database on 2026-08-16.
 --
 -- IMPORTANT:
 --   * Select exactly one school database before importing this file.
@@ -20,6 +20,8 @@
 --   129_add_monnify_payments.php
 --   130_add_biometric_attendance.php
 --   131_add_id_card_design_studio.php
+--   132_add_biometric_gateway_control.php
+--   133_add_promotion_system.php
 --
 -- Supported targets: MySQL 5.7+/8.0 and compatible MariaDB releases.
 -- This is a schema/permission migration bundle, not a full database dump.
@@ -1017,7 +1019,7 @@ CREATE TABLE IF NOT EXISTS `monnify_payments` (
   KEY `idx_monnify_context` (`payment_context`,`context_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
--- BEGIN GENERATED MIGRATIONS 130-131
+-- BEGIN GENERATED MIGRATIONS 130-132
 
 -- ========================================================================
 
@@ -1027,7 +1029,7 @@ CREATE TABLE IF NOT EXISTS `monnify_payments` (
 
 
 
--- Migration 130/131 prerequisites. Every result set must be empty.
+-- Migration 130-132 prerequisites. Every result set must be empty.
 
 SELECT required.`table_name`, required.`column_name` AS `missing_prerequisite`
 FROM (
@@ -1682,7 +1684,56 @@ CREATE TABLE IF NOT EXISTS `id_card_design_audit` (
     KEY `id_card_design_audit_staff_idx` (`staff_id`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Migration 130/131 verification. Every result set below must be empty.
+-- Migration 132: outbound Windows connector heartbeat and fixed web actions.
+-- The website cannot supply command text or arguments. The authenticated
+-- connector may claim only the fixed command types enforced by application
+-- code, then return a bounded and redacted result.
+
+CREATE TABLE IF NOT EXISTS `biometric_gateway_agents` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `integration_id` INT UNSIGNED NOT NULL,
+    `gateway_id` VARCHAR(128) NOT NULL,
+    `gateway_version` VARCHAR(40) DEFAULT NULL,
+    `status_json` TEXT NULL,
+    `provider_reachable` TINYINT(1) DEFAULT NULL,
+    `last_sync_ok` TINYINT(1) DEFAULT NULL,
+    `last_sync_at` DATETIME DEFAULT NULL,
+    `queue_pending` INT UNSIGNED NOT NULL DEFAULT 0,
+    `queue_retry` INT UNSIGNED NOT NULL DEFAULT 0,
+    `queue_dead` INT UNSIGNED NOT NULL DEFAULT 0,
+    `provider_cursor` VARCHAR(191) DEFAULT NULL,
+    `last_error` VARCHAR(500) DEFAULT NULL,
+    `first_seen_at` DATETIME NOT NULL,
+    `last_heartbeat_at` DATETIME NOT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_biometric_gateway_agent_id` (`gateway_id`),
+    KEY `idx_biometric_gateway_agent_heartbeat` (`integration_id`, `last_heartbeat_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `biometric_gateway_commands` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `command_uuid` CHAR(32) NOT NULL,
+    `integration_id` INT UNSIGNED NOT NULL,
+    `gateway_id` VARCHAR(128) DEFAULT NULL,
+    `command_type` VARCHAR(32) NOT NULL,
+    `status` VARCHAR(20) NOT NULL DEFAULT 'queued',
+    `result_json` TEXT NULL,
+    `queued_by` INT DEFAULT NULL,
+    `queued_at` DATETIME NOT NULL,
+    `expires_at` DATETIME NOT NULL,
+    `claimed_at` DATETIME DEFAULT NULL,
+    `completed_at` DATETIME DEFAULT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_biometric_gateway_command_uuid` (`command_uuid`),
+    KEY `idx_biometric_gateway_command_claim` (`integration_id`, `status`, `expires_at`, `id`),
+    KEY `idx_biometric_gateway_command_gateway` (`integration_id`, `gateway_id`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Migration 130-132 verification. Every result set below must be empty.
 
 SELECT required.`table_name` AS `missing_migration_table`
 FROM (
@@ -1700,6 +1751,8 @@ FROM (
   UNION ALL SELECT 'biometric_scanner_stations' AS `table_name`
   UNION ALL SELECT 'biometric_qr_credentials' AS `table_name`
   UNION ALL SELECT 'biometric_audit_logs' AS `table_name`
+  UNION ALL SELECT 'biometric_gateway_agents' AS `table_name`
+  UNION ALL SELECT 'biometric_gateway_commands' AS `table_name`
   UNION ALL SELECT 'id_card_designs' AS `table_name`
   UNION ALL SELECT 'id_card_design_versions' AS `table_name`
   UNION ALL SELECT 'id_card_design_assets' AS `table_name`
@@ -1737,7 +1790,235 @@ WHERE NOT EXISTS (SELECT 1 FROM `biometric_settings` WHERE `id` = 1)
 UNION ALL SELECT 'SIM-GATE-001', 1 WHERE NOT EXISTS (SELECT 1 FROM `biometric_devices` WHERE `serial_number` = 'SIM-GATE-001')
 UNION ALL SELECT 'biometric_attendance_permission', 1 WHERE NOT EXISTS (SELECT 1 FROM `permission_category` WHERE `short_code` = 'biometric_attendance');
 
--- END GENERATED MIGRATIONS 130-131
+-- END GENERATED MIGRATIONS 130-132
+
+-- ========================================================================
+-- Migration 133: advisory promotion criteria and promotion-note overrides.
+-- This migration never changes `student_session`; actual class movement
+-- remains in the existing manual Promote Students workflow.
+-- ========================================================================
+
+CREATE TABLE IF NOT EXISTS `promotion_criteria` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `session_id` INT NOT NULL,
+    `name` VARCHAR(191) NOT NULL,
+    `minimum_average` DECIMAL(5,2) NOT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_by` INT DEFAULT NULL,
+    `updated_by` INT DEFAULT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `promotion_criteria_session_idx` (`session_id`, `is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `promotion_criteria_classes` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `criteria_id` BIGINT UNSIGNED NOT NULL,
+    `session_id` INT NOT NULL,
+    `class_id` INT NOT NULL,
+    `promoted_to_class_id` INT DEFAULT NULL,
+    `promoted_to_label` VARCHAR(191) DEFAULT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `promotion_criteria_class_unique` (`session_id`, `class_id`),
+    KEY `promotion_criteria_class_criteria_idx` (`criteria_id`),
+    KEY `promotion_criteria_class_target_idx` (`promoted_to_class_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `promotion_criteria_subjects` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `criteria_id` BIGINT UNSIGNED NOT NULL,
+    `subject_id` INT NOT NULL,
+    `minimum_average` DECIMAL(5,2) NOT NULL,
+    `created_at` DATETIME NOT NULL,
+    `updated_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `promotion_criteria_subject_unique` (`criteria_id`, `subject_id`),
+    KEY `promotion_criteria_subject_subject_idx` (`subject_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `promotion_note_overrides` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `student_id` INT NOT NULL,
+    `session_id` INT NOT NULL,
+    `class_id` INT NOT NULL,
+    `section_id` INT NOT NULL,
+    `action` VARCHAR(10) NOT NULL,
+    `decision` VARCHAR(20) DEFAULT NULL,
+    `target_class_id` INT DEFAULT NULL,
+    `target_label` VARCHAR(191) DEFAULT NULL,
+    `reason` TEXT NOT NULL,
+    `automatic_decision` VARCHAR(20) NOT NULL,
+    `automatic_note` VARCHAR(255) NOT NULL,
+    `created_by` INT NOT NULL,
+    `created_at` DATETIME NOT NULL,
+    PRIMARY KEY (`id`),
+    KEY `promotion_override_scope_idx` (`student_id`, `session_id`, `class_id`, `section_id`, `id`),
+    KEY `promotion_override_review_idx` (`session_id`, `class_id`, `section_id`, `id`),
+    KEY `promotion_override_actor_idx` (`created_by`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `permission_group`
+    (`name`, `short_code`, `is_active`, `system`, `created_at`)
+SELECT 'Exam Setting', 'exam_setting', 1, 0, NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM `permission_group` WHERE `short_code` = 'exam_setting'
+);
+
+SET @trix_promotion_exam_group_id := (
+    SELECT `id`
+    FROM `permission_group`
+    WHERE `short_code` = 'exam_setting'
+    ORDER BY `id`
+    LIMIT 1
+);
+
+INSERT INTO `permission_category`
+    (`perm_group_id`, `name`, `short_code`, `enable_view`, `enable_add`,
+     `enable_edit`, `enable_delete`, `created_at`)
+SELECT @trix_promotion_exam_group_id, 'Manage Promotion Criteria',
+       'manage_promotion_criteria', 1, 1, 1, 0, NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM `permission_category`
+    WHERE `short_code` = 'manage_promotion_criteria'
+);
+
+UPDATE `permission_category`
+SET `perm_group_id` = @trix_promotion_exam_group_id,
+    `name` = 'Manage Promotion Criteria',
+    `enable_view` = 1,
+    `enable_add` = 1,
+    `enable_edit` = 1,
+    `enable_delete` = 0
+WHERE `short_code` = 'manage_promotion_criteria';
+
+INSERT INTO `permission_category`
+    (`perm_group_id`, `name`, `short_code`, `enable_view`, `enable_add`,
+     `enable_edit`, `enable_delete`, `created_at`)
+SELECT @trix_promotion_exam_group_id, 'Override Promotion Note',
+       'override_promotion_note', 1, 1, 1, 0, NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM `permission_category`
+    WHERE `short_code` = 'override_promotion_note'
+);
+
+UPDATE `permission_category`
+SET `perm_group_id` = @trix_promotion_exam_group_id,
+    `name` = 'Override Promotion Note',
+    `enable_view` = 1,
+    `enable_add` = 1,
+    `enable_edit` = 1,
+    `enable_delete` = 0
+WHERE `short_code` = 'override_promotion_note';
+
+SET @trix_manage_promotion_permission_id := (
+    SELECT `id` FROM `permission_category`
+    WHERE `short_code` = 'manage_promotion_criteria'
+    ORDER BY `id` LIMIT 1
+);
+
+SET @trix_override_promotion_permission_id := (
+    SELECT `id` FROM `permission_category`
+    WHERE `short_code` = 'override_promotion_note'
+    ORDER BY `id` LIMIT 1
+);
+
+INSERT INTO `roles_permissions`
+    (`role_id`, `perm_cat_id`, `can_view`, `can_add`, `can_edit`,
+     `can_delete`, `created_at`)
+SELECT `roles`.`id`, @trix_manage_promotion_permission_id, 1, 1, 1, 0, NOW()
+FROM `roles`
+WHERE `roles`.`name` IN ('Admin', 'Head Teacher', 'Super Admin')
+  AND NOT EXISTS (
+      SELECT 1 FROM `roles_permissions`
+      WHERE `roles_permissions`.`role_id` = `roles`.`id`
+        AND `roles_permissions`.`perm_cat_id` = @trix_manage_promotion_permission_id
+  );
+
+UPDATE `roles_permissions`
+INNER JOIN `roles` ON `roles`.`id` = `roles_permissions`.`role_id`
+SET `roles_permissions`.`can_view` = 1,
+    `roles_permissions`.`can_add` = 1,
+    `roles_permissions`.`can_edit` = 1,
+    `roles_permissions`.`can_delete` = 0
+WHERE `roles_permissions`.`perm_cat_id` = @trix_manage_promotion_permission_id
+  AND `roles`.`name` IN ('Admin', 'Head Teacher', 'Super Admin');
+
+INSERT INTO `roles_permissions`
+    (`role_id`, `perm_cat_id`, `can_view`, `can_add`, `can_edit`,
+     `can_delete`, `created_at`)
+SELECT `roles`.`id`, @trix_override_promotion_permission_id, 1, 1, 1, 0, NOW()
+FROM `roles`
+WHERE `roles`.`name` IN ('Teacher', 'Admin', 'Head Teacher', 'Super Admin')
+  AND NOT EXISTS (
+      SELECT 1 FROM `roles_permissions`
+      WHERE `roles_permissions`.`role_id` = `roles`.`id`
+        AND `roles_permissions`.`perm_cat_id` = @trix_override_promotion_permission_id
+  );
+
+UPDATE `roles_permissions`
+INNER JOIN `roles` ON `roles`.`id` = `roles_permissions`.`role_id`
+SET `roles_permissions`.`can_view` = 1,
+    `roles_permissions`.`can_add` = 1,
+    `roles_permissions`.`can_edit` = 1,
+    `roles_permissions`.`can_delete` = 0
+WHERE `roles_permissions`.`perm_cat_id` = @trix_override_promotion_permission_id
+  AND `roles`.`name` IN ('Teacher', 'Admin', 'Head Teacher', 'Super Admin');
+
+-- Migration 133 verification. Every result set below must be empty.
+SELECT required.`table_name` AS `missing_promotion_table`
+FROM (
+    SELECT 'promotion_criteria' AS `table_name`
+    UNION ALL SELECT 'promotion_criteria_classes'
+    UNION ALL SELECT 'promotion_criteria_subjects'
+    UNION ALL SELECT 'promotion_note_overrides'
+) AS required
+LEFT JOIN `INFORMATION_SCHEMA`.`TABLES` AS actual
+    ON actual.`TABLE_SCHEMA` = DATABASE()
+   AND actual.`TABLE_NAME` = required.`table_name`
+WHERE actual.`TABLE_NAME` IS NULL
+ORDER BY required.`table_name`;
+
+SELECT required.`permission_code` AS `missing_promotion_permission`
+FROM (
+    SELECT 'manage_promotion_criteria' AS `permission_code`
+    UNION ALL SELECT 'override_promotion_note'
+) AS required
+LEFT JOIN `permission_category` AS actual
+    ON actual.`short_code` = required.`permission_code`
+   AND actual.`enable_view` = 1
+   AND actual.`enable_add` = 1
+   AND actual.`enable_edit` = 1
+   AND actual.`enable_delete` = 0
+WHERE actual.`id` IS NULL;
+
+SELECT expected.`role_name`, expected.`permission_code`
+       AS `missing_default_promotion_grant`
+FROM (
+    SELECT 'Admin' AS `role_name`,
+           'manage_promotion_criteria' AS `permission_code`
+    UNION ALL SELECT 'Head Teacher', 'manage_promotion_criteria'
+    UNION ALL SELECT 'Super Admin', 'manage_promotion_criteria'
+    UNION ALL SELECT 'Teacher', 'override_promotion_note'
+    UNION ALL SELECT 'Admin', 'override_promotion_note'
+    UNION ALL SELECT 'Head Teacher', 'override_promotion_note'
+    UNION ALL SELECT 'Super Admin', 'override_promotion_note'
+) AS expected
+LEFT JOIN `roles` AS role_row
+    ON role_row.`name` = expected.`role_name`
+LEFT JOIN `permission_category` AS permission_row
+    ON permission_row.`short_code` = expected.`permission_code`
+LEFT JOIN `roles_permissions` AS grant_row
+    ON grant_row.`role_id` = role_row.`id`
+   AND grant_row.`perm_cat_id` = permission_row.`id`
+   AND grant_row.`can_view` = 1
+   AND grant_row.`can_add` = 1
+   AND grant_row.`can_edit` = 1
+   AND grant_row.`can_delete` = 0
+WHERE grant_row.`id` IS NULL
+ORDER BY expected.`permission_code`, expected.`role_name`;
 
 -- ========================================================================
 -- Consolidated verification
@@ -1768,6 +2049,10 @@ FROM (
   UNION ALL SELECT 'onlineexam_incidents'
   UNION ALL SELECT 'onlineexam_audit_log'
   UNION ALL SELECT 'monnify_payments'
+  UNION ALL SELECT 'promotion_criteria'
+  UNION ALL SELECT 'promotion_criteria_classes'
+  UNION ALL SELECT 'promotion_criteria_subjects'
+  UNION ALL SELECT 'promotion_note_overrides'
 ) AS required
 LEFT JOIN `INFORMATION_SCHEMA`.`TABLES` AS actual
   ON actual.`TABLE_SCHEMA` = DATABASE()
@@ -1810,6 +2095,10 @@ FROM (
   UNION ALL SELECT 'onlineexam_incidents' AS `table_name`, 'id,onlineexam_id,attempt_id,onlineexam_student_id,incident_type,severity,details,status,reported_by,resolved_by,resolved_at,created_at,updated_at' AS `expected_columns`, 13 AS `expected_count`
   UNION ALL SELECT 'onlineexam_audit_log' AS `table_name`, 'id,onlineexam_id,attempt_id,actor_id,actor_type,action,entity_type,entity_id,before_json,after_json,ip_address,created_at' AS `expected_columns`, 12 AS `expected_count`
   UNION ALL SELECT 'monnify_payments' AS `table_name`, 'id,payment_reference,transaction_reference,payment_context,context_id,amount,currency,customer_email,customer_name,context_data,gateway_mode,gateway_response,status,processing_started_at,paid_at,processed_at,created_at,updated_at' AS `expected_columns`, 18 AS `expected_count`
+  UNION ALL SELECT 'promotion_criteria' AS `table_name`, 'id,session_id,name,minimum_average,is_active,created_by,updated_by,created_at,updated_at' AS `expected_columns`, 9 AS `expected_count`
+  UNION ALL SELECT 'promotion_criteria_classes' AS `table_name`, 'id,criteria_id,session_id,class_id,promoted_to_class_id,promoted_to_label,created_at,updated_at' AS `expected_columns`, 8 AS `expected_count`
+  UNION ALL SELECT 'promotion_criteria_subjects' AS `table_name`, 'id,criteria_id,subject_id,minimum_average,created_at,updated_at' AS `expected_columns`, 6 AS `expected_count`
+  UNION ALL SELECT 'promotion_note_overrides' AS `table_name`, 'id,student_id,session_id,class_id,section_id,action,decision,target_class_id,target_label,reason,automatic_decision,automatic_note,created_by,created_at' AS `expected_columns`, 14 AS `expected_count`
 ) AS required
 WHERE (
   SELECT COUNT(DISTINCT actual.`COLUMN_NAME`)
@@ -1858,6 +2147,19 @@ FROM (
   UNION ALL SELECT 'monnify_payments', 'UNIQUE(transaction_reference)', 'transaction_reference', 0
   UNION ALL SELECT 'monnify_payments', 'INDEX(status)', 'status', 1
   UNION ALL SELECT 'monnify_payments', 'INDEX(payment_context,context_id)', 'payment_context,context_id', 1
+  UNION ALL SELECT 'promotion_criteria', 'PRIMARY(id)', 'id', 0
+  UNION ALL SELECT 'promotion_criteria', 'INDEX(session_id,is_active)', 'session_id,is_active', 1
+  UNION ALL SELECT 'promotion_criteria_classes', 'PRIMARY(id)', 'id', 0
+  UNION ALL SELECT 'promotion_criteria_classes', 'UNIQUE(session_id,class_id)', 'session_id,class_id', 0
+  UNION ALL SELECT 'promotion_criteria_classes', 'INDEX(criteria_id)', 'criteria_id', 1
+  UNION ALL SELECT 'promotion_criteria_classes', 'INDEX(promoted_to_class_id)', 'promoted_to_class_id', 1
+  UNION ALL SELECT 'promotion_criteria_subjects', 'PRIMARY(id)', 'id', 0
+  UNION ALL SELECT 'promotion_criteria_subjects', 'UNIQUE(criteria_id,subject_id)', 'criteria_id,subject_id', 0
+  UNION ALL SELECT 'promotion_criteria_subjects', 'INDEX(subject_id)', 'subject_id', 1
+  UNION ALL SELECT 'promotion_note_overrides', 'PRIMARY(id)', 'id', 0
+  UNION ALL SELECT 'promotion_note_overrides', 'INDEX(student_id,session_id,class_id,section_id,id)', 'student_id,session_id,class_id,section_id,id', 1
+  UNION ALL SELECT 'promotion_note_overrides', 'INDEX(session_id,class_id,section_id,id)', 'session_id,class_id,section_id,id', 1
+  UNION ALL SELECT 'promotion_note_overrides', 'INDEX(created_by,created_at)', 'created_by,created_at', 1
 ) AS required
 WHERE NOT EXISTS (
   SELECT 1

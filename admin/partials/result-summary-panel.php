@@ -1,0 +1,66 @@
+<?php
+
+$resultSummaryContext = isset($resultSummaryContext) && is_array($resultSummaryContext)
+    ? $resultSummaryContext
+    : ['number_in_class' => 0, 'grade_key' => [], 'grade_summary' => '', 'cumulative_average' => null];
+$showPromotionOutcome = !empty($showPromotionOutcome);
+$showCumulativeAverage = !empty($showCumulativeAverage);
+$promotionOutcome = isset($promotionOutcome) && is_array($promotionOutcome)
+    ? $promotionOutcome
+    : build_promotion_outcome('pending', '', 'system', 'unavailable');
+$promotionDecision = preg_replace('/[^a-z_]/', '', (string) ($promotionOutcome['decision'] ?? 'pending'));
+$promotionStatus = str_replace('_', '-', $promotionDecision);
+?>
+<section class="result-report__summary" aria-label="Result summary">
+    <div class="result-report__statistics">
+        <div class="result-report__stat">
+            <span class="result-report__label">NO.:</span>
+            <strong class="result-report__value"><?php echo (int) ($resultSummaryContext['number_in_class'] ?? 0); ?></strong>
+        </div>
+
+        <?php if (!empty($resultSummaryContext['grade_summary'])) { ?>
+            <div class="result-report__stat">
+                <span class="result-report__label">GRADE SUMMARY:</span>
+                <strong class="result-report__value"><?php echo htmlspecialchars($resultSummaryContext['grade_summary'], ENT_QUOTES, 'UTF-8'); ?></strong>
+            </div>
+        <?php } ?>
+
+        <?php if ($showCumulativeAverage) { ?>
+            <div class="result-report__stat">
+                <span class="result-report__label">CUMULATIVE AVERAGE SCORE:</span>
+                <strong class="result-report__value">
+                    <?php
+                    $cumulativeAverage = $resultSummaryContext['cumulative_average'] ?? null;
+                    echo $cumulativeAverage === null
+                        ? 'N/A'
+                        : htmlspecialchars(number_format((float) $cumulativeAverage, 2), ENT_QUOTES, 'UTF-8');
+                    ?>
+                </strong>
+            </div>
+        <?php } ?>
+
+    </div>
+
+    <?php if ($showPromotionOutcome) { ?>
+        <div class="result-report__promotion" data-promotion-status="<?php echo htmlspecialchars($promotionStatus, ENT_QUOTES, 'UTF-8'); ?>">
+            <span class="result-report__promotion-label">Promotion status</span>
+            <strong class="result-report__promotion-value"><?php echo htmlspecialchars($promotionOutcome['note'] ?? 'PROMOTION PENDING', ENT_QUOTES, 'UTF-8'); ?></strong>
+        </div>
+    <?php } ?>
+
+    <?php if (!empty($resultSummaryContext['grade_key'])) { ?>
+        <div class="result-report__panel">
+            <p class="result-report__panel-title">Key to grades</p>
+            <div class="result-report__panel-body">
+                <ul class="result-report__grade-key">
+                    <?php foreach ($resultSummaryContext['grade_key'] as $gradeKeyItem) { ?>
+                        <li class="result-report__grade-item">
+                            <b class="result-report__grade-symbol"><?php echo htmlspecialchars($gradeKeyItem['grade'] ?? '', ENT_QUOTES, 'UTF-8'); ?>:</b>
+                            <?php echo htmlspecialchars($gradeKeyItem['range'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                        </li>
+                    <?php } ?>
+                </ul>
+            </div>
+        </div>
+    <?php } ?>
+</section>

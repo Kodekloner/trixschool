@@ -630,6 +630,8 @@
                     $this->rbac->hasPrivilege('teachers_timetable', 'can_view') ||
                     $this->rbac->hasPrivilege('assign_class_teacher', 'can_view') ||
                     $this->rbac->hasPrivilege('promote_student', 'can_view') ||
+                    $this->rbac->hasPrivilege('manage_promotion_criteria', 'can_view') ||
+                    $this->rbac->hasPrivilege('override_promotion_note', 'can_view') ||
                     $this->rbac->hasPrivilege('subject_group', 'can_view') ||
                     $this->rbac->hasPrivilege('section', 'can_view') ||
                     $this->rbac->hasPrivilege('subject', 'can_view') ||
@@ -666,6 +668,11 @@
                             ?>
 
                                 <li class="<?php echo set_Submenu('stdtransfer/index'); ?>"><a href="<?php echo base_url(); ?>admin/stdtransfer"><i class="fa fa-angle-double-right"></i> <?php echo $this->lang->line('promote_students'); ?></a></li>
+                            <?php
+                            }
+                            if ($this->rbac->hasPrivilege('manage_promotion_criteria', 'can_view') || $this->rbac->hasPrivilege('override_promotion_note', 'can_view')) {
+                            ?>
+                                <li class="<?php echo set_Submenu('promotioncriteria/index'); ?>"><a href="<?php echo site_url('admin/promotioncriteria'); ?>"><i class="fa fa-angle-double-right"></i> Promotion Criteria</a></li>
                             <?php
                             }
                             if ($this->rbac->hasPrivilege('subject_group', 'can_view')) {

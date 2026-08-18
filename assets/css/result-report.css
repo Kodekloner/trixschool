@@ -1,0 +1,988 @@
+/*
+ * Shared A4 result report layout.
+ *
+ * Markup contract:
+ *
+ * <div class="result-report-preview" data-result-report-preview>
+ *   <article class="result-report" data-result-report
+ *            data-academic-row-count="12"
+ *            style="--result-brand: #6d247f;">
+ *     <div class="result-report__content" data-result-report-content>
+ *       ...report content...
+ *     </div>
+ *   </article>
+ * </div>
+ *
+ * The preview wrapper is optional on large screens, but is recommended because
+ * result-report-print.js uses it to scale the physical A4 sheet to small
+ * viewports without reflowing tables. Set the brand custom properties on the
+ * result root when a school has its own palette.
+ */
+
+:root {
+    --result-brand: #6d247f;
+    --result-brand-strong: #42154d;
+    --result-brand-soft: #f4eaf7;
+    --result-brand-contrast: #ffffff;
+    --result-accent: #d9a521;
+    --result-ink: #172033;
+    --result-muted: #5d6675;
+    --result-border: #c8cfda;
+    --result-stripe: #f6f8fb;
+    --result-paper: #ffffff;
+    --result-page-background: #e8ebf0;
+    --result-success: #17643a;
+    --result-success-soft: #e8f6ee;
+    --result-danger: #982f38;
+    --result-danger-soft: #fcecee;
+    --result-warning: #805600;
+    --result-warning-soft: #fff6da;
+    --result-a4-width: 210mm;
+    --result-a4-height: 297mm;
+    --result-safe-margin: 7mm;
+}
+
+.result-report,
+.result-report *,
+.result-report::before,
+.result-report::after,
+.result-report *::before,
+.result-report *::after {
+    box-sizing: border-box;
+}
+
+.result-report-preview {
+    position: relative;
+    width: 100%;
+    max-width: var(--result-a4-width);
+    min-height: var(--result-a4-height);
+    margin: 16px auto 28px;
+}
+
+.result-report {
+    --result-fit-scale: 1;
+    --result-preview-scale: 1;
+    --result-font-size: 8.6pt;
+    --result-line-height: 1.28;
+    --result-block-gap: 2.2mm;
+    --result-cell-y: 1.15mm;
+    --result-cell-x: 1.2mm;
+    --result-heading-size: 9.2pt;
+    position: relative;
+    width: var(--result-a4-width);
+    height: var(--result-a4-height);
+    min-width: var(--result-a4-width);
+    min-height: var(--result-a4-height);
+    margin: 0 auto;
+    overflow: hidden;
+    color: var(--result-ink);
+    background: var(--result-paper);
+    border: 0.35mm solid var(--result-brand-strong);
+    border-radius: 1.5mm;
+    box-shadow: 0 5px 24px rgba(23, 32, 51, 0.16);
+    font-family: "Poppins", "Segoe UI", Arial, Helvetica, sans-serif;
+    font-size: var(--result-font-size);
+    font-weight: 400;
+    line-height: var(--result-line-height);
+    text-align: left;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+.result-report::before {
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 2.2mm;
+    content: "";
+    background: var(--result-brand);
+}
+
+.result-report__content {
+    position: absolute;
+    z-index: 1;
+    top: var(--result-safe-margin);
+    right: var(--result-safe-margin);
+    bottom: var(--result-safe-margin);
+    left: var(--result-safe-margin);
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    transform: scale(var(--result-fit-scale));
+    transform-origin: top left;
+}
+
+.result-report__content > :first-child {
+    margin-top: 0 !important;
+}
+
+.result-report__content > :last-child {
+    margin-bottom: 0 !important;
+}
+
+.result-report img,
+.result-report svg,
+.result-report canvas {
+    max-width: 100%;
+}
+
+.result-report p,
+.result-report h1,
+.result-report h2,
+.result-report h3,
+.result-report h4,
+.result-report h5,
+.result-report h6 {
+    color: inherit;
+    font-family: inherit;
+}
+
+.result-report p {
+    margin-top: 0;
+    margin-bottom: 1mm;
+}
+
+/* Normalize the legacy result templates inside the physical report sheet. */
+.result-report .card-body {
+    padding: 0 !important;
+}
+
+.result-report .rel {
+    width: 100%;
+    margin: 0;
+    padding: 2mm;
+    border: 0.35mm solid var(--result-brand-strong);
+    border-radius: 1mm;
+}
+
+.result-report .container-motto,
+.result-report .summDD,
+.result-report .performance {
+    width: auto;
+    margin: 0 0 var(--result-block-gap);
+    border: 0.25mm solid var(--result-border);
+    border-radius: 1mm;
+}
+
+.result-report .container-motto {
+    padding: 1mm;
+}
+
+.result-report .container-motto > .row:first-of-type,
+.result-report .result-report__title + .row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    margin: 0 0 var(--result-block-gap) !important;
+    overflow: hidden;
+    border: 0.25mm solid var(--result-border);
+    border-radius: 1mm;
+}
+
+.result-report .container-motto > .row:first-of-type > [class*="col-"],
+.result-report .result-report__title + .row > [class*="col-"] {
+    width: auto;
+    max-width: none;
+    padding: 1mm 1.4mm;
+    border-right: 0.25mm solid var(--result-border);
+}
+
+.result-report .container-motto > .row:first-of-type > [class*="col-"]:last-child,
+.result-report .result-report__title + .row > [class*="col-"]:last-child {
+    border-right: 0;
+}
+
+.result-report .container-motto > .row:first-of-type h5,
+.result-report .result-report__title + .row h5 {
+    margin: 0;
+    color: var(--result-ink) !important;
+    font-size: 7.6pt;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.result-report .summDD,
+.result-report .performance {
+    padding: 1.2mm;
+}
+
+.result-report .result.table-responsive {
+    width: 100%;
+    margin: 0 0 var(--result-block-gap) !important;
+}
+
+.result-report .performance .containerForChart {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    border-color: var(--result-border);
+}
+
+.result-report .performance > .row {
+    width: 100%;
+    margin: 0;
+}
+
+.result-report .performance > .row > [class*="col-"] {
+    min-width: 0;
+    padding: 0 1mm;
+}
+
+.result-report .performance .result[style*="display: flex"] {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 !important;
+    gap: 2mm !important;
+}
+
+.result-report .performance .result[style*="display: flex"] > table {
+    flex: 1 1 0;
+    width: calc(50% - 1mm) !important;
+    min-width: 0;
+}
+
+.result-report__summary {
+    display: block;
+    margin-top: var(--result-block-gap);
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.result-report__watermark {
+    position: absolute;
+    z-index: -1;
+    top: 50%;
+    left: 50%;
+    width: 76mm;
+    max-height: 76mm;
+    opacity: 0.035;
+    transform: translate(-50%, -50%);
+    object-fit: contain;
+    pointer-events: none;
+}
+
+/* Header */
+.result-report__header {
+    display: grid;
+    grid-template-columns: 24mm minmax(0, 1fr) 24mm;
+    align-items: center;
+    gap: 3mm;
+    width: auto;
+    height: auto;
+    margin-bottom: var(--result-block-gap);
+    padding-bottom: 2.2mm;
+    background: transparent;
+    border-bottom: 0.65mm solid var(--result-brand);
+    box-shadow: none;
+}
+
+.result-report__logo,
+.result-report__student-photo {
+    display: block;
+    width: 22mm;
+    height: 22mm;
+    margin: auto;
+    background: var(--result-paper);
+    border: 0.25mm solid var(--result-border);
+    border-radius: 1.5mm;
+    object-fit: contain;
+}
+
+.result-report__student-photo {
+    object-fit: cover;
+}
+
+.result-report__school {
+    min-width: 0;
+    text-align: center;
+}
+
+.result-report__school-name {
+    margin: 0;
+    color: var(--result-brand-strong);
+    font-size: 17pt;
+    font-weight: 700;
+    line-height: 1.08;
+    overflow-wrap: anywhere;
+}
+
+.result-report__school-address,
+.result-report__school-contact,
+.result-report__motto {
+    margin: 0.7mm 0 0;
+    color: var(--result-muted);
+    font-size: 7.6pt;
+    font-weight: 500;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.result-report__motto {
+    color: var(--result-brand-strong);
+    font-style: italic;
+}
+
+.result-report__title {
+    margin: 0 0 var(--result-block-gap);
+    padding: 1.4mm 2mm;
+    color: var(--result-brand-contrast);
+    background: var(--result-brand);
+    border-radius: 1mm;
+    font-size: 10pt;
+    font-weight: 700;
+    line-height: 1.25;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    overflow-wrap: anywhere;
+}
+
+/* Student and result statistics */
+.result-report__statistics,
+.result-report__student-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(34mm, 1fr));
+    gap: 0;
+    margin: 0 0 var(--result-block-gap);
+    overflow: hidden;
+    border: 0.25mm solid var(--result-border);
+    border-radius: 1mm;
+}
+
+.result-report__stat,
+.result-report__detail {
+    min-width: 0;
+    padding: 1.1mm 1.5mm;
+    border-right: 0.25mm solid var(--result-border);
+    border-bottom: 0.25mm solid var(--result-border);
+    background: var(--result-paper);
+}
+
+.result-report__stat:nth-child(4n),
+.result-report__detail:nth-child(4n) {
+    border-right: 0;
+}
+
+.result-report__stat:last-child,
+.result-report__detail:last-child {
+    border-right: 0;
+}
+
+.result-report__stat:nth-last-child(-n + 4),
+.result-report__detail:nth-last-child(-n + 4) {
+    border-bottom: 0;
+}
+
+.result-report__label {
+    display: block;
+    margin-bottom: 0.35mm;
+    color: var(--result-muted);
+    font-size: 6.7pt;
+    font-weight: 600;
+    line-height: 1.15;
+    text-transform: uppercase;
+    letter-spacing: 0.15px;
+}
+
+.result-report__value {
+    display: block;
+    min-width: 0;
+    color: var(--result-ink);
+    font-size: 8pt;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.result-report__section {
+    margin: 0 0 var(--result-block-gap);
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.result-report__section-title {
+    margin: 0;
+    padding: 1.05mm 1.5mm;
+    color: var(--result-brand-contrast);
+    background: var(--result-brand-strong);
+    border: 0.25mm solid var(--result-brand-strong);
+    border-radius: 0.8mm 0.8mm 0 0;
+    font-size: var(--result-heading-size);
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.15px;
+}
+
+/* Tables deliberately override Bootstrap's responsive overflow rules. */
+.result-report .table-responsive,
+.result-report__table-wrap {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    overflow: visible !important;
+    border: 0;
+    -webkit-overflow-scrolling: auto;
+}
+
+.result-report table,
+.result-report__table {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-spacing: 0;
+    border-collapse: collapse !important;
+    table-layout: fixed;
+    color: var(--result-ink);
+    background: var(--result-paper);
+    font-size: inherit;
+}
+
+.result-report table th,
+.result-report table td,
+.result-report__table th,
+.result-report__table td {
+    min-width: 0;
+    padding: var(--result-cell-y) var(--result-cell-x) !important;
+    overflow: hidden;
+    border: 0.25mm solid var(--result-border) !important;
+    color: var(--result-ink);
+    line-height: 1.18;
+    text-align: center;
+    text-overflow: clip;
+    white-space: normal !important;
+    word-break: normal;
+    overflow-wrap: anywhere;
+    vertical-align: middle !important;
+}
+
+.result-report table tr,
+.result-report table th,
+.result-report table td,
+.result-report__table tr,
+.result-report__table th,
+.result-report__table td {
+    height: auto !important;
+}
+
+.result-report table thead th,
+.result-report table tr:first-child > th,
+.result-report__table thead th {
+    color: var(--result-brand-contrast) !important;
+    background: var(--result-brand) !important;
+    border-color: var(--result-brand-strong) !important;
+    font-size: 7.2pt;
+    font-weight: 700;
+    line-height: 1.12;
+    text-transform: uppercase;
+}
+
+.result-report table tbody tr:nth-child(even) td,
+.result-report__table tbody tr:nth-child(even) td {
+    background: var(--result-stripe);
+}
+
+.result-report table tbody tr:nth-child(odd) td,
+.result-report__table tbody tr:nth-child(odd) td {
+    background: var(--result-paper);
+}
+
+.result-report table tbody tr,
+.result-report table thead,
+.result-report table tfoot {
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.result-report table td:first-child,
+.result-report table th:first-child,
+.result-report .result-report__cell--left {
+    text-align: left;
+}
+
+.result-report .result .tab > tbody > tr > th:first-child,
+.result-report .result .tab > tr > th:first-child,
+.result-report .result .tab > tbody > tr > td:first-child {
+    width: 20%;
+}
+
+.result-report .result-report__cell--center {
+    text-align: center;
+}
+
+.result-report .result-report__cell--subject {
+    width: 24%;
+    font-weight: 600;
+    text-align: left;
+}
+
+.result-report .result-report__cell--serial {
+    width: 5%;
+    text-align: center;
+}
+
+.result-report .result-report__cell--comment {
+    width: 18%;
+    text-align: left;
+}
+
+.result-report__empty {
+    padding: 4mm !important;
+    color: var(--result-muted) !important;
+    font-style: italic;
+    text-align: center !important;
+}
+
+/* Grade key, summary, and promotion outcome */
+.result-report__summary-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(42mm, 1fr);
+    gap: 2mm;
+    margin-bottom: var(--result-block-gap);
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.result-report__panel {
+    min-width: 0;
+    overflow: hidden;
+    border: 0.25mm solid var(--result-border);
+    border-radius: 1mm;
+    background: var(--result-paper);
+}
+
+.result-report__panel-title {
+    margin: 0;
+    padding: 0.9mm 1.4mm;
+    color: var(--result-brand-contrast);
+    background: var(--result-brand-strong);
+    font-size: 7.2pt;
+    font-weight: 700;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.result-report__panel-body {
+    padding: 1.2mm 1.5mm;
+}
+
+.result-report__grade-key,
+.result-report__grade-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.8mm;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.result-report__grade-item,
+.result-report__grade-count {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    padding: 0.7mm 1.1mm;
+    color: var(--result-ink);
+    background: var(--result-brand-soft);
+    border: 0.2mm solid var(--result-border);
+    border-radius: 0.8mm;
+    font-size: 6.8pt;
+    font-weight: 600;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+}
+
+.result-report__grade-symbol,
+.result-report__grade-count strong {
+    margin-right: 0.7mm;
+    color: var(--result-brand-strong);
+    font-weight: 800;
+}
+
+.result-report__promotion {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 2mm;
+    margin: 0 0 var(--result-block-gap);
+    padding: 1.5mm 2mm;
+    color: var(--result-brand-strong);
+    background: var(--result-brand-soft);
+    border: 0.35mm solid var(--result-brand);
+    border-left-width: 1.5mm;
+    border-radius: 1mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.result-report__promotion-label {
+    color: var(--result-muted);
+    font-size: 7pt;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.result-report__promotion-value {
+    font-size: 9pt;
+    font-weight: 800;
+    line-height: 1.15;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.result-report__promotion[data-promotion-status="promoted"] {
+    color: var(--result-success);
+    background: var(--result-success-soft);
+    border-color: var(--result-success);
+}
+
+.result-report__promotion[data-promotion-status="not-promoted"] {
+    color: var(--result-danger);
+    background: var(--result-danger-soft);
+    border-color: var(--result-danger);
+}
+
+.result-report__promotion[data-promotion-status="pending"] {
+    color: var(--result-warning);
+    background: var(--result-warning-soft);
+    border-color: var(--result-warning);
+}
+
+/* Comments, signatures, and optional chart. */
+.result-report__comments {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2mm;
+    margin-bottom: var(--result-block-gap);
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.result-report__comment {
+    min-width: 0;
+    min-height: 12mm;
+    padding: 1.3mm 1.6mm;
+    border: 0.25mm solid var(--result-border);
+    border-radius: 1mm;
+    background: var(--result-paper);
+}
+
+.result-report__comment-text {
+    margin: 0;
+    color: var(--result-ink);
+    font-size: 7.2pt;
+    font-weight: 500;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.result-report__signatures {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+    gap: 5mm;
+    margin-top: 3mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.result-report__signature {
+    min-width: 0;
+    padding-top: 7mm;
+    border-top: 0.25mm solid var(--result-ink);
+    color: var(--result-muted);
+    font-size: 6.8pt;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+.result-report__signature-image {
+    display: block;
+    width: auto;
+    height: 8mm;
+    margin: -7mm auto 0.8mm;
+    object-fit: contain;
+}
+
+.result-report__chart {
+    position: relative;
+    width: 100%;
+    min-height: 30mm;
+    max-height: 46mm;
+    margin-bottom: var(--result-block-gap);
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.result-report__chart canvas,
+.result-report__chart svg,
+.result-report canvas.sunygraph {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 46mm !important;
+    margin: 0 auto;
+}
+
+.result-report__footer-note {
+    margin: 1.5mm 0 0;
+    color: var(--result-muted);
+    font-size: 6.4pt;
+    line-height: 1.2;
+    text-align: center;
+}
+
+.result-report__screen-only {
+    display: block;
+}
+
+.result-report__print-only {
+    display: none;
+}
+
+/* Density is selected by result-report-print.js from academic row count. */
+.result-report--compact {
+    --result-font-size: 7.7pt;
+    --result-line-height: 1.2;
+    --result-block-gap: 1.45mm;
+    --result-cell-y: 0.72mm;
+    --result-cell-x: 0.85mm;
+    --result-heading-size: 8.1pt;
+    --result-safe-margin: 6mm;
+}
+
+.result-report--compact .result-report__header {
+    grid-template-columns: 20mm minmax(0, 1fr) 20mm;
+    gap: 2mm;
+    padding-bottom: 1.4mm;
+}
+
+.result-report--compact .result-report__logo,
+.result-report--compact .result-report__student-photo {
+    width: 18mm;
+    height: 18mm;
+}
+
+.result-report--compact .result-report__school-name {
+    font-size: 14pt;
+}
+
+.result-report--compact .result-report__school-address,
+.result-report--compact .result-report__school-contact,
+.result-report--compact .result-report__motto,
+.result-report--compact table thead th {
+    font-size: 6.7pt;
+}
+
+.result-report--compact .result-report__stat,
+.result-report--compact .result-report__detail,
+.result-report--compact .result-report__panel-body,
+.result-report--compact .result-report__comment {
+    padding-top: 0.75mm;
+    padding-bottom: 0.75mm;
+}
+
+.result-report--compact .result-report__chart {
+    min-height: 24mm;
+    max-height: 34mm;
+}
+
+.result-report--compact .result-report__chart canvas,
+.result-report--compact .result-report__chart svg,
+.result-report--compact canvas.sunygraph {
+    max-height: 34mm !important;
+}
+
+.result-report--ultra {
+    --result-font-size: 6.7pt;
+    --result-line-height: 1.13;
+    --result-block-gap: 0.9mm;
+    --result-cell-y: 0.38mm;
+    --result-cell-x: 0.55mm;
+    --result-heading-size: 7.2pt;
+    --result-safe-margin: 5mm;
+}
+
+.result-report--ultra .result-report__header {
+    grid-template-columns: 16mm minmax(0, 1fr) 16mm;
+    gap: 1.5mm;
+    margin-bottom: 0.8mm;
+    padding-bottom: 0.8mm;
+}
+
+.result-report--ultra .result-report__logo,
+.result-report--ultra .result-report__student-photo {
+    width: 14mm;
+    height: 14mm;
+}
+
+.result-report--ultra .result-report__school-name {
+    font-size: 11.5pt;
+}
+
+.result-report--ultra .result-report__school-address,
+.result-report--ultra .result-report__school-contact,
+.result-report--ultra .result-report__motto {
+    margin-top: 0.25mm;
+    font-size: 5.8pt;
+    line-height: 1.12;
+}
+
+.result-report--ultra .result-report__title {
+    padding: 0.7mm 1mm;
+    font-size: 7.5pt;
+}
+
+.result-report--ultra .result-report__stat,
+.result-report--ultra .result-report__detail,
+.result-report--ultra .result-report__panel-body,
+.result-report--ultra .result-report__comment {
+    padding: 0.45mm 0.75mm;
+}
+
+.result-report--ultra .result-report__label,
+.result-report--ultra .result-report__grade-item,
+.result-report--ultra .result-report__grade-count,
+.result-report--ultra .result-report__comment-text,
+.result-report--ultra table thead th {
+    font-size: 5.7pt;
+}
+
+.result-report--ultra .result-report__value,
+.result-report--ultra .result-report__promotion-value {
+    font-size: 6.8pt;
+}
+
+.result-report--ultra .result-report__comment {
+    min-height: 8mm;
+}
+
+.result-report--ultra .result-report__signatures {
+    gap: 3mm;
+    margin-top: 1.5mm;
+}
+
+.result-report--ultra [data-result-decorative-chart],
+.result-report--ultra .result-report__chart--decorative {
+    display: none !important;
+}
+
+@media screen {
+    body.result-report-page {
+        min-width: 0 !important;
+        overflow-x: hidden !important;
+        background: var(--result-page-background) !important;
+    }
+
+    .result-report-preview[data-result-report-preview] .result-report {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        margin: 0 0 0 -105mm;
+        transform: scale(var(--result-preview-scale));
+        transform-origin: top center;
+    }
+}
+
+@media screen and (max-width: 820px) {
+    .result-report-preview {
+        margin-top: 10px;
+        margin-bottom: 18px;
+    }
+}
+
+@page {
+    size: A4 portrait;
+    margin: 0;
+}
+
+@media print {
+    html,
+    body.result-report-page {
+        width: var(--result-a4-width) !important;
+        height: var(--result-a4-height) !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        background: var(--result-paper) !important;
+    }
+
+    #non-printable,
+    .no-print,
+    .result-report-no-print,
+    [data-result-no-print] {
+        display: none !important;
+    }
+
+    .result-report-preview,
+    .result-report-preview[data-result-report-preview] {
+        position: static !important;
+        display: block !important;
+        width: var(--result-a4-width) !important;
+        max-width: none !important;
+        height: var(--result-a4-height) !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        transform: none !important;
+        break-after: avoid;
+        break-inside: avoid;
+        page-break-after: avoid;
+        page-break-inside: avoid;
+    }
+
+    .result-report,
+    .result-report-preview[data-result-report-preview] .result-report {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        display: block !important;
+        width: var(--result-a4-width) !important;
+        min-width: var(--result-a4-width) !important;
+        max-width: var(--result-a4-width) !important;
+        height: var(--result-a4-height) !important;
+        min-height: var(--result-a4-height) !important;
+        max-height: var(--result-a4-height) !important;
+        margin: 0 !important;
+        border-radius: 0;
+        box-shadow: none !important;
+        transform: none !important;
+        break-after: avoid;
+        break-inside: avoid;
+        page-break-after: avoid;
+        page-break-inside: avoid;
+    }
+
+    .result-report__content {
+        overflow: visible;
+    }
+
+    .result-report__screen-only {
+        display: none !important;
+    }
+
+    .result-report__print-only {
+        display: block !important;
+    }
+
+    .result-report--ultra [data-result-decorative-chart],
+    .result-report--ultra .result-report__chart--decorative,
+    .result-report--ultra .containerForChart,
+    .result-report--ultra .newgraph,
+    .result-report--ultra canvas.sunygraph {
+        display: none !important;
+    }
+}
