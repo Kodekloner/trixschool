@@ -234,25 +234,39 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
 
                 <div class="rel">
 
-                    <header class="result-report__header">
-                        <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo htmlspecialchars($rowsch_settings['app_logo'], ENT_QUOTES, 'UTF-8'); ?>" class="result-report__logo" alt="School logo">
-                        <div class="result-report__school">
-                            <p class="result-report__school-name"><?php echo htmlspecialchars($rowsch_settings['name'], ENT_QUOTES, 'UTF-8'); ?></p>
-                            <p class="result-report__school-address"><?php echo htmlspecialchars($rowsch_settings['address'], ENT_QUOTES, 'UTF-8'); ?></p>
-                            <p class="result-report__school-contact">
-                                Email: <?php echo htmlspecialchars($rowsch_settings['email'], ENT_QUOTES, 'UTF-8'); ?>
-                                &nbsp;&bull;&nbsp; Website: <?php echo htmlspecialchars($defRUlsec, ENT_QUOTES, 'UTF-8'); ?>
-                            </p>
+                    <div class="row result-report__legacy-header">
+                        <div class="col">
+                            <div align="center">
+                                <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo htmlspecialchars($rowsch_settings['app_logo'], ENT_QUOTES, 'UTF-8'); ?>" align="center" class="img-fluid" style="margin: 10px; width: 50%;" alt="School logo">
+                            </div>
                         </div>
-                        <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo htmlspecialchars($studimage, ENT_QUOTES, 'UTF-8'); ?>" class="result-report__student-photo" alt="Student photograph">
-                    </header>
+
+                        <div class="col-6">
+                            <p class="schname" style="font-size:25px"><?php echo htmlspecialchars($rowsch_settings['name'], ENT_QUOTES, 'UTF-8'); ?></p>
+                            <p class="schloc" style="color: rgb(185, 7, 7);font-size:16px;margin-top:-20px;"><?php echo htmlspecialchars($rowsch_settings['address'], ENT_QUOTES, 'UTF-8'); ?>.</p>
+                            <div style="margin-top:-10px;text-align:center">
+                                <span>Email: <?php echo htmlspecialchars($rowsch_settings['email'], ENT_QUOTES, 'UTF-8'); ?></span><br />
+                                <span>Website: <?php echo htmlspecialchars($defRUlsec, ENT_QUOTES, 'UTF-8'); ?></span>
+                            </div>
+                        </div>
+
+                        <div class="col">
+                            <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo htmlspecialchars($studimage, ENT_QUOTES, 'UTF-8'); ?>" align="center" class="img-fluid" style="margin: 10px; width: 45%;height:120px" alt="Student photograph">
+                        </div>
+                    </div><br>
 
                     <?php if ($reltypemain == 'midterm') { ?>
-                        <h5 class="report-title result-report__title">SUMMARY OF ACADEMIC PERFORMANCE FOR <?php echo htmlspecialchars($term, ENT_QUOTES, 'UTF-8'); ?> TERM, MID TERM &mdash; <?php echo htmlspecialchars($session_name, ENT_QUOTES, 'UTF-8'); ?> SESSION</h5>
+                        <div align="center" class="result-report__legacy-title">
+                            <h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo htmlspecialchars($term, ENT_QUOTES, 'UTF-8'); ?> TERM, MID TERM</span> <?php echo htmlspecialchars($session_name, ENT_QUOTES, 'UTF-8'); ?> SESSION</h5>
+                        </div>
                     <?php } elseif ($reltypemain == 'cummulative') { ?>
-                        <h5 class="report-title result-report__title">SUMMARY OF CUMULATIVE ACADEMIC PERFORMANCE FOR <?php echo htmlspecialchars($session_name, ENT_QUOTES, 'UTF-8'); ?> SESSION</h5>
+                        <div align="center" class="result-report__legacy-title">
+                            <h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF CUMULATIVE ACADEMIC PERFORMANCE FOR <?php echo htmlspecialchars($session_name, ENT_QUOTES, 'UTF-8'); ?> SESSION</h5>
+                        </div>
                     <?php } else { ?>
-                        <h5 class="report-title result-report__title">SUMMARY OF ACADEMIC PERFORMANCE FOR <?php echo htmlspecialchars($term, ENT_QUOTES, 'UTF-8'); ?> TERM &mdash; <?php echo htmlspecialchars($session_name, ENT_QUOTES, 'UTF-8'); ?> SESSION</h5>
+                        <div align="center" class="result-report__legacy-title">
+                            <h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo htmlspecialchars($term, ENT_QUOTES, 'UTF-8'); ?> TERM</span> <?php echo htmlspecialchars($session_name, ENT_QUOTES, 'UTF-8'); ?> SESSION</h5>
+                        </div>
                     <?php } ?>
 
                     <?php

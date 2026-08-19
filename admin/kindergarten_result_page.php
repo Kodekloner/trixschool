@@ -198,17 +198,28 @@ require_once('../helper/promotion_helper.php');
 			<div class="card-body" style="color: black;">
 				<div class="rel">
 					<!-- School header -->
-					<header class="result-report__header">
-						<img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo htmlspecialchars($rowsch_settings['app_logo'], ENT_QUOTES, 'UTF-8'); ?>" class="result-report__logo" alt="School logo">
-						<div class="result-report__school">
-							<p class="result-report__school-name"><?php echo htmlspecialchars($rowsch_settings['name'], ENT_QUOTES, 'UTF-8'); ?></p>
-							<p class="result-report__school-address"><?php echo htmlspecialchars($rowsch_settings['address'], ENT_QUOTES, 'UTF-8'); ?></p>
-							<p class="result-report__school-contact">Email: <?php echo htmlspecialchars($rowsch_settings['email'], ENT_QUOTES, 'UTF-8'); ?> &nbsp;&bull;&nbsp; Website: <?php echo htmlspecialchars($defRUlsec, ENT_QUOTES, 'UTF-8'); ?></p>
+					<div class="row result-report__legacy-header">
+						<div class="col">
+							<div align="center">
+								<img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo htmlspecialchars($rowsch_settings['app_logo'], ENT_QUOTES, 'UTF-8'); ?>" class="img-fluid" style="margin: 10px; width: 50%;" alt="School logo">
+							</div>
 						</div>
-						<img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo htmlspecialchars($studimage, ENT_QUOTES, 'UTF-8'); ?>" class="result-report__student-photo" alt="Student photograph">
-					</header>
+						<div class="col-6">
+							<p class="schname" style="font-size:25px"><?php echo htmlspecialchars($rowsch_settings['name'], ENT_QUOTES, 'UTF-8'); ?></p>
+							<p class="schloc" style="color: rgb(185, 7, 7);font-size:16px;margin-top:-20px;"><?php echo htmlspecialchars($rowsch_settings['address'], ENT_QUOTES, 'UTF-8'); ?>.</p>
+							<div style="margin-top:-10px;text-align:center">
+								<span>Email: <?php echo htmlspecialchars($rowsch_settings['email'], ENT_QUOTES, 'UTF-8'); ?></span><br />
+								<span>Website: <?php echo htmlspecialchars($defRUlsec, ENT_QUOTES, 'UTF-8'); ?></span>
+							</div>
+						</div>
+						<div class="col">
+							<img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo htmlspecialchars($studimage, ENT_QUOTES, 'UTF-8'); ?>" align="center" class="img-fluid" style="margin: 10px; width: 45%;height:120px" alt="Student photograph">
+						</div>
+					</div><br>
 
-					<h5 class="report-title result-report__title"><?php echo $resultSubType === 'midterm' ? 'MIDTERM PROGRESS REPORT' : 'TERM PROGRESS REPORT'; ?> FOR <?php echo htmlspecialchars($term, ENT_QUOTES, 'UTF-8'); ?> TERM &mdash; <?php echo htmlspecialchars($session_name, ENT_QUOTES, 'UTF-8'); ?> SESSION</h5>
+					<div align="center" class="result-report__legacy-title">
+						<h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px"><?php echo $resultSubType === 'midterm' ? 'MIDTERM PROGRESS REPORT' : 'TERM PROGRESS REPORT'; ?> FOR <?php echo htmlspecialchars($term, ENT_QUOTES, 'UTF-8'); ?> TERM, <?php echo htmlspecialchars($session_name, ENT_QUOTES, 'UTF-8'); ?> SESSION</h5>
+					</div>
 
 					<!-- Student info -->
 					<div class="row" style="margin: 10px;">
@@ -273,23 +284,25 @@ require_once('../helper/promotion_helper.php');
 						</table>
 					</div>
 
-					<section class="result-report__comments" aria-label="Result comments">
-						<div class="result-report__comment">
-							<strong class="result-report__label">Class teacher's remark</strong>
-							<p class="result-report__comment-text"><?php echo htmlspecialchars($teacher_remark, ENT_QUOTES, 'UTF-8'); ?></p>
-							<?php if ($teacher_sign !== '') { ?>
-								<div class="signature-container" aria-label="Class teacher's signature"><?php echo $teacher_sign; ?></div>
-							<?php } ?>
+					<div class="result-report__legacy-comments" aria-label="Result comments">
+						<div class="row mt-4">
+							<div class="col-sm-10 col-md-10">
+								<p class="pl-3" style="text-align: justify;"><b>CLASS TEACHER'S REMARK:</b> <?php echo htmlspecialchars($teacher_remark, ENT_QUOTES, 'UTF-8'); ?></p>
+							</div>
+							<div class="col-sm-2 col-md-2 signature-container" aria-label="Class teacher's signature">
+								<?php echo $teacher_sign; ?>
+							</div>
 						</div>
 
-						<div class="result-report__comment">
-							<strong class="result-report__label">Head teacher's remark</strong>
-							<p class="result-report__comment-text"><?php echo htmlspecialchars($principal_remark, ENT_QUOTES, 'UTF-8'); ?></p>
-							<?php if ($principal_sign !== '') { ?>
-								<div class="signature-container" aria-label="Head teacher's signature"><?php echo $principal_sign; ?></div>
-							<?php } ?>
+						<div class="row mt-2">
+							<div class="col-sm-10 col-md-10">
+								<p class="pl-3" style="text-align: justify;"><b>PRINCIPAL/HEAD TEACHER'S COMMENT:</b> <?php echo htmlspecialchars($principal_remark, ENT_QUOTES, 'UTF-8'); ?></p>
+							</div>
+							<div class="col-sm-2 col-md-2 signature-container" aria-label="Head teacher's signature">
+								<?php echo $principal_sign; ?>
+							</div>
 						</div>
-					</section>
+					</div>
 
 					<!-- Next term begins (optional) -->
 					<?php

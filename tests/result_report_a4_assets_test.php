@@ -314,22 +314,26 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
   <div class="result-report-preview" data-result-report-preview>
     <article class="result-report" data-result-report data-academic-row-count="' . $rowCount . '">
       <div class="result-report__content" data-result-report-content>
-        <header class="result-report__header">
-          <div></div>
-          <div class="result-report__school">
-            <h1 class="result-report__school-name">The International Academy for Science, Technology, Languages and Creative Leadership</h1>
-            <p class="result-report__school-address">Plot 12345, An Intentionally Long Crescent Name, Beside the Metropolitan Community Development Centre, Lagos State, Nigeria</p>
-            <p class="result-report__school-contact">school@example.test · www.an-intentionally-long-school-domain.example.test</p>
+        <svg class="watermark-logo result-report__watermark" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="#6d247f"></circle></svg>
+        <div class="card-body">
+        <div class="rel">
+        <div class="row result-report__legacy-header">
+          <div class="col"><div align="center"><svg viewBox="0 0 100 100" class="img-fluid" style="margin:10px;width:50%" aria-label="School logo"><circle cx="50" cy="50" r="42" fill="#6d247f"></circle></svg></div></div>
+          <div class="col-6">
+            <p class="schname" style="font-size:25px">The International Academy for Science, Technology, Languages and Creative Leadership</p>
+            <p class="schloc" style="color:rgb(185,7,7);font-size:16px;margin-top:-20px">Plot 12345, An Intentionally Long Crescent Name, Beside the Metropolitan Community Development Centre, Lagos State, Nigeria.</p>
+            <div style="margin-top:-10px;text-align:center"><span>school@example.test</span><br><span>www.an-intentionally-long-school-domain.example.test</span></div>
           </div>
-          <div></div>
-        </header>
-        <h2 class="result-report__title">Third Term Cumulative Academic Performance Report</h2>
-        <section class="result-report__student-details">
-          <div class="result-report__detail"><span class="result-report__label">Student</span><span class="result-report__value">A Student With Several Long Names</span></div>
-          <div class="result-report__detail"><span class="result-report__label">Class</span><span class="result-report__value">JSS 1 — Sapphire</span></div>
-          <div class="result-report__detail"><span class="result-report__label">Session</span><span class="result-report__value">2025/2026</span></div>
-          <div class="result-report__detail"><span class="result-report__label">NO.</span><span class="result-report__value">128</span></div>
-        </section>
+          <div class="col"><svg viewBox="0 0 80 100" class="img-fluid" style="margin:10px;width:45%;height:120px" aria-label="Student photograph"><rect width="80" height="100" fill="#ddd"></rect></svg></div>
+        </div><br>
+        <div align="center" class="result-report__legacy-title"><h5 class="report-title" style="font-size:17px;font-weight:500;margin-top:-40px">Third Term Cumulative Academic Performance Report</h5></div>
+        <div class="container-motto">
+          <div class="row">
+            <div class="col-4"><h5>NAME: <b>A Student With Several Long Names</b></h5></div>
+            <div class="col-4"><h5>CLASS: <b>JSS 1 — Sapphire</b></h5></div>
+            <div class="col-4"><h5>SESSION: <b>2025/2026</b></h5></div>
+          </div>
+        </div>
         <section class="result-report__section">
           <h3 class="result-report__section-title">Academic Performance</h3>
           <div class="result-report__table-wrap">
@@ -339,13 +343,19 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
             </table>
           </div>
         </section>
-        <div class="result-report__summary-grid">
-          <section class="result-report__panel"><h3 class="result-report__panel-title">Key to Grades</h3><div class="result-report__panel-body"><ul class="result-report__grade-key"><li class="result-report__grade-item">A: 70% and above</li><li class="result-report__grade-item">B: 60%–69.9%</li><li class="result-report__grade-item">C: 50%–59.9%</li><li class="result-report__grade-item">F: 0%–49.9%</li></ul></div></section>
-          <section class="result-report__panel"><h3 class="result-report__panel-title">Grade Summary</h3><div class="result-report__panel-body"><ul class="result-report__grade-summary"><li class="result-report__grade-count"><strong>' . $rowCount . '</strong>A</li></ul></div></section>
-        </div>
-        <section class="result-report__promotion" data-promotion-status="promoted"><span class="result-report__promotion-label">Promotion Status</span><strong class="result-report__promotion-value">PROMOTED TO: JSS 2</strong></section>
         <section class="result-report__chart result-report__chart--decorative" data-result-decorative-chart><svg viewBox="0 0 100 16" role="img"><rect width="100" height="16" fill="#eceff3"></rect><path d="M0 14 L20 8 L40 10 L60 3 L80 7 L100 1" fill="none" stroke="#6d247f"></path></svg></section>
         <section class="result-report__comments"><div class="result-report__comment"><strong class="result-report__label">Teacher&apos;s Comment</strong><p class="result-report__comment-text">A focused learner who has made steady progress throughout the academic year.</p></div><div class="result-report__comment"><strong class="result-report__label">Head Teacher&apos;s Comment</strong><p class="result-report__comment-text">An excellent result. Continue the good work.</p></div></section>
+        <section class="result-report__summary" aria-label="Result summary">
+          <div class="result-report__statistics">
+            <div class="result-report__stat"><span class="result-report__label">NO.:</span><strong class="result-report__value">128</strong></div>
+            <div class="result-report__stat"><span class="result-report__label">GRADE SUMMARY:</span><strong class="result-report__value">' . $rowCount . 'A</strong></div>
+            <div class="result-report__stat"><span class="result-report__label">CUMULATIVE AVERAGE SCORE:</span><strong class="result-report__value">92.00</strong></div>
+          </div>
+          <div class="result-report__promotion" data-promotion-status="promoted"><span class="result-report__promotion-label">Promotion Status</span><strong class="result-report__promotion-value">PROMOTED TO: JSS 2</strong></div>
+          <div class="result-report__panel"><p class="result-report__panel-title">Key to Grades</p><div class="result-report__panel-body"><ul class="result-report__grade-key"><li class="result-report__grade-item">A: 70% and above</li><li class="result-report__grade-item">B: 60%–69.9%</li><li class="result-report__grade-item">C: 50%–59.9%</li><li class="result-report__grade-item">F: 0%–49.9%</li></ul></div></div>
+        </section>
+        </div>
+        </div>
       </div>
     </article>
   </div>
@@ -359,17 +369,32 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
           var root = document.querySelector("[data-result-report]");
           var content = root.querySelector("[data-result-report-content]");
           var table = document.getElementById("academic-performance");
+          var watermark = root.querySelector(".result-report__watermark");
+          var cardBody = root.querySelector(".card-body");
+          var legacyHeader = root.querySelector(".result-report__legacy-header");
+          var legacyTitle = root.querySelector(".result-report__legacy-title");
+          var watermarkStyle = window.getComputedStyle(watermark);
+          var cardBodyStyle = window.getComputedStyle(cardBody);
           var rootRect = root.getBoundingClientRect();
           var contentRect = content.getBoundingClientRect();
           var tableRect = table.getBoundingClientRect();
+          var legacyHeaderRect = legacyHeader.getBoundingClientRect();
+          var legacyTitleRect = legacyTitle.getBoundingClientRect();
           var tolerance = 1;
+          var contentLeftGap = contentRect.left - rootRect.left;
+          var contentRightGap = rootRect.right - contentRect.right;
           var payload = {
             density: root.getAttribute("data-result-density"),
             rowCount: table.querySelectorAll("[data-academic-row]").length,
             fitScale: parseFloat(root.getAttribute("data-result-fit-scale")),
             tableWithinContent: tableRect.left >= contentRect.left - tolerance && tableRect.right <= contentRect.right + tolerance,
             tableWithinReport: tableRect.left >= rootRect.left - tolerance && tableRect.right <= rootRect.right + tolerance,
-            viewportContained: document.documentElement.scrollWidth <= document.documentElement.clientWidth + tolerance
+            viewportContained: document.documentElement.scrollWidth <= document.documentElement.clientWidth + tolerance,
+            contentHorizontallyCentered: Math.abs(contentLeftGap - contentRightGap) <= tolerance,
+            legacyHeaderTitleSeparated: legacyTitleRect.top >= legacyHeaderRect.bottom - tolerance,
+            watermarkBehindContent: watermarkStyle.display !== "none"
+              && parseFloat(watermarkStyle.opacity) > 0
+              && parseInt(watermarkStyle.zIndex, 10) < parseInt(cardBodyStyle.zIndex, 10)
           };
           var output = document.createElement("pre");
           output.id = "result-report-test-output";
@@ -512,6 +537,9 @@ foreach ($fixtures as $fixture) {
     result_report_a4_assert($payload['tableWithinContent'] === true, 'The ' . $rowCount . '-row academic table must stay within report content.');
     result_report_a4_assert($payload['tableWithinReport'] === true, 'The ' . $rowCount . '-row academic table must stay within the A4 border.');
     result_report_a4_assert($payload['viewportContained'] === true, 'The ' . $rowCount . '-row preview must not create horizontal viewport overflow.');
+    result_report_a4_assert($payload['contentHorizontallyCentered'] === true, 'The ' . $rowCount . '-row fitted result must retain balanced left and right A4 margins.');
+    result_report_a4_assert($payload['legacyHeaderTitleSeparated'] === true, 'The ' . $rowCount . '-row title must not overlap a long legacy school header.');
+    result_report_a4_assert($payload['watermarkBehindContent'] === true, 'The ' . $rowCount . '-row watermark must remain faintly visible behind the legacy result content.');
 
     $printArguments = array_merge(
         $commonArguments,
