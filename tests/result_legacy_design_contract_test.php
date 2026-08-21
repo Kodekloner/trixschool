@@ -136,6 +136,10 @@ result_legacy_design_assert(
     'Subject names must wrap only at word boundaries.'
 );
 result_legacy_design_assert(
+    strpos($css, '.result-report .result .tab > thead > tr > th:first-child') !== false,
+    'The fixed academic table must reserve subject-column width on its header so subject text is not clipped.'
+);
+result_legacy_design_assert(
     preg_match('/\.result-report__grade-item[^\{]*\{[^\}]*font-size:\s*7\.8pt;/s', $css) === 1,
     'The standard key-to-grades text must use the requested larger readable size.'
 );

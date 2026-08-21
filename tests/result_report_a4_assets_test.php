@@ -296,6 +296,8 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
         'Information and Communication Technology',
         'Advanced Mathematics',
         'Agricultural Science',
+        'Entrepreneurship and Business Studies',
+        'Quantitative Reasoning',
     );
 
     for ($index = 1; $index <= $rowCount; $index++) {
@@ -352,7 +354,7 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
         <div align="center"><h5 style="font-size:18px;font-weight:800;color:#000;margin-bottom:0">ACADEMIC PERFORMANCE</h5></div>
         <div class="result table-responsive result-report__academic-table-wrap result-report__table-wrap">
           <table id="academic-performance" class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table result-report__table">
-            <thead><tr><th class="result-report__cell--subject">Subject</th><th>CA 1</th><th>CA 2</th><th>Exam</th><th>Total</th><th>1st</th><th>2nd</th><th>Cumulative Average</th><th>Grade</th><th class="result-report__cell--comment">Remark</th></tr></thead>
+            <thead><tr><th>Subject</th><th>CA 1</th><th>CA 2</th><th>Exam</th><th>Total</th><th>1st</th><th>2nd</th><th>Cumulative Average</th><th>Grade</th><th class="result-report__cell--comment">Remark</th></tr></thead>
             <tbody>' . $rows . '</tbody>
           </table>
         </div>
@@ -460,6 +462,7 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
               && table.classList.contains("result-report__academic-table")
               && table.tHead !== null,
             subjectUsesBodyStyling: firstBodyCellStyle.backgroundColor !== headerCellStyle.backgroundColor,
+            subjectColumnWidthRatio: headerCell.getBoundingClientRect().width / tableRect.width,
             subjectWordsRemainWhole: subjectWordsRemainWhole,
             stripedRowsDiffer: firstRowStyle.backgroundColor !== secondRowStyle.backgroundColor,
             stripedRowIsConsistent: secondRowCellsConsistent,
@@ -621,6 +624,7 @@ foreach ($fixtures as $fixture) {
     result_report_a4_assert($payload['gradeKeyDirectlyAfterTable'] === true, 'The ' . $rowCount . '-row key to grades must appear directly below the academic table.');
     result_report_a4_assert($payload['academicTableContract'] === true, 'The ' . $rowCount . '-row academic table must use a real header and the striped-table contract.');
     result_report_a4_assert($payload['subjectUsesBodyStyling'] === true, 'The ' . $rowCount . '-row first subject must not use the dark table-header styling.');
+    result_report_a4_assert($payload['subjectColumnWidthRatio'] >= 0.19, 'The ' . $rowCount . '-row subject column must reserve enough width to contain complete words.');
     result_report_a4_assert($payload['subjectWordsRemainWhole'] === true, 'The ' . $rowCount . '-row subject names must wrap only between complete words.');
     result_report_a4_assert($payload['stripedRowsDiffer'] === true, 'The ' . $rowCount . '-row academic table must visibly alternate row colours.');
     result_report_a4_assert($payload['stripedRowIsConsistent'] === true, 'The ' . $rowCount . '-row stripe must cover every cell in the row.');

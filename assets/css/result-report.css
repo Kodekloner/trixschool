@@ -682,6 +682,7 @@
     text-align: left;
 }
 
+.result-report .result .tab > thead > tr > th:first-child,
 .result-report .result .tab > tbody > tr > th:first-child,
 .result-report .result .tab > tr > th:first-child,
 .result-report .result .tab > tbody > tr > td:first-child {
