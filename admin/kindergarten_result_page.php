@@ -222,21 +222,29 @@ require_once('../helper/promotion_helper.php');
 					</div>
 
 					<!-- Student info -->
-					<div class="row" style="margin: 10px;">
-						<div class="col-4">
-							<h5>NAME: <b><?php echo $student_name; ?></b></h5>
+					<div class="container-motto">
+						<div class="row" style="margin: 10px;">
+							<div class="col-4">
+								<h5>NAME: <b><?php echo htmlspecialchars($student_name, ENT_QUOTES, 'UTF-8'); ?></b></h5>
+							</div>
+							<div class="col-4">
+								<h5>CLASS: <b><?php echo htmlspecialchars($class_name . ' ' . $section_name, ENT_QUOTES, 'UTF-8'); ?></b></h5>
+							</div>
+							<div class="col-4">
+								<h5>GENDER: <b><?php echo htmlspecialchars($student_gender, ENT_QUOTES, 'UTF-8'); ?></b></h5>
+							</div>
 						</div>
-						<div class="col-4">
-							<h5>CLASS: <b><?php echo $class_name . ' ' . $section_name; ?></b></h5>
-						</div>
-						<div class="col-4">
-							<h5>GENDER: <b><?php echo $student_gender; ?></b></h5>
-						</div>
+						<?php
+						$resultSummaryPanelSections = array('statistics');
+						include __DIR__ . '/partials/result-summary-panel.php';
+						unset($resultSummaryPanelSections);
+						?>
 					</div>
 
 					<!-- Result table -->
-					<div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
-						<table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
+					<div class="result table-responsive result-report__academic-table-wrap" style="margin: 10px; margin-top: 5px;">
+						<table class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table" style="width:98%;">
+							<thead>
 							<tr>
 								<th>SUBJECT</th>
 								<th><?php echo $assessment_label; ?></th>
@@ -244,6 +252,7 @@ require_once('../helper/promotion_helper.php');
 									<th><?php echo htmlspecialchars($label); ?></th>
 								<?php endforeach; ?>
 							</tr>
+							</thead>
 							<tbody>
 								<?php
 								$current_subject = '';
@@ -308,7 +317,11 @@ require_once('../helper/promotion_helper.php');
 					<?php
 					// You can add next term date logic if needed
 					?>
-					<?php include __DIR__ . '/partials/result-summary-panel.php'; ?>
+					<?php
+					$resultSummaryPanelSections = array('promotion');
+					include __DIR__ . '/partials/result-summary-panel.php';
+					unset($resultSummaryPanelSections);
+					?>
 				</div>
 			</div>
 			</div>

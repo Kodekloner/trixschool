@@ -10,8 +10,19 @@ $promotionOutcome = isset($promotionOutcome) && is_array($promotionOutcome)
     : build_promotion_outcome('pending', '', 'system', 'unavailable');
 $promotionDecision = preg_replace('/[^a-z_]/', '', (string) ($promotionOutcome['decision'] ?? 'pending'));
 $promotionStatus = str_replace('_', '-', $promotionDecision);
+$resultSummaryPanelSections = $resultSummaryPanelSections ?? array('statistics', 'grade_key', 'promotion');
+
+if (!is_array($resultSummaryPanelSections)) {
+    $resultSummaryPanelSections = array($resultSummaryPanelSections);
+}
+
+$resultSummaryPanelSections = array_values(array_unique(array_map('strval', $resultSummaryPanelSections)));
+$renderResultStatistics = in_array('statistics', $resultSummaryPanelSections, true);
+$renderResultGradeKey = in_array('grade_key', $resultSummaryPanelSections, true);
+$renderResultPromotion = in_array('promotion', $resultSummaryPanelSections, true);
 ?>
-<section class="result-report__summary" aria-label="Result summary">
+<?php if ($renderResultStatistics) { ?>
+<section class="result-report__summary result-report__summary--statistics" data-result-summary-section="statistics" aria-label="Result statistics">
     <div class="result-report__statistics">
         <div class="result-report__stat">
             <span class="result-report__label">NO.:</span>
@@ -40,15 +51,11 @@ $promotionStatus = str_replace('_', '-', $promotionDecision);
         <?php } ?>
 
     </div>
+</section>
+<?php } ?>
 
-    <?php if ($showPromotionOutcome) { ?>
-        <div class="result-report__promotion" data-promotion-status="<?php echo htmlspecialchars($promotionStatus, ENT_QUOTES, 'UTF-8'); ?>">
-            <span class="result-report__promotion-label">Promotion status</span>
-            <strong class="result-report__promotion-value"><?php echo htmlspecialchars($promotionOutcome['note'] ?? 'PROMOTION PENDING', ENT_QUOTES, 'UTF-8'); ?></strong>
-        </div>
-    <?php } ?>
-
-    <?php if (!empty($resultSummaryContext['grade_key'])) { ?>
+<?php if ($renderResultGradeKey && !empty($resultSummaryContext['grade_key'])) { ?>
+    <section class="result-report__summary result-report__summary--grade-key" data-result-summary-section="grade-key" aria-label="Key to grades">
         <div class="result-report__panel">
             <p class="result-report__panel-title">Key to grades</p>
             <div class="result-report__panel-body">
@@ -62,5 +69,14 @@ $promotionStatus = str_replace('_', '-', $promotionDecision);
                 </ul>
             </div>
         </div>
-    <?php } ?>
-</section>
+    </section>
+<?php } ?>
+
+<?php if ($renderResultPromotion && $showPromotionOutcome) { ?>
+    <section class="result-report__summary result-report__summary--promotion" data-result-summary-section="promotion" aria-label="Promotion status">
+        <div class="result-report__promotion" data-promotion-status="<?php echo htmlspecialchars($promotionStatus, ENT_QUOTES, 'UTF-8'); ?>">
+            <span class="result-report__promotion-label">Promotion status</span>
+            <strong class="result-report__promotion-value"><?php echo htmlspecialchars($promotionOutcome['note'] ?? 'PROMOTION PENDING', ENT_QUOTES, 'UTF-8'); ?></strong>
+        </div>
+    </section>
+<?php } ?>

@@ -429,13 +429,19 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                 </div>
                             </div>
 
+                            <?php
+                            $resultSummaryPanelSections = array('statistics');
+                            include __DIR__ . '/partials/result-summary-panel.php';
+                            unset($resultSummaryPanelSections);
+                            ?>
+
                         </div>
 
                         <div align="center">
                             <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                         </div>
 
-                        <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
+                        <div class="result table-responsive result-report__academic-table-wrap" style="margin: 10px; margin-top: 5px;">
                             <?php
 
                             $sqlrelset = ("SELECT * FROM `resultsetting` INNER JOIN assigncatoclass ON resultsetting.ResultSettingID=assigncatoclass.ResultSettingID WHERE ClassID = '$classid'");
@@ -504,7 +510,8 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                             }
 
                             ?>
-                            <table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
+                            <table class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table" style="width:98%;">
+                                <thead>
 
                                 <tr>
                                     <th>SUBJECT(s)</th>
@@ -523,6 +530,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                     <th>GRADE</th>
                                     <th>REMARK</th>
                                 </tr>
+                                </thead>
 
                                 <tbody>
                                     <?php
@@ -697,7 +705,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                 }
 
                                                 echo '<tr>
-                                                                                <th>' . $subname . '</th>';
+                                                                                <td>' . $subname . '</td>';
                                                 echo $ca1table . $ca2table . $ca3table . $ca4table . $ca5table . $ca6table . $ca7table . $ca8table . $ca9table . $ca10table;
                                                 echo '
                                                                                 <td>' . $grade . '</td>
@@ -714,6 +722,12 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                 </tbody>
                             </table>
                         </div>
+
+                        <?php
+                        $resultSummaryPanelSections = array('grade_key');
+                        include __DIR__ . '/partials/result-summary-panel.php';
+                        unset($resultSummaryPanelSections);
+                        ?>
 
                         <?php
                         $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='$term'");
@@ -1117,13 +1131,18 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                     </div>
 
                                 </div>
+                                <?php
+                                $resultSummaryPanelSections = array('statistics');
+                                include __DIR__ . '/partials/result-summary-panel.php';
+                                unset($resultSummaryPanelSections);
+                                ?>
                             </div>
 
                             <div align="center">
                                 <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
+                        <div class="result table-responsive result-report__academic-table-wrap" style="margin: 10px; margin-top: 5px;">
                                 <?php
                                 $sqlrelset = ("SELECT * FROM `resultsetting` INNER JOIN assigncatoclass ON resultsetting.ResultSettingID=assigncatoclass.ResultSettingID WHERE ClassID = '$classid'");
                                 $resultrelset = mysqli_query($link, $sqlrelset);
@@ -1158,7 +1177,8 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                     $ca1test = '';
                                 }
                                 ?>
-                                <table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
+                                <table class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table" style="width:98%;">
+                                    <thead>
                                     <tr>
                                         <th>SUBJECT(s)</th>
                                         <?php echo $ca1test; ?>
@@ -1178,6 +1198,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                         <th style="width:90px;text-align:center">Highest in Class</th>
                                         <th style="width:120px;text-align:center">Remark</th>
                                     </tr>
+                                    </thead>
 
                                     <tbody>
                                         <?php
@@ -1303,7 +1324,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                     }
 
                                                     echo '<tr>
-                                                                                        <th>' . $subname . '</th>';
+                                                                                        <td>' . $subname . '</td>';
                                                     if ($rowGetrelset['NumberOfCA'] == '1') {
                                                         echo '<td>
                                                                                                     ' . $rowgetscore["ca1"] . '
@@ -1554,6 +1575,12 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                     </tbody>
                                 </table>
                             </div>
+
+                            <?php
+                            $resultSummaryPanelSections = array('grade_key');
+                            include __DIR__ . '/partials/result-summary-panel.php';
+                            unset($resultSummaryPanelSections);
+                            ?>
 
                             <?php
                             $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='$term'");
@@ -3015,13 +3042,18 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                         <h5 style="color: #000000;"> LOWEST IN CLASS AVE: <b><?php echo $sunlowscrun; ?></b></h5>
                                     </div>
                                 </div>
+                                <?php
+                                $resultSummaryPanelSections = array('statistics');
+                                include __DIR__ . '/partials/result-summary-panel.php';
+                                unset($resultSummaryPanelSections);
+                                ?>
                             </div>
 
                             <div align="center">
                                 <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE </h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
+                        <div class="result table-responsive result-report__academic-table-wrap" style="margin: 10px; margin-top: 5px;">
                                 <?php
 
                                 $sqlrelset = ("SELECT * FROM `resultsetting` INNER JOIN assigncatoclass ON resultsetting.ResultSettingID=assigncatoclass.ResultSettingID WHERE ClassID = '$classid'");
@@ -3058,7 +3090,8 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                 }
                                 ?>
 
-                                <table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
+                                <table class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table" style="width:98%;">
+                                    <thead>
                                     <tr>
                                         <th>SUBJECT(s)</th>
                                         <?php echo $ca1test; ?>
@@ -3078,6 +3111,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                         <th>Highest in Class</th>
                                         <th>Remark</th>
                                     </tr>
+                                    </thead>
 
                                     <tbody>
                                         <?php
@@ -3209,7 +3243,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                     }
 
                                                     echo '<tr>
-                                                                                    <th>' . $subname . '</th>';
+                                                                                    <td>' . $subname . '</td>';
                                                     if ($rowGetrelset['NumberOfCA'] == '1') {
                                                         echo '<td>
                                                                                                 ' . $rowgetscore["ca1"] . '
@@ -3466,6 +3500,12 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                     </tbody>
                                 </table>
                             </div>
+
+                            <?php
+                            $resultSummaryPanelSections = array('grade_key');
+                            include __DIR__ . '/partials/result-summary-panel.php';
+                            unset($resultSummaryPanelSections);
+                            ?>
 
                             <?php
                             $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='$term'");
@@ -4834,20 +4874,26 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                         <h5 style="color: #000000;"> Days Absent: <b><?php echo $rowcountfixedabsent; ?></b></h5>
                                     </div>
                                 </div>
+                                <?php
+                                $resultSummaryPanelSections = array('statistics');
+                                include __DIR__ . '/partials/result-summary-panel.php';
+                                unset($resultSummaryPanelSections);
+                                ?>
                             </div>
 
                             <div align="center">
                                 <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
-                                <table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
-
+                        <div class="result table-responsive result-report__academic-table-wrap" style="margin: 10px; margin-top: 5px;">
+                                <table class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table" style="width:98%;">
+                                    <thead>
                                     <tr style="text-align: center;font-size:16px;font-weight:bolder">
                                         <th style="width: 20%; height:45px; background-color:yellow;">Subject(s)</th>
                                         <th style="width: 20%; background-color:red;color:white">Remark</th>
                                         <th style="background-color:blue;color:white">Additional Comments</th>
                                     </tr>
+                                    </thead>
 
                                     <tbody>
                                         <?php
@@ -4887,7 +4933,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
 
                                                 if ($row_cntgetscore > 0) {
                                                     echo '<tr style="">
-                                                                                            <th style="height:70px;">' . $subname . '</th>';
+                                                                                            <td style="height:70px;">' . $subname . '</td>';
                                                     echo '
                                                                                             <td>' . $briremark . '</td>
                                                                                             <td>' . $briextcom . '</td>
@@ -5147,14 +5193,20 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                         <h5 style="color: #000000;"> OVERALL GRADE: <b><?php echo $totscorgrade; ?></b></h5>
                                     </div>
                                 </div>
+                                <?php
+                                $resultSummaryPanelSections = array('statistics');
+                                include __DIR__ . '/partials/result-summary-panel.php';
+                                unset($resultSummaryPanelSections);
+                                ?>
                             </div>
 
                             <div align="center">
                                 <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
-                                <table class="table-bordered tab table-sm tb-result-border">
+                        <div class="result table-responsive result-report__academic-table-wrap" style="margin: 10px; margin-top: 5px;">
+                                <table class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table">
+                                    <thead>
                                     <tr>
                                         <th>SUBJECT(s)</th>
                                         <th>1ST TERM</th>
@@ -5167,6 +5219,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                         <th>HIGHEST IN CLASS</th>
                                         <th>REMARK</th>
                                     </tr>
+                                    </thead>
 
                                     <tbody>
                                         <?php
@@ -5257,10 +5310,10 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                     }
 
                                                     echo '<tr>
-                                                                                    <th>' . $subname . '</th>
-                                                                                    <th>' . $totalCUMFirst . '</th>
-                                                                                    <th>' . $totalCUMsec . '</th>
-                                                                                    <th>' . $totalCUMthr . '</th>
+                                                                                    <td>' . $subname . '</td>
+                                                                                    <td>' . $totalCUMFirst . '</td>
+                                                                                    <td>' . $totalCUMsec . '</td>
+                                                                                    <td>' . $totalCUMthr . '</td>
                                                                                     <td>' . $total . '</td>
                                                                                     <td>' . $subavg . '</td>
                                                                                     <td>' . $grade . '</td>
@@ -5279,6 +5332,12 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                     </tbody>
                                 </table>
                             </div>
+
+                            <?php
+                            $resultSummaryPanelSections = array('grade_key');
+                            include __DIR__ . '/partials/result-summary-panel.php';
+                            unset($resultSummaryPanelSections);
+                            ?>
 
                             <?php
                             $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='3rd'");
@@ -6690,14 +6749,20 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                     </div>
 
                                 </div>
+                                <?php
+                                $resultSummaryPanelSections = array('statistics');
+                                include __DIR__ . '/partials/result-summary-panel.php';
+                                unset($resultSummaryPanelSections);
+                                ?>
                             </div>
 
                             <div align="center">
                                 <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
-                                <table class="table-bordered tab table-sm tb-result-border">
+                            <div class="result table-responsive result-report__academic-table-wrap" style="margin: 10px; margin-top: 5px;">
+                                <table class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table">
+                                    <thead>
                                     <tr>
                                         <th>SUBJECT(s)</th>
                                         <th>1ST TERM</th>
@@ -6710,6 +6775,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                         <th>HIGHEST IN CLASS</th>
                                         <th>REMARK</th>
                                     </tr>
+                                    </thead>
 
                                     <tbody>
                                         <?php
@@ -6808,10 +6874,10 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                     }
 
                                                     echo '<tr>
-                                                                                        <th>' . $subname . '</th>
-                                                                                        <th>' . $totalCUMFirst . '</th>
-                                                                                        <th>' . $totalCUMsec . '</th>
-                                                                                        <th>' . $totalCUMthr . '</th>
+                                                                                        <td>' . $subname . '</td>
+                                                                                        <td>' . $totalCUMFirst . '</td>
+                                                                                        <td>' . $totalCUMsec . '</td>
+                                                                                        <td>' . $totalCUMthr . '</td>
                                                                                         <td>' . $total . '</td>
                                                                                         <td>' . $subavg . '</td>
                                                                                         <td>';
@@ -6836,6 +6902,12 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                     </tbody>
                                 </table>
                             </div>
+
+                            <?php
+                            $resultSummaryPanelSections = array('grade_key');
+                            include __DIR__ . '/partials/result-summary-panel.php';
+                            unset($resultSummaryPanelSections);
+                            ?>
 
                             <?php
                             $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='$term'");
@@ -7909,7 +7981,11 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                         }
                     }
                     ?>
-                    <?php include __DIR__ . '/partials/result-summary-panel.php'; ?>
+                    <?php
+                    $resultSummaryPanelSections = array('promotion');
+                    include __DIR__ . '/partials/result-summary-panel.php';
+                    unset($resultSummaryPanelSections);
+                    ?>
                 </div>
             </div>
             </div>

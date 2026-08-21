@@ -293,7 +293,7 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
     for ($index = 1; $index <= $rowCount; $index++) {
         $subject = $longSubject . ' ' . $index;
         $rows .= '<tr data-academic-row>'
-            . '<td>' . htmlspecialchars($subject, ENT_QUOTES, 'UTF-8') . '</td>'
+            . '<th scope="row">' . htmlspecialchars($subject, ENT_QUOTES, 'UTF-8') . '</th>'
             . '<td>18</td><td>17</td><td>62</td><td>97</td>'
             . '<td>91</td><td>88</td><td>92.00</td><td>A</td>'
             . '<td>Excellent and consistently thoughtful performance</td>'
@@ -333,26 +333,28 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
             <div class="col-4"><h5>CLASS: <b>JSS 1 — Sapphire</b></h5></div>
             <div class="col-4"><h5>SESSION: <b>2025/2026</b></h5></div>
           </div>
+          <section class="result-report__summary result-report__summary--statistics" data-result-summary-section="statistics" aria-label="Result statistics">
+            <div class="result-report__statistics">
+              <div class="result-report__stat"><span class="result-report__label">NO.:</span><strong class="result-report__value">128</strong></div>
+              <div class="result-report__stat"><span class="result-report__label">GRADE SUMMARY:</span><strong class="result-report__value">' . $rowCount . 'A</strong></div>
+              <div class="result-report__stat"><span class="result-report__label">CUMULATIVE AVERAGE SCORE:</span><strong class="result-report__value">92.00</strong></div>
+            </div>
+          </section>
         </div>
-        <section class="result-report__section">
-          <h3 class="result-report__section-title">Academic Performance</h3>
-          <div class="result-report__table-wrap">
-            <table id="academic-performance" class="result-report__table">
-              <thead><tr><th class="result-report__cell--subject">Subject</th><th>CA 1</th><th>CA 2</th><th>Exam</th><th>Total</th><th>1st</th><th>2nd</th><th>Cumulative Average</th><th>Grade</th><th class="result-report__cell--comment">Remark</th></tr></thead>
-              <tbody>' . $rows . '</tbody>
-            </table>
-          </div>
+        <div align="center"><h5 style="font-size:18px;font-weight:800;color:#000;margin-bottom:0">ACADEMIC PERFORMANCE</h5></div>
+        <div class="result table-responsive result-report__academic-table-wrap result-report__table-wrap">
+          <table id="academic-performance" class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table result-report__table">
+            <thead><tr><th class="result-report__cell--subject">Subject</th><th>CA 1</th><th>CA 2</th><th>Exam</th><th>Total</th><th>1st</th><th>2nd</th><th>Cumulative Average</th><th>Grade</th><th class="result-report__cell--comment">Remark</th></tr></thead>
+            <tbody>' . $rows . '</tbody>
+          </table>
+        </div>
+        <section class="result-report__summary result-report__summary--grade-key" data-result-summary-section="grade-key" aria-label="Key to grades">
+          <div class="result-report__panel"><p class="result-report__panel-title">Key to Grades</p><div class="result-report__panel-body"><ul class="result-report__grade-key"><li class="result-report__grade-item"><b class="result-report__grade-symbol">A:</b> 70% and above</li><li class="result-report__grade-item"><b class="result-report__grade-symbol">B:</b> 60%–69.9%</li><li class="result-report__grade-item"><b class="result-report__grade-symbol">C:</b> 50%–59.9%</li><li class="result-report__grade-item"><b class="result-report__grade-symbol">D:</b> 45%–49.9%</li><li class="result-report__grade-item"><b class="result-report__grade-symbol">E:</b> 40%–44.9%</li><li class="result-report__grade-item"><b class="result-report__grade-symbol">F:</b> 0%–39.9%</li></ul></div></div>
         </section>
         <section class="result-report__chart result-report__chart--decorative" data-result-decorative-chart><svg viewBox="0 0 100 16" role="img"><rect width="100" height="16" fill="#eceff3"></rect><path d="M0 14 L20 8 L40 10 L60 3 L80 7 L100 1" fill="none" stroke="#6d247f"></path></svg></section>
         <section class="result-report__comments"><div class="result-report__comment"><strong class="result-report__label">Teacher&apos;s Comment</strong><p class="result-report__comment-text">A focused learner who has made steady progress throughout the academic year.</p></div><div class="result-report__comment"><strong class="result-report__label">Head Teacher&apos;s Comment</strong><p class="result-report__comment-text">An excellent result. Continue the good work.</p></div></section>
-        <section class="result-report__summary" aria-label="Result summary">
-          <div class="result-report__statistics">
-            <div class="result-report__stat"><span class="result-report__label">NO.:</span><strong class="result-report__value">128</strong></div>
-            <div class="result-report__stat"><span class="result-report__label">GRADE SUMMARY:</span><strong class="result-report__value">' . $rowCount . 'A</strong></div>
-            <div class="result-report__stat"><span class="result-report__label">CUMULATIVE AVERAGE SCORE:</span><strong class="result-report__value">92.00</strong></div>
-          </div>
+        <section class="result-report__summary result-report__summary--promotion" data-result-summary-section="promotion" aria-label="Promotion status">
           <div class="result-report__promotion" data-promotion-status="promoted"><span class="result-report__promotion-label">Promotion Status</span><strong class="result-report__promotion-value">PROMOTED TO: JSS 2</strong></div>
-          <div class="result-report__panel"><p class="result-report__panel-title">Key to Grades</p><div class="result-report__panel-body"><ul class="result-report__grade-key"><li class="result-report__grade-item">A: 70% and above</li><li class="result-report__grade-item">B: 60%–69.9%</li><li class="result-report__grade-item">C: 50%–59.9%</li><li class="result-report__grade-item">F: 0%–49.9%</li></ul></div></div>
         </section>
         </div>
         </div>
@@ -373,8 +375,29 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
           var cardBody = root.querySelector(".card-body");
           var legacyHeader = root.querySelector(".result-report__legacy-header");
           var legacyTitle = root.querySelector(".result-report__legacy-title");
+          var studentInfo = root.querySelector(".container-motto");
+          var statisticsSection = root.querySelector("[data-result-summary-section=statistics]");
+          var tableWrap = table.closest(".result-report__table-wrap");
+          var gradeKeySection = root.querySelector("[data-result-summary-section=grade-key]");
+          var promotion = root.querySelector(".result-report__promotion");
+          var promotionLabel = root.querySelector(".result-report__promotion-label");
+          var promotionValue = root.querySelector(".result-report__promotion-value");
+          var gradeItem = root.querySelector(".result-report__grade-item");
+          var headerCell = table.tHead.rows[0].cells[0];
+          var firstBodyRow = table.tBodies[0].rows[0];
+          var secondBodyRow = table.tBodies[0].rows[1];
           var watermarkStyle = window.getComputedStyle(watermark);
           var cardBodyStyle = window.getComputedStyle(cardBody);
+          var headerCellStyle = window.getComputedStyle(headerCell);
+          var firstBodyCellStyle = window.getComputedStyle(firstBodyRow.cells[0]);
+          var firstRowStyle = window.getComputedStyle(firstBodyRow.cells[1]);
+          var secondRowStyle = window.getComputedStyle(secondBodyRow.cells[1]);
+          var secondRowCellsConsistent = Array.prototype.every.call(secondBodyRow.cells, function (cell) {
+            return window.getComputedStyle(cell).backgroundColor === secondRowStyle.backgroundColor;
+          });
+          var promotionLabelStyle = window.getComputedStyle(promotionLabel);
+          var promotionValueStyle = window.getComputedStyle(promotionValue);
+          var gradeItemStyle = window.getComputedStyle(gradeItem);
           var rootRect = root.getBoundingClientRect();
           var contentRect = content.getBoundingClientRect();
           var tableRect = table.getBoundingClientRect();
@@ -391,6 +414,19 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
             tableWithinReport: tableRect.left >= rootRect.left - tolerance && tableRect.right <= rootRect.right + tolerance,
             viewportContained: document.documentElement.scrollWidth <= document.documentElement.clientWidth + tolerance,
             contentHorizontallyCentered: Math.abs(contentLeftGap - contentRightGap) <= tolerance,
+            statisticsInsideStudentInfo: studentInfo.contains(statisticsSection),
+            gradeKeyDirectlyAfterTable: tableWrap.nextElementSibling === gradeKeySection,
+            academicTableContract: table.classList.contains("table-striped")
+              && table.classList.contains("result-report__academic-table")
+              && table.tHead !== null,
+            subjectUsesBodyStyling: firstBodyCellStyle.backgroundColor !== headerCellStyle.backgroundColor,
+            stripedRowsDiffer: firstRowStyle.backgroundColor !== secondRowStyle.backgroundColor,
+            stripedRowIsConsistent: secondRowCellsConsistent,
+            gradeKeyFontSize: parseFloat(gradeItemStyle.fontSize),
+            promotionEmphasized: parseInt(promotionLabelStyle.fontWeight, 10) >= 700
+              && parseInt(promotionValueStyle.fontWeight, 10) >= 700
+              && parseFloat(promotionValueStyle.fontSize) > parseFloat(promotionLabelStyle.fontSize)
+              && promotion !== null,
             legacyHeaderTitleSeparated: legacyTitleRect.top >= legacyHeaderRect.bottom - tolerance,
             watermarkBehindContent: watermarkStyle.display !== "none"
               && parseFloat(watermarkStyle.opacity) > 0
@@ -538,6 +574,20 @@ foreach ($fixtures as $fixture) {
     result_report_a4_assert($payload['tableWithinReport'] === true, 'The ' . $rowCount . '-row academic table must stay within the A4 border.');
     result_report_a4_assert($payload['viewportContained'] === true, 'The ' . $rowCount . '-row preview must not create horizontal viewport overflow.');
     result_report_a4_assert($payload['contentHorizontallyCentered'] === true, 'The ' . $rowCount . '-row fitted result must retain balanced left and right A4 margins.');
+    result_report_a4_assert($payload['statisticsInsideStudentInfo'] === true, 'The ' . $rowCount . '-row result statistics must stay inside the legacy student-information box.');
+    result_report_a4_assert($payload['gradeKeyDirectlyAfterTable'] === true, 'The ' . $rowCount . '-row key to grades must appear directly below the academic table.');
+    result_report_a4_assert($payload['academicTableContract'] === true, 'The ' . $rowCount . '-row academic table must use a real header and the striped-table contract.');
+    result_report_a4_assert($payload['subjectUsesBodyStyling'] === true, 'The ' . $rowCount . '-row first subject must not use the dark table-header styling.');
+    result_report_a4_assert($payload['stripedRowsDiffer'] === true, 'The ' . $rowCount . '-row academic table must visibly alternate row colours.');
+    result_report_a4_assert($payload['stripedRowIsConsistent'] === true, 'The ' . $rowCount . '-row stripe must cover every cell in the row.');
+    $minimumGradeKeyFontSize = $fixture['density'] === 'standard'
+        ? 10
+        : ($fixture['density'] === 'compact' ? 9 : 7);
+    result_report_a4_assert(
+        $payload['gradeKeyFontSize'] >= $minimumGradeKeyFontSize,
+        'The ' . $rowCount . '-row key-to-grades text must remain readable at its adaptive A4 density.'
+    );
+    result_report_a4_assert($payload['promotionEmphasized'] === true, 'The ' . $rowCount . '-row promotion status must use a bold, larger decision value.');
     result_report_a4_assert($payload['legacyHeaderTitleSeparated'] === true, 'The ' . $rowCount . '-row title must not overlap a long legacy school header.');
     result_report_a4_assert($payload['watermarkBehindContent'] === true, 'The ' . $rowCount . '-row watermark must remain faintly visible behind the legacy result content.');
 
