@@ -52,7 +52,7 @@ foreach (array(
 }
 
 result_legacy_design_assert($summary !== false, 'The shared result summary must be readable.');
-foreach (array('NO.:', 'GRADE SUMMARY:', 'CUMULATIVE AVERAGE SCORE:', 'Promotion status', 'Key to grades') as $label) {
+foreach (array('NO. IN CLASS:', 'GRADE SUMMARY:', 'CUMULATIVE AVERAGE SCORE:', 'Promotion status', 'Key to grades') as $label) {
     result_legacy_design_assert(
         strpos($summary, $label) !== false,
         'The result summary is missing the required field: ' . $label
@@ -60,8 +60,8 @@ foreach (array('NO.:', 'GRADE SUMMARY:', 'CUMULATIVE AVERAGE SCORE:', 'Promotion
 }
 
 result_legacy_design_assert(
-    strpos($summary, '>NO.:</span>') !== false,
-    'The number-in-class field must retain the requested NO.: label.'
+    strpos($summary, '>NO. IN CLASS:</span>') !== false,
+    'The number-in-class field must use the requested descriptive label.'
 );
 
 foreach (array('statistics', 'grade_key', 'promotion') as $section) {
@@ -125,6 +125,15 @@ result_legacy_design_assert(
 result_legacy_design_assert(
     strpos($css, 'table tr:first-child > th') === false,
     'A subject cell in the first body row must never inherit dark table-header styling.'
+);
+result_legacy_design_assert(
+    preg_match('/\.result-report\s+\.container-motto\s+\.result-report__statistics\s*\{[^}]*border:\s*0;/s', $css) === 1
+        && preg_match('/\.result-report\s+\.container-motto\s+\.result-report__statistics\s*>\s*\.result-report__stat\s*\{[^}]*border:\s*0;/s', $css) === 1,
+    'Result statistics must use the plain student-information row treatment without boxed cells.'
+);
+result_legacy_design_assert(
+    preg_match('/\.result-report\s+\.result-report__academic-table\s*>\s*tbody\s*>\s*tr\s*>\s*:first-child\s*\{[^}]*overflow-wrap:\s*normal;[^}]*hyphens:\s*none;/s', $css) === 1,
+    'Subject names must wrap only at word boundaries.'
 );
 result_legacy_design_assert(
     preg_match('/\.result-report__grade-item[^\{]*\{[^\}]*font-size:\s*7\.8pt;/s', $css) === 1,

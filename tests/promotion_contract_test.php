@@ -197,7 +197,7 @@ promotion_contract_assert(
 
 $summaryPartial = file_get_contents($summaryPartialPath);
 $summaryPartialLower = strtolower($summaryPartial);
-foreach (array('no.:', 'grade summary:', 'cumulative average score:', 'promotion status', 'key to grades') as $label) {
+foreach (array('no. in class:', 'grade summary:', 'cumulative average score:', 'promotion status', 'key to grades') as $label) {
     promotion_contract_assert(
         strpos($summaryPartialLower, $label) !== false,
         'The shared result summary is missing ' . $label

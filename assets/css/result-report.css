@@ -380,7 +380,7 @@
 
 .result-report .container-motto .result-report__summary--statistics {
     margin: 0;
-    padding: 0 2.5mm 2mm;
+    padding: 0 0 1mm;
 }
 
 .result-report__summary--grade-key {
@@ -412,6 +412,32 @@
 .result-report__stat:last-child,
 .result-report__detail:last-child {
     border-right: 0;
+}
+
+.result-report .container-motto .result-report__statistics {
+    margin: 0 !important;
+    overflow: visible;
+    border: 0;
+}
+
+.result-report .container-motto .result-report__statistics > .result-report__stat {
+    padding: 0 1.5mm;
+    border: 0;
+}
+
+.result-report .container-motto .result-report__stat-line {
+    color: #000000;
+}
+
+.result-report .container-motto .result-report__statistics .result-report__label,
+.result-report .container-motto .result-report__statistics .result-report__value {
+    color: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+.result-report .container-motto .result-report__statistics .result-report__label {
+    font-weight: inherit;
 }
 
 .result-report__label {
@@ -638,6 +664,9 @@
 .result-report .result-report__academic-table > tbody > tr > :first-child {
     color: #000000 !important;
     font-weight: 600;
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
 }
 
 .result-report table tbody tr,

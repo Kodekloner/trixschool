@@ -25,28 +25,34 @@ $renderResultPromotion = in_array('promotion', $resultSummaryPanelSections, true
 <section class="result-report__summary result-report__summary--statistics" data-result-summary-section="statistics" aria-label="Result statistics">
     <div class="result-report__statistics">
         <div class="result-report__stat">
-            <span class="result-report__label">NO.:</span>
-            <strong class="result-report__value"><?php echo (int) ($resultSummaryContext['number_in_class'] ?? 0); ?></strong>
+            <h5 class="result-report__stat-line">
+                <span class="result-report__label">NO. IN CLASS:</span>
+                <b class="result-report__value"><?php echo (int) ($resultSummaryContext['number_in_class'] ?? 0); ?></b>
+            </h5>
         </div>
 
         <?php if (!empty($resultSummaryContext['grade_summary'])) { ?>
             <div class="result-report__stat">
-                <span class="result-report__label">GRADE SUMMARY:</span>
-                <strong class="result-report__value"><?php echo htmlspecialchars($resultSummaryContext['grade_summary'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                <h5 class="result-report__stat-line">
+                    <span class="result-report__label">GRADE SUMMARY:</span>
+                    <b class="result-report__value"><?php echo htmlspecialchars($resultSummaryContext['grade_summary'], ENT_QUOTES, 'UTF-8'); ?></b>
+                </h5>
             </div>
         <?php } ?>
 
         <?php if ($showCumulativeAverage) { ?>
             <div class="result-report__stat">
-                <span class="result-report__label">CUMULATIVE AVERAGE SCORE:</span>
-                <strong class="result-report__value">
-                    <?php
-                    $cumulativeAverage = $resultSummaryContext['cumulative_average'] ?? null;
-                    echo $cumulativeAverage === null
-                        ? 'N/A'
-                        : htmlspecialchars(number_format((float) $cumulativeAverage, 2), ENT_QUOTES, 'UTF-8');
-                    ?>
-                </strong>
+                <h5 class="result-report__stat-line">
+                    <span class="result-report__label">CUMULATIVE AVERAGE SCORE:</span>
+                    <b class="result-report__value">
+                        <?php
+                        $cumulativeAverage = $resultSummaryContext['cumulative_average'] ?? null;
+                        echo $cumulativeAverage === null
+                            ? 'N/A'
+                            : htmlspecialchars(number_format((float) $cumulativeAverage, 2), ENT_QUOTES, 'UTF-8');
+                        ?>
+                    </b>
+                </h5>
             </div>
         <?php } ?>
 

@@ -288,12 +288,20 @@ function result_report_a4_file_url($path, $windowsBrowser)
 function result_report_a4_fixture_html($rowCount, $css, $javascript)
 {
     $rows = '';
-    $longSubject = 'AdvancedInterdisciplinaryResearchAndAppliedCommunicationSubjectWithAnExceptionallyLongName';
+    $subjects = array(
+        'Mathematics',
+        'Basic Science and Technology',
+        'Cultural and Creative Art',
+        'English Language',
+        'Information and Communication Technology',
+        'Advanced Mathematics',
+        'Agricultural Science',
+    );
 
     for ($index = 1; $index <= $rowCount; $index++) {
-        $subject = $longSubject . ' ' . $index;
+        $subject = $subjects[($index - 1) % count($subjects)];
         $rows .= '<tr data-academic-row>'
-            . '<th scope="row">' . htmlspecialchars($subject, ENT_QUOTES, 'UTF-8') . '</th>'
+            . '<td data-subject-cell>' . htmlspecialchars($subject, ENT_QUOTES, 'UTF-8') . '</td>'
             . '<td>18</td><td>17</td><td>62</td><td>97</td>'
             . '<td>91</td><td>88</td><td>92.00</td><td>A</td>'
             . '<td>Excellent and consistently thoughtful performance</td>'
@@ -335,9 +343,9 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
           </div>
           <section class="result-report__summary result-report__summary--statistics" data-result-summary-section="statistics" aria-label="Result statistics">
             <div class="result-report__statistics">
-              <div class="result-report__stat"><span class="result-report__label">NO.:</span><strong class="result-report__value">128</strong></div>
-              <div class="result-report__stat"><span class="result-report__label">GRADE SUMMARY:</span><strong class="result-report__value">' . $rowCount . 'A</strong></div>
-              <div class="result-report__stat"><span class="result-report__label">CUMULATIVE AVERAGE SCORE:</span><strong class="result-report__value">92.00</strong></div>
+              <div class="result-report__stat"><h5 class="result-report__stat-line"><span class="result-report__label">NO. IN CLASS:</span> <b class="result-report__value">128</b></h5></div>
+              <div class="result-report__stat"><h5 class="result-report__stat-line"><span class="result-report__label">GRADE SUMMARY:</span> <b class="result-report__value">' . $rowCount . 'A</b></h5></div>
+              <div class="result-report__stat"><h5 class="result-report__stat-line"><span class="result-report__label">CUMULATIVE AVERAGE SCORE:</span> <b class="result-report__value">92.00</b></h5></div>
             </div>
           </section>
         </div>
@@ -377,6 +385,10 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
           var legacyTitle = root.querySelector(".result-report__legacy-title");
           var studentInfo = root.querySelector(".container-motto");
           var statisticsSection = root.querySelector("[data-result-summary-section=statistics]");
+          var statistics = root.querySelector(".result-report__statistics");
+          var statistic = root.querySelector(".result-report__stat");
+          var statisticLine = root.querySelector(".result-report__stat-line");
+          var studentInfoLine = studentInfo.querySelector(":scope > .row h5");
           var tableWrap = table.closest(".result-report__table-wrap");
           var gradeKeySection = root.querySelector("[data-result-summary-section=grade-key]");
           var promotion = root.querySelector(".result-report__promotion");
@@ -398,6 +410,10 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
           var promotionLabelStyle = window.getComputedStyle(promotionLabel);
           var promotionValueStyle = window.getComputedStyle(promotionValue);
           var gradeItemStyle = window.getComputedStyle(gradeItem);
+          var statisticsStyle = window.getComputedStyle(statistics);
+          var statisticStyle = window.getComputedStyle(statistic);
+          var statisticLineStyle = window.getComputedStyle(statisticLine);
+          var studentInfoLineStyle = window.getComputedStyle(studentInfoLine);
           var rootRect = root.getBoundingClientRect();
           var contentRect = content.getBoundingClientRect();
           var tableRect = table.getBoundingClientRect();
@@ -406,6 +422,26 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
           var tolerance = 1;
           var contentLeftGap = contentRect.left - rootRect.left;
           var contentRightGap = rootRect.right - contentRect.right;
+          var subjectWordsRemainWhole = Array.prototype.every.call(table.querySelectorAll("[data-subject-cell]"), function (cell) {
+            var textNode = cell.firstChild;
+            var wordPattern = /\S+/g;
+            var match;
+
+            if (!textNode || textNode.nodeType !== Node.TEXT_NODE) {
+              return false;
+            }
+
+            while ((match = wordPattern.exec(textNode.nodeValue)) !== null) {
+              var range = document.createRange();
+              range.setStart(textNode, match.index);
+              range.setEnd(textNode, match.index + match[0].length);
+              if (range.getClientRects().length !== 1) {
+                return false;
+              }
+            }
+
+            return cell.scrollWidth <= cell.clientWidth + tolerance;
+          });
           var payload = {
             density: root.getAttribute("data-result-density"),
             rowCount: table.querySelectorAll("[data-academic-row]").length,
@@ -415,11 +451,16 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
             viewportContained: document.documentElement.scrollWidth <= document.documentElement.clientWidth + tolerance,
             contentHorizontallyCentered: Math.abs(contentLeftGap - contentRightGap) <= tolerance,
             statisticsInsideStudentInfo: studentInfo.contains(statisticsSection),
+            statisticsUnboxed: parseFloat(statisticsStyle.borderTopWidth) === 0
+              && parseFloat(statisticStyle.borderRightWidth) === 0,
+            statisticsMatchStudentText: statisticLineStyle.fontSize === studentInfoLineStyle.fontSize
+              && statisticLineStyle.lineHeight === studentInfoLineStyle.lineHeight,
             gradeKeyDirectlyAfterTable: tableWrap.nextElementSibling === gradeKeySection,
             academicTableContract: table.classList.contains("table-striped")
               && table.classList.contains("result-report__academic-table")
               && table.tHead !== null,
             subjectUsesBodyStyling: firstBodyCellStyle.backgroundColor !== headerCellStyle.backgroundColor,
+            subjectWordsRemainWhole: subjectWordsRemainWhole,
             stripedRowsDiffer: firstRowStyle.backgroundColor !== secondRowStyle.backgroundColor,
             stripedRowIsConsistent: secondRowCellsConsistent,
             gradeKeyFontSize: parseFloat(gradeItemStyle.fontSize),
@@ -575,9 +616,12 @@ foreach ($fixtures as $fixture) {
     result_report_a4_assert($payload['viewportContained'] === true, 'The ' . $rowCount . '-row preview must not create horizontal viewport overflow.');
     result_report_a4_assert($payload['contentHorizontallyCentered'] === true, 'The ' . $rowCount . '-row fitted result must retain balanced left and right A4 margins.');
     result_report_a4_assert($payload['statisticsInsideStudentInfo'] === true, 'The ' . $rowCount . '-row result statistics must stay inside the legacy student-information box.');
+    result_report_a4_assert($payload['statisticsUnboxed'] === true, 'The ' . $rowCount . '-row result statistics must not render as bordered table cells.');
+    result_report_a4_assert($payload['statisticsMatchStudentText'] === true, 'The ' . $rowCount . '-row result statistics must inherit the surrounding student-information typography.');
     result_report_a4_assert($payload['gradeKeyDirectlyAfterTable'] === true, 'The ' . $rowCount . '-row key to grades must appear directly below the academic table.');
     result_report_a4_assert($payload['academicTableContract'] === true, 'The ' . $rowCount . '-row academic table must use a real header and the striped-table contract.');
     result_report_a4_assert($payload['subjectUsesBodyStyling'] === true, 'The ' . $rowCount . '-row first subject must not use the dark table-header styling.');
+    result_report_a4_assert($payload['subjectWordsRemainWhole'] === true, 'The ' . $rowCount . '-row subject names must wrap only between complete words.');
     result_report_a4_assert($payload['stripedRowsDiffer'] === true, 'The ' . $rowCount . '-row academic table must visibly alternate row colours.');
     result_report_a4_assert($payload['stripedRowIsConsistent'] === true, 'The ' . $rowCount . '-row stripe must cover every cell in the row.');
     $minimumGradeKeyFontSize = $fixture['density'] === 'standard'
