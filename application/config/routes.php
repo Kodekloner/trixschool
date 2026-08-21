@@ -16,6 +16,8 @@ $route['translate_uri_dashes'] = FALSE;
 $route['cron/(:any)'] = 'cron/index/$1';
 $route['webhooks/ses-inbound'] = 'webhooks/ses_inbound';
 $route['webhooks/monnify'] = 'webhooks/monnify';
+$route['api/biometric/v2/events'] = 'api/biometric_v2/events';
+$route['api/biometric/v2/health'] = 'api/biometric_v2/health';
 
 //======= front url rewriting==========
 $route['page/(:any)'] = 'welcome/page/$1';

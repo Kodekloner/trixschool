@@ -14,6 +14,7 @@
                         </div><!-- /.box-header -->
                         <!-- form start -->
                         <form id="form1" enctype="multipart/form-data" action="<?php echo site_url('admin/staffidcard/create') ?>"  id="certificateform" name="certificateform" method="post" accept-charset="utf-8">
+                            <input type="hidden" name="idcard_legacy_csrf" value="<?php echo html_escape($idcard_legacy_csrf); ?>">
                             <div class="box-body">
                                 <?php if ($this->session->flashdata('msg')) { ?>
                                     <?php echo $this->session->flashdata('msg') ?>
@@ -204,9 +205,10 @@
                                                     }
                                                     if ($this->rbac->hasPrivilege('staff_id_card', 'can_delete')) {
                                                         ?>
-                                                        <a href="<?php echo base_url(); ?>admin/staffidcard/delete/<?php echo $staffidcard_value->id ?>" class="btn btn-default btn-xs"  data-toggle="tooltip" title="<?php echo $this->lang->line('delete'); ?>" onclick="return confirm('<?php echo $this->lang->line('delete_confirm') ?>');">
-                                                            <i class="fa fa-remove"></i>
-                                                        </a>
+                                                        <form method="post" action="<?php echo site_url('admin/staffidcard/delete/' . (int) $staffidcard_value->id); ?>" style="display:inline" onsubmit="return confirm('<?php echo $this->lang->line('delete_confirm') ?>');">
+                                                            <input type="hidden" name="idcard_legacy_csrf" value="<?php echo html_escape($idcard_legacy_csrf); ?>">
+                                                            <button type="submit" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?php echo $this->lang->line('delete'); ?>"><i class="fa fa-remove"></i></button>
+                                                        </form>
                                                     <?php } ?>
                                                 </td>
                                             </tr>
@@ -257,7 +259,10 @@
            $.ajax({
                 url: "<?php echo base_url('admin/staffidcard/view') ?>",
                 method: "post",
-                data: {certificateid: certificateid},
+                data: {
+                    certificateid: certificateid,
+                    idcard_legacy_csrf: <?php echo json_encode($idcard_legacy_csrf); ?>
+                },
                  beforeSend: function() {
 
                   },

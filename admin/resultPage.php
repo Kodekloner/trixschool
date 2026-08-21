@@ -1,5 +1,6 @@
 <?php
 require_once('../helper/resultpage_helper.php');
+require_once('../helper/promotion_helper.php');
 
 $resultSubTypeRaw = $_GET['reltype'] ?? 'termly';
 $resultSubType = normalize_result_page_reltype($resultSubTypeRaw);
@@ -30,132 +31,26 @@ require_once('../helper/defaultcomment_helper.php');
 
     <!--The result stylesheet -->
     <link rel="stylesheet" href="../assets/css/resultStyleSheet.css">
+    <link rel="stylesheet" href="../assets/css/result-report.css">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
     <title>Result Page</title>
-</head>
-<style>
-    @media only screen and (max-width: 767px) {
-        /* CSS rules for smaller screens */
-
-        /* Adjust the width of the result sheet to fit the screen */
-        #result-body {
-            width: 1300px;
-            overflow: auto;
-        }
-
-        /* Apply scaling transformation to the result sheet */
-        #printable {
-            transform-origin: top left;
-            transform: scale(0.25);
-            width: 1200px;
-
-        }
-    }
-
-    @page {
-        margin: 0;
-    }
-
-    @media print {
-
-        .container-fluid {
-            max-height: 1582px;
-        }
-
-        /* Scale the printable container down to ensure it fits on one page */
-        #printable.resize-for-print {
-            /* transform: scale(0.80);
-            transform-origin: top left; */
-            width: 1080px;
-        }
-
-        /* Apply padding adjustments for compact display */
-        #printable.resize-for-print .tab td,
-        #printable.resize-for-print .tab th {
-            padding: 0.2rem;
-        }
-
-        /* Adjust font sizes for printing */
-        #printable.resize-for-print body,
-        #printable.resize-for-print .card {
-            font-size: 13px;
-        }
-
-        /* Prevent page breaks inside cards and tables */
-        #printable.resize-for-print .card,
-        #printable.resize-for-print .table-responsive {
-            page-break-inside: avoid;
-        }
-
-        canvas.sunygraph {
-            min-height: 200px;
-            max-width: 98%;
-            max-height: 100%;
-            height: auto !important;
-            width: auto !important;
-        }
-
-        /* Reset negative margins in the header */
-        .rel .schloc {
-            margin-top: 0 !important;
-        }
-
-        .rel .col-6 div[style*="margin-top"] {
-            margin-top: 0 !important;
-        }
-
-        /* Give the report title enough space */
-        .report-title {
-            margin-top: 10px !important;
-        }
-
-    }
-
-    .tab {
-        table-layout: auto;
-        /* Keeps column widths uniform */
-        word-wrap: break-word;
-        /* Breaks long text properly */
-        white-space: normal;
-        /* Allows wrapping at spaces */
-    }
-
-    .tab td,
-    .tab th {
-        padding: 4px 6px;
-        /* Reduces padding for a compact design */
-        text-align: center;
-        /* Centers content for better alignment */
-        vertical-align: middle;
-        /* Ensures content stays vertically aligned */
-        /* font-size: 14px; */
-        /* Adjusts font size for numbers */
-    }
-
-    .tab th {
-        text-align: left;
-        /* Aligns headers to the left for better readability */
-        font-weight: bold;
-        /* Keeps headers distinct */
-    }
-
+    <style>
     .signature-container {
         height: 56px;
         width: 100%;
-        /* Optionally, use position: relative; if you need it for layout */
     }
 
     .signature-img {
         width: 100%;
         height: 100%;
         object-fit: contain;
-        /* Ensures the entire image is visible without distortion */
     }
-</style>
+    </style>
+</head>
 
 <?php
 $classsection = $_GET['classsection'];
@@ -265,10 +160,57 @@ $rowGetsections = mysqli_fetch_assoc($queryGetsections);
 $countGetsections = mysqli_num_rows($queryGetsections);
 
 $studsection = $rowGetsections['section'];
+
+$resultFormat = strtolower(trim((string) $reltype)) === 'british' ? 'british' : 'numeric';
+$resultSummaryContext = get_result_summary_context(
+    $link,
+    $id,
+    $session,
+    $classid,
+    $classsectionactual,
+    $term,
+    $reltypemain,
+    $resultFormat
+);
+$resultAcademicRowCount = (int) ($resultSummaryContext['academic_row_count'] ?? 0);
+
+if ($resultFormat === 'british') {
+    $resultAcademicRowResult = mysqli_query(
+        $link,
+        "SELECT COUNT(DISTINCT SubjectID) AS row_count
+         FROM `britishresult`
+         WHERE StudentID = '" . (int) $id . "'
+           AND Session = '" . (int) $session . "'
+           AND ClassID = '" . (int) $classid . "'
+           AND SectionID = '" . (int) $classsectionactual . "'
+           AND Term = '" . mysqli_real_escape_string($link, $term) . "'
+           AND (
+               TRIM(COALESCE(Remark, '')) != ''
+               OR TRIM(COALESCE(AdditionalComments, '')) != ''
+           )"
+    );
+    $resultAcademicRow = $resultAcademicRowResult ? mysqli_fetch_assoc($resultAcademicRowResult) : null;
+    $resultAcademicRowCount = (int) ($resultAcademicRow['row_count'] ?? 0);
+}
+
+$showPromotionOutcome = ($reltypemain === 'cummulative')
+    || ($reltypemain === 'termly' && $term === '3rd');
+$showCumulativeAverage = $showPromotionOutcome && $resultFormat === 'numeric';
+$promotionOutcome = $showPromotionOutcome
+    ? get_final_promotion_outcome(
+        $link,
+        $id,
+        $session,
+        $classid,
+        $classsectionactual,
+        $resultFormat === 'british'
+    )
+    : build_promotion_outcome('pending', '', 'system', 'not_applicable');
+$resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_color_code'] ?? '#1f4e78');
 ?>
 
 <body style="background: rgb(236, 234, 234);">
-    <div class="container-fluid">
+    <div class="container-fluid result-report-controls" data-result-no-print>
 
         <div class="row" id="non-printable" style="margin-top: 20px;">
             <div class="col-md-10 ">
@@ -281,50 +223,49 @@ $studsection = $rowGetsections['section'];
             </div>
 
         </div>
+    </div>
 
-        <div class="card" id="printable">
-            <img class="watermark-logo" src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $rowsch_settings['app_logo']; ?>">
+    <div class="result-report-preview" data-result-report-preview>
+        <div class="card result-report" id="printable" data-result-report data-academic-row-count="<?php echo (int) $resultAcademicRowCount; ?>" style="--result-brand: <?php echo $resultBrandPalette['brand']; ?>; --result-brand-strong: <?php echo $resultBrandPalette['strong']; ?>; --result-brand-soft: <?php echo $resultBrandPalette['soft']; ?>; --result-brand-contrast: <?php echo $resultBrandPalette['contrast']; ?>;">
+            <div class="result-report__content" data-result-report-content>
+            <img class="watermark-logo result-report__watermark" src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo htmlspecialchars($rowsch_settings['app_logo'], ENT_QUOTES, 'UTF-8'); ?>" alt="">
 
             <div class="card-body" style="color: black;">
 
                 <div class="rel">
 
-                    <div class="row">
+                    <div class="row result-report__legacy-header">
                         <div class="col">
                             <div align="center">
-                                <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $rowsch_settings['app_logo']; ?>" align="center" class="img-fluid" style="margin: 10px; width: 50%;">
+                                <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo htmlspecialchars($rowsch_settings['app_logo'], ENT_QUOTES, 'UTF-8'); ?>" align="center" class="img-fluid" style="margin: 10px; width: 50%;" alt="School logo">
                             </div>
                         </div>
 
                         <div class="col-6">
-
-                            <p class="schname" style="font-size:25px"><?php echo $rowsch_settings['name']; ?></p>
-                            <p class="schloc" style="color: rgb(185, 7, 7);font-size:16px;margin-top:-20px;"><?php echo $rowsch_settings['address']; ?>.</p>
+                            <p class="schname" style="font-size:25px"><?php echo htmlspecialchars($rowsch_settings['name'], ENT_QUOTES, 'UTF-8'); ?></p>
+                            <p class="schloc" style="color: rgb(185, 7, 7);font-size:16px;margin-top:-20px;"><?php echo htmlspecialchars($rowsch_settings['address'], ENT_QUOTES, 'UTF-8'); ?>.</p>
                             <div style="margin-top:-10px;text-align:center">
-                                <span>Email: <?php echo $rowsch_settings['email']; ?>
-                                </span><br />
-                                <span>
-                                    Website: <?php echo $defRUlsec; ?>
-                                </span>
+                                <span>Email: <?php echo htmlspecialchars($rowsch_settings['email'], ENT_QUOTES, 'UTF-8'); ?></span><br />
+                                <span>Website: <?php echo htmlspecialchars($defRUlsec, ENT_QUOTES, 'UTF-8'); ?></span>
                             </div>
                         </div>
 
                         <div class="col">
-                            <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $studimage; ?>" align="center" class="img-fluid" style="margin: 10px; width: 45%;height:120px">
+                            <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo htmlspecialchars($studimage, ENT_QUOTES, 'UTF-8'); ?>" align="center" class="img-fluid" style="margin: 10px; width: 45%;height:120px" alt="Student photograph">
                         </div>
                     </div><br>
 
                     <?php if ($reltypemain == 'midterm') { ?>
-                        <div align="center">
-                            <h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo $term; ?> TERM, MID TERM</span> <?php echo $session_name; ?> SESSION <span><?php $studsectionid; ?></span></h5>
+                        <div align="center" class="result-report__legacy-title">
+                            <h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo htmlspecialchars($term, ENT_QUOTES, 'UTF-8'); ?> TERM, MID TERM</span> <?php echo htmlspecialchars($session_name, ENT_QUOTES, 'UTF-8'); ?> SESSION</h5>
                         </div>
                     <?php } elseif ($reltypemain == 'cummulative') { ?>
-                        <div align="center">
-                            <h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF CUMULATIVE ACADEMIC PERFORMANCE FOR <?php echo $session_name; ?> SESSION <span><?php $studsectionid; ?></span></h5>
+                        <div align="center" class="result-report__legacy-title">
+                            <h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF CUMULATIVE ACADEMIC PERFORMANCE FOR <?php echo htmlspecialchars($session_name, ENT_QUOTES, 'UTF-8'); ?> SESSION</h5>
                         </div>
                     <?php } else { ?>
-                        <div align="center">
-                            <h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo $term; ?> TERM</span> <?php echo $session_name; ?> SESSION <span><?php $studsectionid; ?></span></h5>
+                        <div align="center" class="result-report__legacy-title">
+                            <h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px">SUMMARY OF ACADEMIC PERFORMANCE FOR <span><?php echo htmlspecialchars($term, ENT_QUOTES, 'UTF-8'); ?> TERM</span> <?php echo htmlspecialchars($session_name, ENT_QUOTES, 'UTF-8'); ?> SESSION</h5>
                         </div>
                     <?php } ?>
 
@@ -488,13 +429,19 @@ $studsection = $rowGetsections['section'];
                                 </div>
                             </div>
 
+                            <?php
+                            $resultSummaryPanelSections = array('statistics');
+                            include __DIR__ . '/partials/result-summary-panel.php';
+                            unset($resultSummaryPanelSections);
+                            ?>
+
                         </div>
 
                         <div align="center">
                             <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                         </div>
 
-                        <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
+                        <div class="result table-responsive result-report__academic-table-wrap" style="margin: 10px; margin-top: 5px;">
                             <?php
 
                             $sqlrelset = ("SELECT * FROM `resultsetting` INNER JOIN assigncatoclass ON resultsetting.ResultSettingID=assigncatoclass.ResultSettingID WHERE ClassID = '$classid'");
@@ -563,7 +510,8 @@ $studsection = $rowGetsections['section'];
                             }
 
                             ?>
-                            <table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
+                            <table class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table" style="width:98%;">
+                                <thead>
 
                                 <tr>
                                     <th>SUBJECT(s)</th>
@@ -582,6 +530,7 @@ $studsection = $rowGetsections['section'];
                                     <th>GRADE</th>
                                     <th>REMARK</th>
                                 </tr>
+                                </thead>
 
                                 <tbody>
                                     <?php
@@ -756,7 +705,7 @@ $studsection = $rowGetsections['section'];
                                                 }
 
                                                 echo '<tr>
-                                                                                <th>' . $subname . '</th>';
+                                                                                <td>' . $subname . '</td>';
                                                 echo $ca1table . $ca2table . $ca3table . $ca4table . $ca5table . $ca6table . $ca7table . $ca8table . $ca9table . $ca10table;
                                                 echo '
                                                                                 <td>' . $grade . '</td>
@@ -773,6 +722,12 @@ $studsection = $rowGetsections['section'];
                                 </tbody>
                             </table>
                         </div>
+
+                        <?php
+                        $resultSummaryPanelSections = array('grade_key');
+                        include __DIR__ . '/partials/result-summary-panel.php';
+                        unset($resultSummaryPanelSections);
+                        ?>
 
                         <?php
                         $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='$term'");
@@ -1176,13 +1131,18 @@ $studsection = $rowGetsections['section'];
                                     </div>
 
                                 </div>
+                                <?php
+                                $resultSummaryPanelSections = array('statistics');
+                                include __DIR__ . '/partials/result-summary-panel.php';
+                                unset($resultSummaryPanelSections);
+                                ?>
                             </div>
 
                             <div align="center">
                                 <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
+                        <div class="result table-responsive result-report__academic-table-wrap" style="margin: 10px; margin-top: 5px;">
                                 <?php
                                 $sqlrelset = ("SELECT * FROM `resultsetting` INNER JOIN assigncatoclass ON resultsetting.ResultSettingID=assigncatoclass.ResultSettingID WHERE ClassID = '$classid'");
                                 $resultrelset = mysqli_query($link, $sqlrelset);
@@ -1217,7 +1177,8 @@ $studsection = $rowGetsections['section'];
                                     $ca1test = '';
                                 }
                                 ?>
-                                <table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
+                                <table class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table" style="width:98%;">
+                                    <thead>
                                     <tr>
                                         <th>SUBJECT(s)</th>
                                         <?php echo $ca1test; ?>
@@ -1237,6 +1198,7 @@ $studsection = $rowGetsections['section'];
                                         <th style="width:90px;text-align:center">Highest in Class</th>
                                         <th style="width:120px;text-align:center">Remark</th>
                                     </tr>
+                                    </thead>
 
                                     <tbody>
                                         <?php
@@ -1362,7 +1324,7 @@ $studsection = $rowGetsections['section'];
                                                     }
 
                                                     echo '<tr>
-                                                                                        <th>' . $subname . '</th>';
+                                                                                        <td>' . $subname . '</td>';
                                                     if ($rowGetrelset['NumberOfCA'] == '1') {
                                                         echo '<td>
                                                                                                     ' . $rowgetscore["ca1"] . '
@@ -1615,6 +1577,12 @@ $studsection = $rowGetsections['section'];
                             </div>
 
                             <?php
+                            $resultSummaryPanelSections = array('grade_key');
+                            include __DIR__ . '/partials/result-summary-panel.php';
+                            unset($resultSummaryPanelSections);
+                            ?>
+
+                            <?php
                             $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='$term'");
 
                             $resultresumdateOld = mysqli_query($link, $sqlresumdateOld);
@@ -1679,7 +1647,7 @@ $studsection = $rowGetsections['section'];
                             <div class="performance">
                                 <div class="row">
                                     <div class="col-4">
-                                        <div class="containerForChart" style="border:0px solid black">
+                                        <div class="containerForChart" data-result-decorative-chart style="border:0px solid black">
 
                                             <canvas class="newgraph" id="mysunChart" style="width:100%;"></canvas>
 
@@ -3074,13 +3042,18 @@ $studsection = $rowGetsections['section'];
                                         <h5 style="color: #000000;"> LOWEST IN CLASS AVE: <b><?php echo $sunlowscrun; ?></b></h5>
                                     </div>
                                 </div>
+                                <?php
+                                $resultSummaryPanelSections = array('statistics');
+                                include __DIR__ . '/partials/result-summary-panel.php';
+                                unset($resultSummaryPanelSections);
+                                ?>
                             </div>
 
                             <div align="center">
                                 <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE </h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
+                        <div class="result table-responsive result-report__academic-table-wrap" style="margin: 10px; margin-top: 5px;">
                                 <?php
 
                                 $sqlrelset = ("SELECT * FROM `resultsetting` INNER JOIN assigncatoclass ON resultsetting.ResultSettingID=assigncatoclass.ResultSettingID WHERE ClassID = '$classid'");
@@ -3117,7 +3090,8 @@ $studsection = $rowGetsections['section'];
                                 }
                                 ?>
 
-                                <table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
+                                <table class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table" style="width:98%;">
+                                    <thead>
                                     <tr>
                                         <th>SUBJECT(s)</th>
                                         <?php echo $ca1test; ?>
@@ -3137,6 +3111,7 @@ $studsection = $rowGetsections['section'];
                                         <th>Highest in Class</th>
                                         <th>Remark</th>
                                     </tr>
+                                    </thead>
 
                                     <tbody>
                                         <?php
@@ -3268,7 +3243,7 @@ $studsection = $rowGetsections['section'];
                                                     }
 
                                                     echo '<tr>
-                                                                                    <th>' . $subname . '</th>';
+                                                                                    <td>' . $subname . '</td>';
                                                     if ($rowGetrelset['NumberOfCA'] == '1') {
                                                         echo '<td>
                                                                                                 ' . $rowgetscore["ca1"] . '
@@ -3527,6 +3502,12 @@ $studsection = $rowGetsections['section'];
                             </div>
 
                             <?php
+                            $resultSummaryPanelSections = array('grade_key');
+                            include __DIR__ . '/partials/result-summary-panel.php';
+                            unset($resultSummaryPanelSections);
+                            ?>
+
+                            <?php
                             $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='$term'");
 
                             $resultresumdateOld = mysqli_query($link, $sqlresumdateOld);
@@ -3592,7 +3573,7 @@ $studsection = $rowGetsections['section'];
                             <div class="performance">
                                 <div class="row">
                                     <div class="col-4">
-                                        <div class="containerForChart">
+                                        <div class="containerForChart" data-result-decorative-chart>
 
                                             <canvas class="newgraph" id="mysunChart" style="width:100%;"></canvas>
 
@@ -4893,20 +4874,26 @@ $studsection = $rowGetsections['section'];
                                         <h5 style="color: #000000;"> Days Absent: <b><?php echo $rowcountfixedabsent; ?></b></h5>
                                     </div>
                                 </div>
+                                <?php
+                                $resultSummaryPanelSections = array('statistics');
+                                include __DIR__ . '/partials/result-summary-panel.php';
+                                unset($resultSummaryPanelSections);
+                                ?>
                             </div>
 
                             <div align="center">
                                 <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
-                                <table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
-
+                        <div class="result table-responsive result-report__academic-table-wrap" style="margin: 10px; margin-top: 5px;">
+                                <table class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table" style="width:98%;">
+                                    <thead>
                                     <tr style="text-align: center;font-size:16px;font-weight:bolder">
                                         <th style="width: 20%; height:45px; background-color:yellow;">Subject(s)</th>
                                         <th style="width: 20%; background-color:red;color:white">Remark</th>
                                         <th style="background-color:blue;color:white">Additional Comments</th>
                                     </tr>
+                                    </thead>
 
                                     <tbody>
                                         <?php
@@ -4946,7 +4933,7 @@ $studsection = $rowGetsections['section'];
 
                                                 if ($row_cntgetscore > 0) {
                                                     echo '<tr style="">
-                                                                                            <th style="height:70px;">' . $subname . '</th>';
+                                                                                            <td style="height:70px;">' . $subname . '</td>';
                                                     echo '
                                                                                             <td>' . $briremark . '</td>
                                                                                             <td>' . $briextcom . '</td>
@@ -5206,14 +5193,20 @@ $studsection = $rowGetsections['section'];
                                         <h5 style="color: #000000;"> OVERALL GRADE: <b><?php echo $totscorgrade; ?></b></h5>
                                     </div>
                                 </div>
+                                <?php
+                                $resultSummaryPanelSections = array('statistics');
+                                include __DIR__ . '/partials/result-summary-panel.php';
+                                unset($resultSummaryPanelSections);
+                                ?>
                             </div>
 
                             <div align="center">
                                 <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
-                                <table class="table-bordered tab table-sm tb-result-border">
+                        <div class="result table-responsive result-report__academic-table-wrap" style="margin: 10px; margin-top: 5px;">
+                                <table class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table">
+                                    <thead>
                                     <tr>
                                         <th>SUBJECT(s)</th>
                                         <th>1ST TERM</th>
@@ -5226,6 +5219,7 @@ $studsection = $rowGetsections['section'];
                                         <th>HIGHEST IN CLASS</th>
                                         <th>REMARK</th>
                                     </tr>
+                                    </thead>
 
                                     <tbody>
                                         <?php
@@ -5316,10 +5310,10 @@ $studsection = $rowGetsections['section'];
                                                     }
 
                                                     echo '<tr>
-                                                                                    <th>' . $subname . '</th>
-                                                                                    <th>' . $totalCUMFirst . '</th>
-                                                                                    <th>' . $totalCUMsec . '</th>
-                                                                                    <th>' . $totalCUMthr . '</th>
+                                                                                    <td>' . $subname . '</td>
+                                                                                    <td>' . $totalCUMFirst . '</td>
+                                                                                    <td>' . $totalCUMsec . '</td>
+                                                                                    <td>' . $totalCUMthr . '</td>
                                                                                     <td>' . $total . '</td>
                                                                                     <td>' . $subavg . '</td>
                                                                                     <td>' . $grade . '</td>
@@ -5338,6 +5332,12 @@ $studsection = $rowGetsections['section'];
                                     </tbody>
                                 </table>
                             </div>
+
+                            <?php
+                            $resultSummaryPanelSections = array('grade_key');
+                            include __DIR__ . '/partials/result-summary-panel.php';
+                            unset($resultSummaryPanelSections);
+                            ?>
 
                             <?php
                             $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='3rd'");
@@ -5405,7 +5405,7 @@ $studsection = $rowGetsections['section'];
                             <div class="performance">
                                 <div class="row">
                                     <div class="col-4">
-                                        <div class="containerForChart">
+                                        <div class="containerForChart" data-result-decorative-chart>
 
                                             <canvas class="newgraph" id="mysunChart" style="width:100%;"></canvas>
 
@@ -6749,14 +6749,20 @@ $studsection = $rowGetsections['section'];
                                     </div>
 
                                 </div>
+                                <?php
+                                $resultSummaryPanelSections = array('statistics');
+                                include __DIR__ . '/partials/result-summary-panel.php';
+                                unset($resultSummaryPanelSections);
+                                ?>
                             </div>
 
                             <div align="center">
                                 <h5 style="font-size: 18px; font-weight: 800; color: #000000; margin-bottom: 0px;">ACADEMIC PERFORMANCE</h5>
                             </div>
 
-                            <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
-                                <table class="table-bordered tab table-sm tb-result-border">
+                            <div class="result table-responsive result-report__academic-table-wrap" style="margin: 10px; margin-top: 5px;">
+                                <table class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table">
+                                    <thead>
                                     <tr>
                                         <th>SUBJECT(s)</th>
                                         <th>1ST TERM</th>
@@ -6769,6 +6775,7 @@ $studsection = $rowGetsections['section'];
                                         <th>HIGHEST IN CLASS</th>
                                         <th>REMARK</th>
                                     </tr>
+                                    </thead>
 
                                     <tbody>
                                         <?php
@@ -6867,10 +6874,10 @@ $studsection = $rowGetsections['section'];
                                                     }
 
                                                     echo '<tr>
-                                                                                        <th>' . $subname . '</th>
-                                                                                        <th>' . $totalCUMFirst . '</th>
-                                                                                        <th>' . $totalCUMsec . '</th>
-                                                                                        <th>' . $totalCUMthr . '</th>
+                                                                                        <td>' . $subname . '</td>
+                                                                                        <td>' . $totalCUMFirst . '</td>
+                                                                                        <td>' . $totalCUMsec . '</td>
+                                                                                        <td>' . $totalCUMthr . '</td>
                                                                                         <td>' . $total . '</td>
                                                                                         <td>' . $subavg . '</td>
                                                                                         <td>';
@@ -6895,6 +6902,12 @@ $studsection = $rowGetsections['section'];
                                     </tbody>
                                 </table>
                             </div>
+
+                            <?php
+                            $resultSummaryPanelSections = array('grade_key');
+                            include __DIR__ . '/partials/result-summary-panel.php';
+                            unset($resultSummaryPanelSections);
+                            ?>
 
                             <?php
                             $sqlresumdateOld = ("SELECT * FROM `resumptiondate` WHERE `Session`='$session' AND `Term`='$term'");
@@ -6963,7 +6976,7 @@ $studsection = $rowGetsections['section'];
                             <div class="performance">
                                 <div class="row">
                                     <div class="col-4">
-                                        <div class="containerForChart">
+                                        <div class="containerForChart" data-result-decorative-chart>
                                             <canvas class="newgraph" id="mysunChart" style="width:100%;height:100%;"></canvas>
                                         </div>
                                     </div>
@@ -7968,7 +7981,13 @@ $studsection = $rowGetsections['section'];
                         }
                     }
                     ?>
+                    <?php
+                    $resultSummaryPanelSections = array('promotion');
+                    include __DIR__ . '/partials/result-summary-panel.php';
+                    unset($resultSummaryPanelSections);
+                    ?>
                 </div>
+            </div>
             </div>
         </div>
     </div>
@@ -7978,12 +7997,14 @@ $studsection = $rowGetsections['section'];
     <!-- ============================================================== -->
     <!-- My own external JS file -->
     <script src="../assets/js/myScript.js"></script>
+    <script src="../assets/js/result-report-print.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
 
     <script>
         var ctx = document.getElementById("mysunChart");
-        var chart = new Chart(ctx, {
+        if (ctx && typeof Chart !== 'undefined') {
+            var chart = new Chart(ctx, {
             responsive: "true",
             maintainAspectRatio: "false",
             type: "bar",
@@ -8044,37 +8065,9 @@ $studsection = $rowGetsections['section'];
 
                 }
             }
-        });
-    </script>
-
-    <script>
-        function adjustPrintLayout() {
-            const printable = document.getElementById('printable');
-            const usableA4Height = 1547; // Usable height in pixels for A4 portrait
-
-            if (!printable) {
-                console.error("Printable element not found.");
-                return;
-            }
-
-            const printableHeight = printable.scrollHeight;
-
-            if (printableHeight > usableA4Height) {
-                // Add a class that triggers scaling in the print media query
-                printable.classList.add('resize-for-print');
-            } else {
-                // No need to resize if it fits within one page
-                printable.classList.remove('resize-for-print');
-            }
-
-            console.log(`Printable height: ${printableHeight}px`);
+            });
         }
-
-        // Run the function after the content is loaded
-        window.onload = adjustPrintLayout;
-        window.onresize = adjustPrintLayout; // Optional: recheck if the window is resized
     </script>
-
 
     <!-- Option 1: jQuery and Bootstrap Bundle (includes Popper) -->
     <script src="../assets/bootstrap/js/jquery.slim.min.js"></script>

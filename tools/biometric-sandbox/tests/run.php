@@ -106,21 +106,24 @@ function runUnitTests(): void
         'normal',
         'TBSW/ST/0002',
         '2026-08-03',
-        'SIM-IN-001',
-        'SIM-OUT-001',
+        'SIM-GATE-001',
         5,
         $now
     );
     assertSame(2, count($normal['events']), 'Normal scenario should contain IN and OUT.');
     assertSame('0', $normal['events'][0]['punch_state'], 'First normal event should be IN.');
     assertSame('1', $normal['events'][1]['punch_state'], 'Second normal event should be OUT.');
+    assertSame(
+        $normal['events'][0]['terminal_sn'],
+        $normal['events'][1]['terminal_sn'],
+        'IN and OUT should use the same bidirectional terminal serial.'
+    );
 
     $duplicate = $factory->make(
         'duplicate',
         'TBSW/ST/0002',
         '2026-08-03',
-        'SIM-IN-001',
-        'SIM-OUT-001',
+        'SIM-GATE-001',
         5,
         $now
     );
@@ -134,8 +137,7 @@ function runUnitTests(): void
         'out-of-order',
         'TBSW/ST/0002',
         '2026-08-03',
-        'SIM-IN-001',
-        'SIM-OUT-001',
+        'SIM-GATE-001',
         5,
         $now
     );
@@ -149,9 +151,9 @@ function runUnitTests(): void
     assertSame(2, count($created), 'Store should append both transactions.');
     assertSame(2, count($store->listTransactions()), 'Store should list appended transactions.');
     assertSame(
-        1,
-        count($store->listTransactions(['terminal_sn' => 'SIM-IN-001'])),
-        'Terminal filter should isolate the entry device.'
+        2,
+        count($store->listTransactions(['terminal_sn' => 'SIM-GATE-001'])),
+        'Terminal filter should return both directions from the one device.'
     );
     assertSame(
         1,
@@ -164,8 +166,7 @@ function runUnitTests(): void
         'delayed',
         'TBSW/ST/0002',
         '2026-08-03',
-        'SIM-IN-001',
-        'SIM-OUT-001',
+        'SIM-GATE-001',
         10,
         $now
     );
@@ -270,8 +271,7 @@ function runHttpIntegrationTests(): void
         'normal',
         'TBSW/ST/0002',
         '2026-08-03',
-        'SIM-IN-001',
-        'SIM-OUT-001'
+        'SIM-GATE-001'
     );
     $inject = $client->request(
         'POST',
@@ -295,11 +295,11 @@ function runHttpIntegrationTests(): void
 
     $filtered = $client->request(
         'GET',
-        $baseUrl . '/iclock/api/transactions/?terminal_sn=SIM-OUT-001',
+        $baseUrl . '/iclock/api/transactions/?terminal_sn=SIM-GATE-001',
         null,
         ['Authorization: Bearer integration-token']
     );
-    assertSame(1, $filtered['json']['count'] ?? null, 'Terminal query should return only the EXIT event.');
+    assertSame(2, $filtered['json']['count'] ?? null, 'One-terminal query should return both explicit IN and OUT events.');
 
     $scheduleFailure = $client->request(
         'POST',

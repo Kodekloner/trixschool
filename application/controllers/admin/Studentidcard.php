@@ -2,10 +2,16 @@
 
 class studentidcard extends Admin_Controller {
 
+    private $legacyCsrfKey = 'student_idcard_legacy_csrf';
+
     function __construct() {
         parent::__construct();
 
         $this->load->library('Customlib');
+        if (!$this->session->userdata($this->legacyCsrfKey)) {
+            $this->session->set_userdata($this->legacyCsrfKey, bin2hex(random_bytes(32)));
+        }
+        $this->data['idcard_legacy_csrf'] = $this->session->userdata($this->legacyCsrfKey);
     }
 
     public function index() {
@@ -25,6 +31,9 @@ class studentidcard extends Admin_Controller {
 
         if (!$this->rbac->hasPrivilege('student_id_card', 'can_add')) {
             access_denied();
+        }
+        if (strtoupper((string) $this->input->server('REQUEST_METHOD')) === 'POST') {
+            $this->requireLegacyCsrf();
         }
 
         $data['title'] = 'Student ID Card';
@@ -232,6 +241,12 @@ class studentidcard extends Admin_Controller {
         if (!$this->rbac->hasPrivilege('student_id_card', 'can_edit')) {
             access_denied();
         }
+        if (!ctype_digit((string) $id)) {
+            show_404();
+        }
+        if (strtoupper((string) $this->input->server('REQUEST_METHOD')) === 'POST') {
+            $this->requireLegacyCsrf();
+        }
 
         $data['title'] = 'Edit ID Card';
         $data['id'] = $id;
@@ -401,6 +416,16 @@ class studentidcard extends Admin_Controller {
     }
 
     function delete($id) {
+        if (!$this->rbac->hasPrivilege('student_id_card', 'can_delete')) {
+            access_denied();
+        }
+        if (strtoupper((string) $this->input->server('REQUEST_METHOD')) !== 'POST') {
+            show_error('This operation accepts POST requests only.', 405);
+        }
+        $this->requireLegacyCsrf();
+        if (!ctype_digit((string) $id)) {
+            show_404();
+        }
         $data['title'] = 'Certificate List';
         $this->Student_id_card_model->remove($id);
         $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('delete_message') . '</div>');
@@ -408,10 +433,31 @@ class studentidcard extends Admin_Controller {
     }
 
     public function view() {
+        if (!$this->rbac->hasPrivilege('student_id_card', 'can_view')) {
+            access_denied();
+        }
+        if (strtoupper((string) $this->input->server('REQUEST_METHOD')) !== 'POST') {
+            show_error('This operation accepts POST requests only.', 405);
+        }
+        $this->requireLegacyCsrf();
         $id = $this->input->post('certificateid');
-        $output = '';
+        if (!ctype_digit((string) $id)) {
+            show_404();
+        }
         $data['idcard'] = $this->Student_id_card_model->idcardbyid($id);
+        if (!$data['idcard']) {
+            show_404();
+        }
         $this->load->view('admin/certificate/studentidcardpreview', $data);
-          }
+    }
+
+    private function requireLegacyCsrf()
+    {
+        $expected = (string) $this->session->userdata($this->legacyCsrfKey);
+        $received = (string) $this->input->post('idcard_legacy_csrf');
+        if ($expected === '' || $received === '' || !hash_equals($expected, $received)) {
+            show_error('The ID card request expired. Reload the page and try again.', 403);
+        }
+    }
 }
 ?>

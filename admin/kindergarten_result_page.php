@@ -1,6 +1,7 @@
 <?php
 include('../database/config.php');
 require_once('../helper/defaultcomment_helper.php');
+require_once('../helper/promotion_helper.php');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -20,128 +21,22 @@ require_once('../helper/defaultcomment_helper.php');
 
 	<!--The result stylesheet -->
 	<link rel="stylesheet" href="../assets/css/resultStyleSheet.css">
+	<link rel="stylesheet" href="../assets/css/result-report.css">
 
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
 
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 	<title>Kindergarten Result</title>
 	<style>
-		@media only screen and (max-width: 767px) {
-			/* CSS rules for smaller screens */
-
-			/* Adjust the width of the result sheet to fit the screen */
-			#result-body {
-				width: 1300px;
-				overflow: auto;
-			}
-
-			/* Apply scaling transformation to the result sheet */
-			#printable {
-				transform-origin: top left;
-				transform: scale(0.25);
-				width: 1200px;
-
-			}
-		}
-
-		@page {
-			margin: 0;
-		}
-
-		@media print {
-
-			.container-fluid {
-				max-height: 1582px;
-			}
-
-			/* Scale the printable container down to ensure it fits on one page */
-			#printable.resize-for-print {
-				/* transform: scale(0.80);
-				transform-origin: top left; */
-				width: 1080px;
-			}
-
-			/* Apply padding adjustments for compact display */
-			#printable.resize-for-print .tab td,
-			#printable.resize-for-print .tab th {
-				padding: 0.2rem;
-			}
-
-			/* Adjust font sizes for printing */
-			#printable.resize-for-print body,
-			#printable.resize-for-print .card {
-				font-size: 13px;
-			}
-
-			/* Prevent page breaks inside cards and tables */
-			#printable.resize-for-print .card,
-			#printable.resize-for-print .table-responsive {
-				page-break-inside: avoid;
-			}
-
-			canvas.sunygraph {
-				min-height: 200px;
-				max-width: 98%;
-				max-height: 100%;
-				height: auto !important;
-				width: auto !important;
-			}
-
-			/* Reset negative margins in the header */
-			.rel .schloc {
-				margin-top: 0 !important;
-			}
-
-			.rel .col-6 div[style*="margin-top"] {
-				margin-top: 0 !important;
-			}
-
-			/* Give the report title enough space */
-			.report-title {
-				margin-top: 10px !important;
-			}
-
-		}
-
-		.tab {
-			table-layout: auto;
-			/* Keeps column widths uniform */
-			word-wrap: break-word;
-			/* Breaks long text properly */
-			white-space: normal;
-			/* Allows wrapping at spaces */
-		}
-
-		.tab td,
-		.tab th {
-			padding: 4px 6px;
-			/* Reduces padding for a compact design */
-			text-align: center;
-			/* Centers content for better alignment */
-			vertical-align: middle;
-			/* Ensures content stays vertically aligned */
-			/* font-size: 14px; */
-			/* Adjusts font size for numbers */
-		}
-
-		.tab th {
-			text-align: left;
-			/* Aligns headers to the left for better readability */
-			font-weight: bold;
-			/* Keeps headers distinct */
-		}
-
 		.signature-container {
 			height: 56px;
 			width: 100%;
-			/* Optionally, use position: relative; if you need it for layout */
 		}
 
 		.signature-img {
 			width: 100%;
 			height: 100%;
 			object-fit: contain;
-			/* Ensures the entire image is visible without distortion */
 		}
 	</style>
 </head>
@@ -223,7 +118,10 @@ require_once('../helper/defaultcomment_helper.php');
 	$sql_results = "
     SELECT concept_id, result_label_index
     FROM kindergarten_result
-    WHERE student_id = '$student_id' AND session_id = '$session' AND term = '$term'
+    WHERE student_id = '$student_id'
+      AND session_id = '$session'
+      AND term = '$term'
+      AND assessment_id = '$assessment_id'
 ";
 	$res_results = mysqli_query($link, $sql_results);
 	$results_map = [];
@@ -261,8 +159,27 @@ require_once('../helper/defaultcomment_helper.php');
 	$days_present = 0;
 	$days_absent = 0;
 	$total_days = 0;
+
+	$resultSummaryContext = get_result_summary_context(
+		$link,
+		$student_id,
+		$session,
+		$classid,
+		$classsectionactual,
+		$term,
+		$resultSubType,
+		'kindergarten',
+		$assessment_id
+	);
+	$showPromotionOutcome = $resultSubType === 'termly' && $term === '3rd';
+	$showCumulativeAverage = false;
+	$promotionOutcome = $showPromotionOutcome
+		? get_final_promotion_outcome($link, $student_id, $session, $classid, $classsectionactual, true)
+		: build_promotion_outcome('pending', '', 'system', 'not_applicable');
+	$resultAcademicRowCount = count($items);
+	$resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_color_code'] ?? '#1f4e78');
 	?>
-	<div class="container-fluid">
+	<div class="container-fluid result-report-controls" data-result-no-print>
 		<div class="row" id="non-printable" style="margin-top: 20px;">
 			<div class="col-md-10">
 				<a href="<?php echo $defRUladmin; ?>/admin/examResult.php" style="color: black; font-size: 20px;"><i class="fa fa-angle-double-left"></i> Back</a>
@@ -271,52 +188,63 @@ require_once('../helper/defaultcomment_helper.php');
 				<a href="" style="color: #000000; font-weight: 600;" onclick="window.print()"><i class="fa fa-print"></i> Print</a>
 			</div>
 		</div>
+    </div>
 
-		<div class="card" id="printable">
-			<img class="watermark-logo" src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $rowsch_settings['app_logo']; ?>">
+	<div class="result-report-preview" data-result-report-preview>
+		<div class="card result-report" id="printable" data-result-report data-academic-row-count="<?php echo (int) $resultAcademicRowCount; ?>" style="--result-brand: <?php echo $resultBrandPalette['brand']; ?>; --result-brand-strong: <?php echo $resultBrandPalette['strong']; ?>; --result-brand-soft: <?php echo $resultBrandPalette['soft']; ?>; --result-brand-contrast: <?php echo $resultBrandPalette['contrast']; ?>;">
+			<div class="result-report__content" data-result-report-content>
+			<img class="watermark-logo result-report__watermark" src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo htmlspecialchars($rowsch_settings['app_logo'], ENT_QUOTES, 'UTF-8'); ?>" alt="">
 
 			<div class="card-body" style="color: black;">
 				<div class="rel">
 					<!-- School header -->
-					<div class="row">
+					<div class="row result-report__legacy-header">
 						<div class="col">
 							<div align="center">
-								<img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $rowsch_settings['app_logo']; ?>" class="img-fluid" style="margin: 10px; width: 50%;">
+								<img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo htmlspecialchars($rowsch_settings['app_logo'], ENT_QUOTES, 'UTF-8'); ?>" class="img-fluid" style="margin: 10px; width: 50%;" alt="School logo">
 							</div>
 						</div>
 						<div class="col-6">
-							<p class="schname" style="font-size:25px"><?php echo $rowsch_settings['name']; ?></p>
-							<p class="schloc" style="color: rgb(185, 7, 7);font-size:16px;margin-top:-20px;"><?php echo $rowsch_settings['address']; ?>.</p>
+							<p class="schname" style="font-size:25px"><?php echo htmlspecialchars($rowsch_settings['name'], ENT_QUOTES, 'UTF-8'); ?></p>
+							<p class="schloc" style="color: rgb(185, 7, 7);font-size:16px;margin-top:-20px;"><?php echo htmlspecialchars($rowsch_settings['address'], ENT_QUOTES, 'UTF-8'); ?>.</p>
 							<div style="margin-top:-10px;text-align:center">
-								<span>Email: <?php echo $rowsch_settings['email']; ?></span><br />
-								<span>Website: <?php echo $defRUlsec; ?></span>
+								<span>Email: <?php echo htmlspecialchars($rowsch_settings['email'], ENT_QUOTES, 'UTF-8'); ?></span><br />
+								<span>Website: <?php echo htmlspecialchars($defRUlsec, ENT_QUOTES, 'UTF-8'); ?></span>
 							</div>
 						</div>
 						<div class="col">
-							<img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $studimage; ?>" align="center" class="img-fluid" style="margin: 10px; width: 45%;height:120px">
+							<img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo htmlspecialchars($studimage, ENT_QUOTES, 'UTF-8'); ?>" align="center" class="img-fluid" style="margin: 10px; width: 45%;height:120px" alt="Student photograph">
 						</div>
 					</div><br>
 
-					<div align="center">
-						<h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px">MIDTERM PROGRESS REPORT FOR <?php echo $term; ?> TERM, <?php echo $session_name; ?> SESSION</h5>
+					<div align="center" class="result-report__legacy-title">
+						<h5 class="report-title" style="font-size: 17px; font-weight: 500;margin-top:-40px"><?php echo $resultSubType === 'midterm' ? 'MIDTERM PROGRESS REPORT' : 'TERM PROGRESS REPORT'; ?> FOR <?php echo htmlspecialchars($term, ENT_QUOTES, 'UTF-8'); ?> TERM, <?php echo htmlspecialchars($session_name, ENT_QUOTES, 'UTF-8'); ?> SESSION</h5>
 					</div>
 
 					<!-- Student info -->
-					<div class="row" style="margin: 10px;">
-						<div class="col-4">
-							<h5>NAME: <b><?php echo $student_name; ?></b></h5>
+					<div class="container-motto">
+						<div class="row" style="margin: 10px;">
+							<div class="col-4">
+								<h5>NAME: <b><?php echo htmlspecialchars($student_name, ENT_QUOTES, 'UTF-8'); ?></b></h5>
+							</div>
+							<div class="col-4">
+								<h5>CLASS: <b><?php echo htmlspecialchars($class_name . ' ' . $section_name, ENT_QUOTES, 'UTF-8'); ?></b></h5>
+							</div>
+							<div class="col-4">
+								<h5>GENDER: <b><?php echo htmlspecialchars($student_gender, ENT_QUOTES, 'UTF-8'); ?></b></h5>
+							</div>
 						</div>
-						<div class="col-4">
-							<h5>CLASS: <b><?php echo $class_name . ' ' . $section_name; ?></b></h5>
-						</div>
-						<div class="col-4">
-							<h5>GENDER: <b><?php echo $student_gender; ?></b></h5>
-						</div>
+						<?php
+						$resultSummaryPanelSections = array('statistics');
+						include __DIR__ . '/partials/result-summary-panel.php';
+						unset($resultSummaryPanelSections);
+						?>
 					</div>
 
 					<!-- Result table -->
-					<div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
-						<table class="table-bordered tab table-sm tb-result-border" style="width:98%;">
+					<div class="result table-responsive result-report__academic-table-wrap" style="margin: 10px; margin-top: 5px;">
+						<table class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table" style="width:98%;">
+							<thead>
 							<tr>
 								<th>SUBJECT</th>
 								<th><?php echo $assessment_label; ?></th>
@@ -324,6 +252,7 @@ require_once('../helper/defaultcomment_helper.php');
 									<th><?php echo htmlspecialchars($label); ?></th>
 								<?php endforeach; ?>
 							</tr>
+							</thead>
 							<tbody>
 								<?php
 								$current_subject = '';
@@ -364,13 +293,23 @@ require_once('../helper/defaultcomment_helper.php');
 						</table>
 					</div>
 
-					<!-- Teacher's remark -->
-					<div class="row mt-4">
-						<div class="col-sm-10 col-md-10">
-							<p class="pl-3" style="text-align: justify;"><b>CLASS TEACHER'S REMARK:</b> <?php echo $teacher_remark; ?></p>
+					<div class="result-report__legacy-comments" aria-label="Result comments">
+						<div class="row mt-4">
+							<div class="col-sm-10 col-md-10">
+								<p class="pl-3" style="text-align: justify;"><b>CLASS TEACHER'S REMARK:</b> <?php echo htmlspecialchars($teacher_remark, ENT_QUOTES, 'UTF-8'); ?></p>
+							</div>
+							<div class="col-sm-2 col-md-2 signature-container" aria-label="Class teacher's signature">
+								<?php echo $teacher_sign; ?>
+							</div>
 						</div>
-						<div class="col-sm-2 col-md-2 signature-container">
-							<?php echo $teacher_sign; ?>
+
+						<div class="row mt-2">
+							<div class="col-sm-10 col-md-10">
+								<p class="pl-3" style="text-align: justify;"><b>PRINCIPAL/HEAD TEACHER'S COMMENT:</b> <?php echo htmlspecialchars($principal_remark, ENT_QUOTES, 'UTF-8'); ?></p>
+							</div>
+							<div class="col-sm-2 col-md-2 signature-container" aria-label="Head teacher's signature">
+								<?php echo $principal_sign; ?>
+							</div>
 						</div>
 					</div>
 
@@ -378,22 +317,18 @@ require_once('../helper/defaultcomment_helper.php');
 					<?php
 					// You can add next term date logic if needed
 					?>
+					<?php
+					$resultSummaryPanelSections = array('promotion');
+					include __DIR__ . '/partials/result-summary-panel.php';
+					unset($resultSummaryPanelSections);
+					?>
 				</div>
+			</div>
 			</div>
 		</div>
 	</div>
 
-	<script>
-		function adjustPrintLayout() {
-			const printable = document.getElementById('printable');
-			if (printable.scrollHeight > 1547) {
-				printable.classList.add('resize-for-print');
-			} else {
-				printable.classList.remove('resize-for-print');
-			}
-		}
-		window.onload = adjustPrintLayout;
-	</script>
+	<script src="../assets/js/result-report-print.js"></script>
 </body>
 
 </html>

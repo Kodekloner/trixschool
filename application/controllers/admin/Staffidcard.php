@@ -6,9 +6,15 @@ if (!defined('BASEPATH')) {
 class Staffidcard extends Admin_Controller
 {
 
+    private $legacyCsrfKey = 'staff_idcard_legacy_csrf';
+
     public function __construct()
     {
         parent::__construct();
+        if (!$this->session->userdata($this->legacyCsrfKey)) {
+            $this->session->set_userdata($this->legacyCsrfKey, bin2hex(random_bytes(32)));
+        }
+        $this->data['idcard_legacy_csrf'] = $this->session->userdata($this->legacyCsrfKey);
     }
 
     public function index()
@@ -28,6 +34,9 @@ class Staffidcard extends Admin_Controller
     {
         if (!$this->rbac->hasPrivilege('staff_id_card', 'can_add')) {
             access_denied();
+        }
+        if (strtoupper((string) $this->input->server('REQUEST_METHOD')) === 'POST') {
+            $this->requireLegacyCsrf();
         }
         $this->form_validation->set_rules('school_name', $this->lang->line('school_name'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('address', $this->lang->line('address_phone_email'), 'trim|required|xss_clean');
@@ -202,6 +211,12 @@ class Staffidcard extends Admin_Controller
     {
         if (!$this->rbac->hasPrivilege('staff_id_card', 'can_edit')) {
             access_denied();
+        }
+        if (!ctype_digit((string) $id)) {
+            show_404();
+        }
+        if (strtoupper((string) $this->input->server('REQUEST_METHOD')) === 'POST') {
+            $this->requireLegacyCsrf();
         }
         $data['id']                    = $id;
         $editstaffidcard               = $this->Staffidcard_model->get($id);
@@ -381,6 +396,16 @@ class Staffidcard extends Admin_Controller
 
     public function delete($id)
     {
+        if (!$this->rbac->hasPrivilege('staff_id_card', 'can_delete')) {
+            access_denied();
+        }
+        if (strtoupper((string) $this->input->server('REQUEST_METHOD')) !== 'POST') {
+            show_error('This operation accepts POST requests only.', 405);
+        }
+        $this->requireLegacyCsrf();
+        if (!ctype_digit((string) $id)) {
+            show_404();
+        }
         $data['title'] = 'Certificate List';
         $this->Staffidcard_model->remove($id);
         $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">' . $this->lang->line('delete_message') . '</div>');
@@ -389,9 +414,31 @@ class Staffidcard extends Admin_Controller
 
     public function view()
     {
+        if (!$this->rbac->hasPrivilege('staff_id_card', 'can_view')) {
+            access_denied();
+        }
+        if (strtoupper((string) $this->input->server('REQUEST_METHOD')) !== 'POST') {
+            show_error('This operation accepts POST requests only.', 405);
+        }
+        $this->requireLegacyCsrf();
         $id             = $this->input->post('certificateid');
+        if (!ctype_digit((string) $id)) {
+            show_404();
+        }
         $data['idcard'] = $this->Staffidcard_model->idcardbyid($id);
+        if (!$data['idcard']) {
+            show_404();
+        }
         $this->load->view('admin/staffidcard/staffidcardpreview', $data);
+    }
+
+    private function requireLegacyCsrf()
+    {
+        $expected = (string) $this->session->userdata($this->legacyCsrfKey);
+        $received = (string) $this->input->post('idcard_legacy_csrf');
+        if ($expected === '' || $received === '' || !hash_equals($expected, $received)) {
+            show_error('The ID card request expired. Reload the page and try again.', 403);
+        }
     }
 
     public function background_image_handle_upload()

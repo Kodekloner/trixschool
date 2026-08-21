@@ -1237,6 +1237,10 @@ class Report extends Admin_Controller
 
     public function biometric_attlog($offset = 0)
     {
+        if (!$this->rbac->hasPrivilege('biometric_attendance', 'can_view')) {
+            access_denied();
+        }
+
         $this->session->set_userdata('top_menu', 'Reports');
         $this->session->set_userdata('sub_menu', 'Reports/attendance');
         $this->session->set_userdata('subsub_menu', 'Reports/attendence/biometric_attlog');
