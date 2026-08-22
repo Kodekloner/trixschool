@@ -247,6 +247,9 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
     <script src="../assets/js/datatables.min.js"></script>
     <script src="../assets/js/pdfmake.min.js"></script>
     <script src="../assets/js/vfs_fonts.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="../backend/idcard-studio/vendor/jspdf-2.5.2.umd.min.js"></script>
+    <script src="../backend/dist/datatables/js/jszip.min.js"></script>
     <script src="../assets/js/exam-result-download.js"></script>
 
     <script>
