@@ -2,6 +2,129 @@
 include('../database/config.php');
 require_once('../helper/publishresult_helper.php');
 
+function build_student_result_url(
+    $isKindergarten,
+    $classSection,
+    $sectionId,
+    $classId,
+    $sessionId,
+    $term,
+    $studentId,
+    $resultType,
+    $assessmentId
+) {
+    $parameters = array(
+        'classsection' => (int) $classSection,
+        'classsectionactual' => (int) $sectionId,
+        'classid' => (int) $classId,
+        'session' => (int) $sessionId,
+        'term' => (string) $term,
+        'id' => (int) $studentId,
+        'reltype' => (string) $resultType,
+    );
+
+    if ($isKindergarten) {
+        $parameters['assessment_id'] = (int) $assessmentId;
+    }
+
+    return ($isKindergarten ? 'kindergarten_result_page.php' : 'resultPage.php')
+        . '?'
+        . http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
+}
+
+function render_student_result_table_open()
+{
+    return '<div class="result-download-list" data-result-download-list>
+        <div class="result-download-toolbar" data-result-download-toolbar>
+            <div class="result-download-toolbar__summary">
+                <i class="fa fa-download" aria-hidden="true"></i>
+                <span>Result downloads</span>
+                <small data-result-selected-count>0 selected</small>
+            </div>
+            <div class="result-download-toolbar__actions" aria-label="Bulk result downloads">
+                <button type="button" class="btn btn-sm btn-outline-primary" data-result-download-selected disabled>
+                    <i class="fa fa-download" aria-hidden="true"></i> Download selected
+                </button>
+                <button type="button" class="btn btn-sm btn-primary" data-result-download-all>
+                    <i class="fa fa-download" aria-hidden="true"></i> Download all
+                </button>
+            </div>
+            <div class="dropdown result-download-toolbar__dropdown">
+                <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa fa-download" aria-hidden="true"></i> Download
+                </button>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <button type="button" class="dropdown-item" data-result-download-selected disabled>Download selected</button>
+                    <button type="button" class="dropdown-item" data-result-download-all>Download all results</button>
+                </div>
+            </div>
+            <div class="result-download-toolbar__message" data-result-download-message role="status" aria-live="polite"></div>
+        </div>
+        <table class="table table-striped table-bordered result-download-table" id="editable-datatable">
+            <thead>
+                <tr>
+                    <th class="result-download-table__select">
+                        <input type="checkbox" data-result-select-all aria-label="Select all results">
+                    </th>
+                    <th>S/N</th>
+                    <th>Full Name</th>
+                    <th>Admission No.</th>
+                    <th>Class</th>
+                    <th>Session</th>
+                    <th>Term</th>
+                    <th class="result-download-table__action">Action</th>
+                </tr>
+            </thead>
+            <tbody>';
+}
+
+function render_student_result_row(
+    array $student,
+    $serialNumber,
+    $className,
+    $sessionName,
+    $termLabel,
+    $resultUrl
+) {
+    $studentId = (int) ($student['StudentID'] ?? 0);
+    $fullName = trim(
+        (string) ($student['lastname'] ?? '')
+        . ' '
+        . (string) ($student['middlename'] ?? '')
+        . ' '
+        . (string) ($student['firstname'] ?? '')
+    );
+    $escape = static function ($value) {
+        return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+    };
+
+    return '<tr data-result-row data-result-student-id="' . $studentId . '">
+        <td class="result-download-table__select">
+            <input type="checkbox" data-result-select aria-label="Select result for ' . $escape($fullName) . '">
+        </td>
+        <td>' . (int) $serialNumber . '</td>
+        <td>' . $escape($fullName) . '</td>
+        <td>' . $escape($student['admission_no'] ?? '') . '</td>
+        <td>' . $escape($className) . '</td>
+        <td>' . $escape($sessionName) . '</td>
+        <td>' . $escape($termLabel) . '</td>
+        <td class="result-download-table__action">
+            <div class="result-download-row-actions">
+                <a href="' . $escape($resultUrl) . '" class="result-download-row-actions__view">View Result</a>
+                <a href="' . $escape($resultUrl) . '" class="btn btn-sm btn-outline-primary result-download-row-actions__download" data-result-download-one title="Download result" aria-label="Download result for ' . $escape($fullName) . '">
+                    <i class="fa fa-download" aria-hidden="true"></i>
+                    <span class="sr-only">Download result</span>
+                </a>
+            </div>
+        </td>
+    </tr>';
+}
+
+function render_student_result_table_close()
+{
+    return '</tbody></table></div>';
+}
+
 $classsectionactual = $_POST['classsectionactual'] ?? 0;
 
 $classid = $_POST['classid'] ?? 0;
@@ -97,19 +220,7 @@ if ($rolefirst == 'student' || $rolefirst == 'parent') {
 
             $class_id = $rowGetclass_sections['class_id'];
 
-            echo '<table class="table table-striped table-bordered" id="editable-datatable" style="margin-top: 30px;">
-                    <thead>
-                        <tr>
-                            <th>S/N</th>
-                            <th>Full Name</th>
-                            <th>Admission No.</th>
-                            <th>Class</th>
-                            <th>Session</th>
-                            <th>Term</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>';
+            echo render_student_result_table_open();
             $cnt = 1;
             // ---- START MODIFICATION ----
             if ($is_kindergarten) {
@@ -160,42 +271,32 @@ if ($rolefirst == 'student' || $rolefirst == 'parent') {
 
             if ($countGetstudent_session > 0) {
                 do {
-                    echo '<tr>
-                        			<td>' . $cnt++ . '</td>
-                        			<td>' . $rowGetstudent_session['lastname'] . ' ' . $rowGetstudent_session['middlename'] . ' ' . $rowGetstudent_session['firstname'] . '</td>
-                        			<td>' . $rowGetstudent_session['admission_no'] . '</td>
-                        			<td>' . $rowGetclasses['class'] . '</td>
-                        			<td>' . $rowGetsessions['session'] . '</td>';
-
-                    if ($reltype == 'cummulative') {
-                        echo '<td>Cummulative</td>';
-                    } else {
-                        echo '<td>' . $term . ' Term</td>';
-                    }
-                    if ($is_kindergarten) {
-                        echo '<td>
-                                        <a href="kindergarten_result_page.php?classsection=' . $classsection . '&classsectionactual=' . $classsectionactual . '&classid=' . $classid . '&session=' . $session . '&term=' . $term . '&id=' . $rowGetstudent_session['StudentID'] . '&reltype=' . $reltype . '&assessment_id=' . $kindergarten_assessment_id . '" style="font-size: 15px;text-decoration:underline;">
-                                            View Result
-                                        </a>
-                                    </td>';
-
-                        echo '</tr>';
-                    } else {
-                        echo '<td>
-                                        <a href="resultPage.php?classsection=' . $classsection . '&classsectionactual=' . $classsectionactual . '&classid=' . $classid . '&session=' . $session . '&term=' . $term . '&id=' . $rowGetstudent_session['StudentID'] . '&reltype=' . $reltype . '" style="font-size: 15px;text-decoration:underline;">
-                                            View Result
-                                        </a>
-                                    </td>';
-
-                        echo '</tr>';
-                    }
+                    $resultUrl = build_student_result_url(
+                        $is_kindergarten,
+                        $classsection,
+                        $classsectionactual,
+                        $classid,
+                        $session,
+                        $term,
+                        $rowGetstudent_session['StudentID'],
+                        $reltype,
+                        $kindergarten_assessment_id
+                    );
+                    $termLabel = $reltype === 'cummulative' ? 'Cumulative' : $term . ' Term';
+                    echo render_student_result_row(
+                        $rowGetstudent_session,
+                        $cnt++,
+                        $rowGetclasses['class'],
+                        $rowGetsessions['session'],
+                        $termLabel,
+                        $resultUrl
+                    );
                 } while ($rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session));
             } else {
-                echo '<tr><td>No Records Found</td></tr>';
+                echo '<tr><td colspan="8">No Records Found</td></tr>';
             }
 
-            echo '</tbody>
-                </table>';
+            echo render_student_result_table_close();
         } else {
             echo 'Class Section Not Found';
         }
@@ -233,19 +334,7 @@ if ($rolefirst == 'student' || $rolefirst == 'parent') {
 
         $class_id = $rowGetclass_sections['class_id'];
 
-        echo '<table class="table table-striped table-bordered" id="editable-datatable" style="margin-top: 30px;">
-                <thead>
-                    <tr>
-                        <th>S/N</th>
-                        <th>Full Name</th>
-                        <th>Admission No.</th>
-                        <th>Class</th>
-                        <th>Session</th>
-                        <th>Term</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>';
+        echo render_student_result_table_open();
         $cnt = 1;
         // ---- START MODIFICATION ----
         if ($is_kindergarten) {
@@ -284,44 +373,32 @@ if ($rolefirst == 'student' || $rolefirst == 'parent') {
 
         if ($countGetstudent_session > 0) {
             do {
-                echo '<tr>
-                    			<td>' . $cnt++ . '</td>
-                    			<td>' . $rowGetstudent_session['lastname'] . ' ' . $rowGetstudent_session['middlename'] . ' ' . $rowGetstudent_session['firstname'] . '</td>
-                    			<td>' . $rowGetstudent_session['admission_no'] . '</td>
-                    			<td>' . $rowGetclasses['class'] . '</td>
-                    			<td>' . $rowGetsessions['session'] . '</td>';
-
-                if ($reltype == 'cummulative') {
-                    echo '<td>Cummulative</td>';
-                } else {
-                    echo '<td>' . $term . ' Term</td>';
-                }
-
-                if ($is_kindergarten) {
-                    echo '<td>
-                                    <a href="kindergarten_result_page.php?classsection=' . $classsection . '&classsectionactual=' . $classsectionactual . '&classid=' . $classid . '&session=' . $session . '&term=' . $term . '&id=' . $rowGetstudent_session['StudentID'] . '&reltype=' . $reltype . '&assessment_id=' . $kindergarten_assessment_id . '" style="font-size: 15px;text-decoration:underline;">
-                                        View Result
-                                    </a>
-                                </td>';
-
-                    echo '</tr>';
-                } else {
-
-                    echo '<td>
-                                        <a href="resultPage.php?classsection=' . $classsection . '&classsectionactual=' . $classsectionactual . '&classid=' . $classid . '&session=' . $session . '&term=' . $term . '&id=' . $rowGetstudent_session['StudentID'] . '&reltype=' . $reltype . '" style="font-size: 15px;text-decoration:underline;">
-                                            View Result
-                                        </a>
-                                    </td>';
-
-                    echo '</tr>';
-                }
+                $resultUrl = build_student_result_url(
+                    $is_kindergarten,
+                    $classsection,
+                    $classsectionactual,
+                    $classid,
+                    $session,
+                    $term,
+                    $rowGetstudent_session['StudentID'],
+                    $reltype,
+                    $kindergarten_assessment_id
+                );
+                $termLabel = $reltype === 'cummulative' ? 'Cumulative' : $term . ' Term';
+                echo render_student_result_row(
+                    $rowGetstudent_session,
+                    $cnt++,
+                    $rowGetclasses['class'],
+                    $rowGetsessions['session'],
+                    $termLabel,
+                    $resultUrl
+                );
             } while ($rowGetstudent_session = mysqli_fetch_assoc($queryGetstudent_session));
         } else {
-            echo '<tr><td>No Records Found</td></tr>';
+            echo '<tr><td colspan="8">No Records Found</td></tr>';
         }
 
-        echo '</tbody>
-            </table>';
+        echo render_student_result_table_close();
     } else {
         echo 'Class Section Not Found';
     }
