@@ -526,6 +526,141 @@ function result_report_a4_pdf_details($pdfPath)
     );
 }
 
+function result_download_source_fixture_html()
+{
+    return '<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Result source</title></head>
+<body>
+  <article class="result-report result-report--standard" data-result-report data-result-report-ready="true" data-result-fit-scale="1" style="--result-fit-scale:1;--result-brand:#6d247f;--result-brand-strong:#42154d;--result-brand-soft:#f4eaf7;--result-brand-contrast:#fff">
+    <div class="result-report__content" data-result-report-content>
+      <div class="card-body"><div class="rel" style="padding:12mm">
+        <h1 style="text-align:center">Student Result</h1>
+        <p style="text-align:center">One fitted A4 result page</p>
+      </div></div>
+    </div>
+  </article>
+</body>
+</html>';
+}
+
+function result_download_bulk_fixture_html($resultCss, $downloadCss, $bulkScript, array $urls)
+{
+    $bulkScript = str_ireplace('</script', '<\/script', $bulkScript);
+    $payload = json_encode(
+        array('urls' => $urls, 'error' => ''),
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+    );
+
+    return '<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bulk result fixture</title>
+  <style>' . $resultCss . "\n" . $downloadCss . '</style>
+</head>
+<body class="result-report-page result-bulk-download-page">
+  <header class="result-bulk-download-status" data-result-no-print>
+    <div class="result-bulk-download-status__copy"><strong>Preparing</strong><span data-result-bulk-status>Starting</span></div>
+    <div class="result-bulk-download-status__actions">
+      <button type="button" data-result-bulk-print hidden>Save as PDF</button>
+      <button type="button" data-result-bulk-close>Close</button>
+    </div>
+  </header>
+  <main class="result-bulk-download-output" data-result-bulk-output></main>
+  <script type="application/json" id="result-download-payload">' . $payload . '</script>
+  <script>window.print=function(){document.body.setAttribute("data-print-requested","true");};</script>
+  <script>' . $bulkScript . '</script>
+</body>
+</html>';
+}
+
+function result_download_list_fixture_html($downloadCss, $listScript)
+{
+    $listScript = str_ireplace('</script', '<\/script', $listScript);
+
+    return '<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>' . $downloadCss . '</style>
+</head>
+<body>
+  <div class="result-download-list" data-result-download-list>
+    <div class="result-download-toolbar" data-result-download-toolbar>
+      <div class="result-download-toolbar__summary"><i class="fa fa-download"></i><span>Result downloads</span><small data-result-selected-count>0 selected</small></div>
+      <div class="result-download-toolbar__actions">
+        <button type="button" data-result-download-selected disabled>Download selected</button>
+        <button type="button" data-result-download-all>Download all</button>
+      </div>
+      <div class="dropdown result-download-toolbar__dropdown">
+        <button type="button">Download</button>
+        <div class="dropdown-menu">
+          <button type="button" data-result-download-selected disabled>Download selected</button>
+          <button type="button" data-result-download-all>Download all</button>
+        </div>
+      </div>
+      <div class="result-download-toolbar__message" data-result-download-message></div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="result-download-table"><thead><tr><th class="result-download-table__select"><input type="checkbox" data-result-select-all></th><th>Name</th><th class="result-download-table__action">Action</th></tr></thead>
+        <tbody>
+          <tr data-result-row><td><input type="checkbox" data-result-select></td><td>Student One</td><td><div class="result-download-row-actions"><a href="resultPage.php?id=1">View</a><a href="resultPage.php?id=1" data-result-download-one class="result-download-row-actions__download">↓</a></div></td></tr>
+          <tr data-result-row><td><input type="checkbox" data-result-select></td><td>Student Two</td><td><div class="result-download-row-actions"><a href="resultPage.php?id=2">View</a><a href="resultPage.php?id=2" data-result-download-one class="result-download-row-actions__download">↓</a></div></td></tr>
+          <tr data-result-row><td><input type="checkbox" data-result-select></td><td>Student Three</td><td><div class="result-download-row-actions"><a href="resultPage.php?id=3">View</a><a href="resultPage.php?id=3" data-result-download-one class="result-download-row-actions__download">↓</a></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <script>HTMLFormElement.prototype.submit=function(){window.__submittedResultUrls=JSON.parse(this.querySelector("[name=result_urls]").value);};</script>
+  <script>' . $listScript . '</script>
+  <script>
+  (function(){
+    var list=document.querySelector("[data-result-download-list]");
+    var checks=list.querySelectorAll("[data-result-select]");
+    checks[0].checked=true;
+    checks[1].checked=true;
+    window.ResultDownloadList.refresh(document);
+    var selectedButtons=list.querySelectorAll("[data-result-download-selected]");
+    selectedButtons[window.innerWidth<=575?1:0].click();
+    setTimeout(function(){
+      var toolbar=list.querySelector("[data-result-download-toolbar]");
+      var actions=list.querySelector(".result-download-toolbar__actions");
+      var dropdown=list.querySelector(".result-download-toolbar__dropdown");
+      var icon=list.querySelector(".result-download-row-actions__download");
+      var rect=toolbar.getBoundingClientRect();
+      var iconRect=icon.getBoundingClientRect();
+      var payload={
+        viewportWidth:window.innerWidth,
+        submittedCount:(window.__submittedResultUrls||[]).length,
+        inlineActionsVisible:getComputedStyle(actions).display!=="none",
+        dropdownVisible:getComputedStyle(dropdown).display!=="none",
+        toolbarContained:rect.left>=0&&rect.right<=window.innerWidth+1,
+        compactIcon:Math.abs(iconRect.width-31)<=1&&Math.abs(iconRect.height-31)<=1
+      };
+      var output=document.createElement("pre");
+      output.id="result-download-list-output";
+      output.textContent=JSON.stringify(payload);
+      document.body.appendChild(output);
+    },50);
+  }());
+  </script>
+</body>
+</html>';
+}
+
+function result_download_list_parse_payload($html)
+{
+    if (!preg_match('#<pre id="result-download-list-output">(.*?)</pre>#s', $html, $matches)) {
+        return null;
+    }
+
+    $payload = json_decode(html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'), true);
+    return is_array($payload) ? $payload : null;
+}
+
 $browser = result_report_a4_find_browser();
 if ($browser === null) {
     echo 'SKIP: result report A4 browser test (no compatible Chrome, Chromium, or Edge executable found).' . PHP_EOL;
@@ -535,11 +670,20 @@ if ($browser === null) {
 $repositoryRoot = dirname(__DIR__);
 $cssPath = $repositoryRoot . '/assets/css/result-report.css';
 $javascriptPath = $repositoryRoot . '/assets/js/result-report-print.js';
+$downloadCssPath = $repositoryRoot . '/assets/css/exam-result-download.css';
+$listJavascriptPath = $repositoryRoot . '/assets/js/exam-result-download.js';
+$bulkJavascriptPath = $repositoryRoot . '/assets/js/result-bulk-download.js';
 $css = file_get_contents($cssPath);
 $javascript = file_get_contents($javascriptPath);
+$downloadCss = file_get_contents($downloadCssPath);
+$listJavascript = file_get_contents($listJavascriptPath);
+$bulkJavascript = file_get_contents($bulkJavascriptPath);
 
 result_report_a4_assert($css !== false, 'The shared result report stylesheet must be readable.');
 result_report_a4_assert($javascript !== false, 'The shared result report print script must be readable.');
+result_report_a4_assert($downloadCss !== false, 'The result download stylesheet must be readable.');
+result_report_a4_assert($listJavascript !== false, 'The result-list download script must be readable.');
+result_report_a4_assert($bulkJavascript !== false, 'The bulk result download script must be readable.');
 
 $temporaryBase = $browser['windows'] ? result_report_a4_windows_temp_directory() : sys_get_temp_dir();
 if ($temporaryBase === null || !is_dir($temporaryBase) || !is_writable($temporaryBase)) {
@@ -667,6 +811,144 @@ foreach ($fixtures as $fixture) {
 
     echo 'PASS: ' . $rowCount . '-row A4 fixture (' . $fixture['density'] . ' density).' . PHP_EOL;
 }
+
+$listHtmlPath = $temporaryDirectory . DIRECTORY_SEPARATOR . 'result-download-list.html';
+result_report_a4_assert(
+    file_put_contents(
+        $listHtmlPath,
+        result_download_list_fixture_html($downloadCss, $listJavascript)
+    ) !== false,
+    'The responsive result-download list fixture must be writable.'
+);
+$listUrl = result_report_a4_file_url($listHtmlPath, $browser['windows']);
+
+foreach (array(
+    array('name' => 'desktop', 'width' => 1024, 'height' => 900, 'inline' => true, 'dropdown' => false),
+    array('name' => 'mobile', 'width' => 390, 'height' => 844, 'inline' => false, 'dropdown' => true),
+) as $listViewport) {
+    $listProfile = $temporaryDirectory . DIRECTORY_SEPARATOR . 'list-profile-' . $listViewport['name'];
+    if (!mkdir($listProfile, 0700, true) && !is_dir($listProfile)) {
+        result_report_a4_fail('Unable to create the result-download list browser profile.');
+    }
+    $listResult = result_report_a4_run_process(
+        array(
+            $browser['path'],
+            '--headless=new',
+            '--disable-gpu',
+            '--disable-dev-shm-usage',
+            '--no-sandbox',
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--allow-file-access-from-files',
+            '--run-all-compositor-stages-before-draw',
+            '--window-size=' . $listViewport['width'] . ',' . $listViewport['height'],
+            '--user-data-dir=' . result_report_a4_to_browser_path($listProfile, $browser['windows']),
+            '--virtual-time-budget=1500',
+            '--dump-dom',
+            $listUrl,
+        ),
+        30
+    );
+    result_report_a4_assert(
+        $listResult['exit_code'] === 0,
+        'Chromium must render the ' . $listViewport['name'] . ' result-download controls.'
+    );
+    $listPayload = result_download_list_parse_payload($listResult['stdout']);
+    result_report_a4_assert(is_array($listPayload), 'The ' . $listViewport['name'] . ' result-download fixture must publish measurements.');
+    result_report_a4_assert($listPayload['submittedCount'] === 2, 'Download selected must submit exactly the two checked results on ' . $listViewport['name'] . '.');
+    result_report_a4_assert($listPayload['inlineActionsVisible'] === $listViewport['inline'], 'The inline download buttons must have the expected ' . $listViewport['name'] . ' visibility.');
+    result_report_a4_assert($listPayload['dropdownVisible'] === $listViewport['dropdown'], 'The compact download dropdown must have the expected ' . $listViewport['name'] . ' visibility.');
+    result_report_a4_assert($listPayload['toolbarContained'] === true, 'The download toolbar must remain inside the ' . $listViewport['name'] . ' viewport.');
+    result_report_a4_assert($listPayload['compactIcon'] === true, 'The per-row download icon must remain compact on ' . $listViewport['name'] . '.');
+}
+
+echo 'PASS: responsive result-download controls.' . PHP_EOL;
+
+$bulkSourcePath = $temporaryDirectory . DIRECTORY_SEPARATOR . 'result-source.html';
+$bulkHtmlPath = $temporaryDirectory . DIRECTORY_SEPARATOR . 'result-bulk.html';
+$bulkPdfPath = $temporaryDirectory . DIRECTORY_SEPARATOR . 'result-bulk.pdf';
+$bulkUrls = array(
+    'result-source.html?id=11',
+    'result-source.html?id=12',
+    'result-source.html?id=13',
+);
+
+result_report_a4_assert(
+    file_put_contents($bulkSourcePath, result_download_source_fixture_html()) !== false,
+    'The bulk-download source fixture must be writable.'
+);
+result_report_a4_assert(
+    file_put_contents(
+        $bulkHtmlPath,
+        result_download_bulk_fixture_html($css, $downloadCss, $bulkJavascript, $bulkUrls)
+    ) !== false,
+    'The bulk-download HTML fixture must be writable.'
+);
+
+$bulkArguments = array(
+    $browser['path'],
+    '--headless=new',
+    '--disable-gpu',
+    '--disable-dev-shm-usage',
+    '--no-sandbox',
+    '--no-first-run',
+    '--no-default-browser-check',
+    '--allow-file-access-from-files',
+    '--run-all-compositor-stages-before-draw',
+    '--window-size=1024,1400',
+    '--user-data-dir=' . result_report_a4_to_browser_path($profileDirectory, $browser['windows']),
+    '--virtual-time-budget=8000',
+);
+$bulkUrl = result_report_a4_file_url($bulkHtmlPath, $browser['windows']);
+$bulkDomResult = result_report_a4_run_process(
+    array_merge($bulkArguments, array('--dump-dom', $bulkUrl)),
+    45
+);
+
+result_report_a4_assert(
+    $bulkDomResult['exit_code'] === 0,
+    'Chromium must render the combined result-download fixture. ' . trim($bulkDomResult['stderr'])
+);
+result_report_a4_assert(
+    substr_count($bulkDomResult['stdout'], 'class="result-bulk-download-sheet"') === 3,
+    'Selected/all downloads must retain one prepared sheet per student. Rendered sheets: '
+        . substr_count($bulkDomResult['stdout'], 'class="result-bulk-download-sheet"')
+        . '. Browser output tail: '
+        . substr(trim($bulkDomResult['stdout']), -1600)
+);
+result_report_a4_assert(
+    strpos($bulkDomResult['stdout'], 'data-print-requested="true"') !== false,
+    'The combined download must request the browser PDF dialog after preparation.'
+);
+
+$bulkPrintResult = result_report_a4_run_process(
+    array_merge(
+        $bulkArguments,
+        array(
+            '--no-pdf-header-footer',
+            '--print-to-pdf=' . result_report_a4_to_browser_path($bulkPdfPath, $browser['windows']),
+            $bulkUrl,
+        )
+    ),
+    45
+);
+result_report_a4_assert(
+    $bulkPrintResult['exit_code'] === 0 && is_file($bulkPdfPath),
+    'Chromium must print the combined selected/all result fixture. ' . trim($bulkPrintResult['stderr'])
+);
+$bulkPdfDetails = result_report_a4_pdf_details($bulkPdfPath);
+result_report_a4_assert(is_array($bulkPdfDetails), 'The combined result PDF must be readable.');
+result_report_a4_assert($bulkPdfDetails['pages'] === 3, 'Three selected results must produce exactly three A4 PDF pages.');
+result_report_a4_assert(
+    $bulkPdfDetails['width'] !== null && abs($bulkPdfDetails['width'] - 595.28) <= 2,
+    'The combined result PDF width must remain A4.'
+);
+result_report_a4_assert(
+    $bulkPdfDetails['height'] !== null && abs($bulkPdfDetails['height'] - 841.89) <= 2,
+    'The combined result PDF height must remain A4.'
+);
+
+echo 'PASS: combined three-result A4 download fixture.' . PHP_EOL;
 
 echo 'Result report A4 browser tests passed (' . $assertions . ' assertions) using '
     . $browser['version']

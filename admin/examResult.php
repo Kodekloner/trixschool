@@ -21,6 +21,7 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <!--My New Stylesheet CSS -->
     <link rel="stylesheet" href="../assets/css/myStyleSheet.css">
+    <link rel="stylesheet" href="../assets/css/exam-result-download.css">
     <title>View Result</title>
 
     <style type="text/css">
@@ -246,6 +247,7 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
     <script src="../assets/js/datatables.min.js"></script>
     <script src="../assets/js/pdfmake.min.js"></script>
     <script src="../assets/js/vfs_fonts.js"></script>
+    <script src="../assets/js/exam-result-download.js"></script>
 
     <script>
         var canPublishResult = <?php echo $canPublishResult ? 'true' : 'false'; ?>;
@@ -391,6 +393,9 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
                         success: function(maindata2) {
 
                             $('#tbl_data').html(maindata2);
+                            if (window.ResultDownloadList) {
+                                window.ResultDownloadList.refresh(document.getElementById('tbl_data'));
+                            }
 
                         }
                     });
@@ -428,6 +433,9 @@ $canPublishResult = can_staff_publish_result($link, $id ?? 0, $rolefirst ?? '');
                             success: function(maindata2) {
 
                                 $('#tbl_data').html(maindata2);
+                                if (window.ResultDownloadList) {
+                                    window.ResultDownloadList.refresh(document.getElementById('tbl_data'));
+                                }
 
                             }
                         });
