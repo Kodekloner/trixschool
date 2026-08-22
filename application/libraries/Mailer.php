@@ -23,20 +23,6 @@ class Mailer {
         return substr($value, 0, 2) . str_repeat('*', max(0, $length - 4)) . substr($value, -2);
     }
 
-    private function sanitizeDebugLine($line) {
-        $line = trim((string) $line);
-
-        if (stripos($line, 'CLIENT -> SERVER: AUTH LOGIN') !== false) {
-            return 'CLIENT -> SERVER: AUTH LOGIN [REDACTED]';
-        }
-
-        if (preg_match('/^CLIENT -> SERVER:\s+[A-Za-z0-9+\/=]{16,}$/', $line)) {
-            return 'CLIENT -> SERVER: [REDACTED AUTH PAYLOAD]';
-        }
-
-        return $line;
-    }
- 
     public function __construct() {
         $this->CI = &get_instance();
         $this->CI->load->model('emailconfig_model');
@@ -63,8 +49,6 @@ class Mailer {
         $school_email = $this->sch_setting[0]['email'];
         $from_email   = filter_var($school_email, FILTER_VALIDATE_EMAIL) ? $school_email : '';
         $from_name    = $school_name;
-        $smtp_debug_output = array();
-
         if (!empty($options['from_email']) && filter_var($options['from_email'], FILTER_VALIDATE_EMAIL)) {
             $from_email = $options['from_email'];
         }
@@ -80,16 +64,13 @@ class Mailer {
         if ($this->CI->mail_config->email_type == "smtp") {
 
             $mail->IsSMTP();
-            $mail->SMTPDebug  = 2;
-            $mail->Debugoutput = function ($str, $level) use (&$smtp_debug_output) {
-                $debug_line = 'Mailer SMTP debug level ' . $level . ': ' . $this->sanitizeDebugLine($str);
-                $smtp_debug_output[] = $debug_line;
-                log_message('error', $debug_line);
-            };
+            // SMTP debug level 2 includes the full DATA transaction, which
+            // can expose message bodies and attachments in application logs.
+            $mail->SMTPDebug  = 0;
             $mail->SMTPAuth   = ($this->CI->mail_config->smtp_auth != "") ? $this->CI->mail_config->smtp_auth : "";
-            $mail->SMTPSecure = $this->CI->mail_config->ssl_tls;
-            $mail->Host       = $this->CI->mail_config->smtp_server;
-            $mail->Port       = $this->CI->mail_config->smtp_port;
+            $mail->SMTPSecure = trim((string) $this->CI->mail_config->ssl_tls);
+            $mail->Host       = trim((string) $this->CI->mail_config->smtp_server);
+            $mail->Port       = (int) trim((string) $this->CI->mail_config->smtp_port);
             $mail->Username   = $this->CI->mail_config->smtp_username;
             $mail->Password   = $this->CI->mail_config->smtp_password;
             if ($from_email !== '') {
@@ -196,10 +177,6 @@ class Mailer {
                 ', from=' . $from_email .
                 ', error=' . $mail->ErrorInfo
             );
-
-            if (!empty($smtp_debug_output)) {
-                log_message('error', 'Mailer SMTP transcript: ' . implode(' | ', $smtp_debug_output));
-            }
             return false;
         }
     }

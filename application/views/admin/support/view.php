@@ -57,6 +57,7 @@ $format_date = function ($value) {
                         <div class="box-footer">
                             <form action="<?php echo site_url('admin/support/reply/' . $ticket['id']); ?>" method="post">
                                 <?php echo $this->customlib->getCSRF(); ?>
+                                <input type="hidden" name="support_action_csrf" value="<?php echo html_escape($support_action_csrf); ?>">
                                 <div class="form-group">
                                     <textarea name="message" class="form-control" rows="6" required></textarea>
                                 </div>
@@ -107,6 +108,7 @@ $format_date = function ($value) {
                         </div>
                         <form action="<?php echo site_url('admin/support/update/' . $ticket['id']); ?>" method="post">
                             <?php echo $this->customlib->getCSRF(); ?>
+                            <input type="hidden" name="support_action_csrf" value="<?php echo html_escape($support_action_csrf); ?>">
                             <div class="box-body">
                                 <div class="form-group">
                                     <label>Status</label>

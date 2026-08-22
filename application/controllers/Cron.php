@@ -29,6 +29,7 @@ class Cron extends CI_Controller
             $this->autobackup($key);
             $this->feereminder($key);
             $this->onlineexam($key);
+            $this->supportemailalerts($key);
         } else {
             echo "Invalid Key or Direct access is not allowed";
             return;
@@ -45,6 +46,28 @@ class Cron extends CI_Controller
         $result = $this->onlineexamattempt_model->processExpiredPapers(1000);
         $result['lifecycle_reconciliation'] = $this->onlineexamattempt_model->refreshActiveAssessmentLifecycles(1000);
         echo json_encode(array('online_examination' => $result));
+    }
+
+    /** Send queued new-inbox alerts without delaying the public SES webhook. */
+    public function supportemailalerts($key = '')
+    {
+        if ($key == '' || $this->cron_key != $key) {
+            echo "Invalid Key or Direct access is not allowed";
+            return array();
+        }
+
+        $this->load->library('supportemailnotifier');
+        $result = $this->supportemailnotifier->processQueue(20);
+        log_message(
+            'info',
+            'Support email alert queue: selected=' . (int) $result['selected']
+            . ', sent=' . (int) $result['sent']
+            . ', retried=' . (int) $result['retried']
+            . ', failed=' . (int) $result['failed']
+            . ', cancelled=' . (int) $result['cancelled']
+        );
+
+        return $result;
     }
 
     public function autobackup($key = '')
