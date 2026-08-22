@@ -526,52 +526,22 @@ function result_report_a4_pdf_details($pdfPath)
     );
 }
 
-function result_download_source_fixture_html()
+function result_download_source_fixture_html($resultCss)
 {
     return '<!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><title>Result source</title></head>
-<body>
-  <article class="result-report result-report--standard" data-result-report data-result-report-ready="true" data-result-fit-scale="1" style="--result-fit-scale:1;--result-brand:#6d247f;--result-brand-strong:#42154d;--result-brand-soft:#f4eaf7;--result-brand-contrast:#fff">
-    <div class="result-report__content" data-result-report-content>
-      <div class="card-body"><div class="rel" style="padding:12mm">
-        <h1 style="text-align:center">Student Result</h1>
-        <p style="text-align:center">One fitted A4 result page</p>
-      </div></div>
-    </div>
-  </article>
-</body>
-</html>';
-}
-
-function result_download_bulk_fixture_html($resultCss, $downloadCss, $bulkScript, array $urls)
-{
-    $bulkScript = str_ireplace('</script', '<\/script', $bulkScript);
-    $payload = json_encode(
-        array('urls' => $urls, 'error' => ''),
-        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
-    );
-
-    return '<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Bulk result fixture</title>
-  <style>' . $resultCss . "\n" . $downloadCss . '</style>
-</head>
-<body class="result-report-page result-bulk-download-page">
-  <header class="result-bulk-download-status" data-result-no-print>
-    <div class="result-bulk-download-status__copy"><strong>Preparing</strong><span data-result-bulk-status>Starting</span></div>
-    <div class="result-bulk-download-status__actions">
-      <button type="button" data-result-bulk-print hidden>Save as PDF</button>
-      <button type="button" data-result-bulk-close>Close</button>
-    </div>
-  </header>
-  <main class="result-bulk-download-output" data-result-bulk-output></main>
-  <script type="application/json" id="result-download-payload">' . $payload . '</script>
-  <script>window.print=function(){document.body.setAttribute("data-print-requested","true");};</script>
-  <script>' . $bulkScript . '</script>
+<head><meta charset="utf-8"><title>Result source</title><style>' . $resultCss . '</style></head>
+<body class="result-report-page">
+  <div class="result-report-preview" data-result-report-preview>
+    <article class="result-report result-report--standard" data-result-report data-result-report-ready="true" data-result-fit-scale="1" style="--result-fit-scale:1;--result-brand:#6d247f;--result-brand-strong:#42154d;--result-brand-soft:#f4eaf7;--result-brand-contrast:#fff">
+      <div class="result-report__content" data-result-report-content>
+        <div class="card-body"><div class="rel" style="padding:12mm">
+          <h1 style="text-align:center">Student Result</h1>
+          <p style="text-align:center">One fitted A4 result page</p>
+        </div></div>
+      </div>
+    </article>
+  </div>
 </body>
 </html>';
 }
@@ -607,14 +577,13 @@ function result_download_list_fixture_html($downloadCss, $listScript)
     <div style="overflow-x:auto">
       <table class="result-download-table"><thead><tr><th class="result-download-table__select"><input type="checkbox" data-result-select-all></th><th>Name</th><th class="result-download-table__action">Action</th></tr></thead>
         <tbody>
-          <tr data-result-row><td><input type="checkbox" data-result-select></td><td>Student One</td><td><div class="result-download-row-actions"><a href="resultPage.php?id=1">View</a><a href="resultPage.php?id=1" data-result-download-one class="result-download-row-actions__download">↓</a></div></td></tr>
-          <tr data-result-row><td><input type="checkbox" data-result-select></td><td>Student Two</td><td><div class="result-download-row-actions"><a href="resultPage.php?id=2">View</a><a href="resultPage.php?id=2" data-result-download-one class="result-download-row-actions__download">↓</a></div></td></tr>
-          <tr data-result-row><td><input type="checkbox" data-result-select></td><td>Student Three</td><td><div class="result-download-row-actions"><a href="resultPage.php?id=3">View</a><a href="resultPage.php?id=3" data-result-download-one class="result-download-row-actions__download">↓</a></div></td></tr>
+          <tr data-result-row data-result-student-id="1"><td><input type="checkbox" data-result-select></td><td>Student One</td><td><div class="result-download-row-actions"><a href="resultPage.php?classsection=1&amp;classsectionactual=1&amp;classid=1&amp;session=1&amp;term=3rd&amp;id=1&amp;reltype=cummulative">View</a><a href="resultPage.php?classsection=1&amp;classsectionactual=1&amp;classid=1&amp;session=1&amp;term=3rd&amp;id=1&amp;reltype=cummulative" data-result-download-one data-result-filename="Student One Result.pdf" data-result-archive-filename="Class Results.zip" class="result-download-row-actions__download">↓</a></div></td></tr>
+          <tr data-result-row data-result-student-id="2"><td><input type="checkbox" data-result-select></td><td>Student Two</td><td><div class="result-download-row-actions"><a href="resultPage.php?classsection=1&amp;classsectionactual=1&amp;classid=1&amp;session=1&amp;term=3rd&amp;id=2&amp;reltype=cummulative">View</a><a href="resultPage.php?classsection=1&amp;classsectionactual=1&amp;classid=1&amp;session=1&amp;term=3rd&amp;id=2&amp;reltype=cummulative" data-result-download-one data-result-filename="Student Two Result.pdf" data-result-archive-filename="Class Results.zip" class="result-download-row-actions__download">↓</a></div></td></tr>
+          <tr data-result-row data-result-student-id="3"><td><input type="checkbox" data-result-select></td><td>Student Three</td><td><div class="result-download-row-actions"><a href="resultPage.php?classsection=1&amp;classsectionactual=1&amp;classid=1&amp;session=1&amp;term=3rd&amp;id=3&amp;reltype=cummulative">View</a><a href="resultPage.php?classsection=1&amp;classsectionactual=1&amp;classid=1&amp;session=1&amp;term=3rd&amp;id=3&amp;reltype=cummulative" data-result-download-one data-result-filename="Student Three Result.pdf" data-result-archive-filename="Class Results.zip" class="result-download-row-actions__download">↓</a></div></td></tr>
         </tbody>
       </table>
     </div>
   </div>
-  <script>HTMLFormElement.prototype.submit=function(){window.__submittedResultUrls=JSON.parse(this.querySelector("[name=result_urls]").value);};</script>
   <script>' . $listScript . '</script>
   <script>
   (function(){
@@ -623,8 +592,6 @@ function result_download_list_fixture_html($downloadCss, $listScript)
     checks[0].checked=true;
     checks[1].checked=true;
     window.ResultDownloadList.refresh(document);
-    var selectedButtons=list.querySelectorAll("[data-result-download-selected]");
-    selectedButtons[window.innerWidth<=575?1:0].click();
     setTimeout(function(){
       var toolbar=list.querySelector("[data-result-download-toolbar]");
       var actions=list.querySelector(".result-download-toolbar__actions");
@@ -634,7 +601,8 @@ function result_download_list_fixture_html($downloadCss, $listScript)
       var iconRect=icon.getBoundingClientRect();
       var payload={
         viewportWidth:window.innerWidth,
-        submittedCount:(window.__submittedResultUrls||[]).length,
+        selectedCount:list.querySelector("[data-result-selected-count]").textContent,
+        selectedEnabled:Array.prototype.every.call(list.querySelectorAll("[data-result-download-selected]"),function(button){return !button.disabled;}),
         inlineActionsVisible:getComputedStyle(actions).display!=="none",
         dropdownVisible:getComputedStyle(dropdown).display!=="none",
         toolbarContained:rect.left>=0&&rect.right<=window.innerWidth+1,
@@ -651,9 +619,107 @@ function result_download_list_fixture_html($downloadCss, $listScript)
 </html>';
 }
 
-function result_download_list_parse_payload($html)
+function result_download_direct_fixture_html($downloadCss, $listScript, $jsPdfUrl, $jsZipUrl)
 {
-    if (!preg_match('#<pre id="result-download-list-output">(.*?)</pre>#s', $html, $matches)) {
+    $listScript = str_ireplace('</script', '<\/script', $listScript);
+    $jsPdfUrl = htmlspecialchars($jsPdfUrl, ENT_QUOTES, 'UTF-8');
+    $jsZipUrl = htmlspecialchars($jsZipUrl, ENT_QUOTES, 'UTF-8');
+
+    return '<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>' . $downloadCss . '</style>
+</head>
+<body>
+  <div class="result-download-list" data-result-download-list>
+    <div class="result-download-toolbar" data-result-download-toolbar>
+      <div class="result-download-toolbar__summary"><i class="fa fa-download"></i><span>Result downloads</span><small data-result-selected-count>0 selected</small></div>
+      <div class="result-download-toolbar__actions"><button type="button" data-result-download-selected disabled>Download selected</button><button type="button" data-result-download-all>Download all</button></div>
+      <div class="dropdown result-download-toolbar__dropdown"><button type="button">Download</button><div class="dropdown-menu"><button type="button" data-result-download-selected disabled>Download selected</button><button type="button" data-result-download-all>Download all</button></div></div>
+      <div class="result-download-toolbar__message" data-result-download-message></div>
+    </div>
+    <table class="result-download-table"><tbody>
+      <tr data-result-row data-result-student-id="11"><td><input type="checkbox" data-result-select></td><td>Student One</td><td><a href="resultPage.php/index.html?classsection=1&amp;classsectionactual=1&amp;classid=1&amp;session=1&amp;term=3rd&amp;id=11&amp;reltype=cummulative" data-result-download-one data-result-filename="Student One Result.pdf" data-result-archive-filename="Primary One Results.zip">Download</a></td></tr>
+      <tr data-result-row data-result-student-id="12"><td><input type="checkbox" data-result-select></td><td>Student Two</td><td><a href="resultPage.php/index.html?classsection=1&amp;classsectionactual=1&amp;classid=1&amp;session=1&amp;term=3rd&amp;id=12&amp;reltype=cummulative" data-result-download-one data-result-filename="Student Two Result.pdf" data-result-archive-filename="Primary One Results.zip">Download</a></td></tr>
+    </tbody></table>
+  </div>
+  <script src="' . $jsPdfUrl . '"></script>
+  <script src="' . $jsZipUrl . '"></script>
+  <script>
+    window.__resultRenderCalls=0;
+    window.__resultPrintCalls=0;
+    window.__resultOpenCalls=0;
+    window.print=function(){window.__resultPrintCalls+=1;};
+    window.open=function(){window.__resultOpenCalls+=1;return null;};
+    HTMLAnchorElement.prototype.click=function(){};
+    window.html2canvas=function(){
+      window.__resultRenderCalls+=1;
+      var canvas=document.createElement("canvas");
+      canvas.width=794;canvas.height=1123;
+      var context=canvas.getContext("2d");
+      context.fillStyle="#fff";context.fillRect(0,0,canvas.width,canvas.height);
+      context.fillStyle="#6d247f";context.fillRect(30,30,734,90);
+      context.fillStyle="#111";context.font="30px Arial";context.fillText("Student Result",280,200);
+      return Promise.resolve(canvas);
+    };
+  </script>
+  <script>' . $listScript . '</script>
+  <script>
+  (function(){
+    var list=document.querySelector("[data-result-download-list]");
+    var checks=list.querySelectorAll("[data-result-select]");
+    var payload={zip:null,pdf:null};
+    var finished=false;
+
+    function bytesToString(buffer){
+      var bytes=new Uint8Array(buffer),text="",offset=0,chunk=8192;
+      while(offset<bytes.length){text+=String.fromCharCode.apply(null,bytes.subarray(offset,Math.min(bytes.length,offset+chunk)));offset+=chunk;}
+      return text;
+    }
+    function pdfDetails(buffer){
+      var text=bytesToString(buffer),pages=(text.match(/\/Type\s*\/Page\b/g)||[]).length;
+      var media=text.match(/\/MediaBox\s*\[\s*0\s+0\s+([0-9.]+)\s+([0-9.]+)/);
+      return {starts:text.slice(0,5)==="%PDF-",pages:pages,a4:!!media&&Math.abs(parseFloat(media[1])-595.28)<2&&Math.abs(parseFloat(media[2])-841.89)<2};
+    }
+    function publish(){
+      if(finished||!payload.zip||!payload.pdf){return;}
+      finished=true;
+      payload.renderCalls=window.__resultRenderCalls;
+      payload.printCalls=window.__resultPrintCalls;
+      payload.openCalls=window.__resultOpenCalls;
+      payload.captureFrames=document.querySelectorAll(".result-download-capture-frame").length;
+      var output=document.createElement("pre");output.id="result-download-direct-output";output.textContent=JSON.stringify(payload);document.body.appendChild(output);
+    }
+    document.addEventListener("resultdownloadready",function(event){
+      var detail=event.detail||{};
+      if(detail.blob&&detail.blob.type==="application/zip"){
+        window.JSZip.loadAsync(detail.blob).then(function(zip){
+          var names=Object.keys(zip.files).filter(function(name){return !zip.files[name].dir;});
+          var pdfNames=names.filter(function(name){return /\.pdf$/i.test(name);});
+          return Promise.all(pdfNames.map(function(name){return zip.file(name).async("arraybuffer").then(pdfDetails);})).then(function(details){
+            payload.zip={name:detail.filename,type:detail.blob.type,entries:names,pdfCount:pdfNames.length,allPdf:details.every(function(item){return item.starts&&item.pages===1&&item.a4;})};
+            window.setTimeout(function(){list.querySelector("[data-result-download-one]").dispatchEvent(new MouseEvent("click",{bubbles:true,cancelable:true}));},80);
+          });
+        });
+      }else if(detail.blob&&detail.blob.type==="application/pdf"){
+        detail.blob.arrayBuffer().then(function(buffer){payload.pdf={name:detail.filename,type:detail.blob.type,details:pdfDetails(buffer)};publish();});
+      }
+    });
+    checks[0].checked=true;checks[1].checked=true;
+    window.ResultDownloadList.refresh(document);
+    list.querySelector(".result-download-toolbar__actions [data-result-download-selected]").click();
+    window.setTimeout(function(){if(!finished){var output=document.createElement("pre");output.id="result-download-direct-output";output.textContent=JSON.stringify({error:list.querySelector("[data-result-download-message]").textContent,renderCalls:window.__resultRenderCalls});document.body.appendChild(output);}},12000);
+  }());
+  </script>
+</body>
+</html>';
+}
+
+function result_download_parse_payload($html, $elementId)
+{
+    if (!preg_match('#<pre id="' . preg_quote($elementId, '#') . '">(.*?)</pre>#s', $html, $matches)) {
         return null;
     }
 
@@ -672,18 +738,19 @@ $cssPath = $repositoryRoot . '/assets/css/result-report.css';
 $javascriptPath = $repositoryRoot . '/assets/js/result-report-print.js';
 $downloadCssPath = $repositoryRoot . '/assets/css/exam-result-download.css';
 $listJavascriptPath = $repositoryRoot . '/assets/js/exam-result-download.js';
-$bulkJavascriptPath = $repositoryRoot . '/assets/js/result-bulk-download.js';
+$jsPdfPath = $repositoryRoot . '/backend/idcard-studio/vendor/jspdf-2.5.2.umd.min.js';
+$jsZipPath = $repositoryRoot . '/backend/dist/datatables/js/jszip.min.js';
 $css = file_get_contents($cssPath);
 $javascript = file_get_contents($javascriptPath);
 $downloadCss = file_get_contents($downloadCssPath);
 $listJavascript = file_get_contents($listJavascriptPath);
-$bulkJavascript = file_get_contents($bulkJavascriptPath);
 
 result_report_a4_assert($css !== false, 'The shared result report stylesheet must be readable.');
 result_report_a4_assert($javascript !== false, 'The shared result report print script must be readable.');
 result_report_a4_assert($downloadCss !== false, 'The result download stylesheet must be readable.');
 result_report_a4_assert($listJavascript !== false, 'The result-list download script must be readable.');
-result_report_a4_assert($bulkJavascript !== false, 'The bulk result download script must be readable.');
+result_report_a4_assert(is_file($jsPdfPath), 'The local jsPDF library must be available.');
+result_report_a4_assert(is_file($jsZipPath), 'The local JSZip library must be available.');
 
 $temporaryBase = $browser['windows'] ? result_report_a4_windows_temp_directory() : sys_get_temp_dir();
 if ($temporaryBase === null || !is_dir($temporaryBase) || !is_writable($temporaryBase)) {
@@ -750,6 +817,16 @@ foreach ($fixtures as $fixture) {
     );
 
     $payload = result_report_a4_parse_payload($domResult['stdout']);
+    if (!is_array($payload)) {
+        /* Windows Chrome can occasionally return before its first isolated
+         * headless profile has executed inline JavaScript. Retry that first
+         * render once; a persistent rendering failure still fails below. */
+        $domResult = result_report_a4_run_process(
+            array_merge($commonArguments, array('--dump-dom', $fixtureUrl)),
+            45
+        );
+        $payload = result_report_a4_parse_payload($domResult['stdout']);
+    }
     result_report_a4_assert(
         is_array($payload),
         'The ' . $rowCount . '-row fixture must publish browser measurements. Browser output tail: '
@@ -853,9 +930,10 @@ foreach (array(
         $listResult['exit_code'] === 0,
         'Chromium must render the ' . $listViewport['name'] . ' result-download controls.'
     );
-    $listPayload = result_download_list_parse_payload($listResult['stdout']);
+    $listPayload = result_download_parse_payload($listResult['stdout'], 'result-download-list-output');
     result_report_a4_assert(is_array($listPayload), 'The ' . $listViewport['name'] . ' result-download fixture must publish measurements.');
-    result_report_a4_assert($listPayload['submittedCount'] === 2, 'Download selected must submit exactly the two checked results on ' . $listViewport['name'] . '.');
+    result_report_a4_assert($listPayload['selectedCount'] === '2 selected', 'The selected-result count must include exactly the two checked results on ' . $listViewport['name'] . '.');
+    result_report_a4_assert($listPayload['selectedEnabled'] === true, 'Download selected must be enabled for the two checked results on ' . $listViewport['name'] . '.');
     result_report_a4_assert($listPayload['inlineActionsVisible'] === $listViewport['inline'], 'The inline download buttons must have the expected ' . $listViewport['name'] . ' visibility.');
     result_report_a4_assert($listPayload['dropdownVisible'] === $listViewport['dropdown'], 'The compact download dropdown must have the expected ' . $listViewport['name'] . ' visibility.');
     result_report_a4_assert($listPayload['toolbarContained'] === true, 'The download toolbar must remain inside the ' . $listViewport['name'] . ' viewport.');
@@ -864,28 +942,35 @@ foreach (array(
 
 echo 'PASS: responsive result-download controls.' . PHP_EOL;
 
-$bulkSourcePath = $temporaryDirectory . DIRECTORY_SEPARATOR . 'result-source.html';
-$bulkHtmlPath = $temporaryDirectory . DIRECTORY_SEPARATOR . 'result-bulk.html';
-$bulkPdfPath = $temporaryDirectory . DIRECTORY_SEPARATOR . 'result-bulk.pdf';
-$bulkUrls = array(
-    'result-source.html?id=11',
-    'result-source.html?id=12',
-    'result-source.html?id=13',
-);
+$directSourceDirectory = $temporaryDirectory . DIRECTORY_SEPARATOR . 'resultPage.php';
+$directSourcePath = $directSourceDirectory . DIRECTORY_SEPARATOR . 'index.html';
+$directHtmlPath = $temporaryDirectory . DIRECTORY_SEPARATOR . 'result-download-direct.html';
+$directProfile = $temporaryDirectory . DIRECTORY_SEPARATOR . 'direct-download-profile';
+if (!mkdir($directSourceDirectory, 0700, true) && !is_dir($directSourceDirectory)) {
+    result_report_a4_fail('Unable to create the direct-download source directory.');
+}
+if (!mkdir($directProfile, 0700, true) && !is_dir($directProfile)) {
+    result_report_a4_fail('Unable to create the direct-download browser profile.');
+}
 
 result_report_a4_assert(
-    file_put_contents($bulkSourcePath, result_download_source_fixture_html()) !== false,
-    'The bulk-download source fixture must be writable.'
+    file_put_contents($directSourcePath, result_download_source_fixture_html($css)) !== false,
+    'The direct-download source fixture must be writable.'
 );
 result_report_a4_assert(
     file_put_contents(
-        $bulkHtmlPath,
-        result_download_bulk_fixture_html($css, $downloadCss, $bulkJavascript, $bulkUrls)
+        $directHtmlPath,
+        result_download_direct_fixture_html(
+            $downloadCss,
+            $listJavascript,
+            result_report_a4_file_url($jsPdfPath, $browser['windows']),
+            result_report_a4_file_url($jsZipPath, $browser['windows'])
+        )
     ) !== false,
-    'The bulk-download HTML fixture must be writable.'
+    'The direct PDF/ZIP download fixture must be writable.'
 );
 
-$bulkArguments = array(
+$directArguments = array(
     $browser['path'],
     '--headless=new',
     '--disable-gpu',
@@ -896,59 +981,52 @@ $bulkArguments = array(
     '--allow-file-access-from-files',
     '--run-all-compositor-stages-before-draw',
     '--window-size=1024,1400',
-    '--user-data-dir=' . result_report_a4_to_browser_path($profileDirectory, $browser['windows']),
-    '--virtual-time-budget=8000',
+    '--user-data-dir=' . result_report_a4_to_browser_path($directProfile, $browser['windows']),
+    '--virtual-time-budget=15000',
+    '--dump-dom',
+    result_report_a4_file_url($directHtmlPath, $browser['windows']),
 );
-$bulkUrl = result_report_a4_file_url($bulkHtmlPath, $browser['windows']);
-$bulkDomResult = result_report_a4_run_process(
-    array_merge($bulkArguments, array('--dump-dom', $bulkUrl)),
-    45
-);
+$directResult = result_report_a4_run_process($directArguments, 60);
 
 result_report_a4_assert(
-    $bulkDomResult['exit_code'] === 0,
-    'Chromium must render the combined result-download fixture. ' . trim($bulkDomResult['stderr'])
+    $directResult['exit_code'] === 0,
+    'Chromium must complete the direct PDF/ZIP fixture. ' . trim($directResult['stderr'])
+);
+$directPayload = result_download_parse_payload($directResult['stdout'], 'result-download-direct-output');
+result_report_a4_assert(
+    is_array($directPayload) && !isset($directPayload['error']),
+    'The direct PDF/ZIP fixture must publish successful download details. Browser output tail: '
+        . substr(trim($directResult['stdout']), -1800)
 );
 result_report_a4_assert(
-    substr_count($bulkDomResult['stdout'], 'class="result-bulk-download-sheet"') === 3,
-    'Selected/all downloads must retain one prepared sheet per student. Rendered sheets: '
-        . substr_count($bulkDomResult['stdout'], 'class="result-bulk-download-sheet"')
-        . '. Browser output tail: '
-        . substr(trim($bulkDomResult['stdout']), -1600)
+    $directPayload['zip']['type'] === 'application/zip'
+        && substr($directPayload['zip']['name'], -4) === '.zip'
+        && $directPayload['zip']['pdfCount'] === 2,
+    'Two selected results must download directly as one ZIP containing two PDFs.'
 );
 result_report_a4_assert(
-    strpos($bulkDomResult['stdout'], 'data-print-requested="true"') !== false,
-    'The combined download must request the browser PDF dialog after preparation.'
+    $directPayload['zip']['allPdf'] === true,
+    'Every ZIP entry must be a valid, single-page A4 PDF.'
+);
+result_report_a4_assert(
+    $directPayload['pdf']['type'] === 'application/pdf'
+        && substr($directPayload['pdf']['name'], -4) === '.pdf'
+        && $directPayload['pdf']['details']['starts'] === true
+        && $directPayload['pdf']['details']['pages'] === 1
+        && $directPayload['pdf']['details']['a4'] === true,
+    'A row action must directly download one valid, single-page A4 PDF.'
+);
+result_report_a4_assert(
+    $directPayload['renderCalls'] === 3
+        && $directPayload['captureFrames'] === 0,
+    'The two ZIP PDFs and one row PDF must render sequentially and clean up their hidden frames.'
+);
+result_report_a4_assert(
+    $directPayload['printCalls'] === 0 && $directPayload['openCalls'] === 0,
+    'Direct result downloads must not open another page or invoke browser printing.'
 );
 
-$bulkPrintResult = result_report_a4_run_process(
-    array_merge(
-        $bulkArguments,
-        array(
-            '--no-pdf-header-footer',
-            '--print-to-pdf=' . result_report_a4_to_browser_path($bulkPdfPath, $browser['windows']),
-            $bulkUrl,
-        )
-    ),
-    45
-);
-result_report_a4_assert(
-    $bulkPrintResult['exit_code'] === 0 && is_file($bulkPdfPath),
-    'Chromium must print the combined selected/all result fixture. ' . trim($bulkPrintResult['stderr'])
-);
-$bulkPdfDetails = result_report_a4_pdf_details($bulkPdfPath);
-result_report_a4_assert(is_array($bulkPdfDetails), 'The combined result PDF must be readable.');
-result_report_a4_assert($bulkPdfDetails['pages'] === 3, 'Three selected results must produce exactly three A4 PDF pages.');
-result_report_a4_assert(
-    $bulkPdfDetails['width'] !== null && abs($bulkPdfDetails['width'] - 595.28) <= 2,
-    'The combined result PDF width must remain A4.'
-);
-result_report_a4_assert(
-    $bulkPdfDetails['height'] !== null && abs($bulkPdfDetails['height'] - 841.89) <= 2,
-    'The combined result PDF height must remain A4.'
-);
-
-echo 'PASS: combined three-result A4 download fixture.' . PHP_EOL;
+echo 'PASS: direct PDF and selected-results ZIP fixture.' . PHP_EOL;
 
 echo 'Result report A4 browser tests passed (' . $assertions . ' assertions) using '
     . $browser['version']

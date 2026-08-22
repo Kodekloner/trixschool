@@ -32,6 +32,33 @@ function build_student_result_url(
         . http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
 }
 
+function build_result_download_filename(array $parts, $extension, $fallback)
+{
+    $parts = array_values(array_filter(array_map(static function ($part) {
+        return trim((string) $part);
+    }, $parts), static function ($part) {
+        return $part !== '';
+    }));
+
+    $filename = implode(' - ', $parts);
+    $filename = preg_replace('/[\\\\\/:*?"<>|\x00-\x1F\x7F]+/u', '-', $filename);
+    $filename = preg_replace('/\s+/u', ' ', trim((string) $filename));
+    $filename = trim((string) $filename, ". -\t\n\r\0\x0B");
+
+    if ($filename === '') {
+        $filename = $fallback;
+    }
+
+    $maximumStemLength = 170;
+    if (function_exists('mb_substr')) {
+        $filename = mb_substr($filename, 0, $maximumStemLength, 'UTF-8');
+    } else {
+        $filename = substr($filename, 0, $maximumStemLength);
+    }
+
+    return rtrim($filename, '. -') . '.' . ltrim(strtolower((string) $extension), '.');
+}
+
 function render_student_result_table_open()
 {
     return '<div class="result-download-list" data-result-download-list>
@@ -97,6 +124,23 @@ function render_student_result_row(
     $escape = static function ($value) {
         return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
     };
+    $pdfFilename = build_result_download_filename(
+        array(
+            $fullName,
+            $student['admission_no'] ?? '',
+            $className,
+            $sessionName,
+            $termLabel,
+            'Result',
+        ),
+        'pdf',
+        'student-result'
+    );
+    $archiveFilename = build_result_download_filename(
+        array($className, $sessionName, $termLabel, 'Results'),
+        'zip',
+        'student-results'
+    );
 
     return '<tr data-result-row data-result-student-id="' . $studentId . '">
         <td class="result-download-table__select">
@@ -111,7 +155,7 @@ function render_student_result_row(
         <td class="result-download-table__action">
             <div class="result-download-row-actions">
                 <a href="' . $escape($resultUrl) . '" class="result-download-row-actions__view">View Result</a>
-                <a href="' . $escape($resultUrl) . '" class="btn btn-sm btn-outline-primary result-download-row-actions__download" data-result-download-one title="Download result" aria-label="Download result for ' . $escape($fullName) . '">
+                <a href="' . $escape($resultUrl) . '" class="btn btn-sm btn-outline-primary result-download-row-actions__download" data-result-download-one data-result-filename="' . $escape($pdfFilename) . '" data-result-archive-filename="' . $escape($archiveFilename) . '" title="Download result as PDF" aria-label="Download PDF result for ' . $escape($fullName) . '">
                     <i class="fa fa-download" aria-hidden="true"></i>
                     <span class="sr-only">Download result</span>
                 </a>
