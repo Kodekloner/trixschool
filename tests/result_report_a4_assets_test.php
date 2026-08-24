@@ -322,6 +322,10 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
         . '<tr><th data-domain-label>Handling of Equipment</th><td>5</td><td></td><td></td></tr>'
         . '<tr><th data-domain-label>Drawing and Painting</th><td>4</td><td></td><td></td></tr>'
         . '<tr><th data-domain-label>Musical Skills</th><td>5</td><td></td><td></td></tr>';
+    $attendanceRows = '<tr><th data-attendance-label>TOTAL DAYS</th><td>120</td></tr>'
+        . '<tr><th data-attendance-label>PRESENT</th><td>116</td></tr>'
+        . '<tr><th data-attendance-label>ABSENT</th><td>3</td></tr>'
+        . '<tr><th data-attendance-label>LATE</th><td>1</td></tr>';
 
     $javascript = str_ireplace('</script', '<\\/script', $javascript);
 
@@ -379,19 +383,31 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
             <div class="col-4 result-report__chart-column">
               <div class="containerForChart result-report__chart result-report__chart--performance" data-result-decorative-chart><canvas class="newgraph" id="fixture-chart"></canvas></div>
             </div>
-            <div class="col-4 result-report__domain-column">
-              <div class="container-motto result-report__domain-panel"><div class="result table-responsive">
-                <table id="affective-fixture" class="tab table-sm result-report__domain-table"><tr><th class="result-report__domain-title" colspan="4">AFFECTIVE DOMAIN</th></tr><tbody>' . $affectiveRows . '</tbody></table>
-              </div></div>
+            <div class="col-8 result-report__domains-column" id="domain-column-fixture">
+              <div class="container-motto result-report__domain-panel">
+                <div class="result result-report__domain-tables" id="domain-group-fixture">
+                  <table id="affective-fixture" class="tab table-sm result-report__domain-table" data-result-domain-kind="affective"><thead><tr><th class="result-report__domain-title" colspan="4">AFFECTIVE DOMAIN</th></tr></thead><tbody>' . $affectiveRows . '</tbody></table>
+                  <table id="attendance-fixture" class="tab table-sm result-report__attendance-table" data-result-domain-kind="attendance"><thead><tr><th class="result-report__domain-title result-report__attendance-title" colspan="2">ATTENDANCE</th></tr></thead><tbody>' . $attendanceRows . '</tbody></table>
+                  <table id="psychomotor-fixture" class="tab table-sm result-report__domain-table" data-result-domain-kind="psychomotor"><thead><tr><th class="result-report__domain-title" colspan="4">PSYCOMOTOR</th></tr></thead><tbody>' . $psychomotorRows . '</tbody></table>
+                </div>
+              </div>
             </div>
-            <div class="col-4 result-report__domain-column">
-              <div class="container-motto result-report__domain-panel"><div class="result table-responsive">
-                <table id="psychomotor-fixture" class="tab table-sm result-report__domain-table"><tr><th class="result-report__domain-title" colspan="4">PSYCOMOTOR</th></tr><tbody>' . $psychomotorRows . '</tbody></table>
-              </div></div>
+            <div class="col-12 result-report__remarks-section" data-result-remarks-section id="legacy-remarks-fixture">
+              <div class="container-motto">
+                <div style="margin:20px">
+                  <div class="row">
+                    <div class="col-sm-10 col-md-10"><p><b>CLASS TEACHER&apos;S COMMENT:</b> A focused learner who has made steady progress.</p></div>
+                    <div class="col-sm-2 col-md-2 signature-container" style="height:56px"><svg class="signature-img" data-teacher-signature viewBox="0 0 80 24" aria-label="Teacher signature" style="width:100%;height:100%"><path d="M3 18 C20 2, 31 23, 47 8 S65 19, 77 5" fill="none" stroke="#222" stroke-width="2"></path></svg></div>
+                  </div>
+                  <div class="row">
+                    <div class="col-sm-10 col-md-10"><p><b>PRINCIPAL/HEAD TEACHER&apos;S COMMENT:</b> An excellent result. Continue the good work.</p></div>
+                    <div class="col-sm-2 col-md-2 signature-container" style="height:56px"><svg class="signature-img" data-principal-signature viewBox="0 0 80 24" aria-label="Principal signature" style="width:100%;height:100%"><path d="M4 17 C17 4, 29 22, 44 7 S62 18, 76 6" fill="none" stroke="#222" stroke-width="2"></path></svg></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
-        <section class="result-report__comments"><div class="result-report__comment"><strong class="result-report__label">Teacher&apos;s Comment</strong><p class="result-report__comment-text">A focused learner who has made steady progress throughout the academic year.</p></div><div class="result-report__comment"><strong class="result-report__label">Head Teacher&apos;s Comment</strong><p class="result-report__comment-text">An excellent result. Continue the good work.</p></div></section>
         <section class="result-report__summary result-report__summary--promotion" data-result-summary-section="promotion" aria-label="Promotion status">
           <div class="result-report__promotion" data-promotion-status="promoted"><span class="result-report__promotion-label">Promotion Status</span><strong class="result-report__promotion-value">PROMOTED TO: JSS 2</strong></div>
         </section>
@@ -417,7 +433,13 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
           var performanceChart = root.querySelector(".result-report__chart--performance");
           var performanceCanvas = document.getElementById("fixture-chart");
           var affectiveTable = document.getElementById("affective-fixture");
+          var attendanceTable = document.getElementById("attendance-fixture");
           var psychomotorTable = document.getElementById("psychomotor-fixture");
+          var domainGroup = document.getElementById("domain-group-fixture");
+          var domainColumn = document.getElementById("domain-column-fixture");
+          var remarksSection = document.getElementById("legacy-remarks-fixture");
+          var teacherSignature = remarksSection.querySelector("[data-teacher-signature]");
+          var principalSignature = remarksSection.querySelector("[data-principal-signature]");
           var legacyHeader = root.querySelector(".result-report__legacy-header");
           var legacyTitle = root.querySelector(".result-report__legacy-title");
           var studentInfo = root.querySelector(".container-motto");
@@ -458,6 +480,14 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
           var performanceRect = performance.getBoundingClientRect();
           var performanceChartRect = performanceChart.getBoundingClientRect();
           var performanceCanvasRect = performanceCanvas.getBoundingClientRect();
+          var affectiveRect = affectiveTable.getBoundingClientRect();
+          var attendanceRect = attendanceTable.getBoundingClientRect();
+          var psychomotorRect = psychomotorTable.getBoundingClientRect();
+          var domainGroupRect = domainGroup.getBoundingClientRect();
+          var domainColumnRect = domainColumn.getBoundingClientRect();
+          var remarksRect = remarksSection.getBoundingClientRect();
+          var teacherSignatureRect = teacherSignature.getBoundingClientRect();
+          var principalSignatureRect = principalSignature.getBoundingClientRect();
           var legacyHeaderRect = legacyHeader.getBoundingClientRect();
           var legacyTitleRect = legacyTitle.getBoundingClientRect();
           var tolerance = 1;
@@ -487,6 +517,7 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
             return Array.prototype.every.call(root.querySelectorAll(selector), function (cell) {
               var walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
               var textNode;
+              var cellRect = cell.getBoundingClientRect();
 
               while ((textNode = walker.nextNode())) {
                 var wordPattern = /\S+/g;
@@ -499,12 +530,37 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
                   if (range.getClientRects().length !== 1) {
                     return false;
                   }
+                  var wordRect = range.getClientRects()[0];
+                  if (wordRect.left < cellRect.left - tolerance
+                    || wordRect.right > cellRect.right + tolerance
+                    || wordRect.top < cellRect.top - tolerance
+                    || wordRect.bottom > cellRect.bottom + tolerance) {
+                    return false;
+                  }
                 }
               }
 
-              return cell.scrollWidth <= cell.clientWidth + tolerance;
+              return cell.scrollWidth <= cell.clientWidth + tolerance
+                && cell.scrollHeight <= cell.clientHeight + tolerance;
             });
           }
+          var visibleDomainTables = Array.prototype.filter.call(domainGroup.children, function (table) {
+            return window.getComputedStyle(table).display !== "none";
+          });
+          var visibleDomainRects = visibleDomainTables.map(function (table) {
+            return table.getBoundingClientRect();
+          }).sort(function (left, right) {
+            return left.left - right.left;
+          });
+          var domainTablesDoNotOverlap = visibleDomainRects.every(function (rect, index) {
+            return index === 0 || visibleDomainRects[index - 1].right <= rect.left + tolerance;
+          });
+          var domainTitles = Array.prototype.map.call(
+            domainGroup.querySelectorAll(".result-report__domain-title"),
+            function (title) { return title.getBoundingClientRect().top; }
+          );
+          var attendanceLabel = attendanceTable.querySelector("[data-attendance-label]");
+          var attendanceLabelRect = attendanceLabel.getBoundingClientRect();
           var remarkHeader = table.querySelector(".result-report__cell--remark");
           var watermarkContentCenterX = contentRect.left + (contentRect.width / 2);
           var watermarkContentCenterY = contentRect.top + (contentRect.height / 2);
@@ -533,11 +589,45 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
             remarkColumnWidthRatio: remarkHeader.getBoundingClientRect().width / tableRect.width,
             remarkWordsRemainWhole: wordsRemainWhole("[data-remark-cell]"),
             domainWordsRemainWhole: wordsRemainWhole("[data-domain-label]"),
+            attendanceWordsRemainWhole: attendanceTable.querySelectorAll("[data-attendance-label]").length === 4
+              && wordsRemainWhole("[data-attendance-label]"),
+            attendanceLabelWidthRatio: attendanceLabelRect.width / attendanceRect.width,
+            attendanceTableWidthRatio: attendanceRect.width / domainGroupRect.width,
+            attendanceInsideGroup: attendanceRect.left >= domainGroupRect.left - tolerance
+              && attendanceRect.right <= domainGroupRect.right + tolerance,
+            allDomainTablesAvailable: domainGroup.getAttribute("data-result-panel-count") === "3"
+              && visibleDomainTables.length === 3,
+            domainTablesFillGroup: visibleDomainRects.length === 3
+              && Math.abs(visibleDomainRects[0].left - domainGroupRect.left) <= tolerance
+              && Math.abs(visibleDomainRects[visibleDomainRects.length - 1].right - domainGroupRect.right) <= tolerance,
+            domainTablesDoNotOverlap: domainTablesDoNotOverlap,
+            domainTitlesAligned: Math.max.apply(Math, domainTitles) - Math.min.apply(Math, domainTitles) <= tolerance,
             psychomotorRows: psychomotorTable.tBodies[psychomotorTable.tBodies.length - 1].rows.length,
             domainTablesCompacted: affectiveTable.getAttribute("data-result-domain-compacted") === "true"
               && psychomotorTable.getAttribute("data-result-domain-compacted") === "true",
             performanceWithinContent: performanceRect.left >= contentRect.left - tolerance
               && performanceRect.right <= contentRect.right + tolerance,
+            performancePanelCount: parseInt(root.querySelector(".result-report__performance-row").getAttribute("data-result-panel-count"), 10),
+            domainColumnWidthRatio: domainColumnRect.width / performanceRect.width,
+            remarksVisibleAndContained: window.getComputedStyle(remarksSection).display !== "none"
+              && remarksRect.width > 0
+              && remarksRect.height > 0
+              && remarksRect.left >= rootRect.left - tolerance
+              && remarksRect.right <= rootRect.right + tolerance
+              && remarksRect.top >= rootRect.top - tolerance
+              && remarksRect.bottom <= rootRect.bottom + tolerance,
+            remarksBelowPerformanceColumns: remarksRect.top >= Math.max(
+              performanceChartRect.bottom,
+              affectiveRect.bottom,
+              attendanceRect.bottom,
+              psychomotorRect.bottom
+            ) - tolerance,
+            remarksTextPreserved: remarksSection.textContent.indexOf("CLASS TEACHER\\u0027S COMMENT:") !== -1
+              && remarksSection.textContent.indexOf("PRINCIPAL/HEAD TEACHER\\u0027S COMMENT:") !== -1,
+            signaturesVisible: teacherSignatureRect.width > 0
+              && teacherSignatureRect.height > 0
+              && principalSignatureRect.width > 0
+              && principalSignatureRect.height > 0,
             chartVisible: window.getComputedStyle(performanceChart).display !== "none",
             chartWidthRatio: performanceChartRect.width / performanceRect.width,
             chartHeight: performanceChartRect.height,
@@ -592,6 +682,100 @@ function result_report_a4_parse_payload($html)
     $json = html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
     $payload = json_decode($json, true);
     return is_array($payload) ? $payload : null;
+}
+
+function result_report_panel_variants_fixture_html($css, $javascript)
+{
+    $table = function ($kind, $state) {
+        $isAttendance = $kind === 'attendance';
+        $title = $kind === 'affective'
+            ? 'AFFECTIVE DOMAIN'
+            : ($isAttendance ? 'ATTENDANCE' : 'PSYCOMOTOR');
+        $class = $isAttendance
+            ? 'result-report__attendance-table'
+            : 'result-report__domain-table';
+        $colspan = $isAttendance ? 2 : 4;
+        $rows = '';
+
+        if ($state === 'data') {
+            $rows = $isAttendance
+                ? '<tr><th data-variant-word>TOTAL DAYS</th><td>120</td></tr><tr><th data-variant-word>PRESENT</th><td>116</td></tr>'
+                : '<tr><th data-variant-word>Relationship with Mates</th><td>5</td><th data-variant-word>Class Participation</th><td>4</td></tr>';
+        } elseif ($state === 'pending') {
+            $rows = '<tr class="result-report__availability-row"><td colspan="' . $colspan . '"><div class="alert">No Result Yet</div></td></tr>';
+        }
+
+        return '<table class="tab table-sm ' . $class . '" data-result-domain-kind="' . $kind . '">'
+            . '<thead><tr><th class="result-report__domain-title' . ($isAttendance ? ' result-report__attendance-title' : '') . '" colspan="' . $colspan . '">' . $title . '</th></tr></thead>'
+            . '<tbody>' . $rows . '</tbody></table>';
+    };
+
+    $chart = function ($available) {
+        return '<div class="result-report__chart-column">'
+            . ($available ? '<div class="result-report__chart result-report__chart--performance" data-result-decorative-chart><canvas></canvas></div>' : '')
+            . '</div>';
+    };
+
+    $grouped = function ($id, $chartAvailable, $affective, $attendance, $psychomotor, $expectedTop, $expectedTables) use ($table, $chart) {
+        return '<section class="performance result-report__performance" data-panel-variant="' . $id . '" data-expected-top="' . $expectedTop . '" data-expected-tables="' . $expectedTables . '">'
+            . '<div class="row result-report__performance-row">'
+            . $chart($chartAvailable)
+            . '<div class="result-report__domains-column"><div class="result-report__domain-panel"><div class="result result-report__domain-tables">'
+            . $table('affective', $affective)
+            . $table('attendance', $attendance)
+            . $table('psychomotor', $psychomotor)
+            . '</div></div></div></div></section>';
+    };
+
+    $separate = function ($id, $chartAvailable, $affective, $psychomotor, $expectedTop) use ($table, $chart) {
+        return '<section class="performance result-report__performance" data-panel-variant="' . $id . '" data-expected-top="' . $expectedTop . '">'
+            . '<div class="row result-report__performance-row">'
+            . $chart($chartAvailable)
+            . '<div class="result-report__domain-column"><div class="result-report__domain-panel">' . $table('affective', $affective) . '</div></div>'
+            . '<div class="result-report__domain-column"><div class="result-report__domain-panel">' . $table('psychomotor', $psychomotor) . '</div></div>'
+            . '</div></section>';
+    };
+
+    $combined = function ($id, $state, $expectedTop, $expectedTitles) use ($chart) {
+        $dataRows = '<tr><td data-variant-word>Attentiveness</td><td>5</td><td data-variant-word>Cooperation</td><td>4</td><td data-variant-word>Handwriting</td><td>5</td><td data-variant-word>Verbal Fluency</td><td>4</td></tr>';
+        return '<section class="performance result-report__performance" data-panel-variant="' . $id . '" data-expected-top="' . $expectedTop . '" data-expected-combined-titles="' . $expectedTitles . '">'
+            . '<div class="row result-report__performance-row">'
+            . $chart(true)
+            . '<div class="result-report__domains-column"><div class="result-report__domain-panel">'
+            . '<table class="result-report__domain-table result-report__domain-table--combined" data-result-domain-state="' . $state . '">'
+            . '<thead><tr><th class="result-report__domain-title" colspan="4">AFFECTIVE DOMAIN</th><th class="result-report__domain-title" colspan="4">PSYCOMOTOR</th></tr></thead>'
+            . '<tbody><tr class="result-report__availability-row"><td colspan="4"><div class="alert">No Result Yet</div></td><td colspan="4"></td></tr>' . $dataRows . '</tbody></table>'
+            . '</div></div></div></section>';
+    };
+
+    $variants = $grouped('group-all', true, 'data', 'data', 'data', 2, 3)
+        . $grouped('group-no-affective', true, 'empty', 'data', 'data', 2, 2)
+        . $grouped('group-no-psychomotor', true, 'data', 'data', 'empty', 2, 2)
+        . $grouped('group-attendance-only', true, 'empty', 'data', 'empty', 2, 1)
+        . $grouped('group-domains-only', true, 'data', 'empty', 'data', 2, 2)
+        . $grouped('group-chart-only', true, 'empty', 'empty', 'empty', 1, 0)
+        . $grouped('group-no-chart', false, 'data', 'data', 'data', 1, 3)
+        . $grouped('group-pending-kept', true, 'pending', 'data', 'empty', 2, 2)
+        . $separate('separate-affective', true, 'data', 'empty', 2)
+        . $separate('separate-psychomotor', true, 'empty', 'data', 2)
+        . $separate('separate-no-chart', false, 'data', 'data', 2)
+        . $combined('combined-both', 'both', 2, 2)
+        . $combined('combined-affective', 'affective', 2, 1)
+        . $combined('combined-psychomotor', 'psychomotor', 2, 1)
+        . $combined('combined-none', 'none', 1, 0);
+
+    $javascript = str_ireplace('</script', '<\\/script', $javascript);
+
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><style>' . $css . '</style></head><body>'
+        . '<div class="result-report-preview" data-result-report-preview><article class="result-report" data-result-report data-academic-row-count="0">'
+        . '<div class="result-report__content" data-result-report-content><div class="card-body"><div class="rel">' . $variants . '</div></div></div>'
+        . '</article></div><script>' . $javascript . '</script><script>(function(){'
+        . 'function visible(element){var rect=element.getBoundingClientRect();return window.getComputedStyle(element).display!=="none"&&rect.width>0&&rect.height>0;}'
+        . 'function rectsDoNotOverlap(rects){rects.sort(function(a,b){return a.left-b.left;});return rects.every(function(rect,index){return index===0||rects[index-1].right<=rect.left+1;});}'
+        . 'function fills(container,elements){var outer=container.getBoundingClientRect(),rects=elements.map(function(item){return item.getBoundingClientRect();}).sort(function(a,b){return a.left-b.left;});return !rects.length||Math.abs(rects[0].left-outer.left)<=1&&Math.abs(rects[rects.length-1].right-outer.right)<=1;}'
+        . 'function wordsWhole(scope){return Array.prototype.every.call(scope.querySelectorAll("[data-variant-word]"),function(cell){if(!visible(cell)){return true;}var walker=document.createTreeWalker(cell,NodeFilter.SHOW_TEXT),node,box=cell.getBoundingClientRect();while((node=walker.nextNode())){var expression=/\\S+/g,match;while((match=expression.exec(node.nodeValue))){var range=document.createRange();range.setStart(node,match.index);range.setEnd(node,match.index+match[0].length);var pieces=range.getClientRects();if(pieces.length!==1||pieces[0].left<box.left-1||pieces[0].right>box.right+1){return false;}}}return cell.scrollWidth<=cell.clientWidth+1;});}'
+        . 'function publish(){window.ResultReportPrint.fitAll();requestAnimationFrame(function(){requestAnimationFrame(function(){var variants=Array.prototype.slice.call(document.querySelectorAll("[data-panel-variant]")),result={scenarioCount:variants.length,counts:true,topFill:true,groupFill:true,noOverlap:true,words:true,wordFailures:[],attendanceOnlyFills:true,noChartFills:true,pendingKept:true,combinedStates:true};variants.forEach(function(variant){var row=variant.querySelector(".result-report__performance-row"),top=Array.prototype.filter.call(row.children,function(child){return /result-report__(?:chart|domain|domains)-column/.test(child.className)&&visible(child);}),expectedTop=parseInt(variant.getAttribute("data-expected-top"),10),variantWordsWhole=wordsWhole(variant);result.counts=result.counts&&top.length===expectedTop&&parseInt(row.getAttribute("data-result-panel-count"),10)===expectedTop;result.topFill=result.topFill&&fills(row,top);result.noOverlap=result.noOverlap&&rectsDoNotOverlap(top.map(function(item){return item.getBoundingClientRect();}));result.words=result.words&&variantWordsWhole;if(!variantWordsWhole){result.wordFailures.push(variant.getAttribute("data-panel-variant"));}var group=variant.querySelector(".result-report__domain-tables");if(group){var tables=Array.prototype.filter.call(group.children,visible),expectedTables=parseInt(variant.getAttribute("data-expected-tables"),10);result.counts=result.counts&&tables.length===expectedTables&&parseInt(group.getAttribute("data-result-panel-count"),10)===expectedTables;result.groupFill=result.groupFill&&fills(group,tables);result.noOverlap=result.noOverlap&&rectsDoNotOverlap(tables.map(function(item){return item.getBoundingClientRect();}));if(variant.getAttribute("data-panel-variant")==="group-attendance-only"){result.attendanceOnlyFills=tables.length===1&&tables[0].getBoundingClientRect().width/group.getBoundingClientRect().width>=0.98;}if(variant.getAttribute("data-panel-variant")==="group-pending-kept"){result.pendingKept=tables.length===2&&visible(variant.querySelector("[data-result-domain-kind=affective]"));}}if(variant.getAttribute("data-panel-variant")==="group-no-chart"){result.noChartFills=top.length===1&&top[0].getBoundingClientRect().width/row.getBoundingClientRect().width>=0.98;}var combined=variant.querySelector(".result-report__domain-table--combined");if(combined){var titles=Array.prototype.filter.call(combined.querySelectorAll(".result-report__domain-title"),visible),expectedTitles=parseInt(variant.getAttribute("data-expected-combined-titles"),10),state=combined.getAttribute("data-result-domain-state");result.combinedStates=result.combinedStates&&titles.length===expectedTitles;if(state==="affective"||state==="psychomotor"){result.combinedStates=result.combinedStates&&combined.querySelectorAll("colgroup col").length===4;}}});var output=document.createElement("pre");output.id="result-panel-variants-output";output.textContent=JSON.stringify(result);document.body.appendChild(output);});});}'
+        . 'window.ResultReportPrint.initAll(document);publish();}());</script></body></html>';
 }
 
 function result_report_a4_pdf_details($pdfPath)
@@ -944,17 +1128,42 @@ foreach ($fixtures as $fixture) {
         $payload['domainWordsRemainWhole'] === true,
         'The ' . $rowCount . '-row affective and psychomotor labels must not split inside words. Measurements: ' . json_encode($payload)
     );
+    result_report_a4_assert($payload['attendanceWordsRemainWhole'] === true, 'The ' . $rowCount . '-row Attendance labels must wrap only between complete words.');
+    result_report_a4_assert(
+        $payload['attendanceLabelWidthRatio'] >= 0.68 && $payload['attendanceLabelWidthRatio'] <= 0.76,
+        'The ' . $rowCount . '-row Attendance label/value columns must retain a readable 72/28 split.'
+    );
+    result_report_a4_assert(
+        $payload['attendanceTableWidthRatio'] >= 0.18 && $payload['attendanceTableWidthRatio'] <= 0.22,
+        'The ' . $rowCount . '-row Attendance table must receive its balanced share when all three tables exist.'
+    );
+    result_report_a4_assert($payload['attendanceInsideGroup'] === true, 'The ' . $rowCount . '-row Attendance table must remain inside its domain group.');
+    result_report_a4_assert($payload['allDomainTablesAvailable'] === true, 'The ' . $rowCount . '-row complete fixture must retain all three available performance tables.');
+    result_report_a4_assert($payload['domainTablesFillGroup'] === true, 'The ' . $rowCount . '-row performance tables must fill their complete available width.');
+    result_report_a4_assert($payload['domainTablesDoNotOverlap'] === true, 'The ' . $rowCount . '-row performance tables must not overlap.');
+    result_report_a4_assert($payload['domainTitlesAligned'] === true, 'The ' . $rowCount . '-row Affective, Attendance, and Psychomotor headings must align along the top.');
     result_report_a4_assert($payload['psychomotorRows'] === 3, 'The ' . $rowCount . '-row fixture must pair six psychomotor entries into three compact rows.');
     result_report_a4_assert($payload['domainTablesCompacted'] === true, 'The ' . $rowCount . '-row domain tables must use the shared compaction pass.');
     result_report_a4_assert($payload['performanceWithinContent'] === true, 'The ' . $rowCount . '-row performance panel must stay within the A4 content box.');
+    result_report_a4_assert(
+        $payload['remarksVisibleAndContained'] === true,
+        'The ' . $rowCount . '-row teacher/principal remarks must remain visible inside the A4 page. Measurements: ' . json_encode($payload)
+    );
+    result_report_a4_assert($payload['remarksBelowPerformanceColumns'] === true, 'The ' . $rowCount . '-row remarks and signatures must remain below the chart and domain tables.');
+    result_report_a4_assert($payload['remarksTextPreserved'] === true, 'The ' . $rowCount . '-row result must retain both teacher and principal comment labels.');
+    result_report_a4_assert($payload['signaturesVisible'] === true, 'The ' . $rowCount . '-row result must retain visible teacher and principal signature areas.');
     if ($fixture['density'] === 'ultra') {
         result_report_a4_assert($payload['chartVisible'] === false, 'The ultra-dense fixture may remove the decorative graph to protect one-page A4 output.');
+        result_report_a4_assert($payload['performancePanelCount'] === 1, 'The ultra-dense fixture must remove the entire graph column, not leave a blank gap.');
+        result_report_a4_assert($payload['domainColumnWidthRatio'] >= 0.98, 'The ultra-dense performance tables must reclaim the graph column width.');
     } else {
         $minimumChartHeight = $fixture['density'] === 'standard' ? 150 : 115;
         result_report_a4_assert($payload['chartVisible'] === true, 'The ' . $rowCount . '-row graph must remain visible.');
         result_report_a4_assert($payload['chartWidthRatio'] >= 0.32, 'The ' . $rowCount . '-row graph must receive a useful share of the performance row.');
         result_report_a4_assert($payload['chartCssHeight'] >= $minimumChartHeight, 'The ' . $rowCount . '-row graph must have a useful rendered height.');
         result_report_a4_assert($payload['canvasFillsChart'] === true, 'The ' . $rowCount . '-row graph canvas must fill its wrapper.');
+        result_report_a4_assert($payload['performancePanelCount'] === 2, 'The ' . $rowCount . '-row result must retain the graph and grouped performance-table panels.');
+        result_report_a4_assert($payload['domainColumnWidthRatio'] >= 0.62, 'The ' . $rowCount . '-row grouped tables must retain their familiar share beside the graph.');
     }
     result_report_a4_assert($payload['stripedRowsDiffer'] === true, 'The ' . $rowCount . '-row academic table must visibly alternate row colours.');
     result_report_a4_assert($payload['stripedRowIsConsistent'] === true, 'The ' . $rowCount . '-row stripe must cover every cell in the row.');
@@ -998,6 +1207,68 @@ foreach ($fixtures as $fixture) {
 
     echo 'PASS: ' . $rowCount . '-row A4 fixture (' . $fixture['density'] . ' density).' . PHP_EOL;
 }
+
+$panelVariantsPath = $temporaryDirectory . DIRECTORY_SEPARATOR . 'result-panel-variants.html';
+result_report_a4_assert(
+    file_put_contents(
+        $panelVariantsPath,
+        result_report_panel_variants_fixture_html($css, $javascript)
+    ) !== false,
+    'The adaptive performance-panel fixture must be writable.'
+);
+$panelVariantsUrl = result_report_a4_file_url($panelVariantsPath, $browser['windows']);
+$panelVariantsArguments = array(
+    $browser['path'],
+    '--headless=new',
+    '--disable-gpu',
+    '--disable-dev-shm-usage',
+    '--no-sandbox',
+    '--no-first-run',
+    '--no-default-browser-check',
+    '--allow-file-access-from-files',
+    '--run-all-compositor-stages-before-draw',
+    '--window-size=1024,1400',
+    '--user-data-dir=' . result_report_a4_to_browser_path($profileDirectory, $browser['windows']),
+    '--virtual-time-budget=5000',
+    '--dump-dom',
+    $panelVariantsUrl,
+);
+$panelVariantsResult = result_report_a4_run_process($panelVariantsArguments, 45);
+$panelVariantsPayload = result_download_parse_payload(
+    $panelVariantsResult['stdout'],
+    'result-panel-variants-output'
+);
+if (!is_array($panelVariantsPayload)) {
+    $panelVariantsResult = result_report_a4_run_process($panelVariantsArguments, 45);
+    $panelVariantsPayload = result_download_parse_payload(
+        $panelVariantsResult['stdout'],
+        'result-panel-variants-output'
+    );
+}
+result_report_a4_assert(
+    $panelVariantsResult['exit_code'] === 0 && is_array($panelVariantsPayload),
+    'Chromium must render all adaptive performance-panel combinations. Browser output tail: '
+        . substr(trim($panelVariantsResult['stdout']), -1200)
+);
+result_report_a4_assert($panelVariantsPayload['scenarioCount'] === 15, 'All 15 performance-panel availability combinations must be exercised.');
+foreach (array(
+    'counts' => 'Available and unavailable panels must be detected exactly.',
+    'topFill' => 'Available top-level panels must fill the complete performance row.',
+    'groupFill' => 'Available Affective, Attendance, and Psychomotor tables must fill their group.',
+    'noOverlap' => 'Adaptive performance panels and tables must never overlap.',
+    'words' => 'Performance-table labels must wrap only at word boundaries.',
+    'attendanceOnlyFills' => 'Attendance must expand to the full table area when it is the only available table.',
+    'noChartFills' => 'Available tables must reclaim the complete row when the graph is unavailable.',
+    'pendingKept' => 'Configured panels with no score must retain a compact pending-data message.',
+    'combinedStates' => 'A single available cumulative domain must reclaim the unavailable half.',
+) as $measurement => $message) {
+    result_report_a4_assert(
+        $panelVariantsPayload[$measurement] === true,
+        $message . ($measurement === 'words' ? ' Measurements: ' . json_encode($panelVariantsPayload) : '')
+    );
+}
+
+echo 'PASS: adaptive performance-panel availability matrix.' . PHP_EOL;
 
 $responsiveResultViewports = array(
     array('name' => 'mobile', 'size' => '390,900', 'scaled' => true),

@@ -681,15 +681,27 @@
 }
 
 /*
- * The legacy performance area remains a three-part row.  Explicit sizing
- * gives the chart useful space while keeping both domain tables readable.
+ * The legacy performance area keeps its familiar proportions when every
+ * panel exists, while flex growth lets the available panels reclaim gaps.
  */
 .result-report .result-report__performance-row {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     align-items: stretch;
     width: 100%;
     margin: 0 !important;
+}
+
+.result-report .result-report__remarks-section {
+    position: relative;
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.result-report .result-report__panel--unavailable {
+    display: none !important;
 }
 
 .result-report .result-report__chart-column,
@@ -702,21 +714,21 @@
 
 .result-report .result-report__chart-column {
     display: flex;
-    flex: 0 0 36%;
-    width: 36%;
-    max-width: 36%;
+    flex: 1.125 1 0;
+    width: auto;
+    max-width: none;
 }
 
 .result-report .result-report__domain-column {
-    flex: 0 0 32%;
-    width: 32%;
-    max-width: 32%;
+    flex: 1 1 0;
+    width: auto;
+    max-width: none;
 }
 
 .result-report .result-report__domains-column {
-    flex: 0 0 64%;
-    width: 64%;
-    max-width: 64%;
+    flex: 2 1 0;
+    width: auto;
+    max-width: none;
 }
 
 .result-report .result-report__chart--performance {
@@ -765,13 +777,15 @@
 }
 
 .result-report .result-report__domain-tables > .result-report__domain-table {
-    flex: 1 1 41% !important;
+    flex: 2 1 0 !important;
     width: auto !important;
+    max-width: none !important;
 }
 
 .result-report .result-report__domain-tables > .result-report__attendance-table {
-    flex: 0 0 18% !important;
-    width: 18% !important;
+    flex: 1 1 0 !important;
+    width: auto !important;
+    max-width: none !important;
 }
 
 .result-report .result-report__domain-table,
@@ -786,9 +800,13 @@
 .result-report .result-report__attendance-table td {
     padding: 0.5mm 0.55mm !important;
     line-height: 1.08;
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
 }
 
-.result-report .result-report__domain-table .result-report__domain-title {
+.result-report .result-report__domain-table .result-report__domain-title,
+.result-report .result-report__attendance-table .result-report__domain-title {
     width: 100% !important;
     padding-top: 0.7mm !important;
     padding-bottom: 0.7mm !important;
@@ -804,7 +822,35 @@
     hyphens: none;
 }
 
-.result-report .result-report__domain-table:not(.result-report__domain-table--combined) tbody th:nth-child(odd) {
+.result-report .result-report__attendance-table tbody th:first-child:not(.result-report__domain-title) {
+    width: 72% !important;
+    text-align: left;
+    white-space: normal !important;
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
+}
+
+.result-report .result-report__attendance-table tbody td:last-child {
+    width: 28% !important;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.result-report .result-report__attendance-title {
+    width: 100% !important;
+    white-space: nowrap !important;
+}
+
+.result-report .result-report__availability-row .alert {
+    margin: 0 !important;
+    padding: 0.7mm 1mm !important;
+    border-radius: 0;
+    font-size: 6.5pt;
+    line-height: 1.1;
+}
+
+.result-report .result-report__domain-table:not(.result-report__domain-table--combined) tbody th:nth-child(odd):not(.result-report__domain-title) {
     width: 42% !important;
     text-align: left;
     white-space: normal !important;
@@ -830,6 +876,32 @@
 .result-report .result-report__domain-table--combined tbody td:nth-child(even) {
     width: 4% !important;
     text-align: center;
+}
+
+.result-report .result-report__domain-table--combined[data-result-domain-state="affective"] .result-report__availability-row,
+.result-report .result-report__domain-table--combined[data-result-domain-state="psychomotor"] .result-report__availability-row {
+    display: none;
+}
+
+.result-report .result-report__domain-table--combined[data-result-domain-state="affective"] tr > [colspan="4"]:nth-child(2),
+.result-report .result-report__domain-table--combined[data-result-domain-state="affective"] tr > :nth-child(n + 5),
+.result-report .result-report__domain-table--combined[data-result-domain-state="psychomotor"] tr > [colspan="4"]:first-child,
+.result-report .result-report__domain-table--combined[data-result-domain-state="psychomotor"] tr > :nth-child(-n + 4):not([colspan]) {
+    display: none;
+}
+
+.result-report .result-report__domain-table--combined[data-result-domain-state="affective"] tbody td:nth-child(odd),
+.result-report .result-report__domain-table--combined[data-result-domain-state="psychomotor"] tbody td:nth-child(odd) {
+    width: 42% !important;
+}
+
+.result-report .result-report__domain-table--combined[data-result-domain-state="affective"] tbody td:nth-child(even),
+.result-report .result-report__domain-table--combined[data-result-domain-state="psychomotor"] tbody td:nth-child(even) {
+    width: 8% !important;
+}
+
+.result-report .result-report__domain-table--combined[data-result-domain-state="none"] {
+    display: none !important;
 }
 
 .result-report table tbody tr,
@@ -1209,7 +1281,8 @@
 }
 
 .result-report--ultra [data-result-decorative-chart],
-.result-report--ultra .result-report__chart--decorative {
+.result-report--ultra .result-report__chart--decorative,
+.result-report--ultra .result-report__chart-column {
     display: none !important;
 }
 
@@ -1317,6 +1390,7 @@
 
     .result-report--ultra [data-result-decorative-chart],
     .result-report--ultra .result-report__chart--decorative,
+    .result-report--ultra .result-report__chart-column,
     .result-report--ultra .containerForChart,
     .result-report--ultra .newgraph,
     .result-report--ultra canvas.sunygraph {
