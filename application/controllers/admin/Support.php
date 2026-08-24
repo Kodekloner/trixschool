@@ -6,6 +6,9 @@ if (!defined('BASEPATH')) {
 
 class Support extends Admin_Controller
 {
+    private $notificationTokenSessionKey = 'support_notification_csrf';
+    private $actionTokenSessionKey = 'support_action_csrf';
+
     public function __construct()
     {
         parent::__construct();
@@ -15,6 +18,15 @@ class Support extends Admin_Controller
         $this->load->model('supportticket_model');
         $this->load->model('staff_model');
         $this->load->model('setting_model');
+        $this->load->model('supportnotification_model');
+        $this->load->helper('support_email');
+
+        if (!$this->session->userdata($this->notificationTokenSessionKey)) {
+            $this->session->set_userdata($this->notificationTokenSessionKey, $this->newToken());
+        }
+        if (!$this->session->userdata($this->actionTokenSessionKey)) {
+            $this->session->set_userdata($this->actionTokenSessionKey, $this->newToken());
+        }
     }
 
     public function index()
@@ -39,10 +51,78 @@ class Support extends Admin_Controller
         $data['status_options']   = $this->statusOptions();
         $data['priority_options'] = $this->priorityOptions();
         $data['inbound_email_address'] = $this->getInboundEmailAddress();
+        $staff_id = (int) $this->customlib->getStaffID();
+        $staff = $staff_id > 0 ? $this->staff_model->getAll($staff_id) : array();
+        $data['notification_table_ready'] = $this->supportnotification_model->isReady();
+        $data['notification_preference'] = $data['notification_table_ready']
+            ? $this->supportnotification_model->getForStaff($staff_id)
+            : array();
+        $data['notification_email'] = !empty($staff['email'])
+            ? schoollift_support_normalize_email($staff['email'])
+            : '';
+        $saved_notification_email = !empty($data['notification_preference']['email'])
+            ? schoollift_support_normalize_email($data['notification_preference']['email'])
+            : '';
+        $data['notification_enabled'] = !empty($data['notification_preference']['is_active'])
+            && $data['notification_email'] !== ''
+            && $saved_notification_email !== ''
+            && hash_equals($data['notification_email'], $saved_notification_email);
+        $data['support_notification_csrf'] = (string) $this->session->userdata($this->notificationTokenSessionKey);
+        $data['support_action_csrf'] = (string) $this->session->userdata($this->actionTokenSessionKey);
+        $data['can_send_external_email'] = $this->rbac->hasPrivilege('external_email', 'can_add');
 
         $this->load->view('layout/header');
         $this->load->view('admin/support/index', $data);
         $this->load->view('layout/footer');
+    }
+
+    public function notification()
+    {
+        if (!$this->rbac->hasPrivilege('support_ticket', 'can_view')) {
+            access_denied();
+        }
+
+        $this->requireSupportTables();
+        $this->requireNotificationPost();
+        if (!$this->supportnotification_model->isReady()) {
+            $this->session->set_flashdata('msg', '<div class="alert alert-danger">Email alerts are not ready. Import the all-school database migrations through version 134 first.</div>');
+            return redirect('admin/support');
+        }
+
+        $staff_id = (int) $this->customlib->getStaffID();
+        $staff = $staff_id > 0 ? $this->staff_model->getAll($staff_id) : array();
+        $current_email = !empty($staff['email']) ? schoollift_support_normalize_email($staff['email']) : '';
+        $existing = $this->supportnotification_model->getForStaff($staff_id);
+        $enabled = (int) $this->input->post('enabled') === 1;
+
+        if ($enabled) {
+            if ($current_email === '') {
+                $this->session->set_flashdata('msg', '<div class="alert alert-danger">Add a valid email address to your staff profile before enabling device alerts.</div>');
+                return redirect('admin/support');
+            }
+            if (!schoollift_support_notification_recipient_allowed($current_email, $this->getInboundEmailAddress())) {
+                $this->session->set_flashdata('msg', '<div class="alert alert-danger">The staff email cannot be the same as the school inbox address because that would create an email loop.</div>');
+                return redirect('admin/support');
+            }
+            $notification_email = $current_email;
+        } else {
+            if (empty($existing)) {
+                $this->session->set_flashdata('msg', '<div class="alert alert-info">Email alerts are already disabled.</div>');
+                return redirect('admin/support');
+            }
+            $notification_email = schoollift_support_normalize_email($existing['email']);
+        }
+
+        if (!$this->supportnotification_model->setForStaff($staff_id, $notification_email, $enabled)) {
+            $this->session->set_flashdata('msg', '<div class="alert alert-danger">The email alert preference could not be saved. The address may already be connected to another staff account.</div>');
+            return redirect('admin/support');
+        }
+
+        $message = $enabled
+            ? 'Email alerts enabled for ' . html_escape($notification_email) . '. Add this account to your phone mail app and allow its notifications.'
+            : 'Email alerts disabled.';
+        $this->session->set_flashdata('msg', '<div class="alert alert-success">' . $message . '</div>');
+        return redirect('admin/support');
     }
 
     public function view($id)
@@ -65,6 +145,7 @@ class Support extends Admin_Controller
         $data['staff_list']       = $this->staff_model->getAll(null, 1);
         $data['status_options']   = $this->statusOptions();
         $data['priority_options'] = $this->priorityOptions();
+        $data['support_action_csrf'] = (string) $this->session->userdata($this->actionTokenSessionKey);
 
         $this->load->view('layout/header');
         $this->load->view('admin/support/view', $data);
@@ -76,6 +157,8 @@ class Support extends Admin_Controller
         if (!$this->rbac->hasPrivilege('support_ticket', 'can_add')) {
             access_denied();
         }
+
+        $this->requireSupportActionPost();
 
         $this->requireSupportTables();
         $ticket = $this->supportticket_model->get($id);
@@ -91,6 +174,7 @@ class Support extends Admin_Controller
 
         $school       = $this->setting_model->get();
         $school_email = !empty($school[0]['email']) ? $school[0]['email'] : '';
+        $inbound_email = $this->getInboundEmailAddress();
         $staff_id     = $this->customlib->getStaffID();
         $staff        = !empty($staff_id) ? $this->staff_model->getAll($staff_id) : array();
         $staff_name   = !empty($staff) ? trim($staff['name'] . ' ' . $staff['surname']) : '';
@@ -111,10 +195,23 @@ class Support extends Admin_Controller
             $custom_headers['References'] = $headers['references_header'];
         }
 
-        $sent = $this->mailer->send_mail($ticket['requester_email'], $subject, $body, array(), '', array(
+        $mail_options = array(
             'message_id'     => $message_id,
             'custom_headers' => $custom_headers,
-        ));
+        );
+        if ($inbound_email !== '') {
+            $mail_options['reply_to_email'] = $inbound_email;
+            $mail_options['reply_to_name'] = !empty($school[0]['name']) ? $school[0]['name'] : 'School office';
+        }
+
+        $sent = $this->mailer->send_mail(
+            $ticket['requester_email'],
+            $subject,
+            $body,
+            array(),
+            '',
+            $mail_options
+        );
 
         $this->supportticket_model->addOutgoingReply($ticket['id'], array(
             'sender_staff_id'   => $staff_id,
@@ -153,6 +250,8 @@ class Support extends Admin_Controller
         if (!$this->rbac->hasPrivilege('support_ticket', 'can_edit')) {
             access_denied();
         }
+
+        $this->requireSupportActionPost();
 
         $this->requireSupportTables();
         $ticket = $this->supportticket_model->get($id);
@@ -197,6 +296,8 @@ class Support extends Admin_Controller
             access_denied();
         }
 
+        $this->requireSupportActionPost();
+
         $this->requireSupportTables();
         $this->supportticket_model->delete($id);
         $this->session->set_flashdata('msg', '<div class="alert alert-success">Support ticket deleted.</div>');
@@ -210,16 +311,53 @@ class Support extends Admin_Controller
 
     protected function getInboundEmailAddress()
     {
-        $local_part = strtolower(trim((string) $this->config->item('ses_inbound_recipient_local_part', 'incoming_email')));
-        $domain     = isset($_SERVER['HTTP_HOST']) ? strtolower(trim((string) $_SERVER['HTTP_HOST'])) : '';
-        $domain     = preg_replace('/:\d+$/', '', $domain);
-        $domain     = preg_replace('/^www\./i', '', $domain);
+        return schoollift_support_configured_inbound_address(
+            $this->config->item('ses_inbound_recipient_local_part', 'incoming_email'),
+            isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : ''
+        );
+    }
 
-        if ($local_part === '' || $domain === '') {
-            return '';
+    protected function requireNotificationPost()
+    {
+        if ($this->input->method(true) !== 'POST') {
+            show_error('Method not allowed.', 405);
         }
 
-        return $local_part . '@' . $domain;
+        $expected = (string) $this->session->userdata($this->notificationTokenSessionKey);
+        $provided = (string) $this->input->post('support_notification_csrf');
+        if ($expected === '' || $provided === '' || !hash_equals($expected, $provided)) {
+            show_error('The notification form expired. Refresh the page and try again.', 403);
+        }
+
+        $this->session->set_userdata($this->notificationTokenSessionKey, $this->newToken());
+    }
+
+    protected function requireSupportActionPost()
+    {
+        if ($this->input->method(true) !== 'POST') {
+            show_error('Method not allowed.', 405);
+        }
+
+        $expected = (string) $this->session->userdata($this->actionTokenSessionKey);
+        $provided = (string) $this->input->post('support_action_csrf');
+        if ($expected === '' || $provided === '' || !hash_equals($expected, $provided)) {
+            show_error('The support form expired. Refresh the page and try again.', 403);
+        }
+
+        $this->session->set_userdata($this->actionTokenSessionKey, $this->newToken());
+    }
+
+    protected function newToken()
+    {
+        if (function_exists('random_bytes')) {
+            try {
+                return bin2hex(random_bytes(32));
+            } catch (Exception $exception) {
+                // Fall through for older PHP installations.
+            }
+        }
+
+        return hash('sha256', uniqid((string) mt_rand(), true));
     }
 
     protected function requireSupportTables()

@@ -38,7 +38,7 @@
 
 .result-report-preview {
     position: relative;
-    width: 100%;
+    width: calc(100% - 16px);
     max-width: var(--result-a4-width);
     min-height: var(--result-a4-height);
     margin: 16px auto 28px;
@@ -203,12 +203,13 @@
 
 .result-report__watermark {
     position: absolute;
-    z-index: 0;
-    top: 45%;
+    z-index: 2;
+    top: 50%;
     left: 50%;
-    width: 105mm;
-    max-height: 105mm;
-    opacity: 0.08;
+    width: 122mm;
+    height: auto !important;
+    max-height: 122mm;
+    opacity: 0.065;
     transform: translate(-50%, -50%);
     object-fit: contain;
     pointer-events: none;
@@ -667,6 +668,168 @@
     word-break: normal;
     overflow-wrap: normal;
     hyphens: none;
+}
+
+.result-report .result-report__academic-table .result-report__cell--remark {
+    width: 12.5%;
+    font-size: 0.94em;
+    line-height: 1.12;
+    white-space: normal !important;
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
+}
+
+/*
+ * The legacy performance area remains a three-part row.  Explicit sizing
+ * gives the chart useful space while keeping both domain tables readable.
+ */
+.result-report .result-report__performance-row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    width: 100%;
+    margin: 0 !important;
+}
+
+.result-report .result-report__chart-column,
+.result-report .result-report__domain-column,
+.result-report .result-report__domains-column {
+    min-width: 0;
+    padding-right: 1mm;
+    padding-left: 1mm;
+}
+
+.result-report .result-report__chart-column {
+    display: flex;
+    flex: 0 0 36%;
+    width: 36%;
+    max-width: 36%;
+}
+
+.result-report .result-report__domain-column {
+    flex: 0 0 32%;
+    width: 32%;
+    max-width: 32%;
+}
+
+.result-report .result-report__domains-column {
+    flex: 0 0 64%;
+    width: 64%;
+    max-width: 64%;
+}
+
+.result-report .result-report__chart--performance {
+    flex: 1 1 auto;
+    width: 100%;
+    height: 43mm;
+    min-height: 43mm;
+    max-height: 43mm;
+    margin: 1mm 0 !important;
+    padding: 0;
+    border: 0 !important;
+}
+
+.result-report .result-report__chart--performance canvas.newgraph {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    margin: 0 !important;
+}
+
+.result-report .result-report__domain-panel {
+    width: 100%;
+    max-width: 100%;
+    margin: 1mm 0 !important;
+    border-width: 1px;
+}
+
+.result-report .result-report__domain-panel > div,
+.result-report .result-report__domain-panel .result {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 !important;
+}
+
+.result-report .result-report__domain-panel .row {
+    width: 100%;
+    margin: 0 !important;
+}
+
+.result-report .result-report__domain-tables {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 1mm !important;
+}
+
+.result-report .result-report__domain-tables > .result-report__domain-table {
+    flex: 1 1 41% !important;
+    width: auto !important;
+}
+
+.result-report .result-report__domain-tables > .result-report__attendance-table {
+    flex: 0 0 18% !important;
+    width: 18% !important;
+}
+
+.result-report .result-report__domain-table,
+.result-report .result-report__attendance-table {
+    table-layout: fixed !important;
+    font-size: 7.1pt;
+}
+
+.result-report .result-report__domain-table th,
+.result-report .result-report__domain-table td,
+.result-report .result-report__attendance-table th,
+.result-report .result-report__attendance-table td {
+    padding: 0.5mm 0.55mm !important;
+    line-height: 1.08;
+}
+
+.result-report .result-report__domain-table .result-report__domain-title {
+    width: 100% !important;
+    padding-top: 0.7mm !important;
+    padding-bottom: 0.7mm !important;
+    color: var(--result-brand-contrast) !important;
+    background: var(--result-brand) !important;
+    border-color: var(--result-brand-strong) !important;
+    font-weight: 700;
+    line-height: 1.05;
+    text-align: center !important;
+    white-space: nowrap !important;
+    word-break: keep-all;
+    overflow-wrap: normal;
+    hyphens: none;
+}
+
+.result-report .result-report__domain-table:not(.result-report__domain-table--combined) tbody th:nth-child(odd) {
+    width: 42% !important;
+    text-align: left;
+    white-space: normal !important;
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
+}
+
+.result-report .result-report__domain-table:not(.result-report__domain-table--combined) tbody td:nth-child(even) {
+    width: 8% !important;
+    text-align: center;
+}
+
+.result-report .result-report__domain-table--combined tbody td:nth-child(odd) {
+    width: 21% !important;
+    text-align: left;
+    white-space: normal !important;
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
+}
+
+.result-report .result-report__domain-table--combined tbody td:nth-child(even) {
+    width: 4% !important;
+    text-align: center;
 }
 
 .result-report table tbody tr,

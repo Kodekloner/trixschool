@@ -155,9 +155,22 @@ class Webhooks extends CI_Controller {
         list($sns_payload, $message_data) = $this->normalizeInboundPayload($decoded_payload);
 
         $topic_arn = isset($sns_payload['TopicArn']) ? trim((string) $sns_payload['TopicArn']) : '';
-        if ($allowed_topic_arn !== '' && ($topic_arn === '' || !hash_equals($allowed_topic_arn, $topic_arn))) {
+        if ($allowed_topic_arn === '') {
+            log_message('error', 'SES inbound webhook rejected: allowed SNS topic ARN is not configured.');
+            return $this->respond_json(array('status' => 'error', 'message' => 'Inbound topic is not configured'), 503);
+        }
+        if ($topic_arn === '' || !hash_equals($allowed_topic_arn, $topic_arn)) {
             log_message('error', 'SES inbound webhook rejected: unexpected topic ARN ' . $topic_arn);
             return $this->respond_json(array('status' => 'error', 'message' => 'Unexpected topic'), 403);
+        }
+
+        // TopicArn and the SES body are attacker-controlled until the SNS
+        // signature is verified. Raw SNS delivery omits this signed envelope
+        // and is intentionally rejected.
+        $this->load->library('snsmessagevalidator');
+        if (!$this->snsmessagevalidator->isValid($sns_payload)) {
+            log_message('error', 'SES inbound webhook rejected: ' . $this->snsmessagevalidator->getLastError());
+            return $this->respond_json(array('status' => 'error', 'message' => 'Invalid SNS signature'), 403);
         }
 
         $message_type = isset($sns_payload['Type']) ? (string) $sns_payload['Type'] : '';
@@ -166,7 +179,7 @@ class Webhooks extends CI_Controller {
         if ($normalized_message_type === 'subscriptionconfirmation') {
             $confirmed = false;
             if ($auto_confirm && !empty($sns_payload['SubscribeURL'])) {
-                $confirmed = $this->confirmSnsSubscription($sns_payload['SubscribeURL']);
+                $confirmed = $this->confirmSnsSubscription($sns_payload['SubscribeURL'], $allowed_topic_arn);
             }
 
             log_message($confirmed ? 'info' : 'error', 'SES inbound SNS subscription ' . ($confirmed ? 'confirmed.' : 'is pending confirmation.'));
@@ -212,6 +225,30 @@ class Webhooks extends CI_Controller {
 
         if (strtolower((string) $record['ses_notification_type']) === 'received') {
             $support_ticket_id = $this->supportticket_model->processIncomingEmail($record_id);
+        }
+
+        if (!empty($support_ticket_id) && $this->supportticket_model->wasLastIncomingMessageCreated()) {
+            try {
+                // The notifier is loaded after tenant routing so it reads this
+                // school's SMTP settings and staff notification preferences.
+                $this->load->library('supportemailnotifier');
+                $notification_result = $this->supportemailnotifier->queueIncoming(
+                    $support_ticket_id,
+                    $record_id,
+                    $school_route['database_group'],
+                    $school_route['recipient']
+                );
+                log_message(
+                    'info',
+                    'Support email alerts for ticket #' . (int) $support_ticket_id
+                    . ': eligible=' . (int) $notification_result['eligible']
+                    . ', queued=' . (int) $notification_result['queued']
+                    . ', duplicate=' . (int) $notification_result['duplicate']
+                );
+            } catch (Throwable $exception) {
+                // An alert is secondary to safely accepting the inbound email.
+                log_message('error', 'Support email alert failed: ' . $exception->getMessage());
+            }
         }
 
         log_message('info', 'SES inbound webhook routed ' . $school_route['recipient'] . ' to ' . $school_route['database_group'] . ' and stored message #' . $record_id);
@@ -684,20 +721,39 @@ class Webhooks extends CI_Controller {
         return !empty($matches[2]) ? trim($matches[2]) : '';
     }
 
-    protected function confirmSnsSubscription($subscribe_url)
+    protected function confirmSnsSubscription($subscribe_url, $expected_topic_arn)
     {
         $subscribe_url = trim((string) $subscribe_url);
-        if ($subscribe_url === '' || stripos($subscribe_url, 'https://') !== 0) {
+        $expected_topic_arn = trim((string) $expected_topic_arn);
+        if ($subscribe_url === ''
+            || $expected_topic_arn === ''
+            || !isset($this->snsmessagevalidator)
+            || !$this->snsmessagevalidator->isTrustedSnsUrl($subscribe_url)) {
+            return false;
+        }
+
+        $parts = parse_url($subscribe_url);
+        $query = array();
+        parse_str(isset($parts['query']) ? $parts['query'] : '', $query);
+        if (empty($query['Action'])
+            || strcasecmp((string) $query['Action'], 'ConfirmSubscription') !== 0
+            || empty($query['TopicArn'])
+            || !hash_equals($expected_topic_arn, (string) $query['TopicArn'])
+            || empty($query['Token'])) {
             return false;
         }
 
         if (function_exists('curl_init')) {
             $ch = curl_init($subscribe_url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 4);
             curl_setopt($ch, CURLOPT_TIMEOUT, 10);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+            if (defined('CURLOPT_PROTOCOLS') && defined('CURLPROTO_HTTPS')) {
+                curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS);
+            }
             curl_exec($ch);
             $http_code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
@@ -705,8 +761,7 @@ class Webhooks extends CI_Controller {
             return $http_code >= 200 && $http_code < 300;
         }
 
-        $response = @file_get_contents($subscribe_url);
-        return $response !== false;
+        return false;
     }
 
     protected function respond_json($payload, $status_code)

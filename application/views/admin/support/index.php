@@ -7,7 +7,23 @@ $format_date = function ($value) {
     $time = strtotime($value);
     return $time ? date('Y-m-d H:i', $time) : '';
 };
+$notification_enabled = !empty($notification_preference) && !empty($notification_preference['is_active']);
+$notification_destination = $notification_enabled && !empty($notification_preference['email'])
+    ? $notification_preference['email']
+    : $notification_email;
 ?>
+
+<style>
+    .support-email-actions { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:15px; }
+    .support-email-actions__right { margin-left:auto; text-align:right; }
+    .support-email-actions__hint { display:block; margin-top:5px; color:#777; font-size:12px; }
+    .support-ticket-delete { display:inline-block; margin:0; vertical-align:middle; }
+    @media (max-width:767px) {
+        .support-email-actions { align-items:stretch; flex-direction:column; }
+        .support-email-actions__right { margin-left:0; text-align:left; }
+        .support-email-actions .btn { width:100%; }
+    }
+</style>
 
 <div class="content-wrapper">
     <section class="content-header">
@@ -27,6 +43,41 @@ $format_date = function ($value) {
                         <?php } ?>
                     </div>
                     <div class="box-body">
+                        <div class="support-email-actions">
+                            <div>
+                                <?php if (!empty($can_send_external_email)) { ?>
+                                    <a href="<?php echo site_url('admin/mailsms/compose?tab=external'); ?>" class="btn btn-primary btn-sm">
+                                        <i class="fa fa-paper-plane"></i> New External Email
+                                    </a>
+                                <?php } ?>
+                            </div>
+                            <div class="support-email-actions__right">
+                                <?php if (!empty($notification_table_ready)) { ?>
+                                    <form method="post" action="<?php echo site_url('admin/support/notification'); ?>" style="display:inline-block;">
+                                        <input type="hidden" name="support_notification_csrf" value="<?php echo html_escape($support_notification_csrf); ?>">
+                                        <input type="hidden" name="enabled" value="<?php echo $notification_enabled ? '0' : '1'; ?>">
+                                        <button type="submit" class="btn btn-sm <?php echo $notification_enabled ? 'btn-success' : 'btn-default'; ?>" <?php echo (!$notification_enabled && empty($notification_email)) ? 'disabled' : ''; ?>>
+                                            <i class="fa fa-bell<?php echo $notification_enabled ? '' : '-o'; ?>"></i>
+                                            <?php echo $notification_enabled ? 'Email Alerts On' : 'Enable Email Alerts'; ?>
+                                        </button>
+                                    </form>
+                                    <?php if (!empty($notification_destination)) { ?>
+                                        <span class="support-email-actions__hint">
+                                            Alerts <?php echo $notification_enabled ? 'go' : 'will go'; ?> to <?php echo html_escape($notification_destination); ?>.
+                                            Add that account to Gmail, Outlook, or Apple Mail on the device.
+                                        </span>
+                                    <?php } else { ?>
+                                        <span class="support-email-actions__hint">Add an email address to your staff profile to enable device alerts.</span>
+                                    <?php } ?>
+                                    <?php if ($notification_enabled && !empty($notification_preference['last_error'])) { ?>
+                                        <span class="support-email-actions__hint text-warning"><i class="fa fa-warning"></i> The last alert could not be delivered; check Email Settings.</span>
+                                    <?php } ?>
+                                <?php } else { ?>
+                                    <button type="button" class="btn btn-default btn-sm" disabled><i class="fa fa-bell-o"></i> Email Alerts</button>
+                                    <span class="support-email-actions__hint">Import database migration 134 to enable alerts.</span>
+                                <?php } ?>
+                            </div>
+                        </div>
                         <div class="row">
                             <div class="col-sm-8">
                                 <a href="<?php echo site_url('admin/support'); ?>" class="btn btn-default btn-sm">All</a>
@@ -83,9 +134,13 @@ $format_date = function ($value) {
                                                     <i class="fa fa-reorder"></i>
                                                 </a>
                                                 <?php if ($this->rbac->hasPrivilege('support_ticket', 'can_delete')) { ?>
-                                                    <a href="<?php echo site_url('admin/support/delete/' . $ticket['id']); ?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="Delete" onclick="return confirm('<?php echo $this->lang->line('delete_confirm'); ?>');">
-                                                        <i class="fa fa-remove"></i>
-                                                    </a>
+                                                    <form method="post" action="<?php echo site_url('admin/support/delete/' . $ticket['id']); ?>" class="support-ticket-delete" onsubmit="return confirm(<?php echo html_escape(json_encode($this->lang->line('delete_confirm'))); ?>);">
+                                                        <?php echo $this->customlib->getCSRF(); ?>
+                                                        <input type="hidden" name="support_action_csrf" value="<?php echo html_escape($support_action_csrf); ?>">
+                                                        <button type="submit" class="btn btn-default btn-xs" data-toggle="tooltip" title="Delete">
+                                                            <i class="fa fa-remove"></i>
+                                                        </button>
+                                                    </form>
                                                 <?php } ?>
                                             </td>
                                         </tr>

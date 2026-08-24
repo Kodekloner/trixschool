@@ -8,6 +8,10 @@ $compose_notifications = isset($compose_notifications) ? $compose_notifications 
         'audience'  => array('student', 'parent', 'roles'),
     ),
 );
+$active_email_tab = isset($active_email_tab) ? $active_email_tab : 'group';
+$external_email_ready = !empty($external_email_ready);
+$can_standard_email = !empty($can_standard_email);
+$can_external_email = !empty($can_external_email);
 ?>
 <script src="<?php echo base_url(); ?>backend/plugins/ckeditor/ckeditor.js"></script>
 <div class="content-wrapper">
@@ -17,20 +21,28 @@ $compose_notifications = isset($compose_notifications) ? $compose_notifications 
     </section>
     <section class="content">
 
+        <?php echo $this->session->flashdata('msg'); ?>
+
         <div class="row">
             <div class="col-md-12">
 
-                <!-- Custom Tabs (Pulled to the right) -->
-                <div class="nav-tabs-custom theme-shadow">
-                    <ul class="nav nav-tabs pull-right">
-                        <li><a href="#tab_birthday" data-toggle="tab"><?php echo $this->lang->line('todays_birtday'); ?></a></li>
-                        <li><a href="#tab_class" data-toggle="tab"><?php echo $this->lang->line('class'); ?></a></li>
-                        <li><a href="#tab_perticular" data-toggle="tab"><?php echo $this->lang->line('individual'); ?></a></li>
-                        <li class="active"><a href="#tab_group" data-toggle="tab"><?php echo $this->lang->line('group'); ?></a></li>
-                        <li class="pull-left header"> <?php echo $this->lang->line('send') . " " . $this->lang->line('email') ?></li>
-                    </ul>
-                    <div class="tab-content">
-                        <div class="tab-pane active" id="tab_group">
+                    <!-- Custom Tabs (Pulled to the right) -->
+                    <div class="nav-tabs-custom theme-shadow">
+                        <ul class="nav nav-tabs pull-right">
+                            <?php if ($can_external_email) { ?>
+                                <li class="<?php echo $active_email_tab === 'external' ? 'active' : ''; ?>"><a href="#tab_external" data-toggle="tab"><i class="fa fa-external-link"></i> External</a></li>
+                            <?php } ?>
+                            <?php if ($can_standard_email) { ?>
+                                <li><a href="#tab_birthday" data-toggle="tab"><?php echo $this->lang->line('todays_birtday'); ?></a></li>
+                                <li><a href="#tab_class" data-toggle="tab"><?php echo $this->lang->line('class'); ?></a></li>
+                                <li><a href="#tab_perticular" data-toggle="tab"><?php echo $this->lang->line('individual'); ?></a></li>
+                                <li class="<?php echo $active_email_tab === 'group' ? 'active' : ''; ?>"><a href="#tab_group" data-toggle="tab"><?php echo $this->lang->line('group'); ?></a></li>
+                            <?php } ?>
+                            <li class="pull-left header"> <?php echo $this->lang->line('send') . " " . $this->lang->line('email') ?></li>
+                        </ul>
+                        <div class="tab-content">
+                            <?php if ($can_standard_email) { ?>
+                            <div class="tab-pane <?php echo $active_email_tab === 'group' ? 'active' : ''; ?>" id="tab_group">
                             <form action="<?php echo site_url('admin/mailsms/send_group') ?>" method="post" id="group_form">
 
                                 <!-- /.box-header -->
@@ -218,6 +230,60 @@ $compose_notifications = isset($compose_notifications) ? $compose_notifications 
                                 <!-- /.box-footer -->
                             </form>
                         </div>
+                        <?php } ?>
+                        <?php if ($can_external_email) { ?>
+                        <div class="tab-pane <?php echo $active_email_tab === 'external' ? 'active' : ''; ?>" id="tab_external">
+                            <form action="<?php echo site_url('admin/mailsms/send_external'); ?>" method="post" id="external_email_form">
+                                <input type="hidden" name="external_email_csrf" value="<?php echo html_escape($external_email_csrf); ?>">
+                                <div class="box-body">
+                                    <?php if (!$external_email_ready) { ?>
+                                        <div class="alert alert-danger">
+                                            <i class="fa fa-warning"></i>
+                                            External email storage is not ready. Import the all-school database migrations through version 134 first.
+                                        </div>
+                                    <?php } ?>
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <div class="form-group">
+                                                <label for="external_subject">Subject</label><small class="req"> *</small>
+                                                <input type="text" class="form-control" id="external_subject" name="external_subject" maxlength="220" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="external_msg_text">Message</label><small class="req"> *</small>
+                                                <textarea id="external_msg_text" name="external_message" class="form-control compose-textarea ckeditor" rows="12"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="external_email">External recipient email</label><small class="req"> *</small>
+                                                <input type="email" class="form-control" id="external_email" name="external_email" maxlength="191" autocomplete="email" placeholder="name@example.com" required>
+                                                <span class="help-block">The recipient does not need to be a student, parent, teacher, or staff member.</span>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="external_name">Recipient name <small class="text-muted">(optional)</small></label>
+                                                <input type="text" class="form-control" id="external_name" name="external_name" maxlength="191" autocomplete="name">
+                                            </div>
+                                            <div class="well well-sm">
+                                                <p><i class="fa fa-shield text-primary"></i> <strong>Tracked conversation</strong></p>
+                                                <p class="text-muted" style="margin-bottom:8px;">The delivery attempt is audited. Replies return to the same conversation in Support Tickets.</p>
+                                                <?php if (!empty($inbound_email_address)) { ?>
+                                                    <p style="margin-bottom:0;"><small>Reply address: <strong><?php echo html_escape($inbound_email_address); ?></strong></small></p>
+                                                <?php } ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="box-footer clearfix">
+                                    <span class="text-muted"><i class="fa fa-info-circle"></i> Only staff granted the Send External Email permission can use this form.</span>
+                                    <button type="submit" class="btn btn-primary pull-right" <?php echo $external_email_ready ? '' : 'disabled'; ?>>
+                                        <i class="fa fa-paper-plane"></i> Send External Email
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <?php } ?>
+
+                        <?php if ($can_standard_email) { ?>
                         <div class="tab-pane" id="tab_class">
                             <form action="<?php echo site_url('admin/mailsms/send_class') ?>" method="post" id="class_form">
 
@@ -383,6 +449,7 @@ $compose_notifications = isset($compose_notifications) ? $compose_notifications 
                                 <!-- /.box-footer -->
                             </form>
                         </div>
+                        <?php } ?>
                     </div>
                 </div>
             </div>

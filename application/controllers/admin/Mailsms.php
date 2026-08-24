@@ -6,6 +6,7 @@ if (!defined('BASEPATH')) {
 
 class Mailsms extends Admin_Controller
 {
+    private $externalEmailTokenSessionKey = 'external_email_csrf';
 
     public function __construct()
     {
@@ -18,6 +19,10 @@ class Mailsms extends Admin_Controller
         $this->load->model("notificationsetting_model");
         $this->mailer;
         $this->sch_setting_detail = $this->setting_model->getSetting();
+
+        if (!$this->session->userdata($this->externalEmailTokenSessionKey)) {
+            $this->session->set_userdata($this->externalEmailTokenSessionKey, $this->newExternalEmailToken());
+        }
     }
 
     public function index()
@@ -38,6 +43,11 @@ class Mailsms extends Admin_Controller
 
     public function search()
     {
+        if (!$this->rbac->hasPrivilege('email', 'can_view')
+            && !$this->rbac->hasPrivilege('sms', 'can_view')) {
+            access_denied();
+        }
+
         $keyword     = $this->input->post('keyword');
         $category    = $this->input->post('category');
         $result      = array();
@@ -68,7 +78,9 @@ class Mailsms extends Admin_Controller
 
     public function compose()
     {
-        if (!$this->rbac->hasPrivilege('email', 'can_view')) {
+        $can_standard_email = $this->rbac->hasPrivilege('email', 'can_view');
+        $can_external_email = $this->rbac->hasPrivilege('external_email', 'can_add');
+        if (!$can_standard_email && !$can_external_email) {
             access_denied();
         }
         $this->session->set_userdata('top_menu', 'Communicate');
@@ -111,9 +123,154 @@ class Mailsms extends Admin_Controller
         $data['birthDaysList'] = $birthDaysList;
         $data['sch_setting']   = $this->sch_setting_detail;
         $data['compose_notifications'] = $this->getComposeNotificationTemplates();
+        $this->load->helper('support_email');
+        $this->config->load('incoming_email', true);
+        $requested_tab = strtolower(trim((string) $this->input->get('tab', true)));
+        $data['can_standard_email'] = $can_standard_email;
+        $data['can_external_email'] = $can_external_email;
+        $data['active_email_tab'] = ($can_external_email && ($requested_tab === 'external' || !$can_standard_email))
+            ? 'external'
+            : 'group';
+        $data['external_email_csrf'] = (string) $this->session->userdata($this->externalEmailTokenSessionKey);
+        $data['inbound_email_address'] = schoollift_support_configured_inbound_address(
+            $this->config->item('ses_inbound_recipient_local_part', 'incoming_email'),
+            isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : ''
+        );
+        $data['external_email_ready'] = $this->db->table_exists('incoming_emails')
+            && $this->db->table_exists('support_tickets')
+            && $this->db->table_exists('support_messages')
+            && $data['inbound_email_address'] !== '';
         $this->load->view('layout/header');
         $this->load->view('admin/mailsms/compose', $data);
         $this->load->view('layout/footer');
+    }
+
+    /**
+     * Start an email conversation with a recipient who is not required to be
+     * a student, parent, or member of staff.
+     */
+    public function send_external()
+    {
+        if (!$this->rbac->hasPrivilege('external_email', 'can_add')) {
+            access_denied();
+        }
+        $this->requireExternalEmailPost();
+
+        $this->load->helper('support_email');
+        $this->config->load('incoming_email', true);
+        $this->load->model('supportticket_model');
+        if (!$this->db->table_exists('incoming_emails')
+            || !$this->db->table_exists('support_tickets')
+            || !$this->db->table_exists('support_messages')) {
+            return $this->externalEmailRedirect(
+                'danger',
+                'External email storage is not ready. Import the all-school database migrations through version 134 first.'
+            );
+        }
+
+        $recipientEmail = schoollift_support_normalize_email($this->input->post('external_email', true));
+        $recipientName = trim(strip_tags((string) $this->input->post('external_name', true)));
+        $subject = schoollift_support_normalize_subject($this->input->post('external_subject', true));
+        $rawBody = trim((string) $this->input->post('external_message', false));
+        $bodyHtml = trim((string) $this->security->xss_clean($rawBody));
+        $bodyText = schoollift_support_html_to_text($bodyHtml);
+        $inboundAddress = schoollift_support_configured_inbound_address(
+            $this->config->item('ses_inbound_recipient_local_part', 'incoming_email'),
+            isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : ''
+        );
+
+        $errors = array();
+        if ($recipientEmail === '') {
+            $errors[] = 'Enter a valid external recipient email address.';
+        } elseif ($inboundAddress !== '' && hash_equals($inboundAddress, $recipientEmail)) {
+            $errors[] = 'The recipient cannot be the school inbox address because that would create an email loop.';
+        }
+        if ($inboundAddress === '') {
+            $errors[] = 'The school inbound reply address could not be determined.';
+        }
+        if ($recipientName !== '' && strlen($recipientName) > 191) {
+            $errors[] = 'Recipient name must not exceed 191 characters.';
+        }
+        if ($subject === '') {
+            $errors[] = 'Email subject is required.';
+        }
+        if ($bodyText === '') {
+            $errors[] = 'Email message is required.';
+        } elseif (strlen($rawBody) > 1000000) {
+            $errors[] = 'Email message must not exceed 1 MB.';
+        }
+        if (!empty($errors)) {
+            return $this->externalEmailRedirect('danger', implode(' ', $errors));
+        }
+
+        $staffId = (int) $this->customlib->getStaffID();
+        $ticket = $this->supportticket_model->createOutgoingConversation(array(
+            'requester_name'  => $recipientName,
+            'requester_email' => $recipientEmail,
+            'subject'         => $subject,
+            'sender_staff_id' => $staffId,
+        ));
+        if (empty($ticket)) {
+            return $this->externalEmailRedirect('danger', 'The email conversation could not be created. Please try again.');
+        }
+
+        $school = $this->setting_model->get();
+        $schoolEmail = !empty($school[0]['email']) ? schoollift_support_normalize_email($school[0]['email']) : '';
+        $staff = $staffId > 0 ? $this->staff_model->getAll($staffId) : array();
+        $staffName = !empty($staff) ? trim($staff['name'] . ' ' . $staff['surname']) : '';
+        $threadSubject = schoollift_support_thread_subject($subject, $ticket['ticket_number']);
+        $messageId = $this->supportticket_model->buildOutgoingMessageId(
+            $ticket['ticket_number'],
+            $schoolEmail !== '' ? $schoolEmail : $inboundAddress
+        );
+        $mailBody = schoollift_support_append_ticket_note($bodyHtml, $ticket['ticket_number'], $inboundAddress);
+
+        $this->load->library('mailer');
+        $mailOptions = array(
+            'message_id' => $messageId,
+            'is_html' => true,
+            'custom_headers' => array(
+                'X-SchoolLift-Ticket' => $ticket['ticket_number'],
+            ),
+        );
+        if ($inboundAddress !== '') {
+            $mailOptions['reply_to_email'] = $inboundAddress;
+            $mailOptions['reply_to_name'] = !empty($school[0]['name']) ? $school[0]['name'] : 'School office';
+        }
+
+        $sent = $this->mailer->send_mail($recipientEmail, $threadSubject, $mailBody, array(), '', $mailOptions);
+        $error = $sent ? '' : $this->mailer->get_last_error();
+        $this->supportticket_model->addOutgoingReply($ticket['id'], array(
+            'sender_staff_id' => $staffId,
+            'sender_name' => $staffName,
+            'sender_email' => $schoolEmail !== '' ? $schoolEmail : $inboundAddress,
+            'recipients' => array($recipientEmail),
+            'subject' => $threadSubject,
+            'body_text' => $bodyText . "\n\n--\nTicket: " . $ticket['ticket_number'],
+            'body_html' => $mailBody,
+            'message_id' => $messageId,
+            'delivery_status' => $sent ? 'sent' : 'failed',
+            'error_message' => $sent ? null : $error,
+        ));
+
+        if ($sent) {
+            $this->session->set_flashdata('msg', '<div class="alert alert-success">External email sent successfully. Conversation ' . html_escape($ticket['ticket_number']) . ' has been saved.</div>');
+            if ($this->rbac->hasPrivilege('support_ticket', 'can_view')) {
+                return redirect('admin/support/view/' . (int) $ticket['id']);
+            }
+            return redirect('admin/mailsms/compose?tab=external');
+        }
+
+        $message = 'The external email could not be delivered, but the failed attempt was saved in ' . $ticket['ticket_number'] . '.';
+        if ($error !== '') {
+            $message .= ' ' . $error;
+        }
+        $hint = $this->mailer->get_last_hint();
+        if ($hint !== '') {
+            $message .= ' ' . $hint;
+        }
+
+        return $this->externalEmailRedirect('danger', $message);
     }
 
     private function getComposeNotificationTemplates()
@@ -333,25 +490,45 @@ class Mailsms extends Admin_Controller
 
     public function send_individual()
     {
+        if (!$this->rbac->hasPrivilege('email', 'can_view')) {
+            access_denied();
+        }
 
         $this->form_validation->set_error_delimiters('<li>', '</li>');
         $this->form_validation->set_rules('individual_title', $this->lang->line('title'), 'required');
         $this->form_validation->set_rules('individual_message', $this->lang->line('message'), 'required');
         $this->form_validation->set_rules('user_list', $this->lang->line('recipient'), 'required');
-        $this->form_validation->set_rules('individual_send_by', $this->lang->line('send_through'), 'required');
+        $this->form_validation->set_rules('individual_send_by', $this->lang->line('send_through'), 'required|in_list[email]');
         if ($this->form_validation->run()) {
 
             $userlisting = json_decode($this->input->post('user_list'));
+            if (is_object($userlisting)) {
+                // The compose page keys selections by "category-id", so JSON
+                // decoding produces an object rather than a numeric array.
+                $userlisting = (array) $userlisting;
+            }
             $user_array  = array();
-            foreach ($userlisting as $userlisting_key => $userlisting_value) {
-                $array = array(
-                    'category'      => $userlisting_value[0]->category,
-                    'user_id'       => $userlisting_value[0]->record_id,
-                    'email'         => $userlisting_value[0]->email,
-                    'guardianEmail' => $userlisting_value[0]->guardianEmail,
-                    'mobileno'      => $userlisting_value[0]->mobileno,
-                );
-                $user_array[] = $array;
+            if (is_array($userlisting) || is_object($userlisting)) {
+                foreach ((array) $userlisting as $userlisting_value) {
+                    if (!is_array($userlisting_value) || empty($userlisting_value[0])) {
+                        continue;
+                    }
+                    $submitted = $userlisting_value[0];
+                    $resolved = $this->resolveInternalEmailRecipient(
+                        isset($submitted->category) ? $submitted->category : '',
+                        isset($submitted->record_id) ? $submitted->record_id : 0
+                    );
+                    if (!empty($resolved)) {
+                        $user_array[] = $resolved;
+                    }
+                }
+            }
+            if (empty($user_array)) {
+                echo json_encode(array(
+                    'status' => 1,
+                    'msg' => array('user_list' => '<li>Select a valid student, guardian, or staff recipient.</li>'),
+                ));
+                return;
             }
 
             $sms_mail = $this->input->post('individual_send_by');
@@ -412,12 +589,15 @@ class Mailsms extends Admin_Controller
 
     public function send_birthday()
     {
+        if (!$this->rbac->hasPrivilege('email', 'can_view')) {
+            access_denied();
+        }
 
         $this->form_validation->set_error_delimiters('<li>', '</li>');
         $this->form_validation->set_rules('user[]', $this->lang->line('recipient'), 'required');
         $this->form_validation->set_rules('birthday_title', $this->lang->line('title'), 'required');
         $this->form_validation->set_rules('birthday_message', $this->lang->line('message'), 'required');
-        $this->form_validation->set_rules('birthday_send_by', $this->lang->line('send_through'), 'required');
+        $this->form_validation->set_rules('birthday_send_by', $this->lang->line('send_through'), 'required|in_list[email]');
         if ($this->form_validation->run()) {
             $user_array = array();
 
@@ -441,13 +621,26 @@ class Mailsms extends Admin_Controller
             );
 
             $userlisting = $this->input->post('user[]');
+            $allowed_birthday_emails = $this->getAllowedBirthdayEmailAddresses();
 
-            foreach ($userlisting as $users_key => $users_value) {
+            foreach ((array) $userlisting as $users_key => $users_value) {
+                $normalized_email = strtolower(trim((string) $users_value));
+                if (!isset($allowed_birthday_emails[$normalized_email])) {
+                    continue;
+                }
                 $array = array(
-                    'email'    => $users_value,
-                    'mobileno' => $users_value,
+                    'email'    => $normalized_email,
+                    'mobileno' => $normalized_email,
                 );
                 $user_array[] = $array;
+            }
+
+            if (empty($user_array)) {
+                echo json_encode(array(
+                    'status' => 1,
+                    'msg' => array('user[]' => '<li>Select a valid birthday recipient.</li>'),
+                ));
+                return;
             }
 
             if (!empty($user_array)) {
@@ -485,11 +678,15 @@ class Mailsms extends Admin_Controller
 
     public function send_group()
     {
+        if (!$this->rbac->hasPrivilege('email', 'can_view')) {
+            access_denied();
+        }
+
         $this->form_validation->set_error_delimiters('<li>', '</li>');
         $this->form_validation->set_rules('group_title', $this->lang->line('title'), 'required');
         $this->form_validation->set_rules('group_message', $this->lang->line('message'), 'required');
         $this->form_validation->set_rules('user[]', $this->lang->line('message') . " " . $this->lang->line('to'), 'required');
-        $this->form_validation->set_rules('group_send_by', $this->lang->line('send_through'), 'required');
+        $this->form_validation->set_rules('group_send_by', $this->lang->line('send_through'), 'required|in_list[email]');
         if ($this->form_validation->run()) {
             $user_array = array();
 
@@ -1238,6 +1435,9 @@ class Mailsms extends Admin_Controller
 
     public function send_class()
     {
+        if (!$this->rbac->hasPrivilege('email', 'can_view')) {
+            access_denied();
+        }
 
         $this->form_validation->set_error_delimiters('<li>', '</li>');
 
@@ -1245,7 +1445,7 @@ class Mailsms extends Admin_Controller
         $this->form_validation->set_rules('class_message', $this->lang->line('message'), 'required');
         $this->form_validation->set_rules('class_id', $this->lang->line('class'), 'required');
         $this->form_validation->set_rules('user[]', $this->lang->line('recipient'), 'required');
-        $this->form_validation->set_rules('class_send_by', $this->lang->line('send_through'), 'required');
+        $this->form_validation->set_rules('class_send_by', $this->lang->line('send_through'), 'required|in_list[email]');
         if ($this->form_validation->run()) {
 
             $sms_mail = $this->input->post('class_send_by');
@@ -1360,6 +1560,124 @@ class Mailsms extends Admin_Controller
             }
         }
         echo json_encode($array);
+    }
+
+    /**
+     * Rebuild legacy individual recipients from database records so a changed
+     * browser payload cannot turn the internal-email form into an untracked
+     * external mail relay.
+     */
+    private function resolveInternalEmailRecipient($category, $recordId)
+    {
+        $category = strtolower(trim((string) $category));
+        $recordId = (int) $recordId;
+        if ($recordId <= 0) {
+            return array();
+        }
+
+        if (in_array($category, array('student', 'parent', 'student_guardian'), true)) {
+            $student = $this->student_model->get($recordId);
+            if (empty($student) || !in_array(strtolower((string) $student['is_active']), array('yes', '1'), true)) {
+                return array();
+            }
+
+            $studentEmail = strtolower(trim((string) $student['email']));
+            $guardianEmail = strtolower(trim((string) $student['guardian_email']));
+            if ($category === 'parent') {
+                $email = $guardianEmail;
+                $guardianCc = '';
+            } else {
+                $email = $studentEmail;
+                $guardianCc = $category === 'student_guardian' ? $guardianEmail : '';
+            }
+
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return array();
+            }
+
+            return array(
+                'category' => $category,
+                'user_id' => $recordId,
+                'email' => $email,
+                'guardianEmail' => filter_var($guardianCc, FILTER_VALIDATE_EMAIL) ? $guardianCc : '',
+                'mobileno' => isset($student['mobileno']) ? $student['mobileno'] : '',
+            );
+        }
+
+        if ($category === 'staff') {
+            $staff = $this->staff_model->getAll($recordId);
+            $email = !empty($staff['email']) ? strtolower(trim((string) $staff['email'])) : '';
+            if (empty($staff) || (int) $staff['is_active'] !== 1 || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return array();
+            }
+
+            return array(
+                'category' => 'staff',
+                'user_id' => $recordId,
+                'email' => $email,
+                'guardianEmail' => '',
+                'mobileno' => isset($staff['contact_no']) ? $staff['contact_no'] : '',
+            );
+        }
+
+        return array();
+    }
+
+    private function getAllowedBirthdayEmailAddresses()
+    {
+        $allowed = array();
+        $date = date('Y-m-d');
+        $students = $this->student_model->getBirthDayStudents($date, true);
+        $staff = $this->staff_model->getBirthDayStaff($date, 1, true);
+
+        foreach (array_merge((array) $students, (array) $staff) as $person) {
+            $email = !empty($person['email']) ? strtolower(trim((string) $person['email'])) : '';
+            if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $allowed[$email] = true;
+            }
+        }
+
+        return $allowed;
+    }
+
+    private function requireExternalEmailPost()
+    {
+        if ($this->input->method(true) !== 'POST') {
+            show_error('Method not allowed.', 405);
+        }
+
+        $expected = (string) $this->session->userdata($this->externalEmailTokenSessionKey);
+        $provided = (string) $this->input->post('external_email_csrf');
+        if ($expected === '' || $provided === '' || !hash_equals($expected, $provided)) {
+            show_error('The email form expired. Refresh the page and try again.', 403);
+        }
+
+        // Make the token single-use so a browser retry cannot resend an email.
+        $this->session->set_userdata($this->externalEmailTokenSessionKey, $this->newExternalEmailToken());
+    }
+
+    private function externalEmailRedirect($type, $message)
+    {
+        $type = in_array($type, array('success', 'warning', 'danger', 'info'), true) ? $type : 'info';
+        $this->session->set_flashdata(
+            'msg',
+            '<div class="alert alert-' . $type . '">' . html_escape((string) $message) . '</div>'
+        );
+
+        return redirect('admin/mailsms/compose?tab=external');
+    }
+
+    private function newExternalEmailToken()
+    {
+        if (function_exists('random_bytes')) {
+            try {
+                return bin2hex(random_bytes(32));
+            } catch (Exception $exception) {
+                // Fall through to the legacy-compatible entropy source.
+            }
+        }
+
+        return hash('sha256', uniqid((string) mt_rand(), true));
     }
 
 }

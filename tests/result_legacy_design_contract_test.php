@@ -10,6 +10,7 @@ $mainResult = file_get_contents($root . '/admin/resultPage.php');
 $kindergartenResult = file_get_contents($root . '/admin/kindergarten_result_page.php');
 $summary = file_get_contents($root . '/admin/partials/result-summary-panel.php');
 $css = file_get_contents($root . '/assets/css/result-report.css');
+$printJavascript = file_get_contents($root . '/assets/js/result-report-print.js');
 $assertions = 0;
 
 function result_legacy_design_assert($condition, $message)
@@ -94,6 +95,25 @@ result_legacy_design_assert(
     strpos($mainResult, '$showCumulativeAverage = $showPromotionOutcome') !== false,
     'Cumulative-average output must remain conditional instead of appearing on every result type.'
 );
+result_legacy_design_assert(
+    substr_count($mainResult, 'result-report__chart--performance') === 4
+        && substr_count($mainResult, 'result-report__domain-title') === 8,
+    'Every termly and cumulative performance panel must use the shared chart and domain layout.'
+);
+result_legacy_design_assert(
+    substr_count($mainResult, 'result-report__cell--remark') === 12,
+    'Every academic remark heading and value must opt into whole-word remark sizing.'
+);
+result_legacy_design_assert(
+    strpos($mainResult, '<tb>') === false && strpos($mainResult, '</tb>') === false,
+    'Result domain tables must contain valid table cells.'
+);
+result_legacy_design_assert(
+    strpos($mainResult, 'responsive: true') !== false
+        && strpos($mainResult, 'maintainAspectRatio: false') !== false
+        && substr_count($mainResult, 'Chart.min.js') === 1,
+    'The academic graph must use boolean sizing options and one Chart.js runtime.'
+);
 
 result_legacy_design_assert($css !== false, 'The shared result stylesheet must be readable.');
 foreach (array(
@@ -146,6 +166,25 @@ result_legacy_design_assert(
 result_legacy_design_assert(
     preg_match('/\.result-report__promotion-value\s*\{[^\}]*font-size:\s*10\.2pt;[^\}]*font-weight:\s*800;/s', $css) === 1,
     'The promotion decision must be visibly larger and bold.'
+);
+result_legacy_design_assert(
+    preg_match('/\.result-report\s+\.result-report__academic-table\s+\.result-report__cell--remark\s*\{[^}]*width:\s*12\.5%;[^}]*word-break:\s*normal;[^}]*overflow-wrap:\s*normal;[^}]*hyphens:\s*none;/s', $css) === 1,
+    'Academic remarks must reserve width and wrap only between words.'
+);
+result_legacy_design_assert(
+    strpos($css, '.result-report__domain-table:not(.result-report__domain-table--combined) tbody th:nth-child(odd)') !== false
+        && strpos($css, 'overflow-wrap: normal') !== false,
+    'Affective and psychomotor labels must use compact, whole-word columns.'
+);
+result_legacy_design_assert(
+    preg_match('/\.result-report__watermark\s*\{[^}]*z-index:\s*2;[^}]*width:\s*122mm;[^}]*opacity:\s*0\.065;/s', $css) === 1,
+    'The school watermark must remain large, faint, centred, and visible across result sections.'
+);
+result_legacy_design_assert($printJavascript !== false, 'The shared result fitting script must be readable.');
+result_legacy_design_assert(
+    strpos($printJavascript, 'function compactDomainTables(root)') !== false
+        && strpos($printJavascript, "document.documentElement.clientWidth - 16") !== false,
+    'Result fitting must compact legacy domain rows and respect the available viewport width.'
 );
 
 echo 'legacy result design contract tests passed (' . $assertions . ' assertions)' . PHP_EOL;

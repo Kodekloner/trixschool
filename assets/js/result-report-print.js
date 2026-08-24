@@ -79,6 +79,80 @@
         return count;
     }
 
+    function cellHasContent(cell) {
+        return !!(cell && cell.textContent && cell.textContent.replace(/\s+/g, '') !== '');
+    }
+
+    /*
+     * Older result branches render one domain item plus two empty cells per
+     * row. Pairing adjacent single items uses the intended four-cell layout
+     * and removes unnecessary vertical space without changing any values.
+     */
+    function compactDomainTables(root) {
+        var allTables = toArray(root.querySelectorAll('.result-report__domain-table'));
+        var tables = allTables.filter(function (table) {
+            return !hasClass(table, 'result-report__domain-table--combined');
+        });
+
+        allTables.forEach(function (table) {
+            var isCombined = hasClass(table, 'result-report__domain-table--combined');
+            var widths = isCombined
+                ? [21, 4, 21, 4, 21, 4, 21, 4]
+                : [42, 8, 42, 8];
+            var group = table.querySelector('colgroup[data-result-domain-columns]');
+
+            if (!group) {
+                group = document.createElement('colgroup');
+                group.setAttribute('data-result-domain-columns', 'true');
+                widths.forEach(function (width) {
+                    var column = document.createElement('col');
+                    column.style.width = width + '%';
+                    group.appendChild(column);
+                });
+                table.insertBefore(group, table.firstChild);
+            }
+        });
+
+        tables.forEach(function (table) {
+            var bodies = toArray(table.tBodies || []);
+
+            bodies.forEach(function (body) {
+                var rows = toArray(body.rows || []);
+                var pending = null;
+
+                rows.forEach(function (row) {
+                    var cells = toArray(row.cells || []);
+                    var isSingleItem = cells.length === 4
+                        && cells[0].colSpan === 1
+                        && cellHasContent(cells[0])
+                        && !cellHasContent(cells[2])
+                        && !cellHasContent(cells[3]);
+
+                    if (!isSingleItem) {
+                        pending = null;
+                        return;
+                    }
+
+                    if (!pending) {
+                        pending = row;
+                        return;
+                    }
+
+                    pending.removeChild(pending.cells[3]);
+                    pending.removeChild(pending.cells[2]);
+                    row.removeChild(cells[3]);
+                    row.removeChild(cells[2]);
+                    pending.appendChild(cells[0]);
+                    pending.appendChild(cells[1]);
+                    body.removeChild(row);
+                    pending = null;
+                });
+            });
+
+            table.setAttribute('data-result-domain-compacted', 'true');
+        });
+    }
+
     function applyDensity(root) {
         var count = parseRowCount(root);
         var density = 'standard';
@@ -171,6 +245,13 @@
         rootHeight = root.offsetHeight;
         availableWidth = preview.clientWidth;
 
+        if (document.documentElement && document.documentElement.clientWidth) {
+            availableWidth = Math.min(
+                availableWidth,
+                Math.max(1, document.documentElement.clientWidth - 16)
+            );
+        }
+
         if (!rootWidth || !rootHeight || !availableWidth) {
             return 1;
         }
@@ -190,6 +271,7 @@
             return null;
         }
 
+        compactDomainTables(root);
         applyDensity(root);
         fitContent(root);
         fitPreview(root);

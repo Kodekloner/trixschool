@@ -792,6 +792,7 @@
             if ($this->module_lib->hasActive('communicate')) {
                 if (($this->rbac->hasPrivilege('notice_board', 'can_view') ||
                     $this->rbac->hasPrivilege('email', 'can_view') ||
+                    $this->rbac->hasPrivilege('external_email', 'can_add') ||
                     $this->rbac->hasPrivilege('sms', 'can_view') ||
                     $this->rbac->hasPrivilege('whatsapp_messaging', 'can_view') ||
                     $this->rbac->hasPrivilege('email_sms_log', 'can_view'))) {
@@ -813,6 +814,11 @@
                             if ($this->rbac->hasPrivilege('email', 'can_view')) {
                             ?>
                                 <li class="<?php echo set_Submenu('Communicate/mailsms/compose'); ?>"><a href="<?php echo base_url(); ?>admin/mailsms/compose"><i class="fa fa-angle-double-right"></i> <?php echo $this->lang->line('send') . " " . $this->lang->line('email') ?></a></li>
+                            <?php
+                            }
+                            if ($this->rbac->hasPrivilege('external_email', 'can_add') && !$this->rbac->hasPrivilege('email', 'can_view')) {
+                            ?>
+                                <li class="<?php echo set_Submenu('Communicate/mailsms/compose'); ?>"><a href="<?php echo base_url(); ?>admin/mailsms/compose?tab=external"><i class="fa fa-angle-double-right"></i> Send External Email</a></li>
                             <?php
                             }
                             if ($this->rbac->hasPrivilege('sms', 'can_view')) {

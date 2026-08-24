@@ -8,6 +8,7 @@ class Supportticket_model extends CI_Model
 {
     protected $ticket_table  = 'support_tickets';
     protected $message_table = 'support_messages';
+    protected $last_incoming_message_created = false;
 
     public function getTickets($filters = array())
     {
@@ -169,6 +170,38 @@ class Supportticket_model extends CI_Model
         return $message_id;
     }
 
+    /**
+     * Start an audited conversation with an address outside the school users.
+     * The controller records the first delivery attempt with addOutgoingReply().
+     */
+    public function createOutgoingConversation($data)
+    {
+        $requesterEmail = $this->normalizeEmail(isset($data['requester_email']) ? $data['requester_email'] : '');
+        if ($requesterEmail === '') {
+            return false;
+        }
+
+        $requesterName = trim(strip_tags((string) (isset($data['requester_name']) ? $data['requester_name'] : '')));
+        if ($requesterName === '') {
+            $requesterName = $requesterEmail;
+        }
+
+        $subject = $this->normalizeSubject(isset($data['subject']) ? $data['subject'] : 'School message');
+        $now = date('Y-m-d H:i:s');
+
+        return $this->createTicket(array(
+            'source'                   => 'external_email',
+            'requester_name'           => $requesterName,
+            'requester_email'          => $requesterEmail,
+            'subject'                  => $subject,
+            'assigned_staff_id'        => !empty($data['sender_staff_id']) ? (int) $data['sender_staff_id'] : null,
+            'incoming_email_id'        => null,
+            'last_incoming_email_id'   => null,
+            'last_message_at'          => $now,
+            'last_customer_message_at' => null,
+        ));
+    }
+
     public function createFromContactForm($data)
     {
         if (!$this->db->table_exists($this->ticket_table) || !$this->db->table_exists($this->message_table)) {
@@ -242,6 +275,7 @@ class Supportticket_model extends CI_Model
 
     public function processIncomingEmail($incoming_email_id)
     {
+        $this->last_incoming_message_created = false;
         $incoming_email_id = (int) $incoming_email_id;
         $incoming = $this->getIncomingEmail($incoming_email_id);
 
@@ -280,7 +314,8 @@ class Supportticket_model extends CI_Model
         }
 
         $rfc_message_id = $this->getRfcMessageId($incoming, $headers);
-        $ticket         = $this->findTicketForIncoming($subject, $headers);
+        $ticket         = $this->findTicketForIncoming($subject, $headers, $requester_email);
+        $is_new_ticket  = empty($ticket);
         $now            = date('Y-m-d H:i:s');
 
         $this->db->trans_start();
@@ -331,8 +366,6 @@ class Supportticket_model extends CI_Model
         }
 
         $ticket_update = array(
-            'requester_name'            => $requester_name,
-            'requester_email'           => $requester_email,
             'last_incoming_email_id'    => $incoming_email_id,
             'last_message_at'           => $message_payload['created_at'],
             'last_customer_message_at'  => $message_payload['created_at'],
@@ -344,11 +377,26 @@ class Supportticket_model extends CI_Model
             $ticket_update['message_id'] = $rfc_message_id;
         }
 
+        // Identity is set when the ticket is created. Never replace an
+        // existing conversation's reply destination from an inbound header.
+        if ($is_new_ticket) {
+            $ticket_update['requester_name'] = $requester_name;
+            $ticket_update['requester_email'] = $requester_email;
+        }
+
         $this->db->where('id', $ticket_id)->update($this->ticket_table, $ticket_update);
         $this->markIncomingEmail($incoming_email_id, 'ticketed', null);
         $this->db->trans_complete();
 
-        return $this->db->trans_status() ? $ticket_id : false;
+        $success = $this->db->trans_status();
+        $this->last_incoming_message_created = $success;
+
+        return $success ? $ticket_id : false;
+    }
+
+    public function wasLastIncomingMessageCreated()
+    {
+        return $this->last_incoming_message_created === true;
     }
 
     public function formatReplySubject($ticket)
@@ -417,13 +465,13 @@ class Supportticket_model extends CI_Model
             'subject'                   => isset($data['subject']) ? $data['subject'] : 'Support Request',
             'status'                    => 'open',
             'priority'                  => 'normal',
-            'assigned_staff_id'         => null,
+            'assigned_staff_id'         => isset($data['assigned_staff_id']) ? (int) $data['assigned_staff_id'] : null,
             'incoming_email_id'         => isset($data['incoming_email_id']) ? (int) $data['incoming_email_id'] : null,
             'last_incoming_email_id'    => isset($data['last_incoming_email_id']) ? (int) $data['last_incoming_email_id'] : null,
             'message_id'                => isset($data['message_id']) ? $data['message_id'] : null,
             'last_outgoing_message_id'  => null,
             'last_message_at'           => isset($data['last_message_at']) ? $data['last_message_at'] : $now,
-            'last_customer_message_at'  => isset($data['last_customer_message_at']) ? $data['last_customer_message_at'] : $now,
+            'last_customer_message_at'  => array_key_exists('last_customer_message_at', $data) ? $data['last_customer_message_at'] : $now,
             'last_staff_message_at'     => null,
             'opened_at'                 => $now,
             'closed_at'                 => null,
@@ -443,41 +491,64 @@ class Supportticket_model extends CI_Model
         return $this->get($id);
     }
 
-    protected function findTicketForIncoming($subject, $headers)
+    protected function findTicketForIncoming($subject, $headers, $requester_email)
     {
-        $ticket_number = $this->extractTicketNumber($subject);
-        if ($ticket_number !== '') {
-            $ticket = $this->getByTicketNumber($ticket_number);
-            if (!empty($ticket)) {
-                return $ticket;
-            }
-        }
-
+        // RFC threading headers are stronger evidence than a public subject
+        // marker, so resolve them first and still require the original sender.
         $reference_ids = array_merge(
             $this->extractMessageIds($this->getHeader($headers, 'in-reply-to')),
             $this->extractMessageIds($this->getHeader($headers, 'references'))
         );
 
         $reference_ids = array_values(array_unique(array_filter($reference_ids)));
-        if (empty($reference_ids)) {
-            return array();
+        if (!empty($reference_ids)) {
+            $message = $this->db->where_in('message_id', $reference_ids)
+                ->order_by('id', 'desc')
+                ->get($this->message_table)
+                ->row_array();
+
+            if (!empty($message)) {
+                $ticket = $this->get($message['support_ticket_id']);
+                if ($this->ticketRequesterMatches($ticket, $requester_email)) {
+                    return $ticket;
+                }
+            }
+
+            $ticket = $this->db->where_in('message_id', $reference_ids)
+                ->or_where_in('last_outgoing_message_id', $reference_ids)
+                ->get($this->ticket_table)
+                ->row_array();
+
+            if ($this->ticketRequesterMatches($ticket, $requester_email)) {
+                return $ticket;
+            }
         }
 
-        $message = $this->db->where_in('message_id', $reference_ids)
-            ->order_by('id', 'desc')
-            ->get($this->message_table)
-            ->row_array();
-
-        if (!empty($message)) {
-            return $this->get($message['support_ticket_id']);
+        $ticket_number = $this->extractTicketNumber($subject);
+        if ($ticket_number !== '') {
+            $ticket = $this->getByTicketNumber($ticket_number);
+            if ($this->ticketRequesterMatches($ticket, $requester_email)) {
+                return $ticket;
+            }
         }
 
-        $ticket = $this->db->where_in('message_id', $reference_ids)
-            ->or_where_in('last_outgoing_message_id', $reference_ids)
-            ->get($this->ticket_table)
-            ->row_array();
+        return array();
+    }
 
-        return !empty($ticket) ? $ticket : array();
+    /**
+     * A public ticket marker or Message-ID must never let another sender take
+     * over a conversation or replace its reply destination.
+     */
+    protected function ticketRequesterMatches($ticket, $requester_email)
+    {
+        if (empty($ticket)) {
+            return false;
+        }
+
+        $expected = $this->normalizeEmail(isset($ticket['requester_email']) ? $ticket['requester_email'] : '');
+        $actual = $this->normalizeEmail($requester_email);
+
+        return $expected !== '' && $actual !== '' && hash_equals($expected, $actual);
     }
 
     protected function extractTicketNumber($subject)

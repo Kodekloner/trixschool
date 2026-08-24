@@ -228,7 +228,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
     <div class="result-report-preview" data-result-report-preview>
         <div class="card result-report" id="printable" data-result-report data-academic-row-count="<?php echo (int) $resultAcademicRowCount; ?>" style="--result-brand: <?php echo $resultBrandPalette['brand']; ?>; --result-brand-strong: <?php echo $resultBrandPalette['strong']; ?>; --result-brand-soft: <?php echo $resultBrandPalette['soft']; ?>; --result-brand-contrast: <?php echo $resultBrandPalette['contrast']; ?>;">
             <div class="result-report__content" data-result-report-content>
-            <img class="watermark-logo result-report__watermark" src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo htmlspecialchars($rowsch_settings['app_logo'], ENT_QUOTES, 'UTF-8'); ?>" alt="">
+            <img class="watermark-logo result-report__watermark" src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo htmlspecialchars($rowsch_settings['app_logo'], ENT_QUOTES, 'UTF-8'); ?>" alt="" aria-hidden="true">
 
             <div class="card-body" style="color: black;">
 
@@ -528,7 +528,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                     <!-- <th>TOTAL</th>
                                         <th>AVERAGE</th> -->
                                     <th>GRADE</th>
-                                    <th>REMARK</th>
+                                    <th class="result-report__cell--remark">REMARK</th>
                                 </tr>
                                 </thead>
 
@@ -710,7 +710,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                 echo '
                                                                                 <td>' . $grade . '</td>
 
-                                                                                <td>' . $remark . '</td>
+                                                                                <td class="result-report__cell--remark">' . $remark . '</td>
                                                                             </tr>';
                                             }
                                         } while ($rowGetsub = mysqli_fetch_assoc($resultsub));
@@ -1196,7 +1196,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                         <th style="text-align:center">Grade</th>
                                         <th style="width:90px;text-align:center">Lowest in Class</th>
                                         <th style="width:90px;text-align:center">Highest in Class</th>
-                                        <th style="width:120px;text-align:center">Remark</th>
+                                        <th class="result-report__cell--remark" style="width:120px;text-align:center">Remark</th>
                                     </tr>
                                     </thead>
 
@@ -1562,7 +1562,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                                                         <td>' . $grade . '</td>
                                                                                         <td>' . $sunlowscrunpersub . '</td>
                                                                                         <td>' . $sunhihscrunpersub . '</td>
-                                                                                        <td>' . $remark . '</td>
+                                                                                        <td class="result-report__cell--remark">' . $remark . '</td>
                                                                                     </tr>';
                                                 } else {
                                                 }
@@ -1644,21 +1644,21 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                 <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
-                            <div class="performance">
-                                <div class="row">
-                                    <div class="col-4">
-                                        <div class="containerForChart" data-result-decorative-chart style="border:0px solid black">
+                            <div class="performance result-report__performance">
+                                <div class="row result-report__performance-row">
+                                    <div class="col-4 result-report__chart-column">
+                                        <div class="containerForChart result-report__chart result-report__chart--performance" data-result-decorative-chart style="border:0px solid black">
 
                                             <canvas class="newgraph" id="mysunChart" style="width:100%;"></canvas>
 
                                         </div>
                                     </div>
-                                    <div class="col-8" style="padding-right: 0px">
-                                        <div class="container-motto" style="margin-right: 20px;border:0px solid red;">
-                                            <div class="result" style="margin: 10px; display: flex; align-items: flex-start; gap: 20px; border: 0px solid red;">
-                                                <table class="tab table-sm" style="width: 37%; table-layout: auto; border:0px solid red;">
+                                    <div class="col-8 result-report__domains-column" style="padding-right: 0px">
+                                        <div class="container-motto result-report__domain-panel" style="margin-right: 20px;border:0px solid red;">
+                                            <div class="result result-report__domain-tables" style="margin: 10px; display: flex; align-items: flex-start; gap: 20px; border: 0px solid red;">
+                                                <table class="tab table-sm result-report__domain-table" style="width: 37%; table-layout: auto; border:0px solid red;">
                                                     <tr>
-                                                        <th colspan="4" style="text-align: center;">AFFECTIVE DOMAIN </th>
+                                                        <th class="result-report__domain-title" colspan="4" style="text-align: center;">AFFECTIVE DOMAIN </th>
                                                     </tr>
                                                     <tbody>
                                                         <?php
@@ -2173,7 +2173,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                         ?>
                                                     </tbody>
                                                 </table>
-                                                <table class="tab table-sm" style="width: 18%; table-layout: auto; border:0px solid red;">
+                                                <table class="tab table-sm result-report__attendance-table" style="width: 18%; table-layout: auto; border:0px solid red;">
                                                     <tr>
                                                         <th colspan="2" style="text-align: center;">ATTENDANCE</th>
                                                     </tr>
@@ -2200,9 +2200,9 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
 
                                                     </tbody>
                                                 </table>
-                                                <table class="tab table-sm" style="width: 37%; table-layout: auto; border:0px solid red;">
+                                                <table class="tab table-sm result-report__domain-table" style="width: 37%; table-layout: auto; border:0px solid red;">
                                                     <tr>
-                                                        <th colspan="4" style="text-align: center;">PSYCOMOTOR</th>
+                                                        <th class="result-report__domain-title" colspan="4" style="text-align: center;">PSYCOMOTOR</th>
                                                     </tr>
                                                     <tbody>
                                                         <?php
@@ -3109,7 +3109,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                         <th>Position</th>
                                         <th>Lowest in Class</th>
                                         <th>Highest in Class</th>
-                                        <th>Remark</th>
+                                        <th class="result-report__cell--remark">Remark</th>
                                     </tr>
                                     </thead>
 
@@ -3487,7 +3487,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                     echo '</td>
                                                                 <td>' . $sunlowscrunpersub . '</td>
                                                                 <td>' . $sunhihscrunpersub . '</td>
-                                                                <td>' . $remark . '</td>
+                                                                <td class="result-report__cell--remark">' . $remark . '</td>
                                                             </tr>';
                                                 } else {
                                                 }
@@ -3570,22 +3570,22 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                 <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
-                            <div class="performance">
-                                <div class="row">
-                                    <div class="col-4">
-                                        <div class="containerForChart" data-result-decorative-chart>
+                            <div class="performance result-report__performance">
+                                <div class="row result-report__performance-row">
+                                    <div class="col-4 result-report__chart-column">
+                                        <div class="containerForChart result-report__chart result-report__chart--performance" data-result-decorative-chart>
 
                                             <canvas class="newgraph" id="mysunChart" style="width:100%;"></canvas>
 
                                         </div>
                                     </div>
 
-                                    <div class="col-8" style="padding-right: 0px">
-                                        <div class="container-motto" style="margin-right: 20px;border:0px solid red;">
-                                            <div class="result" style="margin: 10px; display: flex; align-items: flex-start; gap: 20px; border: 0px solid red;">
-                                                <table class="tab table-sm" style="width: 37%; table-layout: auto; border:0px solid red;">
+                                    <div class="col-8 result-report__domains-column" style="padding-right: 0px">
+                                        <div class="container-motto result-report__domain-panel" style="margin-right: 20px;border:0px solid red;">
+                                            <div class="result result-report__domain-tables" style="margin: 10px; display: flex; align-items: flex-start; gap: 20px; border: 0px solid red;">
+                                                <table class="tab table-sm result-report__domain-table" style="width: 37%; table-layout: auto; border:0px solid red;">
                                                     <tr>
-                                                        <th colspan="4" style="text-align: center;">AFFECTIVE DOMAIN </th>
+                                                        <th class="result-report__domain-title" colspan="4" style="text-align: center;">AFFECTIVE DOMAIN </th>
                                                     </tr>
                                                     <tbody>
                                                         <?php
@@ -4100,7 +4100,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                         ?>
                                                     </tbody>
                                                 </table>
-                                                <table class="tab table-sm" style="width: 18%; table-layout: auto; border:0px solid red;">
+                                                <table class="tab table-sm result-report__attendance-table" style="width: 18%; table-layout: auto; border:0px solid red;">
                                                     <tr>
                                                         <th colspan="2" style="text-align: center;">ATTENDANCE</th>
                                                     </tr>
@@ -4127,9 +4127,9 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
 
                                                     </tbody>
                                                 </table>
-                                                <table class="tab table-sm" style="width: 37%; table-layout: auto; border:0px solid red;">
+                                                <table class="tab table-sm result-report__domain-table" style="width: 37%; table-layout: auto; border:0px solid red;">
                                                     <tr>
-                                                        <th colspan="4" style="text-align: center;">PSYCOMOTOR</th>
+                                                        <th class="result-report__domain-title" colspan="4" style="text-align: center;">PSYCOMOTOR</th>
                                                     </tr>
                                                     <tbody>
                                                         <?php
@@ -4890,7 +4890,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                     <thead>
                                     <tr style="text-align: center;font-size:16px;font-weight:bolder">
                                         <th style="width: 20%; height:45px; background-color:yellow;">Subject(s)</th>
-                                        <th style="width: 20%; background-color:red;color:white">Remark</th>
+                                        <th class="result-report__cell--remark" style="width: 20%; background-color:red;color:white">Remark</th>
                                         <th style="background-color:blue;color:white">Additional Comments</th>
                                     </tr>
                                     </thead>
@@ -4935,7 +4935,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                     echo '<tr style="">
                                                                                             <td style="height:70px;">' . $subname . '</td>';
                                                     echo '
-                                                                                            <td>' . $briremark . '</td>
+                                                                                            <td class="result-report__cell--remark">' . $briremark . '</td>
                                                                                             <td>' . $briextcom . '</td>
                                                                                         </tr>';
                                                 } else {
@@ -5217,7 +5217,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                         <th>GRADE</th>
                                         <th>LOWEST IN CLASS</th>
                                         <th>HIGHEST IN CLASS</th>
-                                        <th>REMARK</th>
+                                        <th class="result-report__cell--remark">REMARK</th>
                                     </tr>
                                     </thead>
 
@@ -5319,7 +5319,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                                                     <td>' . $grade . '</td>
                                                                                     <td>' . $sunlowscrunpersub . '</td>
                                                                                     <td>' . $sunhihscrunpersub . '</td>
-                                                                                    <td>' . $remark . '</td>
+                                                                                    <td class="result-report__cell--remark">' . $remark . '</td>
                                                                                 </tr>';
                                                 } else {
                                                 }
@@ -5402,21 +5402,21 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                 <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
-                            <div class="performance">
-                                <div class="row">
-                                    <div class="col-4">
-                                        <div class="containerForChart" data-result-decorative-chart>
+                            <div class="performance result-report__performance">
+                                <div class="row result-report__performance-row">
+                                    <div class="col-4 result-report__chart-column">
+                                        <div class="containerForChart result-report__chart result-report__chart--performance" data-result-decorative-chart>
 
                                             <canvas class="newgraph" id="mysunChart" style="width:100%;"></canvas>
 
                                         </div>
                                     </div>
-                                    <div class="col-4" style="padding-right: 0px">
-                                        <div class="container-motto" style="margin-right: 2px;">
+                                    <div class="col-4 result-report__domain-column" style="padding-right: 0px">
+                                        <div class="container-motto result-report__domain-panel" style="margin-right: 2px;">
                                             <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
-                                                <table class="tab table-sm" style="width:98%;">
+                                                <table class="tab table-sm result-report__domain-table" style="width:98%;">
                                                     <tr>
-                                                        <th colspan="4" style="text-align: center;">AFFECTIVE DOMAIN </th>
+                                                        <th class="result-report__domain-title" colspan="4" style="text-align: center;">AFFECTIVE DOMAIN </th>
                                                     </tr>
                                                     <tbody>
                                                         <?php
@@ -5939,12 +5939,12 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-4" style="padding-left: 0px">
-                                        <div class="container-motto" style="margin-left: 2px;">
+                                    <div class="col-4 result-report__domain-column" style="padding-left: 0px">
+                                        <div class="container-motto result-report__domain-panel" style="margin-left: 2px;">
                                             <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
-                                                <table class="tab table-sm" style="width:98%;">
+                                                <table class="tab table-sm result-report__domain-table" style="width:98%;">
                                                     <tr>
-                                                        <th colspan="4" style="text-align: center;">PSYCOMOTOR</th>
+                                                        <th class="result-report__domain-title" colspan="4" style="text-align: center;">PSYCOMOTOR</th>
                                                     </tr>
                                                     <tbody>
                                                         <?php
@@ -6773,7 +6773,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                         <th>POSITION</th>
                                         <th>LOWEST IN CLASS</th>
                                         <th>HIGHEST IN CLASS</th>
-                                        <th>REMARK</th>
+                                        <th class="result-report__cell--remark">REMARK</th>
                                     </tr>
                                     </thead>
 
@@ -6889,7 +6889,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                     echo '</td>
                                                                                         <td>' . $sunlowscrunpersub . '</td>
                                                                                         <td>' . $sunhihscrunpersub . '</td>
-                                                                                        <td>' . $remark . '</td>
+                                                                                        <td class="result-report__cell--remark">' . $remark . '</td>
                                                                                     </tr>';
                                                 } else {
                                                 }
@@ -6973,10 +6973,10 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                 <p>No. of Subjects: <span style="font-weight:600;"><?php echo $row_cntgetscorecheck; ?></span></p>
                             </div>
 
-                            <div class="performance">
-                                <div class="row">
-                                    <div class="col-4">
-                                        <div class="containerForChart" data-result-decorative-chart>
+                            <div class="performance result-report__performance">
+                                <div class="row result-report__performance-row">
+                                    <div class="col-4 result-report__chart-column">
+                                        <div class="containerForChart result-report__chart result-report__chart--performance" data-result-decorative-chart>
                                             <canvas class="newgraph" id="mysunChart" style="width:100%;height:100%;"></canvas>
                                         </div>
                                     </div>
@@ -7697,15 +7697,15 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                         }
                                     }
                                     ?>
-                                    <div class="col-8">
+                                    <div class="col-8 result-report__domains-column">
 
-                                        <div class="container-motto">
+                                        <div class="container-motto result-report__domain-panel">
                                             <div style="margin: 20px;">
                                                 <div class="row">
-                                                    <table>
+                                                    <table class="result-report__domain-table result-report__domain-table--combined">
                                                         <tr>
-                                                            <th colspan="4">AFFECTIVE DOMAIN</th>
-                                                            <th colspan="4">PSYCOMOTOR</th>
+                                                            <th class="result-report__domain-title" colspan="4">AFFECTIVE DOMAIN</th>
+                                                            <th class="result-report__domain-title" colspan="4">PSYCOMOTOR</th>
                                                         </tr>
                                                         <?php if (!$hasCumulativeAffectiveScore || !$hasCumulativePsycomotorScore) { ?>
                                                             <tr>
@@ -7810,12 +7810,12 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                             <tr>
                                                                 <td><?php echo $ad15title; ?></td>
                                                                 <td><?php echo $domain15; ?></td>
-                                                                <tb></tb>
-                                                                <tb></tb>
+                                                                <td></td>
+                                                                <td></td>
                                                                 <td><?php echo $p15title; ?></td>
                                                                 <td><?php echo $psycomotor15; ?></td>
-                                                                <tb></tb>
-                                                                <tb></tb>
+                                                                <td></td>
+                                                                <td></td>
                                                             </tr>
                                                         <?php }
                                                         } ?>
@@ -7999,14 +7999,12 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
     <script src="../assets/js/myScript.js"></script>
     <script src="../assets/js/result-report-print.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
-
     <script>
         var ctx = document.getElementById("mysunChart");
         if (ctx && typeof Chart !== 'undefined') {
             var chart = new Chart(ctx, {
-            responsive: "true",
-            maintainAspectRatio: "false",
+            responsive: true,
+            maintainAspectRatio: false,
             type: "bar",
             data: {
                 labels: ["Class Avg", "Avg Score", "Highest", "Lowest"],
