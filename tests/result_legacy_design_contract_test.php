@@ -97,16 +97,39 @@ result_legacy_design_assert(
 );
 result_legacy_design_assert(
     substr_count($mainResult, 'result-report__chart--performance') === 4
-        && substr_count($mainResult, 'result-report__domain-title') === 8,
-    'Every termly and cumulative performance panel must use the shared chart and domain layout.'
+        && substr_count($mainResult, 'result-report__domain-title') === 10
+        && substr_count($mainResult, 'result-report__attendance-title') === 2,
+    'Every termly and cumulative performance panel, including Attendance, must use the shared layout.'
+);
+result_legacy_design_assert(
+    substr_count($mainResult, 'data-result-domain-kind="affective"') === 3
+        && substr_count($mainResult, 'data-result-domain-kind="attendance"') === 2
+        && substr_count($mainResult, 'data-result-domain-kind="psychomotor"') === 3
+        && strpos($mainResult, 'data-result-domain-state=') !== false,
+    'Every performance table must identify its type and cumulative availability state.'
 );
 result_legacy_design_assert(
     substr_count($mainResult, 'result-report__cell--remark') === 12,
     'Every academic remark heading and value must opt into whole-word remark sizing.'
 );
 result_legacy_design_assert(
-    strpos($mainResult, '<tb>') === false && strpos($mainResult, '</tb>') === false,
+    substr_count($mainResult, 'data-result-remarks-section') === 6,
+    'Every result branch must preserve the teacher/principal comment and signature section.'
+);
+result_legacy_design_assert(
+    strpos($mainResult, '$hedteachid') === false,
+    'Teacher remarks must load the signature for the teacher who entered the remark.'
+);
+result_legacy_design_assert(
+    strpos($mainResult, '<tb>') === false
+        && strpos($mainResult, '</tb>') === false
+        && strpos($mainResult, '</tr></td>') === false
+        && strpos($mainResult, '?></b></p>') === false,
     'Result domain tables must contain valid table cells.'
+);
+result_legacy_design_assert(
+    substr_count($mainResult, '<tr class="result-report__availability-row"><td align="center" colspan="4">') === 6,
+    'Every simple domain table must use a valid compact four-column pending-data row.'
 );
 result_legacy_design_assert(
     strpos($mainResult, 'responsive: true') !== false
@@ -180,11 +203,28 @@ result_legacy_design_assert(
     preg_match('/\.result-report__watermark\s*\{[^}]*z-index:\s*2;[^}]*width:\s*122mm;[^}]*opacity:\s*0\.065;/s', $css) === 1,
     'The school watermark must remain large, faint, centred, and visible across result sections.'
 );
+result_legacy_design_assert(
+    preg_match('/\.result-report\s+\.result-report__performance-row\s*\{[^}]*flex-wrap:\s*wrap;/s', $css) === 1
+        && strpos($css, '.result-report .result-report__remarks-section') !== false,
+    'Performance rows must wrap the full-width comment/signature section below the chart and domains.'
+);
+result_legacy_design_assert(
+    preg_match('/\.result-report\s+\.result-report__attendance-table\s+tbody\s+th:first-child:not\(\.result-report__domain-title\)\s*\{[^}]*width:\s*72%\s*!important;[^}]*word-break:\s*normal;[^}]*overflow-wrap:\s*normal;/s', $css) === 1,
+    'Attendance labels must retain readable width and wrap only at word boundaries.'
+);
+result_legacy_design_assert(
+    strpos($css, '.result-report .result-report__panel--unavailable') !== false
+        && strpos($css, '.result-report--ultra .result-report__chart-column') !== false
+        && strpos($css, 'data-result-domain-state="affective"') !== false,
+    'Available performance panels must reclaim empty and hidden panel space.'
+);
 result_legacy_design_assert($printJavascript !== false, 'The shared result fitting script must be readable.');
 result_legacy_design_assert(
     strpos($printJavascript, 'function compactDomainTables(root)') !== false
+        && strpos($printJavascript, 'function arrangePerformancePanels(root)') !== false
+        && strpos($printJavascript, 'function tableHasLayoutContent(table)') !== false
         && strpos($printJavascript, "document.documentElement.clientWidth - 16") !== false,
-    'Result fitting must compact legacy domain rows and respect the available viewport width.'
+    'Result fitting must compact and arrange available legacy panels while respecting viewport width.'
 );
 
 echo 'legacy result design contract tests passed (' . $assertions . ' assertions)' . PHP_EOL;

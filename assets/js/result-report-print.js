@@ -96,10 +96,18 @@
 
         allTables.forEach(function (table) {
             var isCombined = hasClass(table, 'result-report__domain-table--combined');
-            var widths = isCombined
+            var combinedState = table.getAttribute('data-result-domain-state');
+            var isSingleCombinedDomain = isCombined
+                && (combinedState === 'affective' || combinedState === 'psychomotor');
+            var widths = isCombined && !isSingleCombinedDomain
                 ? [21, 4, 21, 4, 21, 4, 21, 4]
                 : [42, 8, 42, 8];
             var group = table.querySelector('colgroup[data-result-domain-columns]');
+
+            if (group && group.children.length !== widths.length) {
+                group.parentNode.removeChild(group);
+                group = null;
+            }
 
             if (!group) {
                 group = document.createElement('colgroup');
@@ -110,6 +118,10 @@
                     group.appendChild(column);
                 });
                 table.insertBefore(group, table.firstChild);
+            } else {
+                widths.forEach(function (width, index) {
+                    group.children[index].style.width = width + '%';
+                });
             }
         });
 
@@ -150,6 +162,110 @@
             });
 
             table.setAttribute('data-result-domain-compacted', 'true');
+        });
+    }
+
+    function tableHasLayoutContent(table) {
+        var combinedState = table.getAttribute('data-result-domain-state');
+        var rows;
+
+        if (hasClass(table, 'result-report__domain-table--combined')) {
+            return combinedState !== 'none';
+        }
+
+        rows = toArray(table.rows || []);
+        return rows.some(function (row) {
+            var cells;
+
+            if (row.querySelector('.result-report__domain-title')) {
+                return false;
+            }
+
+            /* A configured panel with no score remains as a compact status
+             * table. Only a truly empty, unconfigured table is removed. */
+            if (row.querySelector('.alert')) {
+                return true;
+            }
+
+            cells = toArray(row.cells || []);
+            return cells.some(function (cell) {
+                return !!(cell.textContent && cell.textContent.replace(/\s+/g, '') !== '');
+            });
+        });
+    }
+
+    function setPanelAvailability(element, available) {
+        if (!element) {
+            return;
+        }
+
+        if (available) {
+            removeClass(element, 'result-report__panel--unavailable');
+            element.setAttribute('data-result-panel-available', 'true');
+            element.removeAttribute('aria-hidden');
+            return;
+        }
+
+        addClass(element, 'result-report__panel--unavailable');
+        element.setAttribute('data-result-panel-available', 'false');
+        element.setAttribute('aria-hidden', 'true');
+    }
+
+    function arrangePerformancePanels(root) {
+        var tables = toArray(root.querySelectorAll(
+            '.result-report__domain-table, .result-report__attendance-table'
+        ));
+        var tableGroups = toArray(root.querySelectorAll('.result-report__domain-tables'));
+        var rows = toArray(root.querySelectorAll('.result-report__performance-row'));
+
+        tables.forEach(function (table) {
+            setPanelAvailability(table, tableHasLayoutContent(table));
+        });
+
+        tableGroups.forEach(function (group) {
+            var groupTables = toArray(group.children).filter(function (child) {
+                return hasClass(child, 'result-report__domain-table')
+                    || hasClass(child, 'result-report__attendance-table');
+            });
+            var availableCount = groupTables.filter(function (table) {
+                return table.getAttribute('data-result-panel-available') === 'true';
+            }).length;
+
+            group.setAttribute('data-result-panel-count', String(availableCount));
+        });
+
+        rows.forEach(function (row) {
+            var panels = toArray(row.children).filter(function (child) {
+                return hasClass(child, 'result-report__chart-column')
+                    || hasClass(child, 'result-report__domain-column')
+                    || hasClass(child, 'result-report__domains-column');
+            });
+            var availableCount = 0;
+
+            panels.forEach(function (panel) {
+                var available = true;
+                var panelTables;
+                var chart;
+
+                if (hasClass(panel, 'result-report__chart-column')) {
+                    chart = panel.querySelector('[data-result-decorative-chart], .result-report__chart');
+                    available = !!chart && window.getComputedStyle(chart).display !== 'none';
+                } else {
+                    panelTables = toArray(panel.querySelectorAll(
+                        '.result-report__domain-table, .result-report__attendance-table'
+                    ));
+                    available = panelTables.some(function (table) {
+                        return table.getAttribute('data-result-panel-available') === 'true';
+                    });
+                }
+
+                setPanelAvailability(panel, available);
+                if (available) {
+                    availableCount += 1;
+                }
+            });
+
+            row.setAttribute('data-result-panel-count', String(availableCount));
         });
     }
 
@@ -273,6 +389,7 @@
 
         compactDomainTables(root);
         applyDensity(root);
+        arrangePerformancePanels(root);
         fitContent(root);
         fitPreview(root);
         addClass(root, 'result-report--ready');
@@ -375,6 +492,7 @@
         instances.push(instance);
 
         applyDensity(root);
+        arrangePerformancePanels(root);
         whenAssetsReady(root, instance.fit);
 
         return instance;

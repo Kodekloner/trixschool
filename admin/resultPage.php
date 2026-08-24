@@ -715,16 +715,16 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                             }
                                         } while ($rowGetsub = mysqli_fetch_assoc($resultsub));
                                     } else {
-                                        echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
-                                    }
+                                        echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></td></tr>';
+                                        }
 
-                                    ?>
-                                </tbody>
-                            </table>
-                        </div>
+                                        ?>
+                                    </tbody>
+                                </table>
+                            </div>
 
-                        <?php
-                        $resultSummaryPanelSections = array('grade_key');
+                            <?php
+                            $resultSummaryPanelSections = array('grade_key');
                         include __DIR__ . '/partials/result-summary-panel.php';
                         unset($resultSummaryPanelSections);
                         ?>
@@ -897,7 +897,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                         $principalRemark = $schoolHeadCommentData['remark'];
                         $hedteachsignhead = $schoolHeadCommentData['signatureHtml'];
                         ?>
-                        <div class="col-12">
+                        <div class="col-12 result-report__remarks-section" data-result-remarks-section>
 
                             <div class="container-motto">
                                 <div style="margin: 20px;">
@@ -1568,7 +1568,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                 }
                                             } while ($rowGetsub = mysqli_fetch_assoc($resultsub));
                                         } else {
-                                            echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
+                                        echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></td></tr>';
                                         }
 
                                         ?>
@@ -1594,6 +1594,11 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                             } else {
                                 $resumdateOld = 'N/A';
                             }
+
+                            $rowcountfixedgennew = 0;
+                            $rowcountfixedpresent = 0;
+                            $rowcountfixedabsent = 0;
+                            $rowcountfixedlate = 0;
 
                             $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`ca1` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND SubjectID = '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                             $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
@@ -1656,7 +1661,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                     <div class="col-8 result-report__domains-column" style="padding-right: 0px">
                                         <div class="container-motto result-report__domain-panel" style="margin-right: 20px;border:0px solid red;">
                                             <div class="result result-report__domain-tables" style="margin: 10px; display: flex; align-items: flex-start; gap: 20px; border: 0px solid red;">
-                                                <table class="tab table-sm result-report__domain-table" style="width: 37%; table-layout: auto; border:0px solid red;">
+                                                <table class="tab table-sm result-report__domain-table" data-result-domain-kind="affective" style="width: 37%; table-layout: auto; border:0px solid red;">
                                                     <tr>
                                                         <th class="result-report__domain-title" colspan="4" style="text-align: center;">AFFECTIVE DOMAIN </th>
                                                     </tr>
@@ -2167,15 +2172,15 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                                 } else {
                                                                 }
                                                             } else {
-                                                                echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
+                                        echo '<tr class="result-report__availability-row"><td align="center" colspan="4"><div class="alert alert-info mb-2" role="alert">No Result Yet</div></td></tr>';
                                                             }
                                                         }
                                                         ?>
                                                     </tbody>
                                                 </table>
-                                                <table class="tab table-sm result-report__attendance-table" style="width: 18%; table-layout: auto; border:0px solid red;">
+                                                <table class="tab table-sm result-report__attendance-table" data-result-domain-kind="attendance" style="width: 18%; table-layout: auto; border:0px solid red;">
                                                     <tr>
-                                                        <th colspan="2" style="text-align: center;">ATTENDANCE</th>
+                                                        <th class="result-report__domain-title result-report__attendance-title" colspan="2" style="text-align: center;">ATTENDANCE</th>
                                                     </tr>
                                                     <tbody>
                                                         <tr>
@@ -2200,7 +2205,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
 
                                                     </tbody>
                                                 </table>
-                                                <table class="tab table-sm result-report__domain-table" style="width: 37%; table-layout: auto; border:0px solid red;">
+                                                <table class="tab table-sm result-report__domain-table" data-result-domain-kind="psychomotor" style="width: 37%; table-layout: auto; border:0px solid red;">
                                                     <tr>
                                                         <th class="result-report__domain-title" colspan="4" style="text-align: center;">PSYCOMOTOR</th>
                                                     </tr>
@@ -2711,7 +2716,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                                 } else {
                                                                 }
                                                             } else {
-                                                                echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
+                                        echo '<tr class="result-report__availability-row"><td align="center" colspan="4"><div class="alert alert-info mb-2" role="alert">No Result Yet</div></td></tr>';
                                                             }
                                                         }
                                                         ?>
@@ -2810,7 +2815,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
 
                             <div class="performance">
                                 <div class="row">
-                                    <div class="col-12">
+                                    <div class="col-12 result-report__remarks-section" data-result-remarks-section>
 
                                         <div class="container-motto" style="border:0px solid black">
                                             <div style="margin: 20px;">
@@ -2844,7 +2849,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                 <div class="row">
                                                     <div class="col-sm-12 col-md-12">
                                                         <div>
-                                                            <p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate; ?></b></p>
+                                                            <p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate; ?></p>
                                                             <?php
                                                             if ($next_fee > 0) {
                                                                 echo '<p style="text-align: center;"><b style="font-weight:600;">NEXT TERM FEEs: N' . $next_fee . '</b></p>';
@@ -3493,7 +3498,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                 }
                                             } while ($rowGetsub = mysqli_fetch_assoc($resultsub));
                                         } else {
-                                            echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
+                                        echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></td></tr>';
                                         }
 
                                         ?>
@@ -3519,6 +3524,11 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                             } else {
                                 $resumdateOld = 'N/A';
                             }
+
+                            $rowcountfixedgennew = 0;
+                            $rowcountfixedpresent = 0;
+                            $rowcountfixedabsent = 0;
+                            $rowcountfixedlate = 0;
 
                             $sqlgetsubscore = ("SELECT * FROM `score` WHERE `ca1` != '0' AND `ca1` != '' AND `ca1` IS NOT NULL AND StudentID = '$id' AND ClassID = '$classid' AND SubjectID = '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                             $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
@@ -3583,7 +3593,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                     <div class="col-8 result-report__domains-column" style="padding-right: 0px">
                                         <div class="container-motto result-report__domain-panel" style="margin-right: 20px;border:0px solid red;">
                                             <div class="result result-report__domain-tables" style="margin: 10px; display: flex; align-items: flex-start; gap: 20px; border: 0px solid red;">
-                                                <table class="tab table-sm result-report__domain-table" style="width: 37%; table-layout: auto; border:0px solid red;">
+                                                <table class="tab table-sm result-report__domain-table" data-result-domain-kind="affective" style="width: 37%; table-layout: auto; border:0px solid red;">
                                                     <tr>
                                                         <th class="result-report__domain-title" colspan="4" style="text-align: center;">AFFECTIVE DOMAIN </th>
                                                     </tr>
@@ -4094,15 +4104,15 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                                 } else {
                                                                 }
                                                             } else {
-                                                                echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
+                                        echo '<tr class="result-report__availability-row"><td align="center" colspan="4"><div class="alert alert-info mb-2" role="alert">No Result Yet</div></td></tr>';
                                                             }
                                                         }
                                                         ?>
                                                     </tbody>
                                                 </table>
-                                                <table class="tab table-sm result-report__attendance-table" style="width: 18%; table-layout: auto; border:0px solid red;">
+                                                <table class="tab table-sm result-report__attendance-table" data-result-domain-kind="attendance" style="width: 18%; table-layout: auto; border:0px solid red;">
                                                     <tr>
-                                                        <th colspan="2" style="text-align: center;">ATTENDANCE</th>
+                                                        <th class="result-report__domain-title result-report__attendance-title" colspan="2" style="text-align: center;">ATTENDANCE</th>
                                                     </tr>
                                                     <tbody>
                                                         <tr>
@@ -4127,7 +4137,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
 
                                                     </tbody>
                                                 </table>
-                                                <table class="tab table-sm result-report__domain-table" style="width: 37%; table-layout: auto; border:0px solid red;">
+                                                <table class="tab table-sm result-report__domain-table" data-result-domain-kind="psychomotor" style="width: 37%; table-layout: auto; border:0px solid red;">
                                                     <tr>
                                                         <th class="result-report__domain-title" colspan="4" style="text-align: center;">PSYCOMOTOR</th>
                                                     </tr>
@@ -4638,7 +4648,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                                 } else {
                                                                 }
                                                             } else {
-                                                                echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
+                                        echo '<tr class="result-report__availability-row"><td align="center" colspan="4"><div class="alert alert-info mb-2" role="alert">No Result Yet</div></td></tr>';
                                                             }
                                                         }
                                                         ?>
@@ -4737,7 +4747,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
 
                             <div class="performance">
                                 <div class="row">
-                                    <div class="col-12">
+                                    <div class="col-12 result-report__remarks-section" data-result-remarks-section>
 
                                         <div class="container-motto" style="border:0px solid black">
                                             <div style="margin: 20px;">
@@ -4771,7 +4781,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                 <div class="row">
                                                     <div class="col-sm-12 col-md-12">
                                                         <div>
-                                                            <p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate; ?></b></p>
+                                                            <p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate; ?></p>
                                                             <?php
                                                             if ($next_fee > 0) {
                                                                 echo '<p style="text-align: center;"><b style="font-weight:600;">NEXT TERM FEEs: N' . $next_fee . '</b></p>';
@@ -4814,6 +4824,11 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                 } else {
                                     $resumdateOld = 'N/A';
                                 }
+
+                                $rowcountfixedgennew = 0;
+                                $rowcountfixedpresent = 0;
+                                $rowcountfixedabsent = 0;
+                                $rowcountfixedlate = 0;
 
                                 $sqlgetsubscore = ("SELECT * FROM `score` WHERE (`ca1` !='0') AND StudentID = '$id' AND ClassID = '$classid' AND SubjectID = '0' AND Session = '$session' AND Term = '$term' AND SectionID = '$classsectionactual'");
                                 $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
@@ -4942,7 +4957,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                 }
                                             } while ($rowGetsub = mysqli_fetch_assoc($resultsub));
                                         } else {
-                                            echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet.</div></tr></td>';
+                                            echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet.</div></td></tr>';
                                         }
                                         ?>
                                     </tbody>
@@ -4963,7 +4978,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
 
                                         $teacherid = $fetchfixedremark['StaffID'];
 
-                                        $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$hedteachid'");
+                                        $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$teacherid'");
                                         $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                         $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                         $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
@@ -5032,7 +5047,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                         $resumdate = 'N/A';
                                     }
                                     ?>
-                                    <div class="col-12">
+                                    <div class="col-12 result-report__remarks-section" data-result-remarks-section>
 
                                         <div class="container-motto">
                                             <div style="margin: 20px;">
@@ -5066,7 +5081,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                 <div class="row">
                                                     <div class="col-sm-12 col-md-12">
                                                         <div>
-                                                            <p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate; ?></b></p>
+                                                            <p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate; ?></p>
                                                             <?php
                                                             if ($next_fee > 0) {
                                                                 echo '<p style="text-align: center;"><b style="font-weight:600;">NEXT TERM FEE: N' . $next_fee . '</b></p>';
@@ -5325,7 +5340,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                 }
                                             } while ($rowGetsub = mysqli_fetch_assoc($resultsub));
                                         } else {
-                                            echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
+                                        echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></td></tr>';
                                         }
 
                                         ?>
@@ -5414,7 +5429,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                     <div class="col-4 result-report__domain-column" style="padding-right: 0px">
                                         <div class="container-motto result-report__domain-panel" style="margin-right: 2px;">
                                             <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
-                                                <table class="tab table-sm result-report__domain-table" style="width:98%;">
+                                                <table class="tab table-sm result-report__domain-table" data-result-domain-kind="affective" style="width:98%;">
                                                     <tr>
                                                         <th class="result-report__domain-title" colspan="4" style="text-align: center;">AFFECTIVE DOMAIN </th>
                                                     </tr>
@@ -5930,7 +5945,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                                 } else {
                                                                 }
                                                             } else {
-                                                                echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
+                                        echo '<tr class="result-report__availability-row"><td align="center" colspan="4"><div class="alert alert-info mb-2" role="alert">No Result Yet</div></td></tr>';
                                                             }
                                                         }
                                                         ?>
@@ -5942,7 +5957,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                     <div class="col-4 result-report__domain-column" style="padding-left: 0px">
                                         <div class="container-motto result-report__domain-panel" style="margin-left: 2px;">
                                             <div class="result table-responsive" style="margin: 10px; margin-top: 5px;">
-                                                <table class="tab table-sm result-report__domain-table" style="width:98%;">
+                                                <table class="tab table-sm result-report__domain-table" data-result-domain-kind="psychomotor" style="width:98%;">
                                                     <tr>
                                                         <th class="result-report__domain-title" colspan="4" style="text-align: center;">PSYCOMOTOR</th>
                                                     </tr>
@@ -6458,7 +6473,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                                 } else {
                                                                 }
                                                             } else {
-                                                                echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
+                                        echo '<tr class="result-report__availability-row"><td align="center" colspan="4"><div class="alert alert-info mb-2" role="alert">No Result Yet</div></td></tr>';
                                                             }
                                                         }
                                                         ?>
@@ -6480,7 +6495,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
 
                                         $teacherid = $fetchfixedremark['StaffID'];
 
-                                        $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$hedteachid'");
+                                        $sqlgetheadteachsign = ("SELECT * FROM `staffsignature` WHERE staff_id = '$teacherid'");
                                         $resultgetheadteachsign = mysqli_query($link, $sqlgetheadteachsign);
                                         $rowgetheadteachsign = mysqli_fetch_assoc($resultgetheadteachsign);
                                         $row_cntgetheadteachsign = mysqli_num_rows($resultgetheadteachsign);
@@ -6537,7 +6552,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                         $resumdate = 'N/A';
                                     }
                                     ?>
-                                    <div class="col-12">
+                                    <div class="col-12 result-report__remarks-section" data-result-remarks-section>
 
                                         <div class="container-motto">
                                             <div style="margin: 20px;">
@@ -6571,7 +6586,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                 <div class="row">
                                                     <div class="col-sm-12 col-md-12">
                                                         <div>
-                                                            <p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate; ?></b></p>
+                                                            <p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate; ?></p>
                                                             <?php
                                                             if ($next_fee > 0) {
                                                                 echo '<p style="text-align: center;"><b style="font-weight:600;">NEXT TERM FEE: N' . $next_fee . '</b></p>';
@@ -6895,7 +6910,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                 }
                                             } while ($rowGetsub = mysqli_fetch_assoc($resultsub));
                                         } else {
-                                            echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></tr></td>';
+                                        echo '<tr><td align="center" colspan="15" style="font-size: calc(12px + (18 - 12) * ((100vw - 300px) / (1600 - 300)))"><div class="alert alert-info alert-dismissible mb-2" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>No Result Yet</div></td></tr>';
                                         }
 
                                         ?>
@@ -7702,13 +7717,13 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                         <div class="container-motto result-report__domain-panel">
                                             <div style="margin: 20px;">
                                                 <div class="row">
-                                                    <table class="result-report__domain-table result-report__domain-table--combined">
+                                                    <table class="result-report__domain-table result-report__domain-table--combined" data-result-domain-state="<?php echo $hasCumulativeAffectiveScore ? ($hasCumulativePsycomotorScore ? 'both' : 'affective') : ($hasCumulativePsycomotorScore ? 'psychomotor' : 'none'); ?>">
                                                         <tr>
                                                             <th class="result-report__domain-title" colspan="4">AFFECTIVE DOMAIN</th>
                                                             <th class="result-report__domain-title" colspan="4">PSYCOMOTOR</th>
                                                         </tr>
                                                         <?php if (!$hasCumulativeAffectiveScore || !$hasCumulativePsycomotorScore) { ?>
-                                                            <tr>
+                                                            <tr class="result-report__availability-row">
                                                                 <td colspan="4" style="text-align: center;">
                                                                     <?php if (!$hasCumulativeAffectiveScore) { ?>
                                                                         <div class="alert alert-info mb-2" role="alert">No Result Yet</div>
@@ -7908,7 +7923,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                         $resumdate = 'N/A';
                                     }
                                     ?>
-                                    <div class="col-12">
+                                    <div class="col-12 result-report__remarks-section" data-result-remarks-section>
 
                                         <div class="container-motto">
                                             <div style="margin: 20px;">
@@ -7942,7 +7957,7 @@ $resultBrandPalette = build_result_brand_palette($rowsch_settings['app_primary_c
                                                 <div class="row">
                                                     <div class="col-sm-12 col-md-12">
                                                         <div>
-                                                            <p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate; ?></b></p>
+                                                            <p style="text-align: justify;"><b style="font-weight:600;">NEXT TERM BEGINS:</b>&nbsp;<?php echo $resumdate; ?></p>
                                                             <?php
                                                             if ($next_fee > 0) {
                                                                 echo '<p style="text-align: center;"><b style="font-weight:600;">NEXT TERM FEE: N' . $next_fee . '</b></p>';
