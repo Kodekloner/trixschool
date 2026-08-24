@@ -306,9 +306,22 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
             . '<td data-subject-cell>' . htmlspecialchars($subject, ENT_QUOTES, 'UTF-8') . '</td>'
             . '<td>18</td><td>17</td><td>62</td><td>97</td>'
             . '<td>91</td><td>88</td><td>92.00</td><td>A</td>'
-            . '<td>Excellent and consistently thoughtful performance</td>'
+            . '<td class="result-report__cell--remark" data-remark-cell>Excellent and consistently thoughtful performance</td>'
             . '</tr>';
     }
+
+    $affectiveRows = '<tr><th data-domain-label>Attentiveness</th><td>5</td><th data-domain-label>Relationship with Mates</th><td>5</td></tr>'
+        . '<tr><th data-domain-label>Class Participation</th><td>4</td><th data-domain-label>Organisational Ability</th><td>4</td></tr>'
+        . '<tr><th data-domain-label>Honesty</th><td>5</td><th data-domain-label>Politeness</th><td>5</td></tr>'
+        . '<tr><th data-domain-label>Neatness</th><td>4</td><th data-domain-label>Self Control</th><td>4</td></tr>'
+        . '<tr><th data-domain-label>Responsibility</th><td>5</td><th data-domain-label>Cooperation</th><td>5</td></tr>'
+        . '<tr><th data-domain-label>Leadership</th><td>4</td><td></td><td></td></tr>';
+    $psychomotorRows = '<tr><th data-domain-label>Handwriting</th><td>5</td><td></td><td></td></tr>'
+        . '<tr><th data-domain-label>Verbal Fluency</th><td>4</td><td></td><td></td></tr>'
+        . '<tr><th data-domain-label>Gymnastic Skills</th><td>4</td><td></td><td></td></tr>'
+        . '<tr><th data-domain-label>Handling of Equipment</th><td>5</td><td></td><td></td></tr>'
+        . '<tr><th data-domain-label>Drawing and Painting</th><td>4</td><td></td><td></td></tr>'
+        . '<tr><th data-domain-label>Musical Skills</th><td>5</td><td></td><td></td></tr>';
 
     $javascript = str_ireplace('</script', '<\\/script', $javascript);
 
@@ -354,14 +367,30 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
         <div align="center"><h5 style="font-size:18px;font-weight:800;color:#000;margin-bottom:0">ACADEMIC PERFORMANCE</h5></div>
         <div class="result table-responsive result-report__academic-table-wrap result-report__table-wrap">
           <table id="academic-performance" class="table-bordered table-striped tab table-sm tb-result-border result-report__academic-table result-report__table">
-            <thead><tr><th>Subject</th><th>CA 1</th><th>CA 2</th><th>Exam</th><th>Total</th><th>1st</th><th>2nd</th><th>Cumulative Average</th><th>Grade</th><th class="result-report__cell--comment">Remark</th></tr></thead>
+            <thead><tr><th>Subject</th><th>CA 1</th><th>CA 2</th><th>Exam</th><th>Total</th><th>1st</th><th>2nd</th><th>Cumulative Average</th><th>Grade</th><th class="result-report__cell--remark">Remark</th></tr></thead>
             <tbody>' . $rows . '</tbody>
           </table>
         </div>
         <section class="result-report__summary result-report__summary--grade-key" data-result-summary-section="grade-key" aria-label="Key to grades">
           <div class="result-report__panel"><p class="result-report__panel-title">Key to Grades</p><div class="result-report__panel-body"><ul class="result-report__grade-key"><li class="result-report__grade-item"><b class="result-report__grade-symbol">A:</b> 70% and above</li><li class="result-report__grade-item"><b class="result-report__grade-symbol">B:</b> 60%–69.9%</li><li class="result-report__grade-item"><b class="result-report__grade-symbol">C:</b> 50%–59.9%</li><li class="result-report__grade-item"><b class="result-report__grade-symbol">D:</b> 45%–49.9%</li><li class="result-report__grade-item"><b class="result-report__grade-symbol">E:</b> 40%–44.9%</li><li class="result-report__grade-item"><b class="result-report__grade-symbol">F:</b> 0%–39.9%</li></ul></div></div>
         </section>
-        <section class="result-report__chart result-report__chart--decorative" data-result-decorative-chart><svg viewBox="0 0 100 16" role="img"><rect width="100" height="16" fill="#eceff3"></rect><path d="M0 14 L20 8 L40 10 L60 3 L80 7 L100 1" fill="none" stroke="#6d247f"></path></svg></section>
+        <section class="performance result-report__performance" id="performance-fixture">
+          <div class="row result-report__performance-row">
+            <div class="col-4 result-report__chart-column">
+              <div class="containerForChart result-report__chart result-report__chart--performance" data-result-decorative-chart><canvas class="newgraph" id="fixture-chart"></canvas></div>
+            </div>
+            <div class="col-4 result-report__domain-column">
+              <div class="container-motto result-report__domain-panel"><div class="result table-responsive">
+                <table id="affective-fixture" class="tab table-sm result-report__domain-table"><tr><th class="result-report__domain-title" colspan="4">AFFECTIVE DOMAIN</th></tr><tbody>' . $affectiveRows . '</tbody></table>
+              </div></div>
+            </div>
+            <div class="col-4 result-report__domain-column">
+              <div class="container-motto result-report__domain-panel"><div class="result table-responsive">
+                <table id="psychomotor-fixture" class="tab table-sm result-report__domain-table"><tr><th class="result-report__domain-title" colspan="4">PSYCOMOTOR</th></tr><tbody>' . $psychomotorRows . '</tbody></table>
+              </div></div>
+            </div>
+          </div>
+        </section>
         <section class="result-report__comments"><div class="result-report__comment"><strong class="result-report__label">Teacher&apos;s Comment</strong><p class="result-report__comment-text">A focused learner who has made steady progress throughout the academic year.</p></div><div class="result-report__comment"><strong class="result-report__label">Head Teacher&apos;s Comment</strong><p class="result-report__comment-text">An excellent result. Continue the good work.</p></div></section>
         <section class="result-report__summary result-report__summary--promotion" data-result-summary-section="promotion" aria-label="Promotion status">
           <div class="result-report__promotion" data-promotion-status="promoted"><span class="result-report__promotion-label">Promotion Status</span><strong class="result-report__promotion-value">PROMOTED TO: JSS 2</strong></div>
@@ -383,6 +412,12 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
           var table = document.getElementById("academic-performance");
           var watermark = root.querySelector(".result-report__watermark");
           var cardBody = root.querySelector(".card-body");
+          var preview = root.closest("[data-result-report-preview]");
+          var performance = document.getElementById("performance-fixture");
+          var performanceChart = root.querySelector(".result-report__chart--performance");
+          var performanceCanvas = document.getElementById("fixture-chart");
+          var affectiveTable = document.getElementById("affective-fixture");
+          var psychomotorTable = document.getElementById("psychomotor-fixture");
           var legacyHeader = root.querySelector(".result-report__legacy-header");
           var legacyTitle = root.querySelector(".result-report__legacy-title");
           var studentInfo = root.querySelector(".container-motto");
@@ -419,6 +454,10 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
           var rootRect = root.getBoundingClientRect();
           var contentRect = content.getBoundingClientRect();
           var tableRect = table.getBoundingClientRect();
+          var watermarkRect = watermark.getBoundingClientRect();
+          var performanceRect = performance.getBoundingClientRect();
+          var performanceChartRect = performanceChart.getBoundingClientRect();
+          var performanceCanvasRect = performanceCanvas.getBoundingClientRect();
           var legacyHeaderRect = legacyHeader.getBoundingClientRect();
           var legacyTitleRect = legacyTitle.getBoundingClientRect();
           var tolerance = 1;
@@ -444,6 +483,33 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
 
             return cell.scrollWidth <= cell.clientWidth + tolerance;
           });
+          function wordsRemainWhole(selector) {
+            return Array.prototype.every.call(root.querySelectorAll(selector), function (cell) {
+              var walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+              var textNode;
+
+              while ((textNode = walker.nextNode())) {
+                var wordPattern = /\S+/g;
+                var match;
+
+                while ((match = wordPattern.exec(textNode.nodeValue)) !== null) {
+                  var range = document.createRange();
+                  range.setStart(textNode, match.index);
+                  range.setEnd(textNode, match.index + match[0].length);
+                  if (range.getClientRects().length !== 1) {
+                    return false;
+                  }
+                }
+              }
+
+              return cell.scrollWidth <= cell.clientWidth + tolerance;
+            });
+          }
+          var remarkHeader = table.querySelector(".result-report__cell--remark");
+          var watermarkContentCenterX = contentRect.left + (contentRect.width / 2);
+          var watermarkContentCenterY = contentRect.top + (contentRect.height / 2);
+          var watermarkCenterX = watermarkRect.left + (watermarkRect.width / 2);
+          var watermarkCenterY = watermarkRect.top + (watermarkRect.height / 2);
           var payload = {
             density: root.getAttribute("data-result-density"),
             rowCount: table.querySelectorAll("[data-academic-row]").length,
@@ -464,6 +530,20 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
             subjectUsesBodyStyling: firstBodyCellStyle.backgroundColor !== headerCellStyle.backgroundColor,
             subjectColumnWidthRatio: headerCell.getBoundingClientRect().width / tableRect.width,
             subjectWordsRemainWhole: subjectWordsRemainWhole,
+            remarkColumnWidthRatio: remarkHeader.getBoundingClientRect().width / tableRect.width,
+            remarkWordsRemainWhole: wordsRemainWhole("[data-remark-cell]"),
+            domainWordsRemainWhole: wordsRemainWhole("[data-domain-label]"),
+            psychomotorRows: psychomotorTable.tBodies[psychomotorTable.tBodies.length - 1].rows.length,
+            domainTablesCompacted: affectiveTable.getAttribute("data-result-domain-compacted") === "true"
+              && psychomotorTable.getAttribute("data-result-domain-compacted") === "true",
+            performanceWithinContent: performanceRect.left >= contentRect.left - tolerance
+              && performanceRect.right <= contentRect.right + tolerance,
+            chartVisible: window.getComputedStyle(performanceChart).display !== "none",
+            chartWidthRatio: performanceChartRect.width / performanceRect.width,
+            chartHeight: performanceChartRect.height,
+            chartCssHeight: parseFloat(window.getComputedStyle(performanceChart).height),
+            canvasFillsChart: Math.abs(performanceCanvasRect.width - performanceChartRect.width) <= tolerance
+              && Math.abs(performanceCanvasRect.height - performanceChartRect.height) <= tolerance,
             stripedRowsDiffer: firstRowStyle.backgroundColor !== secondRowStyle.backgroundColor,
             stripedRowIsConsistent: secondRowCellsConsistent,
             gradeKeyFontSize: parseFloat(gradeItemStyle.fontSize),
@@ -472,9 +552,20 @@ function result_report_a4_fixture_html($rowCount, $css, $javascript)
               && parseFloat(promotionValueStyle.fontSize) > parseFloat(promotionLabelStyle.fontSize)
               && promotion !== null,
             legacyHeaderTitleSeparated: legacyTitleRect.top >= legacyHeaderRect.bottom - tolerance,
-            watermarkBehindContent: watermarkStyle.display !== "none"
+            watermarkVisibleAndCentered: watermarkStyle.display !== "none"
               && parseFloat(watermarkStyle.opacity) > 0
-              && parseInt(watermarkStyle.zIndex, 10) < parseInt(cardBodyStyle.zIndex, 10)
+              && parseFloat(watermarkStyle.opacity) <= 0.1
+              && parseInt(watermarkStyle.zIndex, 10) > parseInt(cardBodyStyle.zIndex, 10)
+              && watermarkRect.width / contentRect.width >= 0.4
+              && watermarkRect.width / contentRect.width <= 0.7
+              && Math.abs(watermarkCenterX - watermarkContentCenterX) <= contentRect.width * 0.03
+              && Math.abs(watermarkCenterY - watermarkContentCenterY) <= contentRect.height * 0.03,
+            previewScale: parseFloat(preview.getAttribute("data-result-preview-scale")),
+            previewWidth: preview.clientWidth,
+            reportLayoutWidth: root.offsetWidth,
+            viewportWidth: document.documentElement.clientWidth,
+            reportInsideViewport: rootRect.left >= -tolerance
+              && rootRect.right <= document.documentElement.clientWidth + tolerance
           };
           var output = document.createElement("pre");
           output.id = "result-report-test-output";
@@ -847,6 +938,24 @@ foreach ($fixtures as $fixture) {
     result_report_a4_assert($payload['subjectUsesBodyStyling'] === true, 'The ' . $rowCount . '-row first subject must not use the dark table-header styling.');
     result_report_a4_assert($payload['subjectColumnWidthRatio'] >= 0.19, 'The ' . $rowCount . '-row subject column must reserve enough width to contain complete words.');
     result_report_a4_assert($payload['subjectWordsRemainWhole'] === true, 'The ' . $rowCount . '-row subject names must wrap only between complete words.');
+    result_report_a4_assert($payload['remarkColumnWidthRatio'] >= 0.115, 'The ' . $rowCount . '-row remark column must reserve enough width for complete words.');
+    result_report_a4_assert($payload['remarkWordsRemainWhole'] === true, 'The ' . $rowCount . '-row remarks must wrap only between complete words.');
+    result_report_a4_assert(
+        $payload['domainWordsRemainWhole'] === true,
+        'The ' . $rowCount . '-row affective and psychomotor labels must not split inside words. Measurements: ' . json_encode($payload)
+    );
+    result_report_a4_assert($payload['psychomotorRows'] === 3, 'The ' . $rowCount . '-row fixture must pair six psychomotor entries into three compact rows.');
+    result_report_a4_assert($payload['domainTablesCompacted'] === true, 'The ' . $rowCount . '-row domain tables must use the shared compaction pass.');
+    result_report_a4_assert($payload['performanceWithinContent'] === true, 'The ' . $rowCount . '-row performance panel must stay within the A4 content box.');
+    if ($fixture['density'] === 'ultra') {
+        result_report_a4_assert($payload['chartVisible'] === false, 'The ultra-dense fixture may remove the decorative graph to protect one-page A4 output.');
+    } else {
+        $minimumChartHeight = $fixture['density'] === 'standard' ? 150 : 115;
+        result_report_a4_assert($payload['chartVisible'] === true, 'The ' . $rowCount . '-row graph must remain visible.');
+        result_report_a4_assert($payload['chartWidthRatio'] >= 0.32, 'The ' . $rowCount . '-row graph must receive a useful share of the performance row.');
+        result_report_a4_assert($payload['chartCssHeight'] >= $minimumChartHeight, 'The ' . $rowCount . '-row graph must have a useful rendered height.');
+        result_report_a4_assert($payload['canvasFillsChart'] === true, 'The ' . $rowCount . '-row graph canvas must fill its wrapper.');
+    }
     result_report_a4_assert($payload['stripedRowsDiffer'] === true, 'The ' . $rowCount . '-row academic table must visibly alternate row colours.');
     result_report_a4_assert($payload['stripedRowIsConsistent'] === true, 'The ' . $rowCount . '-row stripe must cover every cell in the row.');
     $minimumGradeKeyFontSize = $fixture['density'] === 'standard'
@@ -858,7 +967,8 @@ foreach ($fixtures as $fixture) {
     );
     result_report_a4_assert($payload['promotionEmphasized'] === true, 'The ' . $rowCount . '-row promotion status must use a bold, larger decision value.');
     result_report_a4_assert($payload['legacyHeaderTitleSeparated'] === true, 'The ' . $rowCount . '-row title must not overlap a long legacy school header.');
-    result_report_a4_assert($payload['watermarkBehindContent'] === true, 'The ' . $rowCount . '-row watermark must remain faintly visible behind the legacy result content.');
+    result_report_a4_assert($payload['watermarkVisibleAndCentered'] === true, 'The ' . $rowCount . '-row watermark must remain large, faint, centred, and visible over the result paper.');
+    result_report_a4_assert($payload['reportInsideViewport'] === true, 'The ' . $rowCount . '-row A4 preview must stay inside the desktop viewport.');
 
     $printArguments = array_merge(
         $commonArguments,
@@ -888,6 +998,61 @@ foreach ($fixtures as $fixture) {
 
     echo 'PASS: ' . $rowCount . '-row A4 fixture (' . $fixture['density'] . ' density).' . PHP_EOL;
 }
+
+$responsiveResultViewports = array(
+    array('name' => 'mobile', 'size' => '390,900', 'scaled' => true),
+    array('name' => 'tablet', 'size' => '768,1100', 'scaled' => true),
+    array('name' => 'large desktop', 'size' => '1600,1400', 'scaled' => false),
+);
+$responsiveFixturePath = $temporaryDirectory . DIRECTORY_SEPARATOR . 'result-12.html';
+$responsiveFixtureUrl = result_report_a4_file_url($responsiveFixturePath, $browser['windows']);
+
+foreach ($responsiveResultViewports as $responsiveViewport) {
+    $responsiveArguments = array(
+        $browser['path'],
+        '--headless=new',
+        '--disable-gpu',
+        '--disable-dev-shm-usage',
+        '--no-sandbox',
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--allow-file-access-from-files',
+        '--run-all-compositor-stages-before-draw',
+        '--window-size=' . $responsiveViewport['size'],
+        '--user-data-dir=' . result_report_a4_to_browser_path($profileDirectory, $browser['windows']),
+        '--virtual-time-budget=4000',
+        '--dump-dom',
+        $responsiveFixtureUrl,
+    );
+    $responsiveResult = result_report_a4_run_process($responsiveArguments, 45);
+    $responsivePayload = result_report_a4_parse_payload($responsiveResult['stdout']);
+
+    result_report_a4_assert(
+        $responsiveResult['exit_code'] === 0 && is_array($responsivePayload),
+        'Chromium must render the result at the ' . $responsiveViewport['name'] . ' viewport. ' . trim($responsiveResult['stderr'])
+    );
+    result_report_a4_assert(
+        $responsivePayload['viewportContained'] === true && $responsivePayload['reportInsideViewport'] === true,
+        'The A4 result preview must stay horizontally contained at the ' . $responsiveViewport['name'] . ' viewport.'
+    );
+    $expectedResponsiveScale = min(
+        1,
+        min($responsivePayload['previewWidth'], $responsivePayload['viewportWidth'] - 16)
+            / $responsivePayload['reportLayoutWidth']
+    );
+    result_report_a4_assert(
+        abs($responsivePayload['previewScale'] - $expectedResponsiveScale) <= 0.01,
+        'The A4 result preview must use the available ' . $responsiveViewport['name'] . ' width proportionally.'
+    );
+    result_report_a4_assert(
+        $responsiveViewport['scaled']
+            ? $responsivePayload['previewScale'] < 1
+            : abs($responsivePayload['previewScale'] - 1) <= 0.001,
+        'The A4 result preview must use the expected fitted state at the ' . $responsiveViewport['name'] . ' viewport.'
+    );
+}
+
+echo 'PASS: responsive A4 result preview.' . PHP_EOL;
 
 $listHtmlPath = $temporaryDirectory . DIRECTORY_SEPARATOR . 'result-download-list.html';
 result_report_a4_assert(
