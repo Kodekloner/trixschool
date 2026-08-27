@@ -123,6 +123,11 @@ class Promotioncriteria_model extends MY_Model
     public function studentMatchesScope($studentId, $sessionId, $classId, $sectionId)
     {
         return $this->db
+            // Select one unambiguous column for this existence check. Using
+            // count_all_results() with LIMIT made CI wrap SELECT * in a
+            // derived table; both joined tables have an `id` column, which
+            // causes MySQL error 1060 (duplicate column name `id`).
+            ->select('student_session.student_id AS matched_student_id')
             ->from('student_session')
             ->join('students', 'students.id = student_session.student_id')
             ->where('student_session.student_id', (int) $studentId)
@@ -131,7 +136,8 @@ class Promotioncriteria_model extends MY_Model
             ->where('student_session.section_id', (int) $sectionId)
             ->where('students.is_active', 'yes')
             ->limit(1)
-            ->count_all_results() > 0;
+            ->get()
+            ->num_rows() > 0;
     }
 
     public function getCriteriaList($sessionId = null)
