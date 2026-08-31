@@ -53,7 +53,7 @@ class Support extends Admin_Controller
         $data['inbound_email_address'] = $this->getInboundEmailAddress();
         $staff_id = (int) $this->customlib->getStaffID();
         $staff = $staff_id > 0 ? $this->staff_model->getAll($staff_id) : array();
-        $data['notification_table_ready'] = $this->supportnotification_model->isReady();
+        $data['notification_table_ready'] = $this->supportnotification_model->queueIsReady();
         $data['notification_preference'] = $data['notification_table_ready']
             ? $this->supportnotification_model->getForStaff($staff_id)
             : array();
@@ -84,7 +84,7 @@ class Support extends Admin_Controller
 
         $this->requireSupportTables();
         $this->requireNotificationPost();
-        if (!$this->supportnotification_model->isReady()) {
+        if (!$this->supportnotification_model->queueIsReady()) {
             $this->session->set_flashdata('msg', '<div class="alert alert-danger">Email alerts are not ready. Import the all-school database migrations through version 134 first.</div>');
             return redirect('admin/support');
         }
@@ -114,7 +114,7 @@ class Support extends Admin_Controller
         }
 
         if (!$this->supportnotification_model->setForStaff($staff_id, $notification_email, $enabled)) {
-            $this->session->set_flashdata('msg', '<div class="alert alert-danger">The email alert preference could not be saved. The address may already be connected to another staff account.</div>');
+            $this->session->set_flashdata('msg', '<div class="alert alert-danger">The email alert preference could not be saved. Please refresh the page and try again.</div>');
             return redirect('admin/support');
         }
 

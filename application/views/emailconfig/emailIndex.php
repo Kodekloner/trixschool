@@ -16,6 +16,11 @@
                 <div class="box box-primary">
                     <div class="box-header with-border">
                         <h3 class="box-title"><i class="fa fa-envelope"></i> <?php echo $this->lang->line('email_setting'); ?></h3>
+                        <div class="box-tools pull-right">
+                            <button type="button" onclick="test_mail()" class="btn btn-primary btn-sm">
+                                <i class="fa fa-paper-plane"></i> <?php echo $this->lang->line('test_email'); ?>
+                            </button>
+                        </div>
                     </div>   
                     <form id="form1" action="<?php echo base_url() ?>emailconfig/index"   name="employeeform" class="form-horizontal form-label-left" method="post" accept-charset="utf-8">
 
@@ -142,7 +147,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal">×</button>
-                    <h4 class="modal-title">Test Mail --r</h4>
+                    <h4 class="modal-title"><?php echo $this->lang->line('test_email'); ?></h4>
                 </div>
                 <div class="modal-body pt0 pb0">
                     <div class="row">
@@ -166,7 +171,7 @@
                             <div class="box-footer">
                                 <div class="pull-right paddA10">
 
-                                    <button type="submit" class="btn btn-info pull-right">Send --r</button>
+                                    <button type="submit" class="btn btn-info pull-right">Send</button>
                                 </div>
                             </div>
                             </form>  

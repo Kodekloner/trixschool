@@ -21,6 +21,9 @@ written to the `purplinsschool.com.ng` database group.
    `support_tickets`, and `support_messages`. Schools using staff email alerts
    must also have `support_email_notifications` and
    `support_email_alert_deliveries`.
+   PHP must have the OpenSSL extension enabled, and the web server must be able
+   to fetch HTTPS certificates from `sns.<region>.amazonaws.com` so SNS
+   signatures can be verified.
 3. The public local part is configured once in `application/config/incoming_email.php`:
 
 ```php
@@ -62,8 +65,8 @@ tables are empty even though migrations 126 through 133 are already present.
 
 Migration 127 also creates the `support_ticket` permission and assigns it to
 Admin and Super Admin roles. Migration 134 adds the per-staff opt-in and alert
-delivery queue tables plus the dedicated `external_email` permission. Admin,
-Head Teacher, and Super Admin receive that permission by default; other roles can be granted
+delivery queue tables plus the dedicated `external_email` permission. Admin
+and Super Admin receive that permission by default; other roles can be granted
 **Send External Email** through **System Settings > Roles Permissions** when a
 school authorizes them. Migration 134 does not subscribe any staff member
 automatically.
@@ -155,7 +158,7 @@ The support inbox and the external composer serve different starting points:
 
 Do not create student, guardian, or staff records merely to send an email to an
 external recipient. The dedicated **Send External Email** permission is granted
-to Admin, Head Teacher, and Super Admin by default. A school can explicitly authorize another
+to Admin and Super Admin by default. A school can explicitly authorize another
 staff role through Roles Permissions without changing the default grants.
 Support Tickets remains controlled by its separate staff permission.
 
@@ -191,8 +194,14 @@ Recommended setup for each recipient:
    use **Enable Email Alerts** on the Support Tickets page.
 3. Add that destination mailbox to the staff member's device mail app and allow
    notifications for the app.
-4. Schedule the protected SchoolLift cron URL at least once per minute; the
-   cron worker sends queued alerts and retries temporary failures three times.
+4. On every tenant domain, schedule only the dedicated protected alert URL at
+   least once per minute:
+
+   `https://SCHOOL-DOMAIN/cron/supportemailalerts/CRON_SECRET`
+
+   Do not use the generic `/cron/CRON_SECRET` endpoint for this one-minute job;
+   that endpoint also runs database backup and other scheduled work. The alert
+   worker sends queued alerts and retries temporary failures three times.
 5. Send a test message to `admin@SCHOOL-DOMAIN` and confirm the device receives
    one alert whose link requires a valid SchoolLift staff login.
 6. Disable the alert when the staff member changes responsibility or leaves the
@@ -220,7 +229,8 @@ If no ticket appears, check in this order:
 2. The SES receipt rule matched the exact `admin@` recipient.
 3. The SNS subscription is confirmed and reports successful delivery.
 4. The domain exactly matches a database group in `database.php`.
-5. The school database migration version is 134.
+5. The two migration-134 alert tables and their required columns exist. The
+   phpMyAdmin scripts intentionally do not alter the migration ledger.
 6. The `incoming_emails` table contains the notification and its status/error.
 
 If the ticket appears but a staff alert does not, confirm that the staff member
@@ -251,6 +261,9 @@ code and migration remain tenant-safe for every other school.
 6. Open `https://apexstaracademy.com.ng/admin/support`, opt in the authorized
    staff recipients, and test inbound receipt, device alert, reply threading,
    and a new external compose message.
+7. Schedule
+   `https://apexstaracademy.com.ng/cron/supportemailalerts/CRON_SECRET` once per
+   minute using that tenant's configured cron secret.
 
 ### `apexstaracademyaso.com.ng`
 
@@ -268,6 +281,9 @@ code and migration remain tenant-safe for every other school.
 6. Open `https://apexstaracademyaso.com.ng/admin/support`, opt in the authorized
    staff recipients, and test inbound receipt, device alert, reply threading,
    and a new external compose message.
+7. Schedule
+   `https://apexstaracademyaso.com.ng/cron/supportemailalerts/CRON_SECRET` once
+   per minute using that tenant's configured cron secret.
 
 The files under `database/migration-audit-dumps/` are raw audit snapshots and
 may contain tenant data. Do not edit or distribute them as deployment scripts.

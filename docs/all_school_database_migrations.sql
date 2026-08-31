@@ -272,7 +272,7 @@ SET @support_ticket_perm_id := (
 INSERT INTO `roles_permissions` (`role_id`, `perm_cat_id`, `can_view`, `can_add`, `can_edit`, `can_delete`, `created_at`)
 SELECT `roles`.`id`, @support_ticket_perm_id, 1, 1, 1, 1, NOW()
 FROM `roles`
-WHERE `roles`.`name` IN ('Admin', 'Head Teacher', 'Super Admin')
+WHERE `roles`.`name` IN ('Admin', 'Super Admin')
 AND NOT EXISTS (
     SELECT 1
     FROM `roles_permissions`
@@ -2154,7 +2154,7 @@ INSERT INTO `roles_permissions`
    `can_delete`, `created_at`)
 SELECT `roles`.`id`, @external_email_permission_id, 1, 1, 0, 0, NOW()
 FROM `roles`
-WHERE `roles`.`name` IN ('Admin', 'Head Teacher', 'Super Admin')
+WHERE `roles`.`name` IN ('Admin', 'Super Admin')
   AND NOT EXISTS (
     SELECT 1
     FROM `roles_permissions`
@@ -2170,7 +2170,7 @@ SET `roles_permissions`.`can_view` = 1,
     `roles_permissions`.`can_edit` = 0,
     `roles_permissions`.`can_delete` = 0
 WHERE `roles_permissions`.`perm_cat_id` = @external_email_permission_id
-  AND `roles`.`name` IN ('Admin', 'Head Teacher', 'Super Admin');
+  AND `roles`.`name` IN ('Admin', 'Super Admin');
 
 -- Migration 134 verification. Every result set below must be empty.
 SELECT 'support_email_notifications' AS `missing_external_email_notification_table`
@@ -2248,7 +2248,6 @@ WHERE NOT EXISTS (
 SELECT expected.`role_name` AS `missing_default_external_email_grant`
 FROM (
   SELECT 'Admin' AS `role_name`
-  UNION ALL SELECT 'Head Teacher'
   UNION ALL SELECT 'Super Admin'
 ) AS expected
 INNER JOIN `roles` AS role_row

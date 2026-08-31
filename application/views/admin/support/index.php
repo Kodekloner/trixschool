@@ -7,7 +7,9 @@ $format_date = function ($value) {
     $time = strtotime($value);
     return $time ? date('Y-m-d H:i', $time) : '';
 };
-$notification_enabled = !empty($notification_preference) && !empty($notification_preference['is_active']);
+$notification_enabled = isset($notification_enabled)
+    ? !empty($notification_enabled)
+    : (!empty($notification_preference) && !empty($notification_preference['is_active']));
 $notification_destination = $notification_enabled && !empty($notification_preference['email'])
     ? $notification_preference['email']
     : $notification_email;
@@ -15,12 +17,20 @@ $notification_destination = $notification_enabled && !empty($notification_prefer
 
 <style>
     .support-email-actions { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:15px; }
-    .support-email-actions__right { margin-left:auto; text-align:right; }
+    .support-box-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .support-box-heading__address { min-width:0; color:#777; overflow-wrap:anywhere; text-align:right; word-break:break-word; }
+    .support-email-actions__left { min-width:0; }
+    .support-email-actions__right { margin-left:auto; max-width:620px; text-align:right; }
+    .support-email-alert-form { display:inline-block; margin:0; }
     .support-email-actions__hint { display:block; margin-top:5px; color:#777; font-size:12px; }
     .support-ticket-delete { display:inline-block; margin:0; vertical-align:middle; }
     @media (max-width:767px) {
         .support-email-actions { align-items:stretch; flex-direction:column; }
-        .support-email-actions__right { margin-left:0; text-align:left; }
+        .support-box-heading { align-items:flex-start; flex-direction:column; }
+        .support-box-heading__address { text-align:left; width:100%; }
+        .support-email-actions__left,
+        .support-email-actions__right { margin-left:0; max-width:none; text-align:left; width:100%; }
+        .support-email-alert-form { display:block; width:100%; }
         .support-email-actions .btn { width:100%; }
     }
 </style>
@@ -34,17 +44,17 @@ $notification_destination = $notification_enabled && !empty($notification_prefer
         <div class="row">
             <div class="col-md-12">
                 <div class="box box-primary">
-                    <div class="box-header with-border">
+                    <div class="box-header with-border support-box-heading">
                         <h3 class="box-title">Support Tickets</h3>
                         <?php if (!empty($inbound_email_address)) { ?>
-                            <div class="box-tools pull-right">
+                            <div class="support-box-heading__address">
                                 <span class="text-muted"><i class="fa fa-envelope"></i> <?php echo html_escape($inbound_email_address); ?></span>
                             </div>
                         <?php } ?>
                     </div>
                     <div class="box-body">
                         <div class="support-email-actions">
-                            <div>
+                            <div class="support-email-actions__left">
                                 <?php if (!empty($can_send_external_email)) { ?>
                                     <a href="<?php echo site_url('admin/mailsms/compose?tab=external'); ?>" class="btn btn-primary btn-sm">
                                         <i class="fa fa-paper-plane"></i> New External Email
@@ -53,18 +63,18 @@ $notification_destination = $notification_enabled && !empty($notification_prefer
                             </div>
                             <div class="support-email-actions__right">
                                 <?php if (!empty($notification_table_ready)) { ?>
-                                    <form method="post" action="<?php echo site_url('admin/support/notification'); ?>" style="display:inline-block;">
+                                    <form method="post" action="<?php echo site_url('admin/support/notification'); ?>" class="support-email-alert-form">
                                         <input type="hidden" name="support_notification_csrf" value="<?php echo html_escape($support_notification_csrf); ?>">
                                         <input type="hidden" name="enabled" value="<?php echo $notification_enabled ? '0' : '1'; ?>">
-                                        <button type="submit" class="btn btn-sm <?php echo $notification_enabled ? 'btn-success' : 'btn-default'; ?>" <?php echo (!$notification_enabled && empty($notification_email)) ? 'disabled' : ''; ?>>
+                                        <button type="submit" class="btn btn-sm <?php echo $notification_enabled ? 'btn-success' : 'btn-default'; ?>" aria-pressed="<?php echo $notification_enabled ? 'true' : 'false'; ?>" title="<?php echo $notification_enabled ? 'Email alerts are on. Click to disable them.' : 'Send new-message alerts to your staff email.'; ?>" <?php echo (!$notification_enabled && empty($notification_email)) ? 'disabled' : ''; ?>>
                                             <i class="fa fa-bell<?php echo $notification_enabled ? '' : '-o'; ?>"></i>
-                                            <?php echo $notification_enabled ? 'Email Alerts On' : 'Enable Email Alerts'; ?>
+                                            <?php echo $notification_enabled ? 'Disable Email Alerts' : 'Enable Email Alerts'; ?>
                                         </button>
                                     </form>
                                     <?php if (!empty($notification_destination)) { ?>
                                         <span class="support-email-actions__hint">
-                                            Alerts <?php echo $notification_enabled ? 'go' : 'will go'; ?> to <?php echo html_escape($notification_destination); ?>.
-                                            Add that account to Gmail, Outlook, or Apple Mail on the device.
+                                            New-message alerts <?php echo $notification_enabled ? 'go' : 'will go'; ?> to <?php echo html_escape($notification_destination); ?>.
+                                            They contain the sender, subject, and a secure ticket link only&mdash;never the message body. Sign in to that staff email account in Gmail, Outlook, or Apple Mail on the device.
                                         </span>
                                     <?php } else { ?>
                                         <span class="support-email-actions__hint">Add an email address to your staff profile to enable device alerts.</span>
