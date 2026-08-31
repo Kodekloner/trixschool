@@ -170,7 +170,11 @@ class Webhooks extends CI_Controller {
         $this->load->library('snsmessagevalidator');
         if (!$this->snsmessagevalidator->isValid($sns_payload)) {
             log_message('error', 'SES inbound webhook rejected: ' . $this->snsmessagevalidator->getLastError());
-            return $this->respond_json(array('status' => 'error', 'message' => 'Invalid SNS signature'), 403);
+            $retryable = $this->snsmessagevalidator->isRetryableFailure();
+            return $this->respond_json(array(
+                'status' => 'error',
+                'message' => $retryable ? 'SNS verification temporarily unavailable' : 'Invalid SNS signature',
+            ), $retryable ? 503 : 403);
         }
 
         $message_type = isset($sns_payload['Type']) ? (string) $sns_payload['Type'] : '';
@@ -180,6 +184,13 @@ class Webhooks extends CI_Controller {
             $confirmed = false;
             if ($auto_confirm && !empty($sns_payload['SubscribeURL'])) {
                 $confirmed = $this->confirmSnsSubscription($sns_payload['SubscribeURL'], $allowed_topic_arn);
+                if (!$confirmed) {
+                    log_message('error', 'SES inbound SNS subscription confirmation failed temporarily.');
+                    return $this->respond_json(array(
+                        'status' => 'error',
+                        'message' => 'SNS subscription confirmation temporarily unavailable',
+                    ), 503);
+                }
             }
 
             log_message($confirmed ? 'info' : 'error', 'SES inbound SNS subscription ' . ($confirmed ? 'confirmed.' : 'is pending confirmation.'));
@@ -227,7 +238,7 @@ class Webhooks extends CI_Controller {
             $support_ticket_id = $this->supportticket_model->processIncomingEmail($record_id);
         }
 
-        if (!empty($support_ticket_id) && $this->supportticket_model->wasLastIncomingMessageCreated()) {
+        if (!empty($support_ticket_id)) {
             try {
                 // The notifier is loaded after tenant routing so it reads this
                 // school's SMTP settings and staff notification preferences.
@@ -244,10 +255,20 @@ class Webhooks extends CI_Controller {
                     . ': eligible=' . (int) $notification_result['eligible']
                     . ', queued=' . (int) $notification_result['queued']
                     . ', duplicate=' . (int) $notification_result['duplicate']
+                    . ', failed=' . (int) $notification_result['failed']
                 );
+                if (!empty($notification_result['failed'])) {
+                    return $this->respond_json(array(
+                        'status' => 'error',
+                        'message' => 'Support email alert queue temporarily unavailable',
+                    ), 503);
+                }
             } catch (Throwable $exception) {
-                // An alert is secondary to safely accepting the inbound email.
                 log_message('error', 'Support email alert failed: ' . $exception->getMessage());
+                return $this->respond_json(array(
+                    'status' => 'error',
+                    'message' => 'Support email alert queue temporarily unavailable',
+                ), 503);
             }
         }
 
