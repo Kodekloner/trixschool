@@ -36,8 +36,10 @@ if ($certificateResource !== false) {
 }
 sns_validator_assert($certificate !== '', 'A temporary certificate must be generated.');
 
+$certificateFetchCount = 0;
 $validator = new Snsmessagevalidator(array(
-    'certificate_fetcher' => function ($url) use ($certificate) {
+    'certificate_fetcher' => function ($url) use ($certificate, &$certificateFetchCount) {
+        $certificateFetchCount++;
         return $certificate;
     },
 ));
@@ -71,6 +73,7 @@ sns_validator_assert(
 );
 $notification['Signature'] = base64_encode($signature);
 sns_validator_assert($validator->isValid($notification), 'A valid SignatureVersion 1 message must pass.');
+sns_validator_assert($certificateFetchCount === 1, 'A valid signed message must fetch its trusted certificate once.');
 
 $tampered = $notification;
 $tampered['Message'] = '{"notificationType":"AttackerChangedIt"}';
@@ -78,6 +81,28 @@ sns_validator_assert(!$validator->isValid($tampered), 'A changed signed message 
 sns_validator_assert(
     strpos($validator->getLastError(), 'signature is invalid') !== false,
     'A failed signature must expose a safe diagnostic.'
+);
+sns_validator_assert(
+    !$validator->isRetryableFailure(),
+    'A cryptographically invalid message must be rejected permanently.'
+);
+
+$unavailableValidator = new Snsmessagevalidator(array(
+    'certificate_fetcher' => function ($url) {
+        return false;
+    },
+));
+sns_validator_assert(
+    !$unavailableValidator->isValid($notification)
+        && $unavailableValidator->isRetryableFailure(),
+    'A temporary signing-certificate download failure must request an SNS retry.'
+);
+
+$tamperedTopic = $notification;
+$tamperedTopic['TopicArn'] = 'arn:aws:sns:us-east-2:123456789012:attacker-topic';
+sns_validator_assert(
+    !$validator->isValid($tamperedTopic),
+    'A changed TopicArn must invalidate the original signature.'
 );
 
 $confirmation = array(
@@ -91,6 +116,17 @@ $confirmation = array(
     'SignatureVersion' => '2',
     'SigningCertURL' => $notification['SigningCertURL'],
 );
+$expectedConfirmationCanonical = "Message\n" . $confirmation['Message'] . "\n"
+    . "MessageId\n" . $confirmation['MessageId'] . "\n"
+    . "SubscribeURL\n" . $confirmation['SubscribeURL'] . "\n"
+    . "Timestamp\n" . $confirmation['Timestamp'] . "\n"
+    . "Token\n" . $confirmation['Token'] . "\n"
+    . "TopicArn\n" . $confirmation['TopicArn'] . "\n"
+    . "Type\n" . $confirmation['Type'] . "\n";
+sns_validator_assert(
+    $validator->getStringToSign($confirmation) === $expectedConfirmationCanonical,
+    'SubscriptionConfirmation must use SubscribeURL and Token in AWS canonical order without a Subject row.'
+);
 $confirmationSignature = '';
 sns_validator_assert(
     openssl_sign($validator->getStringToSign($confirmation), $confirmationSignature, $privateKey, OPENSSL_ALGO_SHA256),
@@ -98,6 +134,44 @@ sns_validator_assert(
 );
 $confirmation['Signature'] = base64_encode($confirmationSignature);
 sns_validator_assert($validator->isValid($confirmation), 'A valid SignatureVersion 2 confirmation must pass.');
+
+$malformedFetchCount = 0;
+$malformedValidator = new Snsmessagevalidator(array(
+    'certificate_fetcher' => function ($url) use ($certificate, &$malformedFetchCount) {
+        $malformedFetchCount++;
+        return $certificate;
+    },
+));
+$malformedSignature = $notification;
+$malformedSignature['Signature'] = '***not-base64***';
+sns_validator_assert(!$malformedValidator->isValid($malformedSignature), 'Malformed Base64 signatures must fail.');
+sns_validator_assert(
+    strpos($malformedValidator->getLastError(), 'not valid Base64') !== false,
+    'Malformed signatures must produce a bounded diagnostic.'
+);
+sns_validator_assert(
+    $malformedFetchCount === 0,
+    'A malformed signature must be rejected before downloading a certificate.'
+);
+
+$untrustedFetchCount = 0;
+$untrustedValidator = new Snsmessagevalidator(array(
+    'certificate_fetcher' => function ($url) use ($certificate, &$untrustedFetchCount) {
+        $untrustedFetchCount++;
+        return $certificate;
+    },
+));
+$untrustedCertificate = $notification;
+$untrustedCertificate['SigningCertURL'] = 'https://sns.us-east-2.amazonaws.com.evil.test/certificate.pem';
+sns_validator_assert(!$untrustedValidator->isValid($untrustedCertificate), 'An untrusted certificate URL must fail validation.');
+sns_validator_assert(
+    strpos($untrustedValidator->getLastError(), 'not trusted') !== false,
+    'An untrusted certificate URL must produce a safe diagnostic.'
+);
+sns_validator_assert(
+    $untrustedFetchCount === 0,
+    'The injected certificate fetcher must not be called for an untrusted URL.'
+);
 
 foreach (array(
     'http://sns.us-east-2.amazonaws.com/cert.pem',
