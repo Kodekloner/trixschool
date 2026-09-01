@@ -14,7 +14,7 @@ class Supportemailnotifier
     /** Queue one idempotent alert per opted-in, currently authorized staff member. */
     public function queueIncoming($ticketId, $incomingEmailId, $schoolDomain, $inboundAddress)
     {
-        $result = array('eligible' => 0, 'queued' => 0, 'duplicate' => 0);
+        $result = array('eligible' => 0, 'queued' => 0, 'duplicate' => 0, 'failed' => 0);
         $ticketId = (int) $ticketId;
         $incomingEmailId = (int) $incomingEmailId;
         if ($ticketId <= 0 || $incomingEmailId <= 0) {
@@ -60,6 +60,8 @@ class Supportemailnotifier
             ));
             if ($deliveryId > 0) {
                 $result['queued']++;
+            } elseif ($deliveryId < 0) {
+                $result['failed']++;
             } else {
                 $result['duplicate']++;
             }
@@ -134,6 +136,7 @@ class Supportemailnotifier
             );
             $sent = $this->CI->mailer->send_mail($email, $subject, $body, array(), '', array(
                 'is_html' => true,
+                'smtp_timeout' => 10,
                 'custom_headers' => array(
                     'Auto-Submitted' => 'auto-generated',
                     'X-Auto-Response-Suppress' => 'All',

@@ -128,14 +128,15 @@ class Supportnotification_model extends CI_Model
         }
 
         $now = date('Y-m-d H:i:s');
-        $sql = 'INSERT IGNORE INTO `' . $this->deliveryTable . '` '
+        $sql = 'INSERT INTO `' . $this->deliveryTable . '` '
             . '(`notification_id`, `incoming_email_id`, `support_ticket_id`, `school_domain`, '
             . '`inbound_address`, `recipient_email`, `delivery_status`, `attempt_count`, '
             . '`available_at`, `last_attempt_at`, `sent_at`, `provider_message_id`, '
             . '`error_message`, `created_at`, `updated_at`) '
-            . 'VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, NULL, NULL, NULL, NULL, ?, ?)';
+            . 'VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, NULL, NULL, NULL, NULL, ?, ?) '
+            . 'ON DUPLICATE KEY UPDATE `id` = LAST_INSERT_ID(`id`)';
 
-        $this->db->query($sql, array(
+        $saved = $this->db->query($sql, array(
             (int) $data['notification_id'],
             (int) $data['incoming_email_id'],
             (int) $data['support_ticket_id'],
@@ -147,6 +148,10 @@ class Supportnotification_model extends CI_Model
             $now,
             $now,
         ));
+
+        if (!$saved) {
+            return -1;
+        }
 
         return $this->db->affected_rows() === 1 ? (int) $this->db->insert_id() : 0;
     }

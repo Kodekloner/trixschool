@@ -7,6 +7,7 @@ if (!defined('BASEPATH')) {
 class Mailsms extends Admin_Controller
 {
     private $externalEmailTokenSessionKey = 'external_email_csrf';
+    private $standardEmailTokenSessionKey = 'standard_email_csrf';
 
     public function __construct()
     {
@@ -22,6 +23,9 @@ class Mailsms extends Admin_Controller
 
         if (!$this->session->userdata($this->externalEmailTokenSessionKey)) {
             $this->session->set_userdata($this->externalEmailTokenSessionKey, $this->newExternalEmailToken());
+        }
+        if (!$this->session->userdata($this->standardEmailTokenSessionKey)) {
+            $this->session->set_userdata($this->standardEmailTokenSessionKey, $this->newExternalEmailToken());
         }
     }
 
@@ -132,6 +136,8 @@ class Mailsms extends Admin_Controller
             ? 'external'
             : 'group';
         $data['external_email_csrf'] = (string) $this->session->userdata($this->externalEmailTokenSessionKey);
+        $data['standard_email_csrf'] = (string) $this->session->userdata($this->standardEmailTokenSessionKey);
+        $data['external_email_draft'] = (array) $this->session->flashdata('external_email_draft');
         $data['inbound_email_address'] = schoollift_support_configured_inbound_address(
             $this->config->item('ses_inbound_recipient_local_part', 'incoming_email'),
             isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : ''
@@ -493,6 +499,7 @@ class Mailsms extends Admin_Controller
         if (!$this->rbac->hasPrivilege('email', 'can_view')) {
             access_denied();
         }
+        $this->requireStandardEmailPost();
 
         $this->form_validation->set_error_delimiters('<li>', '</li>');
         $this->form_validation->set_rules('individual_title', $this->lang->line('title'), 'required');
@@ -592,6 +599,7 @@ class Mailsms extends Admin_Controller
         if (!$this->rbac->hasPrivilege('email', 'can_view')) {
             access_denied();
         }
+        $this->requireStandardEmailPost();
 
         $this->form_validation->set_error_delimiters('<li>', '</li>');
         $this->form_validation->set_rules('user[]', $this->lang->line('recipient'), 'required');
@@ -681,6 +689,7 @@ class Mailsms extends Admin_Controller
         if (!$this->rbac->hasPrivilege('email', 'can_view')) {
             access_denied();
         }
+        $this->requireStandardEmailPost();
 
         $this->form_validation->set_error_delimiters('<li>', '</li>');
         $this->form_validation->set_rules('group_title', $this->lang->line('title'), 'required');
@@ -1438,6 +1447,7 @@ class Mailsms extends Admin_Controller
         if (!$this->rbac->hasPrivilege('email', 'can_view')) {
             access_denied();
         }
+        $this->requireStandardEmailPost();
 
         $this->form_validation->set_error_delimiters('<li>', '</li>');
 
@@ -1656,9 +1666,35 @@ class Mailsms extends Admin_Controller
         $this->session->set_userdata($this->externalEmailTokenSessionKey, $this->newExternalEmailToken());
     }
 
+    private function requireStandardEmailPost()
+    {
+        if ($this->input->method(true) !== 'POST') {
+            show_error('Method not allowed.', 405);
+        }
+
+        $expected = (string) $this->session->userdata($this->standardEmailTokenSessionKey);
+        $provided = (string) $this->input->post('standard_email_csrf');
+        if ($expected === '' || $provided === '' || !hash_equals($expected, $provided)) {
+            show_error('The email form expired. Refresh the page and try again.', 403);
+        }
+    }
+
     private function externalEmailRedirect($type, $message)
     {
         $type = in_array($type, array('success', 'warning', 'danger', 'info'), true) ? $type : 'info';
+        if ($this->input->method(true) === 'POST') {
+            $draftBody = (string) $this->input->post('external_message', false);
+            $this->session->set_flashdata('external_email_draft', array(
+                'email' => trim((string) $this->input->post('external_email', true)),
+                'name' => trim((string) $this->input->post('external_name', true)),
+                'subject' => trim((string) $this->input->post('external_subject', true)),
+                // Avoid placing an exceptionally large rejected payload in
+                // the session while preserving normal drafts after errors.
+                'message' => strlen($draftBody) <= 100000
+                    ? (string) $this->security->xss_clean($draftBody)
+                    : '',
+            ));
+        }
         $this->session->set_flashdata(
             'msg',
             '<div class="alert alert-' . $type . '">' . html_escape((string) $message) . '</div>'

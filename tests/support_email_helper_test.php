@@ -3,6 +3,9 @@
 /** Focused unit coverage for external/support email value handling. */
 
 define('BASEPATH', dirname(__DIR__) . '/system/');
+define('APPPATH', dirname(__DIR__) . '/application/');
+define('ENVIRONMENT', 'testing');
+$_SERVER['HTTP_HOST'] = 'apexstaracademy.com.ng';
 require_once dirname(__DIR__) . '/application/helpers/support_email_helper.php';
 
 $assertions = 0;
@@ -64,6 +67,14 @@ foreach (array('localhost', 'example.com/path', 'example.com@attacker.test', '-b
         'Invalid or ambiguous hosts must not produce an inbound address.'
     );
 }
+support_email_helper_assert(
+    schoollift_support_configured_inbound_address('admin', 'apexstaracademy.com.ng') === 'admin@apexstaracademy.com.ng',
+    'A configured tenant domain must be accepted for Reply-To.'
+);
+support_email_helper_assert(
+    schoollift_support_configured_inbound_address('admin', 'attacker.example') === '',
+    'A syntactically valid but unconfigured Host header must not control Reply-To.'
+);
 
 support_email_helper_assert(
     schoollift_support_notification_recipient_allowed('Staff@Example.com', 'admin@example.com'),
