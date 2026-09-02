@@ -13,6 +13,7 @@ class Snsmessagevalidator
 {
     private $certificateFetcher;
     private $lastError = '';
+    private $retryableFailure = false;
 
     public function __construct($params = array())
     {
@@ -26,9 +27,10 @@ class Snsmessagevalidator
     public function isValid(array $message)
     {
         $this->lastError = '';
+        $this->retryableFailure = false;
 
         if (!extension_loaded('openssl') || !function_exists('openssl_verify')) {
-            return $this->fail('The OpenSSL extension is required to verify SNS messages.');
+            return $this->fail('The OpenSSL extension is required to verify SNS messages.', true);
         }
 
         $required = array(
@@ -77,18 +79,22 @@ class Snsmessagevalidator
 
         $certificate = call_user_func($this->certificateFetcher, $certificateUrl);
         if (!is_string($certificate) || $certificate === '' || strlen($certificate) > 65536) {
-            return $this->fail('SNS signing certificate could not be downloaded.');
+            return $this->fail('SNS signing certificate could not be downloaded.', true);
         }
 
         $publicKey = @openssl_pkey_get_public($certificate);
         if ($publicKey === false) {
-            return $this->fail('SNS signing certificate does not contain a public key.');
+            return $this->fail('SNS signing certificate does not contain a public key.', true);
         }
 
         $algorithm = $version === '1' ? OPENSSL_ALGO_SHA1 : OPENSSL_ALGO_SHA256;
         $verified = @openssl_verify($this->getStringToSign($message), $signature, $publicKey, $algorithm);
         if (is_resource($publicKey) && function_exists('openssl_free_key')) {
             openssl_free_key($publicKey);
+        }
+
+        if ($verified === -1) {
+            return $this->fail('SNS signature verification could not be completed.', true);
         }
 
         if ($verified !== 1) {
@@ -101,7 +107,11 @@ class Snsmessagevalidator
     public function getStringToSign(array $message)
     {
         $content = '';
-        foreach (array('Message', 'MessageId', 'Subject', 'SubscribeURL', 'Timestamp', 'Token', 'TopicArn', 'Type') as $field) {
+        $fields = isset($message['Type']) && (string) $message['Type'] === 'Notification'
+            ? array('Message', 'MessageId', 'Subject', 'Timestamp', 'TopicArn', 'Type')
+            : array('Message', 'MessageId', 'SubscribeURL', 'Timestamp', 'Token', 'TopicArn', 'Type');
+
+        foreach ($fields as $field) {
             if (isset($message[$field]) && is_scalar($message[$field])) {
                 $content .= $field . "\n" . (string) $message[$field] . "\n";
             }
@@ -113,6 +123,12 @@ class Snsmessagevalidator
     public function getLastError()
     {
         return $this->lastError;
+    }
+
+    /** Operational verifier failures should make Amazon SNS retry delivery. */
+    public function isRetryableFailure()
+    {
+        return $this->retryableFailure === true;
     }
 
     /**
@@ -198,9 +214,10 @@ class Snsmessagevalidator
         return is_string($body) && $body !== '' && strlen($body) <= 65536 ? $body : false;
     }
 
-    private function fail($message)
+    private function fail($message, $retryable = false)
     {
         $this->lastError = (string) $message;
+        $this->retryableFailure = (bool) $retryable;
         return false;
     }
 }

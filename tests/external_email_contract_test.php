@@ -133,23 +133,39 @@ external_email_contract_assert(
     strpos($mailer, "(int) trim((string) \$this->CI->mail_config->smtp_port)") !== false,
     'SMTP ports must be normalized so legacy whitespace does not break Apex delivery.'
 );
+external_email_contract_assert(
+    strpos($mailer, "isset(\$options['smtp_timeout'])") !== false
+        && strpos($mailer, '$mail->Timeout') !== false
+        && strpos($notifier, "'smtp_timeout' => 10") !== false,
+    'Queued alerts must use bounded SMTP connection and command timeouts.'
+);
 
 $individualSend = external_email_contract_method($mailsms, 'public', 'send_individual');
+$standardEmailGuard = external_email_contract_method($mailsms, 'private', 'requireStandardEmailPost');
 external_email_contract_assert(
     strpos($individualSend, "hasPrivilege('email', 'can_view')") !== false
         && strpos($individualSend, 'required|in_list[email]') !== false
         && strpos($individualSend, 'foreach ((array) $userlisting') !== false
-        && strpos($individualSend, 'resolveInternalEmailRecipient') !== false,
-    'The legacy individual form must enforce email permission, accept keyed JSON, and re-resolve internal recipients.'
+        && strpos($individualSend, 'resolveInternalEmailRecipient') !== false
+        && strpos($individualSend, 'requireStandardEmailPost()') !== false,
+    'The legacy individual form must enforce email permission and CSRF, accept keyed JSON, and re-resolve internal recipients.'
 );
 foreach (array('send_birthday', 'send_group', 'send_class') as $legacyActionName) {
     $legacyAction = external_email_contract_method($mailsms, 'public', $legacyActionName);
     external_email_contract_assert(
         strpos($legacyAction, "hasPrivilege('email', 'can_view')") !== false
-            && strpos($legacyAction, 'required|in_list[email]') !== false,
-        $legacyActionName . ' must enforce the standard email permission and transport.'
+            && strpos($legacyAction, 'required|in_list[email]') !== false
+            && strpos($legacyAction, 'requireStandardEmailPost()') !== false,
+        $legacyActionName . ' must enforce the standard email permission, transport, and scoped CSRF token.'
     );
 }
+external_email_contract_assert(
+    strpos($standardEmailGuard, "method(true) !== 'POST'") !== false
+        && strpos($standardEmailGuard, "post('standard_email_csrf')") !== false
+        && strpos($standardEmailGuard, 'hash_equals($expected, $provided)') !== false
+        && substr_count($composeView, 'name="standard_email_csrf"') === 4,
+    'Every legacy email mutation must be POST-only and submit the standard scoped CSRF token.'
+);
 
 $findTicket = external_email_contract_method($ticketModel, 'protected', 'findTicketForIncoming');
 external_email_contract_assert(
@@ -202,21 +218,19 @@ external_email_contract_assert(
     'Every Support mutation form, including delete, must submit the scoped action token.'
 );
 
-$incomingGuardPosition = strpos($webhooks, 'wasLastIncomingMessageCreated()');
 $notifyPosition = strpos($webhooks, 'queueIncoming(');
 external_email_contract_assert(
-    $incomingGuardPosition !== false && $notifyPosition !== false && $incomingGuardPosition < $notifyPosition,
-    'Alerts must run only when the webhook persisted a genuinely new inbound message.'
-);
-external_email_contract_assert(
-    strpos($ticketModel, 'last_incoming_message_created') !== false
-        && strpos($ticketModel, 'wasLastIncomingMessageCreated') !== false,
-    'The ticket model must expose whether the inbound message was newly created.'
+    $notifyPosition !== false
+        && strpos($webhooks, 'if (!empty($support_ticket_id))') !== false
+        && strpos($webhooks, "'failed' => (int) \$notification_result['failed']") === false
+        && strpos($webhooks, "!empty(\$notification_result['failed'])") !== false,
+    'Idempotent alert reservation must be retried for any resolved inbound ticket, and queue failures must not be hidden.'
 );
 external_email_contract_assert(
     preg_match('/catch \((?:Exception|Throwable) \$exception\)/', $webhooks) === 1
-        && strpos($webhooks, 'Support email alert failed:') !== false,
-    'Alert delivery failures must not make SES inbound storage fail.'
+        && strpos($webhooks, 'Support email alert queue temporarily unavailable') !== false
+        && strpos($webhooks, '), 503)') !== false,
+    'Alert reservation failures must return a retryable response after the inbound message is safely stored.'
 );
 
 foreach (array(
@@ -234,8 +248,9 @@ foreach (array(
 external_email_contract_assert(
     strpos($notifier, 'schoollift_support_notification_recipient_allowed') !== false
         && strpos($notifier, 'isset($seen[$email])') !== false
+        && strpos($notifier, 'array_slice(') === false
         && strpos($notifier, "'Auto-Submitted' => 'auto-generated'") !== false,
-    'Notifier fan-out must prevent loops and duplicates and identify automatic mail.'
+    'Notifier fan-out must cover every authorized subscriber, prevent loops and duplicates, and identify automatic mail.'
 );
 external_email_contract_assert(
     strpos($helper, 'Deliberately omit the message body') !== false
@@ -243,7 +258,8 @@ external_email_contract_assert(
     'Device alerts must use the dedicated body-free notification formatter.'
 );
 external_email_contract_assert(
-    strpos($notificationModel, 'INSERT IGNORE INTO') !== false
+    strpos($notificationModel, 'ON DUPLICATE KEY UPDATE') !== false
+        && strpos($notificationModel, 'return -1') !== false
         && strpos($notificationModel, 'support_email_alert_deliveries') !== false
         && strpos($notificationModel, "'processing'") !== false
         && strpos($notificationModel, '$attemptCount < 3') !== false,
@@ -263,12 +279,14 @@ external_email_contract_assert(
 external_email_contract_assert(
     strpos($webhooks, "load->library('snsmessagevalidator')") !== false
         && strpos($webhooks, 'snsmessagevalidator->isValid($sns_payload)') !== false
+        && strpos($webhooks, 'snsmessagevalidator->isRetryableFailure()') !== false
         && strpos($webhooks, 'CURLOPT_FOLLOWLOCATION, false') !== false,
     'The SES webhook must verify the SNS signature and must not follow confirmation redirects.'
 );
 external_email_contract_assert(
     strpos($snsValidator, 'openssl_verify') !== false
         && strpos($snsValidator, 'amazonaws\\.com') !== false
+        && strpos($snsValidator, 'isRetryableFailure') !== false
         && strpos($snsValidator, 'CURLOPT_SSL_VERIFYPEER => true') !== false,
     'SNS validation must use OpenSSL and restrict TLS certificate downloads to Amazon SNS.'
 );
@@ -276,6 +294,128 @@ external_email_contract_assert(
     strpos($incomingConfig, "getenv('SES_INBOUND_WEBHOOK_TOKEN')") !== false
         && preg_match("/ses_inbound_webhook_token'\]\\s*=.*?:\\s*'';/s", $incomingConfig) === 1,
     'The inbound webhook secret must come from deployment environment without a checked-in fallback.'
+);
+
+$signatureCheckPosition = strpos($webhooks, 'snsmessagevalidator->isValid($sns_payload)');
+$subscriptionConfirmationPosition = strpos($webhooks, 'confirmSnsSubscription(');
+$schoolRoutePosition = strpos($webhooks, 'resolveSchoolRoute($message_data');
+$inboundSavePosition = strpos($webhooks, 'saveFromWebhook($record)');
+external_email_contract_assert(
+    $signatureCheckPosition !== false
+        && $subscriptionConfirmationPosition !== false
+        && $schoolRoutePosition !== false
+        && $inboundSavePosition !== false
+        && $signatureCheckPosition < $subscriptionConfirmationPosition
+        && $signatureCheckPosition < $schoolRoutePosition
+        && $signatureCheckPosition < $inboundSavePosition,
+    'SNS signatures must be verified before subscription confirmation, tenant routing, or database writes.'
+);
+external_email_contract_assert(
+    strpos($webhooks, "if (\$allowed_topic_arn === '')") !== false
+        && strpos($webhooks, 'hash_equals($allowed_topic_arn, $topic_arn)') !== false,
+    'The webhook must fail closed and compare the signed TopicArn exactly.'
+);
+foreach (array("'Signature'", "'SignatureVersion'", "'SigningCertURL'") as $signedEnvelopeField) {
+    external_email_contract_assert(
+        strpos($snsValidator, $signedEnvelopeField) !== false,
+        'The SNS validator must require signed-envelope field ' . $signedEnvelopeField . '.'
+    );
+}
+$normalizeInbound = external_email_contract_method($webhooks, 'protected', 'normalizeInboundPayload');
+$rawHeaderEnvelope = external_email_contract_method($webhooks, 'protected', 'buildSnsPayloadFromHeaders');
+external_email_contract_assert(
+    strpos($normalizeInbound, 'isSesNotificationPayload') !== false
+        && strpos($normalizeInbound, 'buildSnsPayloadFromHeaders') !== false
+        && strpos($rawHeaderEnvelope, "'Signature'") === false
+        && strpos($rawHeaderEnvelope, "'SignatureVersion'") === false
+        && strpos($rawHeaderEnvelope, "'SigningCertURL'") === false,
+    'Raw SNS delivery must remain unverifiable and therefore fail the mandatory signature check.'
+);
+external_email_contract_assert(
+    strpos($incomingConfig, 'SNS signature is always required') !== false
+        && stripos($setupDocs, 'Leave raw message delivery disabled') !== false
+        && stripos($setupDocs, 'unsigned raw delivery is rejected') !== false,
+    'Configuration and deployment instructions must require signed SNS JSON delivery.'
+);
+
+$findIncomingTicket = external_email_contract_method($ticketModel, 'protected', 'findTicketForIncoming');
+$requesterMatches = external_email_contract_method($ticketModel, 'protected', 'ticketRequesterMatches');
+external_email_contract_assert(
+    substr_count($findIncomingTicket, 'ticketRequesterMatches($ticket, $requester_email)') >= 2
+        && strpos($findIncomingTicket, 'extractTicketNumber($subject)') !== false
+        && strpos($findIncomingTicket, "getHeader(\$headers, 'in-reply-to')") !== false
+        && strpos($findIncomingTicket, "getHeader(\$headers, 'references')") !== false,
+    'Both RFC references and public ticket markers must be bound to the original requester.'
+);
+external_email_contract_assert(
+    strpos($requesterMatches, "ticket['requester_email']") !== false
+        && strpos($requesterMatches, 'normalizeEmail($requester_email)') !== false
+        && strpos($requesterMatches, 'hash_equals($expected, $actual)') !== false,
+    'Thread sender binding must compare normalized non-empty requester addresses safely.'
+);
+
+$queueIncoming = external_email_contract_method($notifier, 'public', 'queueIncoming');
+$processQueue = external_email_contract_method($notifier, 'public', 'processQueue');
+$cronAlerts = external_email_contract_method($cron, 'public', 'supportemailalerts');
+$cronKeyGuard = external_email_contract_method($cron, 'protected', 'hasValidCronKey');
+external_email_contract_assert(
+    strpos($webhooks, 'queueIncoming(') !== false
+        && strpos($webhooks, 'processQueue(') === false
+        && strpos($queueIncoming, 'queueIsReady()') !== false
+        && strpos($queueIncoming, 'reserveDelivery(array(') !== false
+        && strpos($queueIncoming, "'incoming_email_id' => \$incomingEmailId") !== false,
+    'The public webhook must reserve idempotent alert jobs instead of sending mail synchronously.'
+);
+external_email_contract_assert(
+    strpos($notificationModel, 'ON DUPLICATE KEY UPDATE') !== false
+        && strpos($migration, 'UNIQUE KEY `support_email_alert_delivery_unique` (`notification_id`, `incoming_email_id`)') !== false,
+    'One incoming email may reserve at most one queued alert per staff subscription.'
+);
+external_email_contract_assert(
+    strpos($processQueue, 'getPendingDeliveries($limit)') !== false
+        && strpos($processQueue, 'getAuthorizedRecipients()') !== false
+        && strpos($processQueue, 'claimDelivery($deliveryId)') !== false
+        && strpos($processQueue, 'cancelQueuedDelivery(') !== false
+        && strpos($processQueue, 'completeQueuedDelivery(') !== false
+        && strpos($processQueue, '$attemptCount < 3') !== false,
+    'The worker must claim bounded jobs, reauthorize recipients, cancel stale authority, and cap retries.'
+);
+external_email_contract_assert(
+    strpos($cronAlerts, 'hasValidCronKey($key)') !== false
+        && strpos($cronAlerts, 'processQueue(20)') !== false
+        && strpos($cron, '$this->supportemailalerts($key)') !== false
+        && strpos($cronKeyGuard, 'hash_equals($expected, $provided)') !== false,
+    'A protected, bounded queue worker must run from the existing tenant cron.'
+);
+external_email_contract_assert(
+    strpos($notifier, 'get_last_message_id()') !== false
+        && strpos($mailer, 'public function get_last_message_id()') !== false
+        && strpos($notificationModel, "'provider_message_id'") !== false,
+    'Queue delivery history must retain the outbound provider message ID when available.'
+);
+
+$legacyIndividualSend = external_email_contract_method($mailsms, 'public', 'send_individual');
+$resolveInternalRecipient = external_email_contract_method($mailsms, 'private', 'resolveInternalEmailRecipient');
+external_email_contract_assert(
+    strpos($legacyIndividualSend, "json_decode(\$this->input->post('user_list'))") !== false
+        && strpos($legacyIndividualSend, 'is_object($userlisting)') !== false
+        && strpos($legacyIndividualSend, '$userlisting = (array) $userlisting') !== false
+        && strpos($legacyIndividualSend, 'foreach ((array) $userlisting') !== false,
+    'Legacy object-shaped recipient JSON must be handled without stdClass indexing errors.'
+);
+external_email_contract_assert(
+    strpos($legacyIndividualSend, '!is_array($userlisting_value)') !== false
+        && strpos($legacyIndividualSend, 'resolveInternalEmailRecipient(') !== false
+        && strpos($legacyIndividualSend, '$user_array[] = $resolved') !== false
+        && strpos($legacyIndividualSend, '$user_array[] = $submitted') === false,
+    'Legacy recipient entries must be structurally checked and rebuilt server-side.'
+);
+external_email_contract_assert(
+    strpos($resolveInternalRecipient, '$this->student_model->get($recordId)') !== false
+        && strpos($resolveInternalRecipient, '$this->staff_model->getAll($recordId)') !== false
+        && strpos($resolveInternalRecipient, 'FILTER_VALIDATE_EMAIL') !== false
+        && strpos($resolveInternalRecipient, "array('student', 'parent', 'student_guardian')") !== false,
+    'Internal recipients must come from current student/guardian/staff database records and valid mailboxes.'
 );
 
 external_email_contract_assert(
@@ -291,7 +431,7 @@ foreach (array(
     "'external_email'",
     'Send External Email',
     "'enable_add' => 1",
-    "array('Admin', 'Head Teacher', 'Super Admin')",
+    "array('Admin', 'Super Admin')",
 ) as $migrationContract) {
     external_email_contract_assert(
         strpos($migration, $migrationContract) !== false,
@@ -307,7 +447,6 @@ foreach (array($standaloneSql, $consolidatedSql) as $sql) {
         "'external_email'",
         'Send External Email',
         "SELECT 'Admin' AS `role_name`",
-        "UNION ALL SELECT 'Head Teacher'",
         "UNION ALL SELECT 'Super Admin'",
     ) as $sqlContract) {
         external_email_contract_assert(
@@ -330,6 +469,7 @@ foreach (array(
     'support_email_notifications',
     'support_email_alert_deliveries',
     'once per minute',
+    '/cron/supportemailalerts/CRON_SECRET',
     'external_email_notifications_migration.sql',
 ) as $documentationContract) {
     external_email_contract_assert(

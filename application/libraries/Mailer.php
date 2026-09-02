@@ -45,6 +45,9 @@ class Mailer {
 
         $mail = new PHPMailer();
         $mail->CharSet = 'UTF-8';
+        $smtp_timeout = isset($options['smtp_timeout'])
+            ? max(1, min(120, (int) $options['smtp_timeout']))
+            : 30;
         $school_name = $this->sch_setting[0]['name'];
         $school_email = $this->sch_setting[0]['email'];
         $from_email   = filter_var($school_email, FILTER_VALIDATE_EMAIL) ? $school_email : '';
@@ -67,6 +70,13 @@ class Mailer {
             // SMTP debug level 2 includes the full DATA transaction, which
             // can expose message bodies and attachments in application logs.
             $mail->SMTPDebug  = 0;
+            $mail->Timeout    = $smtp_timeout;
+            if (method_exists($mail, 'getSMTPInstance')) {
+                $smtp = $mail->getSMTPInstance();
+                if (is_object($smtp) && property_exists($smtp, 'Timelimit')) {
+                    $smtp->Timelimit = $smtp_timeout;
+                }
+            }
             $mail->SMTPAuth   = ($this->CI->mail_config->smtp_auth != "") ? $this->CI->mail_config->smtp_auth : "";
             $mail->SMTPSecure = trim((string) $this->CI->mail_config->ssl_tls);
             $mail->Host       = trim((string) $this->CI->mail_config->smtp_server);
@@ -82,6 +92,13 @@ class Mailer {
             }
         } else {
             $mail->isSMTP();
+            $mail->Timeout     = $smtp_timeout;
+            if (method_exists($mail, 'getSMTPInstance')) {
+                $smtp = $mail->getSMTPInstance();
+                if (is_object($smtp) && property_exists($smtp, 'Timelimit')) {
+                    $smtp->Timelimit = $smtp_timeout;
+                }
+            }
             $mail->Host        = 'localhost';
             $mail->SMTPAuth    = false;
             $mail->SMTPAutoTLS = false;

@@ -78,7 +78,8 @@ if (!function_exists('schoollift_support_configured_inbound_address')) {
             return '';
         }
 
-        $domain = substr(strrchr($address, '@'), 1);
+        // Keep this name distinct from variables declared by database.php.
+        $requestedDomain = substr(strrchr($address, '@'), 1);
         $active_group = 'default';
         $query_builder = true;
         $db = array();
@@ -97,7 +98,7 @@ if (!function_exists('schoollift_support_configured_inbound_address')) {
             }
         }
 
-        return isset($groups[$domain]) ? $address : '';
+        return isset($groups[$requestedDomain]) ? $address : '';
     }
 }
 

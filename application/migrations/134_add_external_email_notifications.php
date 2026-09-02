@@ -133,7 +133,7 @@ class Migration_Add_external_email_notifications extends CI_Migration
 
         $roles = $this->db->select('id')
             ->from('roles')
-            ->where_in('name', array('Admin', 'Head Teacher', 'Super Admin'))
+            ->where_in('name', array('Admin', 'Super Admin'))
             ->get()
             ->result_array();
 

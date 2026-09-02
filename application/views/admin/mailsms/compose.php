@@ -12,8 +12,56 @@ $active_email_tab = isset($active_email_tab) ? $active_email_tab : 'group';
 $external_email_ready = !empty($external_email_ready);
 $can_standard_email = !empty($can_standard_email);
 $can_external_email = !empty($can_external_email);
+$standard_email_csrf = isset($standard_email_csrf) ? (string) $standard_email_csrf : '';
+$external_email_draft = isset($external_email_draft) && is_array($external_email_draft)
+    ? $external_email_draft
+    : array();
 ?>
 <script src="<?php echo base_url(); ?>backend/plugins/ckeditor/ckeditor.js"></script>
+<style>
+    .external-email-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+    .external-email-footer__hint { min-width: 0; }
+    .external-email-footer__submit { flex: 0 0 auto; }
+    .external-email-reply-address { overflow-wrap: anywhere; word-break: break-word; }
+    @media (max-width: 767px) {
+        .nav-tabs-custom > .nav-tabs.compose-email-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 0 5px 5px;
+        }
+        .nav-tabs-custom > .nav-tabs.compose-email-tabs > li {
+            float: none;
+            flex: 1 1 auto;
+            margin-right: 1px;
+            text-align: center;
+        }
+        .nav-tabs-custom > .nav-tabs.compose-email-tabs > li.header {
+            flex-basis: 100%;
+            order: -1;
+            padding: 5px 8px;
+            text-align: left;
+        }
+        .nav-tabs-custom > .nav-tabs.compose-email-tabs > li > a {
+            padding: 8px 10px;
+            white-space: nowrap;
+        }
+        .external-email-footer {
+            align-items: stretch;
+            flex-direction: column;
+        }
+        .external-email-footer__submit { width: 100%; }
+    }
+    @media (max-width: 420px) {
+        .nav-tabs-custom > .nav-tabs.compose-email-tabs > li:not(.header) {
+            flex-basis: 46%;
+        }
+    }
+</style>
 <div class="content-wrapper">
     <section class="content-header">
         <h1>
@@ -28,7 +76,7 @@ $can_external_email = !empty($can_external_email);
 
                     <!-- Custom Tabs (Pulled to the right) -->
                     <div class="nav-tabs-custom theme-shadow">
-                        <ul class="nav nav-tabs pull-right">
+                        <ul class="nav nav-tabs pull-right compose-email-tabs">
                             <?php if ($can_external_email) { ?>
                                 <li class="<?php echo $active_email_tab === 'external' ? 'active' : ''; ?>"><a href="#tab_external" data-toggle="tab"><i class="fa fa-external-link"></i> External</a></li>
                             <?php } ?>
@@ -44,6 +92,7 @@ $can_external_email = !empty($can_external_email);
                             <?php if ($can_standard_email) { ?>
                             <div class="tab-pane <?php echo $active_email_tab === 'group' ? 'active' : ''; ?>" id="tab_group">
                             <form action="<?php echo site_url('admin/mailsms/send_group') ?>" method="post" id="group_form">
+                                <input type="hidden" name="standard_email_csrf" value="<?php echo html_escape($standard_email_csrf); ?>">
 
                                 <!-- /.box-header -->
                                 <div class="box-body">
@@ -134,6 +183,7 @@ $can_external_email = !empty($can_external_email);
                         <!-- /.tab-pane -->
                         <div class="tab-pane" id="tab_perticular">
                             <form action="<?php echo site_url('admin/mailsms/send_individual') ?>" method="post" id="individual_form">
+                                <input type="hidden" name="standard_email_csrf" value="<?php echo html_escape($standard_email_csrf); ?>">
 
                                 <!-- /.box-header -->
                                 <div class="box-body">
@@ -246,36 +296,37 @@ $can_external_email = !empty($can_external_email);
                                         <div class="col-md-8">
                                             <div class="form-group">
                                                 <label for="external_subject">Subject</label><small class="req"> *</small>
-                                                <input type="text" class="form-control" id="external_subject" name="external_subject" maxlength="220" required>
+                                                <input type="text" class="form-control" id="external_subject" name="external_subject" maxlength="220" value="<?php echo html_escape(isset($external_email_draft['subject']) ? $external_email_draft['subject'] : ''); ?>" required>
                                             </div>
                                             <div class="form-group">
                                                 <label for="external_msg_text">Message</label><small class="req"> *</small>
-                                                <textarea id="external_msg_text" name="external_message" class="form-control compose-textarea ckeditor" rows="12"></textarea>
+                                                <textarea id="external_msg_text" name="external_message" class="form-control compose-textarea ckeditor" rows="12" maxlength="1000000" aria-describedby="external_message_error"><?php echo html_escape(isset($external_email_draft['message']) ? $external_email_draft['message'] : ''); ?></textarea>
+                                                <span id="external_message_error" class="help-block text-danger" role="alert" style="display:none;">Email message is required.</span>
                                             </div>
                                         </div>
                                         <div class="col-md-4">
                                             <div class="form-group">
                                                 <label for="external_email">External recipient email</label><small class="req"> *</small>
-                                                <input type="email" class="form-control" id="external_email" name="external_email" maxlength="191" autocomplete="email" placeholder="name@example.com" required>
+                                                <input type="email" class="form-control" id="external_email" name="external_email" maxlength="191" autocomplete="email" placeholder="name@example.com" value="<?php echo html_escape(isset($external_email_draft['email']) ? $external_email_draft['email'] : ''); ?>" required>
                                                 <span class="help-block">The recipient does not need to be a student, parent, teacher, or staff member.</span>
                                             </div>
                                             <div class="form-group">
                                                 <label for="external_name">Recipient name <small class="text-muted">(optional)</small></label>
-                                                <input type="text" class="form-control" id="external_name" name="external_name" maxlength="191" autocomplete="name">
+                                                <input type="text" class="form-control" id="external_name" name="external_name" maxlength="191" autocomplete="name" value="<?php echo html_escape(isset($external_email_draft['name']) ? $external_email_draft['name'] : ''); ?>">
                                             </div>
                                             <div class="well well-sm">
                                                 <p><i class="fa fa-shield text-primary"></i> <strong>Tracked conversation</strong></p>
                                                 <p class="text-muted" style="margin-bottom:8px;">The delivery attempt is audited. Replies return to the same conversation in Support Tickets.</p>
                                                 <?php if (!empty($inbound_email_address)) { ?>
-                                                    <p style="margin-bottom:0;"><small>Reply address: <strong><?php echo html_escape($inbound_email_address); ?></strong></small></p>
+                                                    <p class="external-email-reply-address" style="margin-bottom:0;"><small>Reply address: <strong><?php echo html_escape($inbound_email_address); ?></strong></small></p>
                                                 <?php } ?>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="box-footer clearfix">
-                                    <span class="text-muted"><i class="fa fa-info-circle"></i> Only staff granted the Send External Email permission can use this form.</span>
-                                    <button type="submit" class="btn btn-primary pull-right" <?php echo $external_email_ready ? '' : 'disabled'; ?>>
+                                <div class="box-footer external-email-footer">
+                                    <span class="text-muted external-email-footer__hint"><i class="fa fa-info-circle"></i> Only staff granted the Send External Email permission can use this form.</span>
+                                    <button type="submit" class="btn btn-primary external-email-footer__submit" data-loading-text="<i class='fa fa-spinner fa-spin'></i> Sending" <?php echo $external_email_ready ? '' : 'disabled'; ?>>
                                         <i class="fa fa-paper-plane"></i> Send External Email
                                     </button>
                                 </div>
@@ -286,6 +337,7 @@ $can_external_email = !empty($can_external_email);
                         <?php if ($can_standard_email) { ?>
                         <div class="tab-pane" id="tab_class">
                             <form action="<?php echo site_url('admin/mailsms/send_class') ?>" method="post" id="class_form">
+                                <input type="hidden" name="standard_email_csrf" value="<?php echo html_escape($standard_email_csrf); ?>">
 
                                 <div class="box-body">
                                     <div class="row">
@@ -353,6 +405,7 @@ $can_external_email = !empty($can_external_email);
                         </div>
                         <div class="tab-pane" id="tab_birthday">
                             <form action="<?php echo site_url('admin/mailsms/send_birthday') ?>" method="post" id="birthday_form">
+                                <input type="hidden" name="standard_email_csrf" value="<?php echo html_escape($standard_email_csrf); ?>">
 
                                 <!-- /.box-header -->
                                 <div class="box-body">
@@ -1070,5 +1123,48 @@ $can_external_email = !empty($can_external_email);
 <script>
     $(document).ready(function () {
         CKEDITOR.replaceClass = 'ckeditor';
+
+        var $externalForm = $('#external_email_form');
+        var externalEmailSubmitting = false;
+
+        $externalForm.on('submit', function (event) {
+            var editor = typeof CKEDITOR !== 'undefined' ? CKEDITOR.instances.external_msg_text : null;
+            if (editor) {
+                editor.updateElement();
+            }
+
+            var messageHtml = $('#external_msg_text').val() || '';
+            var messageContainer = document.createElement('div');
+            messageContainer.innerHTML = messageHtml;
+            var messageText = (messageContainer.textContent || messageContainer.innerText || '')
+                .replace(/\u00a0/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            if (messageText === '') {
+                event.preventDefault();
+                $('#external_message_error').show();
+                $('#external_msg_text').attr('aria-invalid', 'true');
+                if (editor) {
+                    editor.focus();
+                }
+                return;
+            }
+
+            $('#external_message_error').hide();
+            $('#external_msg_text').removeAttr('aria-invalid');
+
+            if (externalEmailSubmitting) {
+                event.preventDefault();
+                return;
+            }
+
+            externalEmailSubmitting = true;
+            var $submitButton = $externalForm.find('.external-email-footer__submit');
+            if (typeof $submitButton.button === 'function') {
+                $submitButton.button('loading');
+            }
+            $submitButton.prop('disabled', true);
+        });
     });
 </script>

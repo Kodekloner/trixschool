@@ -9,6 +9,17 @@ $format_date = function ($value) {
 };
 ?>
 
+<style>
+    .support-ticket-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .support-ticket-heading .box-title { min-width:0; overflow-wrap:anywhere; word-break:break-word; }
+    .support-ticket-heading__actions { flex:0 0 auto; }
+    @media (max-width:767px) {
+        .support-ticket-heading { align-items:flex-start; flex-direction:column; }
+        .support-ticket-heading__actions { width:100%; }
+        .support-ticket-heading__actions .btn { width:100%; }
+    }
+</style>
+
 <div class="content-wrapper">
     <section class="content-header">
         <h1><i class="fa fa-life-ring"></i> Support Ticket <?php echo html_escape($ticket['ticket_number']); ?></h1>
@@ -18,9 +29,9 @@ $format_date = function ($value) {
         <div class="row">
             <div class="col-md-8">
                 <div class="box box-primary">
-                    <div class="box-header with-border">
+                    <div class="box-header with-border support-ticket-heading">
                         <h3 class="box-title"><?php echo html_escape($ticket['subject']); ?></h3>
-                        <div class="box-tools pull-right">
+                        <div class="support-ticket-heading__actions">
                             <a href="<?php echo site_url('admin/support'); ?>" class="btn btn-default btn-xs"><i class="fa fa-arrow-left"></i> Back</a>
                         </div>
                     </div>

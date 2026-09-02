@@ -24,7 +24,7 @@ class Cron extends CI_Controller
     public function index($key = '')
     {
 
-        if ($key != "" && $this->cron_key == $key) {
+        if ($this->hasValidCronKey($key)) {
 
             $this->autobackup($key);
             $this->feereminder($key);
@@ -39,7 +39,7 @@ class Cron extends CI_Controller
     /** Finalize elapsed CBT papers even when a candidate never reconnects. */
     public function onlineexam($key = '')
     {
-        if ($key == '' || $this->cron_key != $key) {
+        if (!$this->hasValidCronKey($key)) {
             echo "Invalid Key or Direct access is not allowed";
             return;
         }
@@ -51,7 +51,7 @@ class Cron extends CI_Controller
     /** Send queued new-inbox alerts without delaying the public SES webhook. */
     public function supportemailalerts($key = '')
     {
-        if ($key == '' || $this->cron_key != $key) {
+        if (!$this->hasValidCronKey($key)) {
             echo "Invalid Key or Direct access is not allowed";
             return array();
         }
@@ -67,6 +67,11 @@ class Cron extends CI_Controller
             . ', cancelled=' . (int) $result['cancelled']
         );
 
+        if ($this->router->fetch_method() === 'supportemailalerts') {
+            $this->output->set_content_type('application/json');
+            echo json_encode(array('support_email_alerts' => $result));
+        }
+
         return $result;
     }
 
@@ -74,7 +79,7 @@ class Cron extends CI_Controller
     {
 
         if ($key != "") {
-            if ($key != "" && $this->cron_key != $key) {
+            if (!$this->hasValidCronKey($key)) {
                 echo "Invalid Key or Direct access is not allowed";
                 return;
             }
@@ -100,7 +105,7 @@ class Cron extends CI_Controller
     {
         $setting_result = $this->setting_model->getSetting();
         if ($key != "") {
-            if ($key != "" && $this->cron_key != $key) {
+            if (!$this->hasValidCronKey($key)) {
                 echo "Invalid Key or Direct access is not allowed";
                 return;
             }
@@ -196,6 +201,15 @@ class Cron extends CI_Controller
                 }
             }
         }
+    }
+
+    /** Compare tenant cron secrets without PHP's loose type coercion. */
+    protected function hasValidCronKey($key)
+    {
+        $expected = (string) $this->cron_key;
+        $provided = (string) $key;
+
+        return $expected !== '' && $provided !== '' && hash_equals($expected, $provided);
     }
 
 }
