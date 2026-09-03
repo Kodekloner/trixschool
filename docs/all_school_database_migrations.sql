@@ -1,5 +1,5 @@
--- SchoolLift consolidated tenant-database migrations (126 through 134).
--- Generated for deployment to every school database on 2026-08-22.
+-- SchoolLift consolidated tenant-database migrations (126 through 135).
+-- Generated for deployment to every school database on 2026-09-02.
 --
 -- IMPORTANT:
 --   * Select exactly one school database before importing this file.
@@ -23,6 +23,7 @@
 --   132_add_biometric_gateway_control.php
 --   133_add_promotion_system.php
 --   134_add_external_email_notifications.php
+--   135_compact_online_examination.php
 --
 -- Supported targets: MySQL 5.7+/8.0 and compatible MariaDB releases.
 -- This is a schema/permission migration bundle, not a full database dump.
@@ -63,6 +64,8 @@ FROM (
   UNION ALL SELECT 'onlineexam', 'id'
   UNION ALL SELECT 'onlineexam_questions', 'id'
   UNION ALL SELECT 'onlineexam_students', 'id'
+  UNION ALL SELECT 'holiday_assessment_scores', 'id'
+  UNION ALL SELECT 'holiday_assessment_scores', 'max_score'
 ) AS required
 LEFT JOIN `INFORMATION_SCHEMA`.`COLUMNS` AS actual
   ON actual.`TABLE_SCHEMA` = DATABASE()
@@ -101,6 +104,8 @@ SET @trix_preflight_missing := (
     UNION ALL SELECT 'onlineexam', 'id'
     UNION ALL SELECT 'onlineexam_questions', 'id'
     UNION ALL SELECT 'onlineexam_students', 'id'
+    UNION ALL SELECT 'holiday_assessment_scores', 'id'
+    UNION ALL SELECT 'holiday_assessment_scores', 'max_score'
   ) AS required
   LEFT JOIN `INFORMATION_SCHEMA`.`COLUMNS` AS actual
     ON actual.`TABLE_SCHEMA` = DATABASE()
@@ -281,10 +286,10 @@ AND NOT EXISTS (
 );
 
 -- ========================================================================
--- Migration 128: Nigerian Online Examination workflow
+-- Migration 128: localized Online Examination workflow
 -- ========================================================================
 
--- Nigerian Online Examination localisation schema (CodeIgniter migration 128).
+-- Localized Online Examination schema (CodeIgniter migration 128).
 --
 -- Run this script in phpMyAdmin for EACH school database after taking a
 -- verified backup. Select the intended school database before importing it.
@@ -334,7 +339,7 @@ SET @trix_ddl := (
     UNION ALL SELECT 3, 'class_id', 'INT(11) NULL'
     UNION ALL SELECT 4, 'subject_id', 'INT(11) NULL'
     UNION ALL SELECT 5, 'purpose', 'VARCHAR(32) NULL'
-    UNION ALL SELECT 6, 'result_adapter', 'VARCHAR(32) DEFAULT ''unlinked_practice'''
+    UNION ALL SELECT 6, 'result_adapter', 'VARCHAR(32) DEFAULT ''standard_component'''
     UNION ALL SELECT 7, 'target_component', 'VARCHAR(16) NULL'
     UNION ALL SELECT 8, 'result_type', 'VARCHAR(20) NULL'
     UNION ALL SELECT 9, 'target_max_score', 'DECIMAL(10,2) NULL'
@@ -2263,6 +2268,177 @@ WHERE grant_row.`role_id` IS NULL
 ORDER BY expected.`role_name`;
 
 -- ========================================================================
+-- Migration 135: compact CBT Online Examination and Holiday result posting
+-- ========================================================================
+
+CREATE TABLE IF NOT EXISTS `onlineexam_holiday_mappings` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `onlineexam_id` INT NOT NULL,
+  `section_id` INT NOT NULL,
+  `setting_id` INT NOT NULL,
+  `setting_subject_id` INT NOT NULL,
+  `max_score` DECIMAL(10,2) NOT NULL,
+  `created_at` DATETIME NOT NULL,
+  `updated_at` DATETIME NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `onlineexam_holiday_mapping_section_unique` (`onlineexam_id`, `section_id`),
+  KEY `onlineexam_holiday_mapping_setting_idx` (`setting_id`, `setting_subject_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET @onlineexam_135_sql := IF(
+  NOT EXISTS (
+    SELECT 1 FROM `INFORMATION_SCHEMA`.`COLUMNS`
+    WHERE `TABLE_SCHEMA` = DATABASE()
+      AND `TABLE_NAME` = 'holiday_assessment_scores'
+      AND `COLUMN_NAME` = 'score_origin'
+  ),
+  'ALTER TABLE `holiday_assessment_scores` ADD COLUMN `score_origin` VARCHAR(24) NOT NULL DEFAULT ''manual'' AFTER `max_score`',
+  'SELECT 1'
+);
+PREPARE onlineexam_135_stmt FROM @onlineexam_135_sql;
+EXECUTE onlineexam_135_stmt;
+DEALLOCATE PREPARE onlineexam_135_stmt;
+
+SET @onlineexam_135_sql := IF(
+  NOT EXISTS (
+    SELECT 1 FROM `INFORMATION_SCHEMA`.`COLUMNS`
+    WHERE `TABLE_SCHEMA` = DATABASE()
+      AND `TABLE_NAME` = 'holiday_assessment_scores'
+      AND `COLUMN_NAME` = 'source_onlineexam_id'
+  ),
+  'ALTER TABLE `holiday_assessment_scores` ADD COLUMN `source_onlineexam_id` INT NULL AFTER `score_origin`',
+  'SELECT 1'
+);
+PREPARE onlineexam_135_stmt FROM @onlineexam_135_sql;
+EXECUTE onlineexam_135_stmt;
+DEALLOCATE PREPARE onlineexam_135_stmt;
+
+SET @onlineexam_135_sql := IF(
+  NOT EXISTS (
+    SELECT 1 FROM `INFORMATION_SCHEMA`.`COLUMNS`
+    WHERE `TABLE_SCHEMA` = DATABASE()
+      AND `TABLE_NAME` = 'holiday_assessment_scores'
+      AND `COLUMN_NAME` = 'source_attempt_id'
+  ),
+  'ALTER TABLE `holiday_assessment_scores` ADD COLUMN `source_attempt_id` BIGINT UNSIGNED NULL AFTER `source_onlineexam_id`',
+  'SELECT 1'
+);
+PREPARE onlineexam_135_stmt FROM @onlineexam_135_sql;
+EXECUTE onlineexam_135_stmt;
+DEALLOCATE PREPARE onlineexam_135_stmt;
+
+SET @onlineexam_135_sql := IF(
+  NOT EXISTS (
+    SELECT 1 FROM `INFORMATION_SCHEMA`.`COLUMNS`
+    WHERE `TABLE_SCHEMA` = DATABASE()
+      AND `TABLE_NAME` = 'holiday_assessment_scores'
+      AND `COLUMN_NAME` = 'source_sync_id'
+  ),
+  'ALTER TABLE `holiday_assessment_scores` ADD COLUMN `source_sync_id` BIGINT UNSIGNED NULL AFTER `source_attempt_id`',
+  'SELECT 1'
+);
+PREPARE onlineexam_135_stmt FROM @onlineexam_135_sql;
+EXECUTE onlineexam_135_stmt;
+DEALLOCATE PREPARE onlineexam_135_stmt;
+
+SET @onlineexam_135_sql := IF(
+  NOT EXISTS (
+    SELECT 1 FROM `INFORMATION_SCHEMA`.`COLUMNS`
+    WHERE `TABLE_SCHEMA` = DATABASE()
+      AND `TABLE_NAME` = 'holiday_assessment_scores'
+      AND `COLUMN_NAME` = 'updated_at'
+  ),
+  'ALTER TABLE `holiday_assessment_scores` ADD COLUMN `updated_at` DATETIME NULL AFTER `source_sync_id`',
+  'SELECT 1'
+);
+PREPARE onlineexam_135_stmt FROM @onlineexam_135_sql;
+EXECUTE onlineexam_135_stmt;
+DEALLOCATE PREPARE onlineexam_135_stmt;
+
+UPDATE `holiday_assessment_scores`
+SET `score_origin` = 'manual'
+WHERE `score_origin` IS NULL OR `score_origin` = '';
+
+SET @onlineexam_135_sql := IF(
+  NOT EXISTS (
+    SELECT 1
+    FROM (
+      SELECT `INDEX_NAME`,
+             GROUP_CONCAT(`COLUMN_NAME` ORDER BY `SEQ_IN_INDEX` SEPARATOR ',') AS `columns`
+      FROM `INFORMATION_SCHEMA`.`STATISTICS`
+      WHERE `TABLE_SCHEMA` = DATABASE()
+        AND `TABLE_NAME` = 'holiday_assessment_scores'
+      GROUP BY `INDEX_NAME`
+    ) AS existing_index
+    WHERE existing_index.`columns` = 'source_onlineexam_id,source_attempt_id'
+  ),
+  'ALTER TABLE `holiday_assessment_scores` ADD KEY `holiday_assessment_scores_source_idx` (`source_onlineexam_id`, `source_attempt_id`)',
+  'SELECT 1'
+);
+PREPARE onlineexam_135_stmt FROM @onlineexam_135_sql;
+EXECUTE onlineexam_135_stmt;
+DEALLOCATE PREPARE onlineexam_135_stmt;
+
+SET @onlineexam_135_sql := IF(
+  NOT EXISTS (
+    SELECT 1
+    FROM (
+      SELECT `INDEX_NAME`, MIN(`NON_UNIQUE`) AS `non_unique`,
+             GROUP_CONCAT(`COLUMN_NAME` ORDER BY `SEQ_IN_INDEX` SEPARATOR ',') AS `columns`
+      FROM `INFORMATION_SCHEMA`.`STATISTICS`
+      WHERE `TABLE_SCHEMA` = DATABASE()
+        AND `TABLE_NAME` = 'holiday_assessment_scores'
+      GROUP BY `INDEX_NAME`
+    ) AS existing_index
+    WHERE existing_index.`columns` = 'source_sync_id'
+      AND existing_index.`non_unique` = 0
+  ),
+  'ALTER TABLE `holiday_assessment_scores` ADD UNIQUE KEY `holiday_assessment_scores_source_sync_unique` (`source_sync_id`)',
+  'SELECT 1'
+);
+PREPARE onlineexam_135_stmt FROM @onlineexam_135_sql;
+EXECUTE onlineexam_135_stmt;
+DEALLOCATE PREPARE onlineexam_135_stmt;
+
+SET @onlineexam_135_sql := IF(
+  NOT EXISTS (
+    SELECT 1 FROM `INFORMATION_SCHEMA`.`COLUMNS`
+    WHERE `TABLE_SCHEMA` = DATABASE()
+      AND `TABLE_NAME` = 'onlineexam_result_sync'
+      AND `COLUMN_NAME` = 'previous_metadata_json'
+  ),
+  'ALTER TABLE `onlineexam_result_sync` ADD COLUMN `previous_metadata_json` LONGTEXT NULL AFTER `previous_value`',
+  'SELECT 1'
+);
+PREPARE onlineexam_135_stmt FROM @onlineexam_135_sql;
+EXECUTE onlineexam_135_stmt;
+DEALLOCATE PREPARE onlineexam_135_stmt;
+
+SET @onlineexam_135_sql := IF(
+  NOT EXISTS (
+    SELECT 1 FROM `INFORMATION_SCHEMA`.`COLUMNS`
+    WHERE `TABLE_SCHEMA` = DATABASE()
+      AND `TABLE_NAME` = 'onlineexam_result_sync'
+      AND `COLUMN_NAME` = 'applied_metadata_json'
+  ),
+  'ALTER TABLE `onlineexam_result_sync` ADD COLUMN `applied_metadata_json` LONGTEXT NULL AFTER `applied_value`',
+  'SELECT 1'
+);
+PREPARE onlineexam_135_stmt FROM @onlineexam_135_sql;
+EXECUTE onlineexam_135_stmt;
+DEALLOCATE PREPARE onlineexam_135_stmt;
+
+ALTER TABLE `onlineexam`
+  MODIFY `result_adapter` VARCHAR(32) NOT NULL DEFAULT 'standard_component';
+
+-- Retire the removed internal-only destination without deleting its history.
+UPDATE `onlineexam`
+SET `result_adapter` = 'legacy_read_only',
+    `lifecycle_status` = 'legacy',
+    `is_active` = 0
+WHERE `result_adapter` = 'unlinked_practice';
+
+-- ========================================================================
 -- Consolidated verification
 -- Every result set below must be empty.
 -- ========================================================================
@@ -2286,6 +2462,7 @@ FROM (
   UNION ALL SELECT 'onlineexam_paper_marking'
   UNION ALL SELECT 'onlineexam_result_profiles'
   UNION ALL SELECT 'onlineexam_kindergarten_mappings'
+  UNION ALL SELECT 'onlineexam_holiday_mappings'
   UNION ALL SELECT 'onlineexam_result_target_locks'
   UNION ALL SELECT 'onlineexam_result_sync'
   UNION ALL SELECT 'onlineexam_incidents'
@@ -2334,10 +2511,12 @@ FROM (
   UNION ALL SELECT 'onlineexam_paper_marking' AS `table_name`, 'id,attempt_paper_id,marking_version,raw_marks,rubric_json,remark,status,marked_by,marked_at,reviewed_by,reviewed_at,created_at' AS `expected_columns`, 12 AS `expected_count`
   UNION ALL SELECT 'onlineexam_result_profiles' AS `table_name`, 'id,onlineexam_id,adapter,name,configuration_json,is_active,created_by,created_at,updated_at' AS `expected_columns`, 9 AS `expected_count`
   UNION ALL SELECT 'onlineexam_kindergarten_mappings' AS `table_name`, 'id,onlineexam_id,paper_id,paper_section_id,assessment_id,assessment_subject_id,subject_id,concept_id,concept_stable_key,outcome_profile_json,created_at,updated_at' AS `expected_columns`, 12 AS `expected_count`
+  UNION ALL SELECT 'onlineexam_holiday_mappings' AS `table_name`, 'id,onlineexam_id,section_id,setting_id,setting_subject_id,max_score,created_at,updated_at' AS `expected_columns`, 8 AS `expected_count`
   UNION ALL SELECT 'onlineexam_result_target_locks' AS `table_name`, 'target_hash,target_descriptor,created_at,updated_at' AS `expected_columns`, 4 AS `expected_count`
-  UNION ALL SELECT 'onlineexam_result_sync' AS `table_name`, 'id,onlineexam_id,attempt_id,student_session_id,adapter,target_table,target_record_id,target_field,source_score,scaled_score,previous_value,applied_value,status,conflict_reason,error_message,reversed_at,reversed_by,reversal_reason,override_authorized_at,override_authorized_by,override_reason,source_fingerprint,idempotency_key,created_at,synced_at,updated_at' AS `expected_columns`, 26 AS `expected_count`
+  UNION ALL SELECT 'onlineexam_result_sync' AS `table_name`, 'id,onlineexam_id,attempt_id,student_session_id,adapter,target_table,target_record_id,target_field,source_score,scaled_score,previous_value,previous_metadata_json,applied_value,applied_metadata_json,status,conflict_reason,error_message,reversed_at,reversed_by,reversal_reason,override_authorized_at,override_authorized_by,override_reason,source_fingerprint,idempotency_key,created_at,synced_at,updated_at' AS `expected_columns`, 28 AS `expected_count`
   UNION ALL SELECT 'onlineexam_incidents' AS `table_name`, 'id,onlineexam_id,attempt_id,onlineexam_student_id,incident_type,severity,details,status,reported_by,resolved_by,resolved_at,created_at,updated_at' AS `expected_columns`, 13 AS `expected_count`
   UNION ALL SELECT 'onlineexam_audit_log' AS `table_name`, 'id,onlineexam_id,attempt_id,actor_id,actor_type,action,entity_type,entity_id,before_json,after_json,ip_address,created_at' AS `expected_columns`, 12 AS `expected_count`
+  UNION ALL SELECT 'holiday_assessment_scores' AS `table_name`, 'id,student_id,class_id,section_id,subject_id,session_id,term,score,max_score,score_origin,source_onlineexam_id,source_attempt_id,source_sync_id,updated_at' AS `expected_columns`, 14 AS `expected_count`
   UNION ALL SELECT 'monnify_payments' AS `table_name`, 'id,payment_reference,transaction_reference,payment_context,context_id,amount,currency,customer_email,customer_name,context_data,gateway_mode,gateway_response,status,processing_started_at,paid_at,processed_at,created_at,updated_at' AS `expected_columns`, 18 AS `expected_count`
   UNION ALL SELECT 'promotion_criteria' AS `table_name`, 'id,session_id,name,minimum_average,is_active,created_by,updated_by,created_at,updated_at' AS `expected_columns`, 9 AS `expected_count`
   UNION ALL SELECT 'promotion_criteria_classes' AS `table_name`, 'id,criteria_id,session_id,class_id,promoted_to_class_id,promoted_to_label,created_at,updated_at' AS `expected_columns`, 8 AS `expected_count`
@@ -2386,8 +2565,12 @@ FROM (
   UNION ALL SELECT 'onlineexam_paper_marking', 'UNIQUE(attempt_paper_id,marking_version)', 'attempt_paper_id,marking_version', 0
   UNION ALL SELECT 'onlineexam_result_profiles', 'UNIQUE(onlineexam_id,adapter)', 'onlineexam_id,adapter', 0
   UNION ALL SELECT 'onlineexam_kindergarten_mappings', 'UNIQUE(onlineexam_id,concept_id)', 'onlineexam_id,concept_id', 0
+  UNION ALL SELECT 'onlineexam_holiday_mappings', 'UNIQUE(onlineexam_id,section_id)', 'onlineexam_id,section_id', 0
+  UNION ALL SELECT 'onlineexam_holiday_mappings', 'INDEX(setting_id,setting_subject_id)', 'setting_id,setting_subject_id', 1
   UNION ALL SELECT 'onlineexam_result_target_locks', 'PRIMARY(target_hash)', 'target_hash', 0
   UNION ALL SELECT 'onlineexam_result_sync', 'UNIQUE(idempotency_key)', 'idempotency_key', 0
+  UNION ALL SELECT 'holiday_assessment_scores', 'INDEX(source_onlineexam_id,source_attempt_id)', 'source_onlineexam_id,source_attempt_id', 1
+  UNION ALL SELECT 'holiday_assessment_scores', 'UNIQUE(source_sync_id)', 'source_sync_id', 0
   UNION ALL SELECT 'monnify_payments', 'PRIMARY(id)', 'id', 0
   UNION ALL SELECT 'monnify_payments', 'UNIQUE(payment_reference)', 'payment_reference', 0
   UNION ALL SELECT 'monnify_payments', 'UNIQUE(transaction_reference)', 'transaction_reference', 0
@@ -2432,5 +2615,14 @@ WHERE NOT EXISTS (
     AND actual.`non_unique` = required.`non_unique`
 )
 ORDER BY required.`table_name`, required.`requirement`;
+
+SELECT 'onlineexam.result_adapter default must be standard_component' AS `incorrect_migration_column_default`
+WHERE COALESCE((
+  SELECT `COLUMN_DEFAULT`
+  FROM `INFORMATION_SCHEMA`.`COLUMNS`
+  WHERE `TABLE_SCHEMA` = DATABASE()
+    AND `TABLE_NAME` = 'onlineexam'
+    AND `COLUMN_NAME` = 'result_adapter'
+), '') <> 'standard_component';
 
 SELECT 'IMPORT FINISHED: empty missing_* result sets mean OK; any returned row requires review.' AS `status`;

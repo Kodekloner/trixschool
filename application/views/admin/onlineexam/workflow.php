@@ -1,7 +1,6 @@
 <?php
 $is_edit = !empty($exam);
 $selected_sections = (array) ($this->input->post('section_ids') !== null ? $this->input->post('section_ids') : ($is_edit ? $exam->section_ids : array()));
-$selected_adapter = set_value('result_adapter', $is_edit ? $exam->result_adapter : 'unlinked_practice');
 $selected_component = set_value('target_component', $is_edit ? $exam->target_component : '');
 $duration_minutes = 60;
 if ($is_edit && !empty($exam->duration)) {
@@ -12,9 +11,10 @@ $format_datetime = function ($value) {
     return $value ? $this->customlib->dateyyyymmddToDateTimeformat($value, false) : '';
 };
 ?>
-<div class="content-wrapper">
+<?php $this->load->view('admin/onlineexam/_assessment_styles'); ?>
+<div class="content-wrapper onlineexam-ui onlineexam-assessment-form-page">
     <section class="content-header">
-        <h1>Nigerian Online Assessment <small><?php echo $is_edit ? 'Edit academic context' : 'Create assessment'; ?></small></h1>
+        <h1>Online Assessment <small><?php echo $is_edit ? 'Edit academic context' : 'Create assessment'; ?></small></h1>
     </section>
     <section class="content">
         <?php if (!empty($workflow_error)) { ?>
@@ -26,10 +26,9 @@ $format_datetime = function ($value) {
             <?php echo $this->customlib->getCSRF(); ?>
             <input type="hidden" name="onlineexam_workflow_token" value="<?php echo html_escape($workflow_csrf); ?>">
             <div class="box box-primary">
-                <div class="box-header with-border">
+                <div class="box-header with-border assessment-box-header">
                     <h3 class="box-title">1. Academic context</h3>
                     <div class="box-tools">
-                        <span class="label label-primary">Workflow v2</span>
                         <?php if ($is_edit) { ?><span class="label label-default"><?php echo html_escape(ucwords($exam->lifecycle_status)); ?></span><?php } ?>
                     </div>
                 </div>
@@ -45,6 +44,7 @@ $format_datetime = function ($value) {
                             <div class="form-group">
                                 <label>Purpose <small class="req">*</small></label>
                                 <select name="purpose" id="purpose" class="form-control" required>
+                                    <option value="">Select purpose</option>
                                     <?php foreach ($purposes as $value => $label) { ?>
                                         <option value="<?php echo $value; ?>" <?php echo set_select('purpose', $value, $is_edit && $exam->purpose === $value); ?>><?php echo html_escape($label); ?></option>
                                     <?php } ?>
@@ -66,7 +66,7 @@ $format_datetime = function ($value) {
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label>Term <small class="req">*</small></label>
-                                <select name="term" class="form-control" required>
+                                <select name="term" id="academic_term" class="form-control" required>
                                     <option value="1st" <?php echo set_select('term', '1st', $is_edit && $exam->term === '1st'); ?>>1st Term</option>
                                     <option value="2nd" <?php echo set_select('term', '2nd', $is_edit && $exam->term === '2nd'); ?>>2nd Term</option>
                                     <option value="3rd" <?php echo set_select('term', '3rd', $is_edit && $exam->term === '3rd'); ?>>3rd Term</option>
@@ -98,10 +98,10 @@ $format_datetime = function ($value) {
                     </div>
                     <div class="form-group">
                         <label>Class arms / sections <small class="req">*</small></label>
-                        <div id="academic_sections" class="well well-sm" style="margin-bottom:0">
+                        <div id="academic_sections" class="well well-sm assessment-rule-options" style="margin-bottom:0">
                             <?php if (empty($sections)) { ?><span class="text-muted">Select a class to load its arms.</span><?php } ?>
                             <?php foreach ($sections as $section) { ?>
-                                <label class="checkbox-inline" style="margin-left:0;margin-right:18px">
+                                <label class="checkbox-inline">
                                     <input type="checkbox" name="section_ids[]" value="<?php echo $section['id']; ?>" <?php echo in_array((string) $section['id'], array_map('strval', $selected_sections), true) ? 'checked' : ''; ?>> <?php echo html_escape($section['section']); ?>
                                 </label>
                             <?php } ?>
@@ -112,32 +112,24 @@ $format_datetime = function ($value) {
             </div>
 
             <div class="box box-info">
-                <div class="box-header with-border"><h3 class="box-title">2. Existing result destination</h3></div>
+                <div class="box-header with-border"><h3 class="box-title">2. Assessment component</h3></div>
                 <div class="box-body">
-                    <div id="result_configuration_message" class="alert alert-info" style="display:none"></div>
+                    <div id="result_configuration_message" class="alert alert-info" style="<?php echo !empty($academic_configuration['message']) ? '' : 'display:none'; ?>"><?php echo !empty($academic_configuration['message']) ? html_escape($academic_configuration['message']) : ''; ?></div>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-6" id="target_component_group" style="<?php echo $academic_configuration && !empty($academic_configuration['valid']) && !empty($academic_configuration['components']) ? '' : 'display:none'; ?>">
                             <div class="form-group">
-                                <label>Destination <small class="req">*</small></label>
-                                <select name="result_adapter" id="result_adapter" class="form-control" required>
-                                    <option value="unlinked_practice" <?php echo $selected_adapter === 'unlinked_practice' ? 'selected' : ''; ?>>Unlinked practice / internal online result only</option>
-                                    <?php if ($academic_configuration && $academic_configuration['adapter'] !== 'unlinked_practice') { ?>
-                                        <option value="<?php echo html_escape($academic_configuration['adapter']); ?>" <?php echo $selected_adapter === $academic_configuration['adapter'] ? 'selected' : ''; ?>><?php echo html_escape(ucwords(str_replace('_', ' ', $academic_configuration['adapter']))); ?></option>
-                                    <?php } ?>
-                                </select>
-                                <p class="help-block">Posting a score here does not publish the report card.</p>
-                            </div>
-                        </div>
-                        <div class="col-md-6" id="target_component_group" style="<?php echo $selected_adapter === 'standard_component' ? '' : 'display:none'; ?>">
-                            <div class="form-group">
-                                <label>CA / Examination component <small class="req">*</small></label>
+                                <label>Result component <small class="req">*</small></label>
                                 <select name="target_component" id="target_component" class="form-control">
                                     <option value="">Select</option>
-                                    <?php if ($academic_configuration) { foreach ($academic_configuration['components'] as $component) { ?>
+                                    <?php if ($academic_configuration && !empty($academic_configuration['valid'])) { foreach ($academic_configuration['components'] as $component) { ?>
                                         <option value="<?php echo html_escape($component['value']); ?>" <?php echo $selected_component === $component['value'] ? 'selected' : ''; ?>><?php echo html_escape($component['label']); ?> — max <?php echo number_format($component['maximum'], 2); ?></option>
                                     <?php }} ?>
                                 </select>
+                                <p class="help-block">The available component is selected from this class's existing assessment setting.</p>
                             </div>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="help-block">Completed scores are sent automatically to the result area configured for the selected purpose and class. Official report-card publication remains separate.</p>
                         </div>
                     </div>
                 </div>
@@ -149,15 +141,14 @@ $format_datetime = function ($value) {
                     <div class="row">
                         <div class="col-md-3"><div class="form-group"><label>Opens <small class="req">*</small></label><input type="text" name="exam_from" class="form-control datetime_twelve_hour" value="<?php echo html_escape(set_value('exam_from', $is_edit ? $format_datetime($exam->exam_from) : '')); ?>" required></div></div>
                         <div class="col-md-3"><div class="form-group"><label>Closes <small class="req">*</small></label><input type="text" name="exam_to" class="form-control datetime_twelve_hour" value="<?php echo html_escape(set_value('exam_to', $is_edit ? $format_datetime($exam->exam_to) : '')); ?>" required></div></div>
-                        <div class="col-md-2"><div class="form-group"><label>Duration (minutes) <small class="req">*</small></label><input type="number" name="duration_minutes" min="1" max="1439" class="form-control" value="<?php echo html_escape(set_value('duration_minutes', $duration_minutes)); ?>" required></div></div>
-                        <div class="col-md-2"><div class="form-group"><label>Pass percentage <small class="req">*</small></label><input type="number" name="passing_percentage" min="0" max="100" step="0.01" class="form-control" value="<?php echo html_escape(set_value('passing_percentage', $is_edit ? $exam->passing_percentage : 40)); ?>" required></div></div>
-                        <div class="col-md-2"><div class="form-group"><label>Practice attempts</label><input type="number" name="attempt" min="1" class="form-control" value="<?php echo html_escape(set_value('attempt', $is_edit ? $exam->attempt : 1)); ?>"><p class="help-block">Result-bearing work is always one official attempt.</p></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Duration (minutes) <small class="req">*</small></label><input type="number" name="duration_minutes" min="1" max="1439" class="form-control" value="<?php echo html_escape(set_value('duration_minutes', $duration_minutes)); ?>" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Pass percentage <small class="req">*</small></label><input type="number" name="passing_percentage" min="0" max="100" step="0.01" class="form-control" value="<?php echo html_escape(set_value('passing_percentage', $is_edit ? $exam->passing_percentage : 40)); ?>" required></div></div>
                     </div>
                     <div class="form-group">
                         <label>Description / general instructions</label>
                         <textarea name="description" class="form-control" rows="5"><?php echo html_escape(set_value('description', $is_edit ? $exam->description : '')); ?></textarea>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group assessment-rule-options">
                         <label class="checkbox-inline"><input type="checkbox" name="is_random_question" value="1" <?php echo set_checkbox('is_random_question', '1', $is_edit && $exam->is_random_question); ?>> Randomize questions within their paper/section</label>
                         <label class="checkbox-inline"><input type="checkbox" name="is_neg_marking" value="1" <?php echo set_checkbox('is_neg_marking', '1', $is_edit && $exam->is_neg_marking); ?>> Enable negative marking for attempted wrong objective answers</label>
                         <label class="checkbox-inline"><input type="checkbox" name="is_marks_display" value="1" <?php echo set_checkbox('is_marks_display', '1', $is_edit && $exam->is_marks_display); ?>> Display marks during review</label>
@@ -176,62 +167,95 @@ $format_datetime = function ($value) {
 (function ($) {
     'use strict';
     var selectedSections = <?php echo json_encode(array_values(array_map('intval', $selected_sections))); ?>;
-    var selectedAdapter = <?php echo json_encode($selected_adapter); ?>;
     var selectedComponent = <?php echo json_encode($selected_component); ?>;
+    var configurationRequest = null;
+
+    function clearConfiguration(message) {
+        $('#target_component').empty().append($('<option>', {value: '', text: 'Select'})).prop('required', false);
+        $('#target_component_group').hide();
+        $('#result_configuration_message').toggle(!!message).text(message || '');
+    }
 
     function renderConfiguration(payload) {
         var sectionsHtml = '';
         $.each(payload.sections || [], function (_, section) {
             var checked = $.inArray(parseInt(section.id, 10), selectedSections) !== -1 ? ' checked' : '';
-            sectionsHtml += '<label class="checkbox-inline" style="margin-left:0;margin-right:18px"><input type="checkbox" name="section_ids[]" value="' + section.id + '"' + checked + '> ' + $('<div>').text(section.section).html() + '</label>';
+            sectionsHtml += '<label class="checkbox-inline"><input type="checkbox" name="section_ids[]" value="' + section.id + '"' + checked + '> ' + $('<div>').text(section.section).html() + '</label>';
         });
         $('#academic_sections').html(sectionsHtml || '<span class="text-danger">No active class arms are configured for this class.</span>');
 
         var config = payload.configuration || {};
-        var adapter = $('#result_adapter');
-        adapter.find('option:not([value="unlinked_practice"])').remove();
-        if (config.adapter && config.adapter !== 'unlinked_practice') {
-            var adapterLabel = config.adapter.replace(/_/g, ' ').replace(/\b\w/g, function (letter) { return letter.toUpperCase(); });
-            adapter.append($('<option>', {value: config.adapter, text: adapterLabel}));
-            if (selectedAdapter === config.adapter) {
-                adapter.val(selectedAdapter);
-            }
-        }
+        var availableComponents = config.valid ? (config.components || []) : [];
         var component = $('#target_component').empty().append($('<option>', {value: '', text: 'Select'}));
-        $.each(config.components || [], function (_, item) {
+        $.each(availableComponents, function (_, item) {
             component.append($('<option>', {value: item.value, text: item.label + ' — max ' + parseFloat(item.maximum).toFixed(2)}));
         });
         component.val(selectedComponent);
-        var message = config.message || (config.adapter === 'standard_component' ? 'The CA names and maximum scores above come from the class CA Setting.' : '');
+        if (!component.val()) {
+            selectedComponent = '';
+        }
+        var hasComponents = availableComponents.length > 0;
+        $('#target_component_group').toggle(hasComponents);
+        component.prop('required', hasComponents);
+        var message = config.message || (hasComponents ? 'The component names and maximum scores come from the class assessment setting.' : '');
         $('#result_configuration_message').toggle(!!message).text(message);
-        toggleComponent();
     }
 
-    function loadConfiguration() {
+    function selectedSectionIds() {
+        return $('#academic_sections input[name="section_ids[]"]:checked').map(function () {
+            return parseInt(this.value, 10);
+        }).get();
+    }
+
+    function loadConfiguration(resetSections) {
         var classId = $('#academic_class_id').val();
-        if (!classId) {
+        var subjectId = $('#academic_subject_id').val();
+        var purpose = $('#purpose').val();
+        if (resetSections) {
+            selectedSections = [];
+            selectedComponent = '';
+            $('#academic_sections').html('<span class="text-muted">Select a class and subject to load available arms.</span>');
+        } else {
+            selectedSections = selectedSectionIds();
+        }
+        if (!classId || !subjectId || !purpose) {
+            clearConfiguration('Select a purpose, class and subject to load the available result component.');
             return;
         }
-        $.getJSON('<?php echo site_url('admin/onlineexam/academicconfiguration'); ?>', {
+        if (!resetSections) {
+            selectedComponent = $('#target_component').val() || selectedComponent;
+        }
+        if (configurationRequest) {
+            configurationRequest.abort();
+        }
+        var request = configurationRequest = $.getJSON('<?php echo site_url('admin/onlineexam/academicconfiguration'); ?>', {
             class_id: classId,
-            subject_id: $('#academic_subject_id').val(),
-            session_id: $('#academic_session_id').val()
+            subject_id: subjectId,
+            session_id: $('#academic_session_id').val(),
+            term: $('#academic_term').val(),
+            purpose: purpose,
+            section_ids: selectedSections
         }).done(function (response) {
             if (response.status) {
                 renderConfiguration(response);
-                selectedSections = [];
-                selectedAdapter = 'unlinked_practice';
-                selectedComponent = '';
+            }
+        }).fail(function (xhr, status) {
+            if (status === 'abort') {
+                return;
+            }
+            var message = xhr.responseJSON && xhr.responseJSON.message
+                ? xhr.responseJSON.message
+                : 'The academic configuration could not be loaded. Check the selected class, subject and purpose.';
+            clearConfiguration(message);
+        }).always(function () {
+            if (configurationRequest === request) {
+                configurationRequest = null;
             }
         });
     }
 
-    function toggleComponent() {
-        $('#target_component_group').toggle($('#result_adapter').val() === 'standard_component');
-    }
-
-    $('#academic_class_id, #academic_subject_id, #academic_session_id').on('change', loadConfiguration);
-    $('#result_adapter').on('change', toggleComponent);
-    toggleComponent();
+    $('#academic_class_id').on('change', function () { loadConfiguration(true); });
+    $('#academic_subject_id, #academic_session_id, #academic_term, #purpose').on('change', function () { loadConfiguration(false); });
+    $(document).on('change', '#academic_sections input[name="section_ids[]"]', function () { loadConfiguration(false); });
 })(jQuery);
 </script>

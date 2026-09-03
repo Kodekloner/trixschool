@@ -283,6 +283,46 @@ class Onlineexamoperations_model extends CI_Model
         if (empty($papers)) {
             return $this->failure('papers_missing', 'The frozen assessment does not contain any active papers.');
         }
+        $active_papers = 0;
+        foreach ($papers as $paper) {
+            if ((isset($paper['is_active']) && (int) $paper['is_active'] !== 1)) {
+                continue;
+            }
+            $active_papers++;
+            if ($paper['delivery_mode'] !== 'cbt' || !in_array($paper['paper_type'], array('objective', 'theory'), true)) {
+                return $this->failure('retired_paper_type', 'Only Objective/Theory CBT papers can receive an official attempt.');
+            }
+            $allowed_question_types = array(
+                'singlechoice', 'multichoice', 'true_false', 'short_answer',
+                'numeric', 'matching', 'ordering', 'long_answer'
+            );
+            $question_count = $this->db->where('onlineexam_id', (int) $onlineexam_id)
+                ->where('revision', (int) $exam['revision'])
+                ->where('paper_id', (int) $paper['id'])
+                ->count_all_results('onlineexam_question_snapshots');
+            $unsupported_count = $this->db->where('onlineexam_id', (int) $onlineexam_id)
+                ->where('revision', (int) $exam['revision'])
+                ->where('paper_id', (int) $paper['id'])
+                ->where_not_in('question_type', $allowed_question_types)
+                ->count_all_results('onlineexam_question_snapshots');
+            if ($question_count < 1 || $unsupported_count > 0) {
+                return $this->failure('retired_response_type', 'The frozen paper contains no supported compact CBT questions.');
+            }
+            if ($paper['paper_type'] === 'objective'
+                && $this->db->where('onlineexam_id', (int) $onlineexam_id)
+                    ->where('revision', (int) $exam['revision'])
+                    ->where('paper_id', (int) $paper['id'])
+                    ->where('question_type', 'long_answer')
+                    ->count_all_results('onlineexam_question_snapshots') > 0) {
+                return $this->failure('retired_response_type', 'Objective papers cannot contain Theory questions.');
+            }
+        }
+        if ($active_papers < 1) {
+            return $this->failure('papers_missing', 'The frozen assessment does not contain any active papers.');
+        }
+        if ($create_makeup) {
+            return $this->failure('makeup_attempts_retired', 'Void the existing attempt before preparing an authorized replacement.');
+        }
 
         $this->db->trans_begin();
         // Serialize candidate-level attempt allocation so two marker screens
@@ -303,23 +343,14 @@ class Onlineexamoperations_model extends CI_Model
             ->get('onlineexam_candidate_attempts')
             ->result_array();
         $latest = empty($attempts) ? null : $attempts[0];
-        $is_practice = $exam['result_adapter'] === 'unlinked_practice';
         $accommodation = $this->db->where('onlineexam_id', (int) $onlineexam_id)
             ->where('onlineexam_student_id', (int) $onlineexam_student_id)
             ->limit(1)
             ->get('onlineexam_accommodations')
             ->row_array();
-        $allowed_attempts = $is_practice ? max(1, (int) $exam['attempt']) : 1;
-        $allowed_attempts += empty($accommodation) ? 0 : (int) $accommodation['makeup_attempts'];
-        if ($create_makeup && (empty($accommodation['makeup_expires_at']) || strtotime($accommodation['makeup_expires_at']) <= time())) {
-            $this->db->trans_rollback();
-            return $this->failure('makeup_window_closed', 'Set a future make-up closing time before preparing another CBT attempt.');
-        }
-
-        // Existing work is always resumed. A completed attempt advances only
-        // after the caller explicitly requests a previously-authorized makeup;
-        // ordinary page refreshes therefore remain idempotent.
-        if (!empty($latest) && ($latest['status'] !== 'completed' || !$create_makeup)) {
+        // Existing work is always returned. Staff must void it (with a full
+        // audit/reversal) before a replacement attempt can be created.
+        if (!empty($latest)) {
             $this->ensureAttemptPaperRows($latest['id'], $papers);
             if ($this->db->trans_status() === false) {
                 $this->db->trans_rollback();
@@ -328,7 +359,7 @@ class Onlineexamoperations_model extends CI_Model
             $this->db->trans_commit();
             return array('success' => true, 'attempt' => $latest, 'idempotent' => true);
         }
-        if (count($attempts) >= $allowed_attempts) {
+        if (count($attempts) >= 1) {
             $this->db->trans_rollback();
             return $this->failure('attempt_limit_reached', 'No authorized official attempts remain for this candidate.');
         }
@@ -339,9 +370,7 @@ class Onlineexamoperations_model extends CI_Model
             ->row_array();
         $attempt_no = empty($max_attempt['number']) ? 1 : ((int) $max_attempt['number'] + 1);
         $now = date('Y-m-d H:i:s');
-        $deadline = $attempt_no > 1 && !empty($accommodation['makeup_expires_at'])
-            ? $accommodation['makeup_expires_at']
-            : (!empty($exam['exam_to']) ? $exam['exam_to'] : $now);
+        $deadline = !empty($exam['exam_to']) ? $exam['exam_to'] : $now;
         $payload = array(
             'onlineexam_id' => (int) $onlineexam_id,
             'onlineexam_student_id' => (int) $onlineexam_student_id,
@@ -366,10 +395,8 @@ class Onlineexamoperations_model extends CI_Model
             return $this->failure('database_error', 'The official paper attempt could not be created.');
         }
         $this->db->trans_commit();
-        if ($attempt_no > 1) {
-            $this->load->model('onlineexamattempt_model');
-            $this->onlineexamattempt_model->refreshAssessmentLifecycle((int) $onlineexam_id);
-        }
+        $this->load->model('onlineexamattempt_model');
+        $this->onlineexamattempt_model->refreshAssessmentLifecycle((int) $onlineexam_id);
         $payload['id'] = $attempt_id;
         return array('success' => true, 'attempt' => $payload, 'idempotent' => false);
     }
@@ -382,6 +409,8 @@ class Onlineexamoperations_model extends CI_Model
      */
     public function saveManualPaperScore($onlineexam_id, $attempt_id, $paper_id, $raw_marks, $rubric, $remark, $status, $actor_id, array $scope = array())
     {
+        return $this->failure('offline_paper_marking_retired', 'Offline paper-score entry is retired; mark individual Theory answers instead.');
+
         if (!$this->db->table_exists('onlineexam_paper_marking')) {
             return array(
                 'success' => false,
@@ -544,11 +573,8 @@ class Onlineexamoperations_model extends CI_Model
         if ($extra_time < 0 || $extra_time > 1440) {
             return $this->failure('invalid_extra_time', 'Extra time must be between 0 and 1,440 minutes.');
         }
-        if ($makeups < 0 || $makeups > 20) {
-            return $this->failure('invalid_makeup_count', 'Authorized make-up attempts must be between 0 and 20.');
-        }
-        if ($makeups > 0 && (empty($makeup_expires_at) || strtotime($makeup_expires_at) <= time())) {
-            return $this->failure('invalid_makeup_window', 'A future make-up closing time is required when make-up attempts are authorized.');
+        if ($makeups !== 0 || $makeup_expires_at !== null) {
+            return $this->failure('makeup_attempts_retired', 'Make-up counters are retired. Void an attempt before creating its audited replacement.');
         }
         if ($notes !== null && mb_strlen($notes) > 5000) {
             return $this->failure('notes_too_long', 'Accommodation notes must not exceed 5,000 characters.');
@@ -565,8 +591,8 @@ class Onlineexamoperations_model extends CI_Model
             'onlineexam_id' => (int) $onlineexam_id,
             'onlineexam_student_id' => (int) $onlineexam_student_id,
             'extra_time_minutes' => $extra_time,
-            'makeup_attempts' => $makeups,
-            'makeup_expires_at' => $makeups > 0 ? $makeup_expires_at : null,
+            'makeup_attempts' => 0,
+            'makeup_expires_at' => null,
             'notes' => $notes === '' ? null : $notes,
             'authorized_by' => (int) $actor_id,
             'updated_at' => $now,
@@ -1384,7 +1410,11 @@ class Onlineexamoperations_model extends CI_Model
             ->get('onlineexam')
             ->row_array();
         if (empty($exam)) {
-            return $this->failure('assessment_not_found', 'The localized assessment was not found.');
+            return $this->failure('assessment_not_found', 'The assessment was not found.');
+        }
+        $this->load->model('onlineexamattempt_model');
+        if (!$this->onlineexamattempt_model->isSupportedAssessmentContext((object) $exam)) {
+            return $this->failure('historical_assessment_read_only', 'This historical assessment is read-only.');
         }
 
         if (isset($scope['allowed_onlineexam_ids'])) {

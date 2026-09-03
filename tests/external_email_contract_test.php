@@ -456,7 +456,8 @@ foreach (array($standaloneSql, $consolidatedSql) as $sql) {
     }
 }
 external_email_contract_assert(
-    strpos($consolidatedSql, '126 through 134') !== false
+    preg_match('/126 through (\d+)/', $consolidatedSql, $bundleMigrationMatch) === 1
+        && (int) $bundleMigrationMatch[1] >= 134
         && strpos($consolidatedSql, '134_add_external_email_notifications.php') !== false,
     'The all-school import must advertise and include migration 134.'
 );

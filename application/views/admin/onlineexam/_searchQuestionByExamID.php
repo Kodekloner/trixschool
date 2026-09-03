@@ -1,8 +1,4 @@
-<style type="text/css">
-.inpwidth40{width: 50px;height: 20px;}
-</style>
 <?php
-
 if (!empty($workflow_exam) && !empty($questionList)) {
     $paper_names = array();
     $section_names = array();
@@ -12,106 +8,65 @@ if (!empty($workflow_exam) && !empty($questionList)) {
             $section_names[(int) $paper_section['id']] = $paper_section['title'];
         }
     }
-
-    foreach ($questionList as $question_value) {
-        $assigned = (int) $question_value->onlineexam_question_id > 0;
-        $assignment_text = '';
-        if ($assigned) {
-            $assignment_text = isset($paper_names[(int) $question_value->onlineexam_paper_id]) ? $paper_names[(int) $question_value->onlineexam_paper_id] : 'Unknown paper';
-            if (!empty($question_value->onlineexam_paper_section_id) && isset($section_names[(int) $question_value->onlineexam_paper_section_id])) {
-                $assignment_text .= ' / ' . $section_names[(int) $question_value->onlineexam_paper_section_id];
-            }
-        }
-        ?>
-        <div class="panel panel-<?php echo $assigned ? 'success' : 'default'; ?> workflow-question-row" data-question-id="<?php echo (int) $question_value->id; ?>">
-            <div class="panel-heading">
-                <strong>Question <?php echo (int) $question_value->id; ?></strong>
-                <span class="label label-default"><?php echo html_escape(isset($question_type[$question_value->question_type]) ? $question_type[$question_value->question_type] : $question_value->question_type); ?></span>
-                <?php if ($assigned) { ?><span class="label label-success pull-right">Assigned: <?php echo html_escape($assignment_text); ?></span><?php } ?>
-            </div>
-            <div class="panel-body">
-                <div class="workflow-question-text"><?php echo readmorelink($question_value->question, site_url('admin/question/read/' . $question_value->id)); ?></div>
-                <div class="row pt10">
-                    <div class="col-md-2"><div class="form-group"><label>Marks</label><input type="number" step="0.01" min="0.01" class="form-control question-marks" value="<?php echo html_escape($question_value->onlineexam_question_marks); ?>"></div></div>
-                    <div class="col-md-2"><div class="form-group"><label>Negative mark</label><input type="number" step="0.01" min="0" class="form-control question-neg-marks" value="<?php echo html_escape($question_value->onlineexam_question_neg_marks); ?>" <?php echo empty($workflow_exam->is_neg_marking) ? 'disabled' : ''; ?>></div></div>
-                    <div class="col-md-2"><div class="form-group"><label>Order</label><input type="number" min="0" class="form-control question-order" value="<?php echo (int) $question_value->onlineexam_question_display_order; ?>"></div></div>
-                    <div class="col-md-6"><div class="form-group"><label>Marking scheme / rubric note</label><input type="text" class="form-control question-scheme" value="<?php echo html_escape($question_value->onlineexam_question_marking_scheme); ?>"></div></div>
-                </div>
-                <div class="clearfix">
-                    <label class="checkbox-inline"><input type="checkbox" class="question-compulsory" value="1" <?php echo $question_value->onlineexam_question_is_compulsory ? 'checked' : ''; ?>> Compulsory question</label>
-                    <?php if ($workflow_editable && $this->rbac->hasPrivilege('add_questions_in_exam', 'can_edit')) { ?>
-                        <button type="button" class="btn btn-primary btn-sm pull-right workflow-question-save" data-question-id="<?php echo (int) $question_value->id; ?>"><i class="fa fa-save"></i> <?php echo $assigned ? 'Update assignment' : 'Assign question'; ?></button>
+    ?>
+    <div class="table-responsive onlineexam-scroll">
+        <table class="table table-striped table-bordered table-condensed question-assignment-table">
+            <thead>
+                <tr>
+                    <th class="question-text-cell">Question</th>
+                    <th>Type</th>
+                    <th class="question-assigned-cell">Assigned paper / section</th>
+                    <th class="question-number-cell">Marks</th>
+                    <th class="question-number-cell">Negative mark</th>
+                    <th class="question-number-cell">Order</th>
+                    <th class="question-scheme-cell">Marking scheme</th>
+                    <th>Required</th>
+                    <th class="question-actions-cell">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($questionList as $question_value) {
+                $assigned = (int) $question_value->onlineexam_question_id > 0;
+                $assignment_text = '';
+                if ($assigned) {
+                    $assignment_text = isset($paper_names[(int) $question_value->onlineexam_paper_id])
+                        ? $paper_names[(int) $question_value->onlineexam_paper_id]
+                        : 'Unknown paper';
+                    if (!empty($question_value->onlineexam_paper_section_id)
+                        && isset($section_names[(int) $question_value->onlineexam_paper_section_id])) {
+                        $assignment_text .= ' / ' . $section_names[(int) $question_value->onlineexam_paper_section_id];
+                    }
+                }
+                ?>
+                <tr class="workflow-question-row <?php echo $assigned ? 'success' : ''; ?>" data-question-id="<?php echo (int) $question_value->id; ?>">
+                    <td class="question-text-cell">
+                        <strong>Question <?php echo (int) $question_value->id; ?></strong>
+                        <div class="workflow-question-text"><?php echo readmorelink($question_value->question, site_url('admin/question/read/' . $question_value->id)); ?></div>
+                    </td>
+                    <td><?php echo html_escape(isset($question_type[$question_value->question_type]) ? $question_type[$question_value->question_type] : $question_value->question_type); ?></td>
+                    <td class="question-assigned-cell">
                         <?php if ($assigned) { ?>
-                            <button type="button" class="btn btn-danger btn-sm pull-right workflow-question-remove" style="margin-right:8px" data-assignment-id="<?php echo (int) $question_value->onlineexam_question_id; ?>"><i class="fa fa-remove"></i> Remove</button>
+                            <span class="label label-success"><?php echo html_escape($assignment_text); ?></span>
+                        <?php } else { ?>
+                            <span class="text-muted">Not assigned</span>
                         <?php } ?>
-                    <?php } ?>
-                </div>
-            </div>
-        </div>
-        <?php
-    }
-}
-
-if (empty($workflow_exam) && !empty($questionList)) {
-
-    foreach ($questionList as $question_key => $question_value) {
-        $checkbox_status = "";
-        if ($question_value->onlineexam_question_id != 0) {
-            $checkbox_status = "checked";
-        }
-
-        ?>
-                 <div class="">
-                 <div class="row">
-                    <div class="col-xs-12 col-md-12 section-box">
-                        <?php if ($this->rbac->hasPrivilege('add_questions_in_exam', 'can_edit')) {?>
-                         <div class="checkbox" style="margin-left: 20px"><input type="checkbox" class="question_chk" value="<?php echo $question_value->id; ?>" <?php echo $checkbox_status; ?>></div>
-                     <?php }?>
-                       <div class="rltpaddleft">
-                      <span class="font-weight-bold"> <?php echo $this->lang->line('q_id')?>: <?php echo $question_value->id;?></span><br/>
-                        <?php echo readmorelink($question_value->question, site_url('admin/question/read/' . $question_value->id)); ?>
-                       <div class="pt5">
-        <div class="row">
-        <div class="col-lg-2 col-md-6 col-sm-12">
-            <div>
-               <label for="email"><?php echo $this->lang->line('marks')?>:</label>
-               <input type="text" name="question_marks" value="<?php echo $question_value->onlineexam_question_marks; ?>" placeholder="question marks" class="inpwidth40">
-            </div>
-
-        </div>
-         <div class="col-lg-2 col-md-6 col-sm-12">
-            <div>
-               <label for="email"><?php echo $this->lang->line('negative_marks')?>:</label>
-               <input type="text" name="question_neg_marks" value="<?php echo $question_value->onlineexam_question_neg_marks; ?>" placeholder="question marks" class="inpwidth40">
-            </div>
-
-        </div>
-        <div class="col-lg-2 col-md-6 col-sm-12">
-        <label for="email"><?php echo $this->lang->line('question_type')?>:</label>
-        <?php echo ($question_value->question_type != "")?$question_type[$question_value->question_type]:""; ?>
-       </div>
-        <div class="col-lg-2 col-md-6 col-sm-12">
-        <label for="email"><?php echo $this->lang->line('level')?>:</label>
-        <?php echo ($question_value->level !="")? $question_level[$question_value->level]:""; ?>
-        </div>
-
-        <div class="col-lg-4 col-md-6 col-sm-12">
-            <label for="email"><?php echo $this->lang->line('subject') ?>:</label>
-                <?php echo $question_value->subject_name; ?>
-        </div>
-    </div><!--./row-->
-</div>
-
-                     </div>
-
-                    </div>
-                </div>
-                <div class="hrexam"></div>
-            </div>
+                    </td>
+                    <td class="question-number-cell"><input type="number" step="0.01" min="0.01" class="form-control input-sm question-marks" aria-label="Question marks" value="<?php echo html_escape($question_value->onlineexam_question_marks); ?>"></td>
+                    <td class="question-number-cell"><input type="number" step="0.01" min="0" class="form-control input-sm question-neg-marks" aria-label="Negative mark" value="<?php echo html_escape($question_value->onlineexam_question_neg_marks); ?>" <?php echo empty($workflow_exam->is_neg_marking) ? 'disabled' : ''; ?>></td>
+                    <td class="question-number-cell"><input type="number" min="0" class="form-control input-sm question-order" aria-label="Display order" value="<?php echo (int) $question_value->onlineexam_question_display_order; ?>"></td>
+                    <td class="question-scheme-cell"><input type="text" class="form-control input-sm question-scheme" aria-label="Marking scheme" value="<?php echo html_escape($question_value->onlineexam_question_marking_scheme); ?>"></td>
+                    <td><label class="checkbox-inline"><input type="checkbox" class="question-compulsory" value="1" <?php echo $question_value->onlineexam_question_is_compulsory ? 'checked' : ''; ?>> Compulsory</label></td>
+                    <td class="question-actions-cell">
+                        <?php if ($workflow_editable && $this->rbac->hasPrivilege('add_questions_in_exam', 'can_edit')) { ?>
+                            <button type="button" class="btn btn-primary btn-xs workflow-question-save" data-question-id="<?php echo (int) $question_value->id; ?>"><i class="fa fa-save"></i> <?php echo $assigned ? 'Update' : 'Assign'; ?></button>
+                            <?php if ($assigned) { ?><button type="button" class="btn btn-danger btn-xs workflow-question-remove" data-assignment-id="<?php echo (int) $question_value->onlineexam_question_id; ?>"><i class="fa fa-remove"></i> Remove</button><?php } ?>
+                        <?php } else { ?>—<?php } ?>
+                    </td>
+                </tr>
+            <?php } ?>
+            </tbody>
+        </table>
+    </div>
     <?php
 }
-
-}
-
 ?>
-</form>

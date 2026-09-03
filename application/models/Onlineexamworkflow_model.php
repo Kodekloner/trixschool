@@ -3,7 +3,7 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
- * Domain model for the Nigerian online-assessment workflow.
+ * Domain model for the compact online-assessment flow.
  *
  * Legacy Onlineexam_model remains the reader/writer for workflow_version=1.
  * This model owns v2 validation, immutable revision snapshots and final score
@@ -13,16 +13,15 @@ class Onlineexamworkflow_model extends CI_Model
 {
     const WORKFLOW_VERSION = 2;
 
-    protected $purposes = array('ca', 'midterm', 'terminal_exam', 'promotion_exam', 'mock', 'practice');
-    protected $adapters = array('standard_component', 'british_outcome', 'kindergarten_concept', 'unlinked_practice');
+    protected $purposes = array('ca', 'midterm', 'holiday', 'kindergarten');
+    protected $adapters = array('standard_component', 'british_outcome', 'kindergarten_concept', 'holiday_assessment');
     protected $terms = array('1st', '2nd', '3rd');
-    protected $paper_types = array('objective', 'theory', 'practical', 'oral', 'aural', 'project', 'custom');
-    protected $delivery_modes = array('cbt', 'paper', 'hybrid');
+    protected $paper_types = array('objective', 'theory');
+    protected $delivery_modes = array('cbt');
     protected $answer_rules = array('all', 'answer_any', 'compulsory_plus_choice');
     protected $localized_question_types = array(
         'singlechoice', 'multichoice', 'true_false', 'short_answer', 'numeric',
-        'matching', 'ordering', 'long_answer', 'file_upload', 'oral', 'aural',
-        'practical', 'project', 'descriptive'
+        'matching', 'ordering', 'long_answer'
     );
 
     public function __construct()
@@ -58,14 +57,14 @@ class Onlineexamworkflow_model extends CI_Model
             return 'british_outcome';
         }
 
-        return !empty($assignment) ? 'standard_component' : 'unlinked_practice';
+        return !empty($assignment) ? 'standard_component' : null;
     }
 
     /**
      * Returns the configured CA slots and derived examination maximum for a
      * class. It never assumes 40/60; resultsetting remains authoritative.
      */
-    public function getStandardDestinations($class_id)
+    public function getStandardDestinations($class_id, $purpose = null)
     {
         $row = $this->db->select('assigncatoclass.ResultType, assigncatoclass.ResultSettingID, resultsetting.*')
             ->from('assigncatoclass')
@@ -107,14 +106,32 @@ class Onlineexamworkflow_model extends CI_Model
         if ($ca_total < 0 || $ca_total > 100) {
             $errors[] = 'Enabled CA maximums must total between 0 and 100.';
         }
-        if ($exam_maximum <= 0) {
+        if (!in_array($purpose, array('ca', 'midterm'), true) && $exam_maximum <= 0) {
             $errors[] = 'The CA settings leave no score available for the examination component.';
-        } else {
+        } elseif (!in_array($purpose, array('ca', 'midterm'), true)) {
             $destinations[] = array(
                 'component' => 'exam',
                 'title' => 'Examination',
                 'maximum' => round($exam_maximum, 2),
             );
+        }
+
+        if (in_array($purpose, array('ca', 'midterm'), true)) {
+            $normalized = $this->onlineexam_scoring->normalizeMidtermSlots($row['MidTermCaToUse'], $number_of_ca);
+            if (!empty($normalized['invalid'])) {
+                $errors[] = 'MidTermCaToUse contains an invalid CA slot.';
+            }
+            $destinations = $this->onlineexam_scoring->filterStandardComponents(
+                $destinations,
+                $purpose,
+                $row['MidTermCaToUse'],
+                $number_of_ca
+            );
+            if (empty($destinations)) {
+                $errors[] = $purpose === 'midterm'
+                    ? 'No positive-score CA slot is configured for Midterm.'
+                    : 'No positive-score Continuous Assessment slot remains after Midterm slots are reserved.';
+            }
         }
 
         return array(
@@ -154,6 +171,19 @@ class Onlineexamworkflow_model extends CI_Model
         if (!in_array($exam['result_adapter'], $this->adapters, true)) {
             $errors[] = 'Result adapter is invalid.';
         }
+        $purpose_adapters = array(
+            'ca' => 'standard_component',
+            'midterm' => 'standard_component',
+            'holiday' => 'holiday_assessment',
+            'kindergarten' => 'kindergarten_concept',
+        );
+        if (isset($purpose_adapters[$exam['purpose']])
+            && $exam['result_adapter'] !== $purpose_adapters[$exam['purpose']]) {
+            $errors[] = 'The result destination does not match the selected assessment purpose.';
+        }
+        if ((int) $exam['attempt'] !== 1) {
+            $errors[] = 'Result-bearing online assessments permit one official attempt only.';
+        }
 
         $sections = $this->db->where('onlineexam_id', (int) $onlineexam_id)->get('onlineexam_class_sections')->result_array();
         if (empty($sections)) {
@@ -169,6 +199,18 @@ class Onlineexamworkflow_model extends CI_Model
                     $errors[] = 'A selected section does not belong to the assessment class.';
                     break;
                 }
+            }
+            $this->load->model('onlineexam_model');
+            $section_ids = array_map(function ($section) {
+                return (int) $section['section_id'];
+            }, $sections);
+            if (!$this->onlineexam_model->subjectIsAssignedToAcademicScope(
+                $exam['class_id'],
+                $section_ids,
+                $exam['subject_id'],
+                $exam['session_id']
+            )) {
+                $errors[] = 'The assessment subject is not assigned to every selected class arm in this academic session.';
             }
         }
 
@@ -532,7 +574,7 @@ class Onlineexamworkflow_model extends CI_Model
             }
 
             $target_maximum = (float) $attempt['target_max_score'];
-            if ($target_maximum <= 0 && in_array($attempt['result_adapter'], array('british_outcome', 'kindergarten_concept', 'unlinked_practice'), true)) {
+            if ($target_maximum <= 0 && in_array($attempt['result_adapter'], array('british_outcome', 'kindergarten_concept', 'holiday_assessment'), true)) {
                 $target_maximum = 100.0;
             }
             $calculation = $this->onlineexam_scoring->calculateAssessment($paper_inputs, $target_maximum);
@@ -597,7 +639,7 @@ class Onlineexamworkflow_model extends CI_Model
         );
 
         if ($exam['result_adapter'] === 'standard_component') {
-            $configuration = $this->getStandardDestinations($exam['class_id']);
+            $configuration = $this->getStandardDestinations($exam['class_id'], $exam['purpose']);
             if (!$configuration['valid']) {
                 $errors = array_merge($errors, $configuration['errors']);
                 return $snapshot;
@@ -639,10 +681,101 @@ class Onlineexamworkflow_model extends CI_Model
                 $errors[] = 'At least one Kindergarten concept mapping is required.';
             }
             $snapshot['mappings'] = $mappings;
-        } elseif ($exam['result_adapter'] !== 'unlinked_practice') {
+        } elseif ($exam['result_adapter'] === 'holiday_assessment') {
+            $snapshot = $this->validateHolidayResultTarget($exam, $snapshot, $errors);
+        } else {
             $errors[] = 'Result adapter is invalid.';
         }
 
+        return $snapshot;
+    }
+
+    /**
+     * Revalidate every arm-specific Holiday destination at publication time.
+     * The identifiers saved with the draft are frozen into the revision only
+     * after they still match the live Holiday configuration.
+     */
+    protected function validateHolidayResultTarget(array $exam, array $snapshot, array &$errors)
+    {
+        if (!$this->db->table_exists('onlineexam_holiday_mappings')
+            || !$this->db->table_exists('holiday_assessment_settings')
+            || !$this->db->table_exists('holiday_assessment_subjects')) {
+            $errors[] = 'Holiday Assessment mapping tables are not installed.';
+            return $snapshot;
+        }
+
+        $selected_sections = $this->db->select('section_id')
+            ->where('onlineexam_id', (int) $exam['id'])
+            ->order_by('section_id', 'ASC')
+            ->get('onlineexam_class_sections')
+            ->result_array();
+        $selected_sections = array_map(function ($row) {
+            return (int) $row['section_id'];
+        }, $selected_sections);
+        $stored = $this->db->where('onlineexam_id', (int) $exam['id'])
+            ->order_by('section_id', 'ASC')
+            ->get('onlineexam_holiday_mappings')
+            ->result_array();
+        if (empty($stored) || count($stored) !== count($selected_sections)) {
+            $errors[] = 'Every selected class arm must have one Holiday Assessment destination.';
+            return $snapshot;
+        }
+
+        $by_section = array();
+        $target_maximum = null;
+        foreach ($stored as $mapping) {
+            $section_id = (int) $mapping['section_id'];
+            if (isset($by_section[$section_id]) || !in_array($section_id, $selected_sections, true)) {
+                $errors[] = 'Holiday Assessment mappings do not match the selected class arms.';
+                return $snapshot;
+            }
+            $rows = $this->db->select('has.id AS setting_id, hsub.id AS setting_subject_id, hsub.max_score')
+                ->from('holiday_assessment_settings has')
+                ->join('holiday_assessment_subjects hsub', 'hsub.setting_id = has.id')
+                ->where('has.id', (int) $mapping['setting_id'])
+                ->where('hsub.id', (int) $mapping['setting_subject_id'])
+                ->where('has.class_id', (int) $exam['class_id'])
+                ->where('has.section_id', $section_id)
+                ->where('has.session_id', (int) $exam['session_id'])
+                ->where('has.term', $exam['term'])
+                ->where('has.enabled', 1)
+                ->where('hsub.subject_id', (int) $exam['subject_id'])
+                ->limit(2)
+                ->get()
+                ->result_array();
+            if (count($rows) !== 1 || (float) $rows[0]['max_score'] <= 0
+                || abs((float) $rows[0]['max_score'] - (float) $mapping['max_score']) > 0.001) {
+                $errors[] = 'A Holiday Assessment destination changed after this draft was configured. Re-save the academic setup.';
+                return $snapshot;
+            }
+            $mapping_maximum = round((float) $mapping['max_score'], 2);
+            if ($target_maximum !== null && abs($target_maximum - $mapping_maximum) > 0.001) {
+                $errors[] = 'Selected class arms use different Holiday Assessment maximums.';
+                return $snapshot;
+            }
+            $target_maximum = $mapping_maximum;
+            $by_section[$section_id] = array(
+                'section_id' => $section_id,
+                'setting_id' => (int) $mapping['setting_id'],
+                'setting_subject_id' => (int) $mapping['setting_subject_id'],
+                'max_score' => $mapping_maximum,
+            );
+        }
+
+        if (array_diff($selected_sections, array_keys($by_section))) {
+            $errors[] = 'Every selected class arm must have one Holiday Assessment destination.';
+            return $snapshot;
+        }
+        if ((float) $exam['target_max_score'] > 0
+            && abs((float) $exam['target_max_score'] - (float) $target_maximum) > 0.001) {
+            $errors[] = 'The saved Holiday Assessment maximum no longer matches its arm configuration.';
+            return $snapshot;
+        }
+
+        $snapshot['target_component'] = null;
+        $snapshot['target_title'] = 'Holiday Assessment';
+        $snapshot['target_maximum'] = $target_maximum;
+        $snapshot['holiday_mappings'] = array_values($by_section);
         return $snapshot;
     }
 
@@ -742,11 +875,14 @@ class Onlineexamworkflow_model extends CI_Model
             ->order_by('onlineexam_questions.display_order', 'ASC')
             ->get()
             ->result_array();
-        if (in_array($paper['delivery_mode'], array('cbt', 'hybrid'), true) && empty($questions)) {
-            $errors[] = strtoupper($paper['delivery_mode']) . ' paper ' . $paper['title'] . ' must contain questions.';
+        if ($paper['delivery_mode'] === 'cbt' && empty($questions)) {
+            $errors[] = 'CBT paper ' . $paper['title'] . ' must contain questions.';
             return;
         }
         foreach ($questions as $question) {
+            if ($paper['paper_type'] === 'objective' && $question['source_question_type'] === 'long_answer') {
+                $errors[] = 'Objective paper ' . $paper['title'] . ' cannot contain Theory questions.';
+            }
             $this->validateAuthoredQuestionDefinition($question, $paper, $errors);
             if (!empty($question['paper_section_id'])) {
                 $valid = false;
@@ -775,6 +911,14 @@ class Onlineexamworkflow_model extends CI_Model
     {
         if (trim((string) $question['source_question_text']) === '') {
             $errors[] = 'A question in ' . $paper['title'] . ' has no question text.';
+        }
+        if (!in_array($question['source_question_type'], $this->localized_question_types, true)) {
+            $errors[] = 'A question in ' . $paper['title'] . ' has an unsupported response type.';
+            return;
+        }
+        if ($question['source_question_type'] === 'long_answer'
+            && trim((string) $question['marking_scheme']) === '') {
+            $errors[] = 'A Theory question in ' . $paper['title'] . ' has no marking scheme.';
         }
         if (empty($question['authoring_json'])) {
             return;
@@ -827,9 +971,9 @@ class Onlineexamworkflow_model extends CI_Model
                 }
             }
         }
-        if (in_array($type, array('long_answer', 'file_upload', 'oral', 'aural', 'practical', 'project'), true)
+        if ($type === 'long_answer'
             && trim((string) $question['marking_scheme']) === '') {
-            $errors[] = 'A manually marked question in ' . $paper['title'] . ' has no marking scheme or rubric.';
+            $errors[] = 'A Theory question in ' . $paper['title'] . ' has no marking scheme.';
         }
         if (!empty($definition['passage'])) {
             $passage = $definition['passage'];

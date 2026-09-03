@@ -66,4 +66,25 @@ $kindergarten_profile = array(
 );
 onlineexam_assert_same(1, $scoring->resolveKindergartenLabel(75, $kindergarten_profile, 2), 'Kindergarten thresholds should resolve to the configured label index.');
 
+$midterm_slots = $scoring->normalizeMidtermSlots('1, 2, 2, 11, bad', 4);
+onlineexam_assert_same(array(1, 2), $midterm_slots['slots'], 'Midterm CA slots should be unique and normalized.');
+onlineexam_assert_same(array('11', 'bad'), $midterm_slots['invalid'], 'Malformed or out-of-range Midterm CA slots must be reported.');
+
+$components = array(
+    array('component' => 'ca1', 'title' => 'First Test', 'maximum' => 10.0),
+    array('component' => 'ca2', 'title' => 'Midterm', 'maximum' => 20.0),
+    array('component' => 'ca3', 'title' => 'Project', 'maximum' => 10.0),
+    array('component' => 'exam', 'title' => 'Examination', 'maximum' => 60.0),
+);
+onlineexam_assert_same(
+    array($components[0], $components[1]),
+    $scoring->filterStandardComponents($components, 'midterm', '1,2', 3),
+    'Midterm must expose only the CA slots reserved by MidTermCaToUse.'
+);
+onlineexam_assert_same(
+    array($components[2]),
+    $scoring->filterStandardComponents($components, 'ca', '1,2', 3),
+    'Continuous Assessment must exclude Midterm-reserved slots and the examination column.'
+);
+
 echo "onlineexam scoring tests passed" . PHP_EOL;

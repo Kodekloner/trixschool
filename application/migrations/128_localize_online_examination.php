@@ -84,7 +84,7 @@ class Migration_Localize_online_examination extends CI_Migration
             'class_id' => array('type' => 'INT', 'constraint' => 11, 'null' => true),
             'subject_id' => array('type' => 'INT', 'constraint' => 11, 'null' => true),
             'purpose' => array('type' => 'VARCHAR', 'constraint' => 32, 'null' => true),
-            'result_adapter' => array('type' => 'VARCHAR', 'constraint' => 32, 'default' => 'unlinked_practice'),
+            'result_adapter' => array('type' => 'VARCHAR', 'constraint' => 32, 'default' => 'standard_component'),
             'target_component' => array('type' => 'VARCHAR', 'constraint' => 16, 'null' => true),
             'result_type' => array('type' => 'VARCHAR', 'constraint' => 20, 'null' => true),
             'target_max_score' => array('type' => 'DECIMAL', 'constraint' => '10,2', 'null' => true),

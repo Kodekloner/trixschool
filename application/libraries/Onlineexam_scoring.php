@@ -13,6 +13,70 @@ class Onlineexam_scoring
     const MONEY_PRECISION = 2;
     const WORKING_PRECISION = 4;
 
+    /**
+     * Parse the resultsetting.MidTermCaToUse CSV without trusting malformed
+     * configuration. The caller can distinguish an empty valid list from a
+     * list that contained out-of-range/non-numeric values.
+     */
+    public function normalizeMidtermSlots($configured_slots, $number_of_ca)
+    {
+        $number_of_ca = max(0, min(10, (int) $number_of_ca));
+        $slots = array();
+        $invalid = array();
+        foreach (explode(',', (string) $configured_slots) as $token) {
+            $token = trim($token);
+            if ($token === '') {
+                continue;
+            }
+            if (!ctype_digit($token)) {
+                $invalid[] = $token;
+                continue;
+            }
+            $slot = (int) $token;
+            if ($slot < 1 || $slot > $number_of_ca) {
+                $invalid[] = $token;
+                continue;
+            }
+            $slots[$slot] = $slot;
+        }
+        ksort($slots, SORT_NUMERIC);
+
+        return array(
+            'slots' => array_values($slots),
+            'invalid' => array_values(array_unique($invalid)),
+        );
+    }
+
+    /**
+     * CA and Midterm share the same score.caN columns, but the existing result
+     * setting designates which enabled slots belong to Midterm. Examination is
+     * deliberately never returned for either compact workflow purpose.
+     */
+    public function filterStandardComponents(array $components, $purpose, $configured_slots, $number_of_ca)
+    {
+        if (!in_array($purpose, array('ca', 'midterm'), true)) {
+            return $components;
+        }
+
+        $normalized = $this->normalizeMidtermSlots($configured_slots, $number_of_ca);
+        $midterm_slots = array_flip($normalized['slots']);
+        $filtered = array();
+        foreach ($components as $component) {
+            $name = isset($component['component']) ? $component['component'] : (isset($component['value']) ? $component['value'] : '');
+            if (!preg_match('/^ca([1-9]|10)$/', strtolower((string) $name), $match)) {
+                continue;
+            }
+            if (!isset($component['maximum']) || (float) $component['maximum'] <= 0) {
+                continue;
+            }
+            $is_midterm = isset($midterm_slots[(int) $match[1]]);
+            if (($purpose === 'midterm' && $is_midterm) || ($purpose === 'ca' && !$is_midterm)) {
+                $filtered[] = $component;
+            }
+        }
+        return $filtered;
+    }
+
     public function scoreObjective($response, $correct_answer, $marks, $negative_marks = 0, $negative_enabled = false, $question_type = '')
     {
         $marks = (float) $marks;
