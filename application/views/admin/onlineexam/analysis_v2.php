@@ -1,5 +1,6 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed'); ?>
-<div class="content-wrapper">
+<?php $this->load->view('admin/onlineexam/_assessment_styles'); ?>
+<div class="content-wrapper onlineexam-ui onlineexam-analysis-page">
     <section class="content-header">
         <h1><i class="fa fa-bar-chart"></i> <?php echo html_escape($exam->exam); ?> <small>frozen paper and question analysis</small></h1>
         <a href="<?php echo base_url('admin/onlineexam/operations/' . (int) $exam->id); ?>">&larr; Back to operations</a>
@@ -7,8 +8,8 @@
     <section class="content">
         <div class="box box-primary">
             <div class="box-header with-border"><h3 class="box-title">Paper performance</h3></div>
-            <div class="box-body table-responsive">
-                <table class="table table-bordered table-striped">
+            <div class="box-body table-responsive onlineexam-scroll">
+                <table class="table table-bordered table-striped operations-table">
                     <thead><tr><th>Revision / paper</th><th>Type</th><th>Candidates</th><th>Submitted</th><th>Average raw</th><th>Average contribution</th></tr></thead>
                     <tbody>
                     <?php foreach ($analysis['papers'] as $paper) { ?>
@@ -29,8 +30,8 @@
 
         <div class="box box-default">
             <div class="box-header with-border"><h3 class="box-title">Question analysis</h3></div>
-            <div class="box-body table-responsive">
-                <table class="table table-bordered table-condensed">
+            <div class="box-body table-responsive onlineexam-scroll">
+                <table class="table table-bordered table-condensed operations-wide-table">
                     <thead><tr><th>Revision / paper / question</th><th>Type</th><th>Candidates</th><th>Answered</th><th>Correct / incorrect</th><th>Average mark</th><th>Facility</th></tr></thead>
                     <tbody>
                     <?php foreach ($analysis['questions'] as $question) { ?>

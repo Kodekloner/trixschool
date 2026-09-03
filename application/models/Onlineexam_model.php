@@ -71,8 +71,8 @@ class Onlineexam_model extends MY_model
        
          $this->datatables
             ->select('onlineexam.*,(select count(*) from onlineexam_questions where onlineexam_questions.onlineexam_id=onlineexam.id ) as `total_ques`, (select count(*) from onlineexam_questions INNER JOIN questions on questions.id=onlineexam_questions.question_id where onlineexam_questions.onlineexam_id=onlineexam.id and questions.question_type="descriptive" ) as `total_descriptive_ques`, (select classes.class from classes where classes.id=onlineexam.class_id) as class_name, (select subjects.name from subjects where subjects.id=onlineexam.subject_id) as subject_name, (select sessions.session from sessions where sessions.id=onlineexam.session_id) as session_name, (select GROUP_CONCAT(sections.section ORDER BY sections.section SEPARATOR ", ") from onlineexam_class_sections INNER JOIN sections on sections.id=onlineexam_class_sections.section_id where onlineexam_class_sections.onlineexam_id=onlineexam.id) as section_names, (select count(*) from onlineexam_papers where onlineexam_papers.onlineexam_id=onlineexam.id and onlineexam_papers.is_active=1) as total_papers')
-            ->searchable('onlineexam.exam,onlineexam.attempt,exam_from,exam_to,duration')
-             ->orderable('onlineexam.exam," ",total_ques,attempt,exam_from,exam_to,duration," "," " ')
+            ->searchable('onlineexam.exam,onlineexam.purpose,onlineexam.exam_from,onlineexam.exam_to,onlineexam.duration,onlineexam.lifecycle_status,onlineexam.feedback_status')
+             ->orderable('onlineexam.exam,onlineexam.purpose,total_ques,onlineexam.exam_from,onlineexam.exam_to,onlineexam.duration,onlineexam.lifecycle_status,onlineexam.feedback_status," "')
             ->sort('onlineexam.exam_from','desc')
             ->from('onlineexam');
         if ($teacher_id !== null) {
@@ -97,6 +97,15 @@ class Onlineexam_model extends MY_model
         $this->db->trans_start(); # Starting Transaction
         $this->db->trans_strict(false); # See Note 01. If you wish can remove as well
         //=======================Code Start===========================
+        $source_question = $this->db->query(
+            'SELECT `id` FROM `questions` WHERE `id` = '
+            . $this->db->escape((int) $insert_data['question_id'])
+            . ' LIMIT 1 FOR UPDATE'
+        )->row();
+        if (!$source_question) {
+            $this->db->trans_rollback();
+            return false;
+        }
         $this->db->where('question_id', $insert_data['question_id']);
         $this->db->where('onlineexam_id', $insert_data['onlineexam_id']);
         $q = $this->db->get('onlineexam_questions');
@@ -282,11 +291,21 @@ class Onlineexam_model extends MY_model
             INNER JOIN onlineexam_students ON onlineexam_students.onlineexam_id = onlineexam.id
             WHERE onlineexam_students.student_session_id=" . $this->db->escape($student_session_id) . "
               AND onlineexam.is_active=1
-              AND (onlineexam.workflow_version < 2 OR onlineexam_students.candidate_status='assigned')
+              AND onlineexam.workflow_version >= 2
+              AND onlineexam_students.candidate_status='assigned'
+              AND (
+                    (onlineexam.purpose IN ('ca','midterm') AND onlineexam.result_adapter='standard_component')
+                    OR (onlineexam.purpose='holiday' AND onlineexam.result_adapter='holiday_assessment')
+                    OR (onlineexam.purpose='kindergarten' AND onlineexam.result_adapter='kindergarten_concept')
+              )
             ORDER BY onlineexam.exam_from DESC";
 
         $query = $this->db->query($query);
-        return $query->result();
+        $rows = $query->result();
+        $this->load->model('onlineexamattempt_model');
+        return array_values(array_filter($rows, function ($exam) {
+            return $this->onlineexamattempt_model->isSupportedAssessmentContext($exam);
+        }));
 
     }
 
@@ -349,6 +368,18 @@ class Onlineexam_model extends MY_model
         $now = date('Y-m-d H:i:s');
         $this->db->trans_begin();
 
+        // Serialize roster saves for the assessment. This also prevents two
+        // concurrent requests from both observing a missing assignment and
+        // inserting duplicate candidate rows in the legacy table.
+        $locked_exam = $this->db->query(
+            'SELECT `id` FROM `onlineexam` WHERE `id` = '
+            . $this->db->escape($onlineexam_id) . ' LIMIT 1 FOR UPDATE'
+        )->row();
+        if (!$locked_exam) {
+            $this->db->trans_rollback();
+            return array('success' => false, 'message' => 'The assessment no longer exists.');
+        }
+
         $existing = array();
         if (!empty($eligible_student_sessions)) {
             foreach ($this->db->where('onlineexam_id', $onlineexam_id)->where_in('student_session_id', $eligible_student_sessions)->get('onlineexam_students')->result_array() as $row) {
@@ -359,7 +390,16 @@ class Onlineexam_model extends MY_model
         foreach ($eligible_student_sessions as $student_session_id) {
             $selected = in_array($student_session_id, $selected_student_sessions, true);
             if (isset($existing[$student_session_id])) {
-                $assignment = $existing[$student_session_id];
+                $assignment = $this->db->query(
+                    'SELECT * FROM `onlineexam_students` WHERE `id` = '
+                    . $this->db->escape((int) $existing[$student_session_id]['id'])
+                    . ' AND `onlineexam_id` = ' . $this->db->escape($onlineexam_id)
+                    . ' LIMIT 1 FOR UPDATE'
+                )->row_array();
+                if (empty($assignment)) {
+                    $this->db->trans_rollback();
+                    return array('success' => false, 'message' => 'A candidate roster record changed while the roster was being saved. Reload and try again.');
+                }
                 if (!$selected) {
                     $has_attempt = $this->db->where('onlineexam_student_id', (int) $assignment['id'])
                         ->where('status !=', 'voided')
@@ -459,34 +499,103 @@ class Onlineexam_model extends MY_model
     }
 
     /**
-     * Resolve the existing Nigerian result configuration for a class. The
+     * Confirm that a curriculum subject belongs to every selected class arm
+     * in the chosen session, not merely that the global subjects row exists.
+     */
+    public function subjectIsAssignedToAcademicScope($class_id, $section_ids, $subject_id, $session_id)
+    {
+        foreach (array('class_sections', 'subject_group_class_sections', 'subject_group_subjects') as $table) {
+            if (!$this->db->table_exists($table)) {
+                return false;
+            }
+        }
+        $class_id = (int) $class_id;
+        $subject_id = (int) $subject_id;
+        $session_id = (int) $session_id;
+        $section_ids = array_values(array_unique(array_filter(array_map('intval', (array) $section_ids))));
+        if ($class_id < 1 || $subject_id < 1 || $session_id < 1 || empty($section_ids)) {
+            return false;
+        }
+
+        $rows = $this->db->select('class_sections.section_id')
+            ->distinct()
+            ->from('class_sections')
+            ->join('subject_group_class_sections sgcs', 'sgcs.class_section_id = class_sections.id')
+            ->join('subject_group_subjects sgs', 'sgs.subject_group_id = sgcs.subject_group_id')
+            ->where('class_sections.class_id', $class_id)
+            ->where_in('class_sections.section_id', $section_ids)
+            ->where('sgcs.session_id', $session_id)
+            ->where('sgs.session_id', $session_id)
+            ->where('sgs.subject_id', $subject_id)
+            ->get()->result_array();
+        $assigned = array_values(array_unique(array_map(function ($row) {
+            return (int) $row['section_id'];
+        }, $rows)));
+        sort($assigned);
+        sort($section_ids);
+        return $assigned === $section_ids;
+    }
+
+    /**
+     * Resolve the existing academic result configuration for a class. The
      * legacy tables remain authoritative; this method only describes valid
      * destinations for the Online Examination UI.
      */
-    public function getAcademicConfiguration($class_id, $subject_id = null)
+    public function getAcademicConfiguration($class_id, $subject_id = null, $purpose = null, $session_id = null, $term = null, $section_ids = array())
     {
         $class_id = (int) $class_id;
+        $subject_id = (int) $subject_id;
+        $purpose = strtolower(trim((string) $purpose));
         $config = array(
-            'adapter'       => 'unlinked_practice',
+            'adapter'       => null,
             'result_type'   => null,
             'components'    => array(),
             'exam_maximum'  => null,
-            'valid'         => true,
+            'target_maximum' => null,
+            'valid'         => false,
             'message'       => '',
             'kindergarten'  => array(),
+            'holiday_mappings' => array(),
         );
 
-        $kindergarten = $this->db->select('kindergarten_assessment_header.id, kindergarten_assessment_header.assessment_name, kindergarten_assessment_header.result_labels_json')
-            ->from('kindergarten_assignment')
-            ->join('kindergarten_assessment_header', 'kindergarten_assessment_header.id=kindergarten_assignment.assessment_id')
-            ->where('kindergarten_assignment.class_id', $class_id)
-            ->get()->result_array();
+        $kindergarten = array();
+        if ($this->db->table_exists('kindergarten_assignment') && $this->db->table_exists('kindergarten_assessment_header')) {
+            $kindergarten = $this->db->select('kindergarten_assessment_header.id, kindergarten_assessment_header.assessment_name, kindergarten_assessment_header.result_labels_json')
+                ->from('kindergarten_assignment')
+                ->join('kindergarten_assessment_header', 'kindergarten_assessment_header.id=kindergarten_assignment.assessment_id')
+                ->where('kindergarten_assignment.class_id', $class_id)
+                ->get()->result_array();
+        }
 
-        if (!empty($kindergarten)) {
+        if ($purpose === 'kindergarten') {
             $config['adapter']      = 'kindergarten_concept';
             $config['result_type']  = 'termly';
             $config['kindergarten'] = $kindergarten;
-            $config['message']      = 'This class uses Kindergarten concept outcomes. Select a configured assessment and map questions to concepts before publishing.';
+            $config['target_maximum'] = 100.0;
+            $mapping_options = empty($kindergarten) || $subject_id < 1
+                ? array()
+                : $this->getKindergartenMappingOptions($class_id, $subject_id);
+            $config['valid'] = !empty($mapping_options);
+            $config['message'] = $config['valid']
+                ? 'Kindergarten results use configured concept mappings; map each paper or section before publishing.'
+                : 'This class and subject do not have an active Kindergarten assessment concept configuration.';
+            return $config;
+        }
+
+        if ($purpose === 'holiday') {
+            return $this->getHolidayAcademicConfiguration($class_id, $subject_id, $session_id, $term, $section_ids);
+        }
+
+        // Existing frozen British/Kindergarten records still need their old
+        // configuration to remain viewable. New compact assessments must choose
+        // their explicit purpose and are validated below.
+        if ($purpose === '' && !empty($kindergarten)) {
+            $config['adapter']      = 'kindergarten_concept';
+            $config['result_type']  = 'termly';
+            $config['kindergarten'] = $kindergarten;
+            $config['target_maximum'] = 100.0;
+            $config['valid'] = true;
+            $config['message'] = 'This class uses Kindergarten concept outcomes.';
             return $config;
         }
 
@@ -497,23 +606,30 @@ class Onlineexam_model extends MY_model
             ->get()->row_array();
 
         if (empty($row)) {
-            $config['valid']   = false;
-            $config['message'] = 'No CA/result setting is assigned to this class. The assessment can only be saved as unlinked practice.';
+            $config['message'] = !empty($kindergarten)
+                ? 'This class uses Kindergarten outcomes. Choose the Kindergarten purpose.'
+                : 'No CA/result setting is assigned to this class.';
             return $config;
         }
 
         if (strtolower($row['ResultType']) === 'british') {
             $config['adapter']      = 'british_outcome';
             $config['result_type']  = 'termly';
+            $config['target_maximum'] = 100.0;
             $config['components'][] = array('value' => 'outcome', 'label' => 'British qualitative outcome', 'maximum' => 100);
-            $config['message']      = 'British results require a configured outcome profile and final teacher outcome.';
+            $config['valid'] = $purpose === '';
+            $config['message'] = $config['valid']
+                ? 'British results require a configured outcome profile and final teacher outcome.'
+                : 'British outcome classes are preserved, but the compact CA/Midterm workflow cannot safely write a numeric CA component for this class.';
             return $config;
         }
 
         $config['adapter']     = 'standard_component';
-        $config['result_type'] = 'termly';
+        $config['result_type'] = $purpose === 'midterm' ? 'midterm' : 'termly';
         $number_of_ca          = min(10, max(0, (int) $row['NumberOfCA']));
         $ca_total              = 0.0;
+        $component_rows        = array();
+        $errors                = array();
 
         for ($index = 1; $index <= $number_of_ca; $index++) {
             $title_key = 'CA' . $index . 'Title';
@@ -521,9 +637,13 @@ class Onlineexam_model extends MY_model
             $maximum   = isset($row[$score_key]) ? (float) $row[$score_key] : 0;
             $title     = isset($row[$title_key]) && trim($row[$title_key]) !== '' ? $row[$title_key] : 'CA ' . $index;
 
+            if ($maximum < 0) {
+                $errors[] = $score_key . ' cannot be negative.';
+                continue;
+            }
             if ($maximum > 0) {
                 $ca_total += $maximum;
-                $config['components'][] = array(
+                $component_rows[] = array(
                     'value'   => 'ca' . $index,
                     'label'   => $title,
                     'maximum' => round($maximum, 2),
@@ -534,23 +654,140 @@ class Onlineexam_model extends MY_model
         $exam_maximum = round(100 - $ca_total, 2);
         $config['exam_maximum'] = $exam_maximum;
         if ($exam_maximum < 0) {
-            $config['valid']   = false;
-            $config['message'] = 'The configured CA maximums exceed 100. Correct the class CA setting before creating a result-bearing examination.';
+            $errors[] = 'The configured CA maximums exceed 100.';
+        }
+
+        if (in_array($purpose, array('ca', 'midterm'), true)) {
+            $this->load->library('onlineexam_scoring');
+            $normalized = $this->onlineexam_scoring->normalizeMidtermSlots($row['MidTermCaToUse'], $number_of_ca);
+            if (!empty($normalized['invalid'])) {
+                $errors[] = 'MidTermCaToUse contains an invalid CA slot.';
+            }
+            $config['components'] = $this->onlineexam_scoring->filterStandardComponents(
+                $component_rows,
+                $purpose,
+                $row['MidTermCaToUse'],
+                $number_of_ca
+            );
+            if (empty($config['components'])) {
+                $errors[] = $purpose === 'midterm'
+                    ? 'No positive-score CA slot is configured for Midterm.'
+                    : 'No positive-score Continuous Assessment slot remains after the Midterm slots are reserved.';
+            }
         } else {
-            $config['components'][] = array(
+            // Historical callers may still display the original broad list;
+            // new saves never use this compatibility branch.
+            $config['components'] = $component_rows;
+            if ($exam_maximum > 0) {
+                $config['components'][] = array(
                 'value'   => 'exam',
                 'label'   => 'Examination',
                 'maximum' => $exam_maximum,
             );
+            }
         }
+
+        $config['valid'] = empty($errors) && !empty($config['components']);
+        $config['message'] = empty($errors)
+            ? ($purpose === 'midterm'
+                ? 'Only CA slots reserved by the class Midterm setting are available.'
+                : ($purpose === 'ca' ? 'Midterm-reserved CA slots are excluded.' : 'Standard result components loaded.'))
+            : implode(' ', array_values(array_unique($errors)));
 
         return $config;
     }
 
-    public function saveWorkflow($exam_data, $section_ids)
+    /**
+     * Resolve one immutable Holiday destination for every selected class arm.
+     * A single online assessment has one target maximum, so all selected arms
+     * must use the same configured maximum for this subject.
+     */
+    public function getHolidayAcademicConfiguration($class_id, $subject_id, $session_id, $term, $section_ids)
+    {
+        $config = array(
+            'adapter' => 'holiday_assessment',
+            'result_type' => 'holiday',
+            'components' => array(),
+            'exam_maximum' => null,
+            'target_maximum' => null,
+            'valid' => false,
+            'message' => '',
+            'kindergarten' => array(),
+            'holiday_mappings' => array(),
+        );
+        if (!$this->db->table_exists('holiday_assessment_settings')
+            || !$this->db->table_exists('holiday_assessment_subjects')) {
+            $config['message'] = 'Holiday Assessment tables are not installed for this school.';
+            return $config;
+        }
+
+        $class_id = (int) $class_id;
+        $subject_id = (int) $subject_id;
+        $session_id = (int) $session_id;
+        $term = strtolower(trim((string) $term));
+        $section_ids = array_values(array_unique(array_filter(array_map('intval', (array) $section_ids))));
+        if ($class_id < 1 || $subject_id < 1 || $session_id < 1
+            || !in_array($term, array('1st', '2nd', '3rd'), true) || empty($section_ids)) {
+            $config['message'] = 'Select session, term, class, class arm and subject to load the Holiday Assessment setting.';
+            return $config;
+        }
+
+        $maximum = null;
+        foreach ($section_ids as $section_id) {
+            $rows = $this->db->select('holiday_assessment_settings.id AS setting_id, holiday_assessment_subjects.id AS setting_subject_id, holiday_assessment_subjects.max_score')
+                ->from('holiday_assessment_settings')
+                ->join('holiday_assessment_subjects', 'holiday_assessment_subjects.setting_id=holiday_assessment_settings.id')
+                ->where('holiday_assessment_settings.class_id', $class_id)
+                ->where('holiday_assessment_settings.section_id', $section_id)
+                ->where('holiday_assessment_settings.session_id', $session_id)
+                ->where('holiday_assessment_settings.term', $term)
+                ->where('holiday_assessment_settings.enabled', 1)
+                ->where('holiday_assessment_subjects.subject_id', $subject_id)
+                ->limit(2)
+                ->get()->result_array();
+            if (count($rows) !== 1 || (float) $rows[0]['max_score'] <= 0) {
+                $config['message'] = 'Holiday Assessment is not enabled with a positive maximum for every selected class arm and subject.';
+                return $config;
+            }
+            $row_maximum = round((float) $rows[0]['max_score'], 2);
+            if ($maximum !== null && abs($maximum - $row_maximum) > 0.001) {
+                $config['message'] = 'Selected class arms use different Holiday Assessment maximums. Use separate online assessments for those arms.';
+                return $config;
+            }
+            $maximum = $row_maximum;
+            $config['holiday_mappings'][] = array(
+                'section_id' => $section_id,
+                'setting_id' => (int) $rows[0]['setting_id'],
+                'setting_subject_id' => (int) $rows[0]['setting_subject_id'],
+                'max_score' => $row_maximum,
+            );
+        }
+
+        $config['target_maximum'] = $maximum;
+        $config['valid'] = !empty($config['holiday_mappings']);
+        $config['message'] = 'Holiday Assessment settings were verified for every selected class arm.';
+        return $config;
+    }
+
+    public function saveWorkflow($exam_data, $section_ids, array $holiday_mappings = array())
     {
         $this->db->trans_begin();
         $id = isset($exam_data['id']) ? (int) $exam_data['id'] : 0;
+        $selected_section_ids = array_values(array_unique(array_filter(array_map('intval', (array) $section_ids))));
+        if (isset($exam_data['result_adapter']) && $exam_data['result_adapter'] === 'holiday_assessment') {
+            $mapped_section_ids = array_values(array_unique(array_map(function ($mapping) {
+                return isset($mapping['section_id']) ? (int) $mapping['section_id'] : 0;
+            }, $holiday_mappings)));
+            sort($mapped_section_ids);
+            $expected_section_ids = $selected_section_ids;
+            sort($expected_section_ids);
+            if (!$this->db->table_exists('onlineexam_holiday_mappings')
+                || empty($holiday_mappings)
+                || $mapped_section_ids !== $expected_section_ids) {
+                $this->db->trans_rollback();
+                return false;
+            }
+        }
 
         if ($id > 0) {
             $this->db->where('id', $id);
@@ -563,13 +800,36 @@ class Onlineexam_model extends MY_model
         }
 
         $this->db->where('onlineexam_id', $id)->delete('onlineexam_class_sections');
-        foreach (array_unique(array_map('intval', $section_ids)) as $section_id) {
+        foreach ($selected_section_ids as $section_id) {
             if ($section_id > 0) {
                 $this->db->insert('onlineexam_class_sections', array(
                     'onlineexam_id' => $id,
                     'section_id'    => $section_id,
                     'created_at'    => date('Y-m-d H:i:s'),
                 ));
+            }
+        }
+
+        if ($this->db->table_exists('onlineexam_holiday_mappings')) {
+            $this->db->where('onlineexam_id', $id)->delete('onlineexam_holiday_mappings');
+            if (isset($exam_data['result_adapter']) && $exam_data['result_adapter'] === 'holiday_assessment') {
+                $now = date('Y-m-d H:i:s');
+                foreach ($holiday_mappings as $mapping) {
+                    if (empty($mapping['section_id']) || empty($mapping['setting_id'])
+                        || empty($mapping['setting_subject_id']) || (float) $mapping['max_score'] <= 0) {
+                        $this->db->trans_rollback();
+                        return false;
+                    }
+                    $this->db->insert('onlineexam_holiday_mappings', array(
+                        'onlineexam_id' => $id,
+                        'section_id' => (int) $mapping['section_id'],
+                        'setting_id' => (int) $mapping['setting_id'],
+                        'setting_subject_id' => (int) $mapping['setting_subject_id'],
+                        'max_score' => round((float) $mapping['max_score'], 2),
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ));
+                }
             }
         }
 
@@ -580,6 +840,17 @@ class Onlineexam_model extends MY_model
 
         $this->db->trans_commit();
         return $id;
+    }
+
+    public function getHolidayMappings($onlineexam_id)
+    {
+        if (!$this->db->table_exists('onlineexam_holiday_mappings')) {
+            return array();
+        }
+        return $this->db->where('onlineexam_id', (int) $onlineexam_id)
+            ->order_by('section_id', 'ASC')
+            ->get('onlineexam_holiday_mappings')
+            ->result_array();
     }
 
     public function getWorkflowPapers($onlineexam_id)
@@ -696,6 +967,16 @@ class Onlineexam_model extends MY_model
 
     public function assignWorkflowQuestion($data)
     {
+        $this->db->trans_begin();
+        $source_question = $this->db->query(
+            'SELECT `id` FROM `questions` WHERE `id` = '
+            . $this->db->escape((int) $data['question_id'])
+            . ' LIMIT 1 FOR UPDATE'
+        )->row();
+        if (!$source_question) {
+            $this->db->trans_rollback();
+            return false;
+        }
         if (empty($data['authoring_json']) && $this->db->table_exists('onlineexam_question_definitions')) {
             $definition = $this->db->select('definition_json')
                 ->where('question_id', (int) $data['question_id'])
@@ -714,11 +995,17 @@ class Onlineexam_model extends MY_model
         if ($existing) {
             $data['id'] = (int) $existing['id'];
             $this->db->where('id', $data['id'])->update('onlineexam_questions', $data);
-            return $data['id'];
+            $id = $data['id'];
+        } else {
+            $this->db->insert('onlineexam_questions', $data);
+            $id = (int) $this->db->insert_id();
         }
-
-        $this->db->insert('onlineexam_questions', $data);
-        return (int) $this->db->insert_id();
+        if ($id < 1 || $this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return false;
+        }
+        $this->db->trans_commit();
+        return $id;
     }
 
     /**
@@ -809,46 +1096,103 @@ class Onlineexam_model extends MY_model
     }
 
     /**
-     * Revising a bank question creates a new source definition and repoints
-     * only this draft assignment. Other drafts and frozen revisions therefore
-     * cannot change as a side effect.
+     * Edit the assigned v2-authored question in place when this draft owns its
+     * source exclusively. A genuinely shared source still uses copy-on-write so
+     * another assessment cannot be changed as a side effect.
      */
     public function reviseWorkflowAuthoredQuestion($assignment_id, $onlineexam_id, array $source, array $assignment)
     {
-        $this->db->trans_begin();
-        $owned = $this->db->where('id', (int) $assignment_id)
+        $reference = $this->db->select('question_id')
+            ->where('id', (int) $assignment_id)
             ->where('onlineexam_id', (int) $onlineexam_id)
             ->where('authoring_json IS NOT NULL', null, false)
-            ->count_all_results('onlineexam_questions') === 1;
-        if (!$owned) {
+            ->limit(1)
+            ->get('onlineexam_questions')
+            ->row_array();
+        if (empty($reference)) {
+            return false;
+        }
+
+        $this->db->trans_begin();
+        $original_question_id = (int) $reference['question_id'];
+        $locked_source = $this->db->query(
+            'SELECT `id` FROM `questions` WHERE `id` = ' . $this->db->escape($original_question_id) . ' LIMIT 1 FOR UPDATE'
+        )->row_array();
+        if (empty($locked_source)) {
             $this->db->trans_rollback();
             return false;
         }
-        $this->db->insert('questions', $source);
-        $question_id = (int) $this->db->insert_id();
-        if ($question_id <= 0) {
+        $owned = $this->db->query(
+            'SELECT * FROM `onlineexam_questions` WHERE `id` = ' . $this->db->escape((int) $assignment_id)
+            . ' AND `onlineexam_id` = ' . $this->db->escape((int) $onlineexam_id)
+            . ' AND `authoring_json` IS NOT NULL LIMIT 1 FOR UPDATE'
+        )->row_array();
+        if (empty($owned) || (int) $owned['question_id'] !== $original_question_id) {
             $this->db->trans_rollback();
             return false;
         }
+
+        $references = $this->db->query(
+            'SELECT `id` FROM `onlineexam_questions` WHERE `question_id` = '
+            . $this->db->escape($original_question_id) . ' FOR UPDATE'
+        )->result_array();
+        $reference_count = count($references);
         $now = date('Y-m-d H:i:s');
-        $this->db->insert('onlineexam_question_definitions', array(
-            'question_id' => $question_id,
-            'definition_version' => 1,
-            'definition_json' => $assignment['authoring_json'],
-            'created_by' => isset($source['staff_id']) ? (int) $source['staff_id'] : null,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ));
+        $copied = $reference_count > 1;
+        if ($copied) {
+            $this->db->insert('questions', $source);
+            $question_id = (int) $this->db->insert_id();
+            if ($question_id <= 0) {
+                $this->db->trans_rollback();
+                return false;
+            }
+            $this->db->insert('onlineexam_question_definitions', array(
+                'question_id' => $question_id,
+                'definition_version' => 1,
+                'definition_json' => $assignment['authoring_json'],
+                'created_by' => isset($source['staff_id']) ? (int) $source['staff_id'] : null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ));
+        } else {
+            $question_id = $original_question_id;
+            $this->db->where('id', $question_id)->update('questions', $source);
+            $definition = $this->db->query(
+                'SELECT * FROM `onlineexam_question_definitions` WHERE `question_id` = '
+                . $this->db->escape($question_id) . ' LIMIT 1 FOR UPDATE'
+            )->row_array();
+            if (empty($definition)) {
+                $this->db->insert('onlineexam_question_definitions', array(
+                    'question_id' => $question_id,
+                    'definition_version' => 1,
+                    'definition_json' => $assignment['authoring_json'],
+                    'created_by' => isset($source['staff_id']) ? (int) $source['staff_id'] : null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ));
+            } else {
+                $this->db->where('id', (int) $definition['id'])->update('onlineexam_question_definitions', array(
+                    'definition_version' => (int) $definition['definition_version'] + 1,
+                    'definition_json' => $assignment['authoring_json'],
+                    'updated_at' => $now,
+                ));
+            }
+        }
+
         $assignment['question_id'] = $question_id;
         $this->db->where('id', (int) $assignment_id)
             ->where('onlineexam_id', (int) $onlineexam_id)
             ->update('onlineexam_questions', $assignment);
-        if ($this->db->trans_status() === false || $this->db->affected_rows() !== 1) {
+        if ($this->db->trans_status() === false) {
             $this->db->trans_rollback();
             return false;
         }
         $this->db->trans_commit();
-        return array('question_id' => $question_id, 'assignment_id' => (int) $assignment_id);
+        return array(
+            'question_id' => $question_id,
+            'assignment_id' => (int) $assignment_id,
+            'copied_shared_source' => $copied,
+        );
     }
 
     public function removeWorkflowQuestion($onlineexam_question_id, $onlineexam_id)
@@ -889,6 +1233,9 @@ class Onlineexam_model extends MY_model
             $this->db->where_in('paper_id', $paper_ids)->delete('onlineexam_paper_sections');
         }
         $this->db->where('onlineexam_id', $onlineexam_id)->delete('onlineexam_kindergarten_mappings');
+        if ($this->db->table_exists('onlineexam_holiday_mappings')) {
+            $this->db->where('onlineexam_id', $onlineexam_id)->delete('onlineexam_holiday_mappings');
+        }
         $this->db->where('onlineexam_id', $onlineexam_id)->delete('onlineexam_result_profiles');
         $this->db->where('onlineexam_id', $onlineexam_id)->delete('onlineexam_questions');
         $this->db->where('onlineexam_id', $onlineexam_id)->delete('onlineexam_papers');
@@ -943,7 +1290,7 @@ class Onlineexam_model extends MY_model
                 $errors[] = 'The result destination no longer matches the class CA configuration. Re-open the assessment and select it again.';
             }
         }
-        if ($exam->result_adapter !== 'unlinked_practice' && (float) $exam->target_max_score <= 0) {
+        if ((float) $exam->target_max_score <= 0) {
             $errors[] = 'The selected result destination must have a positive maximum score.';
         }
         if ($exam->result_adapter === 'british_outcome' && !$this->getWorkflowResultProfile($onlineexam_id, 'british_outcome')) {

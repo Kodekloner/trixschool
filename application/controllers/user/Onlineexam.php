@@ -50,202 +50,34 @@ class Onlineexam extends Student_Controller
         if ($exam && isset($exam->workflow_version) && (int) $exam->workflow_version >= 2) {
             return $this->viewLocalizedExam($exam, $online_exam_validate, $student_session_id);
         }
-        $data['exam']                = $exam;
-        $data['student']             = $student;
-        $questionOpt                 = $this->customlib->getQuesOption();
-        $data['questionOpt']         = $questionOpt;
-        if (!empty($online_exam_validate)) {
-            $data['question_result'] = $this->onlineexamresult_model->getResultByStudent($online_exam_validate->id, $online_exam_validate->onlineexam_id);
-            $data['result_prepare']  = $this->onlineexamresult_model->checkResultPrepare($online_exam_validate->id);
-        }
-        $data['online_exam_validate'] = $online_exam_validate;
-        $filetype                     = $this->filetype_model->get();
-
-        $data['allowed_extension']   = array_map('trim', array_map('strtolower', explode(',', $filetype->image_extension)));
-        $data['allowed_mime_type']   = array_map('trim', array_map('strtolower', explode(',', $filetype->image_mime)));
-        $data['allowed_upload_size'] = $filetype->image_size;
-
-        $this->load->view('layout/student/header');
-        $this->load->view('user/onlineexam/view', $data);
-        $this->load->view('layout/student/footer');
+        show_error('This historical Online Examination is read-only and can no longer be opened for an attempt.', 410);
     }
 
-    function print() {
-        $data                        = array();
-        $data['sch_setting']         = $this->sch_setting_detail;
-        $exam_id                     = $this->input->post('exam_id');
-        $role                        = $this->customlib->getUserRole();
-        $data['role']                = $role;
-        $student_current_class       = $this->customlib->getStudentCurrentClsSection();
-        $student_session_id          = $student_current_class->student_session_id;
-        $online_exam_validate        = $this->onlineexam_model->examstudentsID($student_session_id, $exam_id);
-        $data['question_true_false'] = $this->config->item('question_true_false');
-        $exam                        = $this->onlineexam_model->get($exam_id);
-        if ($exam && isset($exam->workflow_version) && (int) $exam->workflow_version >= 2) {
-            return $this->jsonResponse(array('status' => false, 'message' => 'Localized assessments use their frozen paper workflow.'), 409);
-        }
-        $data['exam']                = $exam;
-        $questionOpt                 = $this->customlib->getQuesOption();
-        $data['questionOpt']         = $questionOpt;
-        $student                     = $this->student_model->getByStudentSession($student_session_id);
-        $data['student']             = $student;
-
-        if (!empty($online_exam_validate)) {
-
-            $data['question_result'] = $this->onlineexamresult_model->getResultByStudent($online_exam_validate->id, $online_exam_validate->onlineexam_id);
-            $data['result_prepare']  = $this->onlineexamresult_model->checkResultPrepare($online_exam_validate->id);
-
-        }
-        $data['online_exam_validate'] = $online_exam_validate;
-        $data['page']                 = $this->load->view('user/onlineexam/_print', $data, true);
-        echo json_encode(array('status' => 1, 'page' => $data['page']));
+    public function print()
+    {
+        show_error('Legacy Online Examination printing is retired.', 410);
     }
 
     public function save()
     {
-
-        if ($this->input->server('REQUEST_METHOD') == 'POST') {
-            $legacy_assignment_id = (int) $this->input->post('onlineexam_student_id');
-            $legacy_assignment = $this->db->select('onlineexam.workflow_version')
-                ->from('onlineexam_students')
-                ->join('onlineexam', 'onlineexam.id = onlineexam_students.onlineexam_id')
-                ->where('onlineexam_students.id', $legacy_assignment_id)
-                ->limit(1)
-                ->get()
-                ->row();
-            if ($legacy_assignment && (int) $legacy_assignment->workflow_version >= 2) {
-                show_error('Localized assessments can only be submitted through the official paper workflow.', 409);
-            }
-            $total_rows = $this->input->post('total_rows');
-
-            if (!empty($total_rows)) {
-                $save_result = array();
-                foreach ($total_rows as $row_key => $row_value) {
-                    if (($_POST['question_type_' . $row_value]) == "singlechoice") {
-
-                        if (isset($_POST['radio' . $row_value])) {
-                            $save_result[] = array(
-                                'onlineexam_student_id'  => $this->input->post('onlineexam_student_id'),
-                                'onlineexam_question_id' => $this->input->post('question_id_' . $row_value),
-                                'select_option'          => $_POST['radio' . $row_value],
-                                'attachment_name'        => "",
-                                'attachment_upload_name' => "",
-                            );
-                        }
-                    } elseif (($_POST['question_type_' . $row_value]) == "true_false") {
-                        # code...
-                        if (isset($_POST['radio' . $row_value])) {
-                            $save_result[] = array(
-                                'onlineexam_student_id'  => $this->input->post('onlineexam_student_id'),
-                                'onlineexam_question_id' => $this->input->post('question_id_' . $row_value),
-                                'select_option'          => $_POST['radio' . $row_value],
-                                'attachment_name'        => "",
-                                'attachment_upload_name' => "",
-                            );
-                        }
-                    } elseif (($_POST['question_type_' . $row_value]) == "multichoice") {
-                        # code...
-                        if (isset($_POST['checkbox' . $row_value])) {
-                            $save_result[] = array(
-                                'onlineexam_student_id'  => $this->input->post('onlineexam_student_id'),
-                                'onlineexam_question_id' => $this->input->post('question_id_' . $row_value),
-                                'select_option'          => json_encode($_POST['checkbox' . $row_value]),
-                                'attachment_name'        => "",
-                                'attachment_upload_name' => "",
-                            );
-                        }
-                    } elseif (($_POST['question_type_' . $row_value]) == "descriptive") {
-                        # code...
-                        if (isset($_POST['answer' . $row_value]) || (isset($_FILES["attachment" . $row_value]) && !empty($_FILES["attachment" . $row_value]['name']))) {
-                            $inst_array = array(
-                                'onlineexam_student_id'  => $this->input->post('onlineexam_student_id'),
-                                'onlineexam_question_id' => $this->input->post('question_id_' . $row_value),
-                                'select_option'          => $_POST['answer' . $row_value],
-                            );
-
-                            $file_name        = "";
-                            $upload_file_name = "";
-                            if (isset($_FILES["attachment" . $row_value]) && !empty($_FILES["attachment" . $row_value]['name'])) {
-                                $file_name        = $_FILES["attachment" . $row_value]["name"];
-                                $fileInfo         = pathinfo($_FILES["attachment" . $row_value]["name"]);
-                                $upload_file_name = time() . uniqid(rand()) . '.' . $fileInfo['extension'];
-                                move_uploaded_file($_FILES["attachment" . $row_value]["tmp_name"], "./uploads/onlinexam_images/" . $upload_file_name);
-
-                            }
-                            $inst_array['attachment_name']        = $file_name;
-                            $inst_array['attachment_upload_name'] = $upload_file_name;
-
-                            $save_result[] = $inst_array;
-                        }
-                    }
-
-                }
-
-                $this->onlineexamresult_model->add($save_result);
-                $this->onlineexam_model->updateExamResult($this->input->post('onlineexam_student_id'));
-                redirect('user/onlineexam', 'refresh');
-            }
-        } else {
-
-        }
+        show_error('Historical Online Examination submission is retired. Use a published CBT assessment.', 410);
     }
 
     public function startexam____($id)
     {
-        $data = array();
-        $this->session->set_userdata('top_menu', 'Hostel');
-        $this->session->set_userdata('sub_menu', 'hostel/index');
-        $questionOpt          = $this->customlib->getQuesOption();
-        $data['questionOpt']  = $questionOpt;
-        $onlineexam_question  = $this->onlineexam_model->getExamQuestions($id);
-        $data['examquestion'] = $onlineexam_question;
-        $this->load->view('layout/student/header');
-        $this->load->view('user/onlineexam/startexam', $data);
-        $this->load->view('layout/student/footer');
+        show_error('Historical Online Examination attempts are retired.', 410);
     }
 
     public function getExamForm()
     {
-        $data            = array();
-        $question_status = 0;
-        $recordid        = $this->input->post('recordid');
-        $exam            = $this->onlineexam_model->get($recordid);
-        if ($exam && isset($exam->workflow_version) && (int) $exam->workflow_version >= 2) {
-            return $this->jsonResponse(array('status' => false, 'message' => 'Use the localized assessment paper workflow.'), 409);
-        }
-        $data['exam']    = $exam;
-
-        $data['questions'] = $this->onlineexam_model->getExamQuestions($recordid, $exam->is_random_question);
-
-        $student_current_class         = $this->customlib->getStudentCurrentClsSection();
-        $student_session_id            = $student_current_class->student_session_id;
-        $onlineexam_student            = $this->onlineexam_model->examstudentsID($student_session_id, $exam->id);
-        $data['onlineexam_student_id'] = $onlineexam_student;
-        $getStudentAttemts             = $this->onlineexam_model->getStudentAttemts($onlineexam_student->id);
-        $data['question_status']       = 0;
-        $data['exam_duration']         = $exam->duration;
-        if (strtotime(date('Y-m-d H:i:s')) >= strtotime(date($exam->exam_to))) {
-            $question_status         = 1;
-            $data['question_status'] = 1;
-        } else if ($exam->attempt > $getStudentAttemts) {
-            $this->onlineexam_model->addStudentAttemts(array('onlineexam_student_id' => $onlineexam_student->id));
-        } else {
-            $question_status         = 1;
-            $data['question_status'] = 1;
-        }
-
-        $questionOpt         = $this->customlib->getQuesOption();
-        $data['questionOpt'] = $questionOpt;
-        $pag_content         = $this->load->view('user/onlineexam/_searchQuestionByExamID', $data, true);
-
-        $total_remaining_seconds = round((strtotime($exam->exam_to) - strtotime(date('Y-m-d H:i:s'))) / 3600 * 60 * 60, 1);
-        $exam_duration           = ($total_remaining_seconds < getSecondsFromHMS($exam->duration)) ? getHMSFromSeconds($total_remaining_seconds) : $exam->duration;
-
-        echo json_encode(array('status' => 0, 'exam' => $exam, 'duration' => $exam_duration, 'page' => $pag_content, 'question_status' => $question_status, 'total_question' => count($data['questions'])));
+        return $this->jsonResponse(array(
+            'status' => false,
+            'message' => 'Historical Online Examination attempts are retired.',
+        ), 410);
     }
 
     /**
-     * Start or resume one CBT/hybrid paper in a workflow-v2 assessment.
+     * Start or resume one CBT paper in a workflow-v2 assessment.
      */
     public function startpaper()
     {
@@ -309,71 +141,19 @@ class Onlineexam extends Student_Controller
             (int) $this->input->post('attempt_id'),
             (int) $this->input->post('question_snapshot_id'),
             $response,
-            $this->input->post('client_sequence')
+            $this->input->post('client_sequence'),
+            $this->requestReceivedAt()
         );
         return $this->jsonResponse($result, $result['status'] ? 200 : 422);
     }
 
-    /**
-     * Server-side attachment validation for theory, oral and practical work.
-     */
+    /** File-based examination responses were retired from the compact CBT flow. */
     public function uploadanswer()
     {
-        if (!$this->isValidV2Request()) {
-            return $this->jsonResponse(array('status' => false, 'message' => 'Your examination session token has expired.'), 403);
-        }
-        if (empty($_FILES['attachment']) || !is_uploaded_file($_FILES['attachment']['tmp_name'])) {
-            return $this->jsonResponse(array('status' => false, 'message' => 'No valid attachment was received.'), 422);
-        }
-
-        $settings = $this->filetype_model->get();
-        $extension = strtolower(pathinfo($_FILES['attachment']['name'], PATHINFO_EXTENSION));
-        $allowed_extensions = array_filter(array_map('trim', explode(',', strtolower($settings->file_extension))));
-        $allowed_mimes = array_filter(array_map('trim', explode(',', strtolower($settings->file_mime))));
-        $blocked_extensions = array('php', 'phtml', 'phar', 'cgi', 'pl', 'sh', 'html', 'htm', 'js', 'svg', 'apk');
-
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime = strtolower((string) $finfo->file($_FILES['attachment']['tmp_name']));
-        if (
-            in_array($extension, $blocked_extensions, true)
-            || !in_array($extension, $allowed_extensions, true)
-            || !in_array($mime, $allowed_mimes, true)
-            || (int) $_FILES['attachment']['size'] > (int) $settings->file_size
-        ) {
-            return $this->jsonResponse(array('status' => false, 'message' => 'The attachment type or size is not allowed.'), 422);
-        }
-
-        // Keep assessed work outside the public webroot. Markers retrieve it
-        // through an authenticated, scoped controller action.
-        $upload_directory = APPPATH . 'writable/onlineexam_answers/';
-        if (!is_dir($upload_directory) && !mkdir($upload_directory, 0755, true)) {
-            return $this->jsonResponse(array('status' => false, 'message' => 'The attachment directory is unavailable.'), 500);
-        }
-        $stored_name = bin2hex(random_bytes(24)) . '.' . $extension;
-        if (!move_uploaded_file($_FILES['attachment']['tmp_name'], $upload_directory . $stored_name)) {
-            return $this->jsonResponse(array('status' => false, 'message' => 'The attachment could not be stored.'), 500);
-        }
-
-        $result = $this->onlineexamattempt_model->attachFile(
-            $this->currentStudentSessionId(),
-            (int) $this->input->post('attempt_id'),
-            (int) $this->input->post('question_snapshot_id'),
-            array(
-                'original_name' => basename($_FILES['attachment']['name']),
-                'stored_name' => $stored_name,
-                'mime' => $mime,
-                'size' => (int) $_FILES['attachment']['size'],
-            )
-        );
-        if (!$result['status']) {
-            @unlink($upload_directory . $stored_name);
-        } elseif (!empty($result['replaced_attachment'])) {
-            $previous = basename((string) $result['replaced_attachment']);
-            if ($previous !== '' && $previous !== $stored_name) {
-                @unlink($upload_directory . $previous);
-            }
-        }
-        return $this->jsonResponse($result, $result['status'] ? 200 : 422);
+        return $this->jsonResponse(array(
+            'status' => false,
+            'message' => 'File responses are not supported in Online Examination.',
+        ), 410);
     }
 
     public function submitpaper()
@@ -382,11 +162,55 @@ class Onlineexam extends Student_Controller
             return $this->jsonResponse(array('status' => false, 'message' => 'Your examination session token has expired.'), 403);
         }
 
+        $final_answers = $this->input->post('final_answers', false);
+        if (is_string($final_answers)
+            && strlen($final_answers) > Onlineexamattempt_model::FINAL_ANSWERS_MAX_BYTES) {
+            return $this->jsonResponse(array(
+                'status' => false,
+                'code' => 'final_answers_too_large',
+                'preserve_local_queue' => true,
+                'message' => 'The queued-answer packet is too large, so the paper was not submitted.',
+            ), 422);
+        }
+        if (is_string($final_answers) && trim($final_answers) !== '') {
+            $decoded = json_decode($final_answers, true);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+                return $this->jsonResponse(array(
+                    'status' => false,
+                    'code' => 'invalid_final_answers',
+                    'preserve_local_queue' => true,
+                    'message' => 'Queued answers could not be read, so the paper was not submitted.',
+                ), 422);
+            }
+            $final_answers = $decoded;
+        }
+        if (!is_array($final_answers)) {
+            $final_answers = array();
+        }
+        foreach ($final_answers as $index => $answer) {
+            if (is_array($answer) && array_key_exists('response', $answer)) {
+                $final_answers[$index]['response'] = $this->sanitizeAnswer($answer['response']);
+            }
+        }
+        $encoded_final_answers = json_encode($final_answers, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($encoded_final_answers === false
+            || strlen($encoded_final_answers) > Onlineexamattempt_model::FINAL_ANSWERS_MAX_BYTES
+            || count($final_answers) > Onlineexamattempt_model::FINAL_ANSWERS_MAX_ITEMS) {
+            return $this->jsonResponse(array(
+                'status' => false,
+                'code' => 'final_answers_too_large',
+                'preserve_local_queue' => true,
+                'message' => 'The queued-answer packet is too large, so the paper was not submitted.',
+            ), 422);
+        }
+
         $result = $this->onlineexamattempt_model->submitPaper(
             $this->currentStudentSessionId(),
             (int) $this->input->post('attempt_id'),
             (int) $this->input->post('paper_id'),
-            (string) $this->input->post('submission_key')
+            (string) $this->input->post('submission_key'),
+            $final_answers,
+            $this->requestReceivedAt()
         );
         if (!$result['status']) {
             return $this->jsonResponse($result, 422);
@@ -424,6 +248,9 @@ class Onlineexam extends Student_Controller
         $context = $this->onlineexamattempt_model->getCandidateContext($student_session_id, $exam->id);
         if (!$context) {
             show_error('You are not assigned to this assessment.', 403);
+        }
+        if (!$this->onlineexamattempt_model->isSupportedAssessmentContext($context)) {
+            show_error('This historical assessment is read-only.', 410);
         }
 
         $expired_results = $this->onlineexamattempt_model->submitExpiredPapers($student_session_id, $assignment->id);
@@ -485,6 +312,15 @@ class Onlineexam extends Student_Controller
             return $clean;
         }
         return is_string($answer) ? $this->security->xss_clean($answer) : $answer;
+    }
+
+    /** Use PHP's trusted request-arrival time so database lock waits do not cost a candidate an answer. */
+    protected function requestReceivedAt()
+    {
+        $received_at = isset($_SERVER['REQUEST_TIME_FLOAT'])
+            ? (float) $_SERVER['REQUEST_TIME_FLOAT']
+            : microtime(true);
+        return $received_at > 0 ? $received_at : microtime(true);
     }
 
     protected function auditV2($onlineexam_id, $attempt_id, $action, $entity_type, $entity_id)

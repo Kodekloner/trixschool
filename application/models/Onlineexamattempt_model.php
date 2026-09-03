@@ -17,11 +17,14 @@ class Onlineexamattempt_model extends CI_Model
     const STATUS_MARKING = 'marking';
     const STATUS_COMPLETED = 'completed';
     const STATUS_VOIDED = 'voided';
+    const FINAL_SUBMISSION_GRACE_SECONDS = 15;
+    const FINAL_ANSWERS_MAX_ITEMS = 500;
+    const FINAL_ANSWERS_MAX_BYTES = 524288;
 
     public function getCandidateContext($student_session_id, $onlineexam_id)
     {
         return $this->db
-            ->select('onlineexam.*, onlineexam_students.id AS onlineexam_student_id, onlineexam_students.student_session_id, onlineexam_students.candidate_status, student_session.student_id, student_session.class_id AS enrolled_class_id, student_session.section_id AS enrolled_section_id, COALESCE(onlineexam_accommodations.extra_time_minutes, 0) AS accommodation_extra_time_minutes, onlineexam_accommodations.makeup_expires_at', false)
+            ->select('onlineexam.*, onlineexam_students.id AS onlineexam_student_id, onlineexam_students.student_session_id, onlineexam_students.candidate_status, student_session.student_id, student_session.class_id AS enrolled_class_id, student_session.section_id AS enrolled_section_id, COALESCE(onlineexam_accommodations.extra_time_minutes, 0) AS accommodation_extra_time_minutes', false)
             ->from('onlineexam_students')
             ->join('onlineexam', 'onlineexam.id = onlineexam_students.onlineexam_id')
             ->join('student_session', 'student_session.id = onlineexam_students.student_session_id')
@@ -74,6 +77,11 @@ class Onlineexamattempt_model extends CI_Model
                 if (isset($paper['is_active']) && (int) $paper['is_active'] !== 1) {
                     continue;
                 }
+                if (!isset($paper['delivery_mode'], $paper['paper_type'])
+                    || $paper['delivery_mode'] !== 'cbt'
+                    || !in_array($paper['paper_type'], array('objective', 'theory'), true)) {
+                    continue;
+                }
                 $row = (object) $paper;
                 $attempt_paper = isset($attempt_papers[(int) $row->id]) ? $attempt_papers[(int) $row->id] : null;
                 $row->attempt_paper_id = $attempt_paper ? $attempt_paper->id : null;
@@ -102,6 +110,8 @@ class Onlineexamattempt_model extends CI_Model
         return $this->db
             ->where('onlineexam_papers.onlineexam_id', (int) $onlineexam_id)
             ->where('onlineexam_papers.is_active', 1)
+            ->where('onlineexam_papers.delivery_mode', 'cbt')
+            ->where_in('onlineexam_papers.paper_type', array('objective', 'theory'))
             ->order_by('onlineexam_papers.display_order', 'ASC')
             ->order_by('onlineexam_papers.id', 'ASC')
             ->get()
@@ -120,7 +130,7 @@ class Onlineexamattempt_model extends CI_Model
             ->from('onlineexam_attempt_papers')
             ->where('attempt_id', (int) $attempt->id)
             ->where('status', self::STATUS_IN_PROGRESS)
-            ->where('deadline_at <=', date('Y-m-d H:i:s'))
+            ->where('deadline_at <', date('Y-m-d H:i:s', time() - self::FINAL_SUBMISSION_GRACE_SECONDS))
             ->get()
             ->result();
 
@@ -153,7 +163,7 @@ class Onlineexamattempt_model extends CI_Model
             ->join('onlineexam_candidate_attempts a', 'a.id = ap.attempt_id')
             ->join('onlineexam_students os', 'os.id = a.onlineexam_student_id')
             ->where('ap.status', self::STATUS_IN_PROGRESS)
-            ->where('ap.deadline_at <=', date('Y-m-d H:i:s'))
+            ->where('ap.deadline_at <', date('Y-m-d H:i:s', time() - self::FINAL_SUBMISSION_GRACE_SECONDS))
             ->where('a.status', self::STATUS_IN_PROGRESS)
             ->order_by('ap.deadline_at', 'ASC')
             ->limit($limit)
@@ -269,7 +279,7 @@ class Onlineexamattempt_model extends CI_Model
             ->join('onlineexam e', 'e.id = a.onlineexam_id')
             ->where('a.status', self::STATUS_COMPLETED)
             ->where('e.workflow_version', 2)
-            ->where('e.result_adapter !=', 'unlinked_practice')
+            ->where("((e.purpose IN ('ca','midterm') AND e.result_adapter = 'standard_component') OR (e.purpose = 'holiday' AND e.result_adapter = 'holiday_assessment') OR (e.purpose = 'kindergarten' AND e.result_adapter = 'kindergarten_concept'))", null, false)
             ->where("NOT EXISTS (SELECT 1 FROM onlineexam_result_sync rs WHERE rs.attempt_id = a.id AND rs.status IN ('posted','conflict'))", null, false)
             ->order_by('a.updated_at', 'ASC')
             ->limit((int) $limit)
@@ -293,7 +303,7 @@ class Onlineexamattempt_model extends CI_Model
     }
 
     /**
-     * Once a frozen CBT/hybrid paper window (including accommodation) closes,
+     * Once a frozen CBT paper window (including accommodation) closes,
      * materialize any missing/pending attempt-paper as a timed-out zero paper.
      * Paper-delivered scripts are never auto-zeroed; invigilators record those.
      */
@@ -315,19 +325,17 @@ class Onlineexamattempt_model extends CI_Model
         foreach ($attempts as $attempt) {
             foreach ($this->getFrozenPapers($attempt['onlineexam_id'], $attempt['revision']) as $paper) {
                 if ((isset($paper['is_active']) && (int) $paper['is_active'] !== 1)
-                    || !in_array($paper['delivery_mode'], array('cbt', 'hybrid'), true)) {
+                    || $paper['delivery_mode'] !== 'cbt'
+                    || !in_array($paper['paper_type'], array('objective', 'theory'), true)
+                    || !$this->compactPaperQuestionsSupported($attempt['onlineexam_id'], $attempt['revision'], $paper['id'], $paper['paper_type'])) {
                     continue;
                 }
-                $is_makeup = (int) $attempt['attempt_no'] > 1 && !empty($attempt['deadline_at']);
-                $hard_end = $is_makeup
-                    ? $attempt['deadline_at']
-                    : (!empty($paper['ends_at']) ? $paper['ends_at'] : $attempt['exam_to']);
+                $hard_end = !empty($paper['ends_at']) ? $paper['ends_at'] : $attempt['exam_to'];
                 if (empty($hard_end)) {
                     continue;
                 }
-                $effective_end = strtotime($hard_end)
-                    + ($is_makeup ? 0 : (max(0, (int) $attempt['extra_time_minutes']) * 60));
-                if ($effective_end > $now_timestamp) {
+                $effective_end = strtotime($hard_end) + (max(0, (int) $attempt['extra_time_minutes']) * 60);
+                if (($effective_end + self::FINAL_SUBMISSION_GRACE_SECONDS) >= $now_timestamp) {
                     continue;
                 }
                 $record = array(
@@ -395,8 +403,27 @@ class Onlineexamattempt_model extends CI_Model
         if (!$paper) {
             return array('status' => false, 'message' => 'The selected paper does not belong to this assessment.');
         }
-        if (!in_array($paper->delivery_mode, array('cbt', 'hybrid'), true)) {
-            return array('status' => false, 'message' => 'This paper is completed and marked offline.');
+        if ($paper->delivery_mode !== 'cbt') {
+            return array('status' => false, 'message' => 'Only CBT papers are available in Online Examination.');
+        }
+        if (!in_array($paper->paper_type, array('objective', 'theory'), true)) {
+            return array('status' => false, 'message' => 'This retired paper type cannot be opened in Online Examination.');
+        }
+        $allowed_question_types = array(
+            'singlechoice', 'multichoice', 'true_false', 'short_answer',
+            'numeric', 'matching', 'ordering', 'long_answer'
+        );
+        $question_count = $this->db->where('onlineexam_id', (int) $onlineexam_id)
+            ->where('revision', (int) $context->revision)
+            ->where('paper_id', (int) $paper->id)
+            ->count_all_results('onlineexam_question_snapshots');
+        $unsupported_count = $this->db->where('onlineexam_id', (int) $onlineexam_id)
+            ->where('revision', (int) $context->revision)
+            ->where('paper_id', (int) $paper->id)
+            ->where_not_in('question_type', $allowed_question_types)
+            ->count_all_results('onlineexam_question_snapshots');
+        if ($question_count < 1 || $unsupported_count > 0) {
+            return array('status' => false, 'message' => 'This paper contains no supported compact CBT questions.');
         }
 
         $window_error = $this->validatePaperWindow($paper, $context, $extra_time_minutes, $current_attempt);
@@ -408,14 +435,14 @@ class Onlineexamattempt_model extends CI_Model
         // Serialize all starts for this candidate. This turns concurrent tabs
         // into a safe resume instead of competing attempt_no=1 inserts.
         $locked_candidate = $this->db->query(
-            'SELECT id FROM `onlineexam_students` WHERE id = '
+            'SELECT id, candidate_status FROM `onlineexam_students` WHERE id = '
             . $this->db->escape((int) $context->onlineexam_student_id)
             . ' AND onlineexam_id = ' . $this->db->escape((int) $context->id)
             . ' LIMIT 1 FOR UPDATE'
         )->row();
-        if (!$locked_candidate) {
+        if (!$locked_candidate || $locked_candidate->candidate_status !== 'assigned') {
             $this->db->trans_rollback();
-            return array('status' => false, 'message' => 'The candidate assignment is no longer available.');
+            return array('status' => false, 'message' => 'You are no longer an active candidate for this assessment.');
         }
         $attempt = $this->getOrCreateAttempt($context);
         if (is_array($attempt) && isset($attempt['status']) && $attempt['status'] === false) {
@@ -456,9 +483,9 @@ class Onlineexamattempt_model extends CI_Model
                 'updated_at' => $now->format('Y-m-d H:i:s'),
             );
             if ($attempt_paper) {
-                // Paper/hybrid rosters can be created by the invigilation
-                // dashboard before a CBT paper is opened. Start that pending
-                // row here so timing and autosave use a real server deadline.
+                // An invigilation action can create a pending roster row before
+                // a CBT paper is opened. Start it here so timing and autosave
+                // use a real server deadline.
                 unset($record['created_at']);
                 $this->db->where('id', (int) $attempt_paper->id)->update('onlineexam_attempt_papers', $record);
                 $record['id'] = (int) $attempt_paper->id;
@@ -504,18 +531,11 @@ class Onlineexamattempt_model extends CI_Model
             ->where('status !=', self::STATUS_VOIDED)->count_all_results('onlineexam_candidate_attempts');
         $max_extra = (int) $this->db->select_max('extra_time_minutes', 'minutes')
             ->where('onlineexam_id', (int) $onlineexam_id)->get('onlineexam_accommodations')->row()->minutes;
-        $makeup_close_row = $this->db->select_max('makeup_expires_at', 'closes_at')
-            ->where('onlineexam_id', (int) $onlineexam_id)->get('onlineexam_accommodations')->row();
-        $makeup_close = $makeup_close_row && !empty($makeup_close_row->closes_at)
-            ? strtotime($makeup_close_row->closes_at) : 0;
-        $open_makeup = $this->db->where('onlineexam_id', (int) $onlineexam_id)
-            ->where('attempt_no >', 1)->where('status', self::STATUS_IN_PROGRESS)
-            ->count_all_results('onlineexam_candidate_attempts');
         $normal_close = empty($exam['exam_to']) ? 0 : strtotime($exam['exam_to']) + ($max_extra * 60);
 
         if (!empty($exam['exam_from']) && $now < strtotime($exam['exam_from'])) {
             $desired = 'scheduled';
-        } elseif (($makeup_close && $now < $makeup_close && $open_makeup > 0) || !$normal_close || $now < $normal_close) {
+        } elseif (!$normal_close || $now < $normal_close) {
             $desired = $started > 0 ? 'in_progress' : 'published';
         } else {
             $assigned = $this->db->where('onlineexam_id', (int) $onlineexam_id)
@@ -635,7 +655,7 @@ class Onlineexamattempt_model extends CI_Model
         return $questions;
     }
 
-    public function saveAnswer($student_session_id, $attempt_id, $question_snapshot_id, $response, $client_sequence = null)
+    public function saveAnswer($student_session_id, $attempt_id, $question_snapshot_id, $response, $client_sequence = null, $request_received_at = null)
     {
         $this->db->trans_begin();
         $owned = $this->lockOwnedAttemptQuestion($student_session_id, $attempt_id, $question_snapshot_id);
@@ -647,21 +667,44 @@ class Onlineexamattempt_model extends CI_Model
             $this->db->trans_rollback();
             return array('status' => false, 'message' => 'This paper is no longer open for answers.');
         }
-        if (strtotime($owned->paper_deadline_at) <= time()) {
+        $request_received_at = $this->trustedRequestTime($request_received_at);
+        if ((strtotime($owned->paper_deadline_at) + self::FINAL_SUBMISSION_GRACE_SECONDS) < $request_received_at) {
             $this->db->trans_rollback();
-            return array('status' => false, 'expired' => true, 'message' => 'The server time for this paper has elapsed.');
+            return array('status' => false, 'expired' => true, 'preserve_local_queue' => true, 'message' => 'The server time for this paper has elapsed.');
         }
+        $result = $this->persistAnswerInOpenTransaction(
+            $owned,
+            $attempt_id,
+            $question_snapshot_id,
+            $response,
+            $client_sequence,
+            true
+        );
+        if (empty($result['status']) || $this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return empty($result['status'])
+                ? $result
+                : array('status' => false, 'message' => 'The answer could not be saved.');
+        }
+        $this->db->trans_commit();
+        return $result;
+    }
 
+    /** Persist one validated answer while the caller owns the attempt transaction. */
+    protected function persistAnswerInOpenTransaction($owned, $attempt_id, $question_snapshot_id, $response, $client_sequence = null, $enforce_selection_limit = true)
+    {
         $normalized = $this->normalizeResponse($response);
         $response_validation = $this->validateAndNormalizeResponse($owned, $normalized);
         if (!$response_validation['valid']) {
-            $this->db->trans_rollback();
             return array('status' => false, 'message' => $response_validation['message']);
         }
         $normalized = $response_validation['response'];
         $response_is_answered = $this->isAnswered($normalized);
         $now = date('Y-m-d H:i:s');
         $response_json = json_encode($normalized, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($response_json === false) {
+            return array('status' => false, 'message' => 'The answer could not be encoded safely.');
+        }
         $response_hash = hash('sha256', $response_json);
         $client_sequence = (int) $client_sequence;
         if ($client_sequence <= 0) {
@@ -674,9 +717,7 @@ class Onlineexamattempt_model extends CI_Model
             . ' AND `question_snapshot_id` = ' . $this->db->escape((int) $question_snapshot_id)
             . ' LIMIT 1 FOR UPDATE'
         )->row();
-
         if ($existing && (int) $existing->client_sequence > $client_sequence) {
-            $this->db->trans_commit();
             return array(
                 'status' => true,
                 'stale' => true,
@@ -688,7 +729,6 @@ class Onlineexamattempt_model extends CI_Model
         }
         if ($existing && (int) $existing->client_sequence === $client_sequence) {
             if (hash_equals((string) $existing->response_hash, $response_hash)) {
-                $this->db->trans_commit();
                 return array(
                     'status' => true,
                     'idempotent' => true,
@@ -698,21 +738,20 @@ class Onlineexamattempt_model extends CI_Model
                     'client_sequence' => (int) $existing->client_sequence,
                 );
             }
-            $this->db->trans_rollback();
             return array('status' => false, 'message' => 'An answer save sequence was reused with different content. Please reload this paper.');
         }
 
-        if ($response_is_answered && (!$existing || (int) $existing->is_answered !== 1)) {
+        if ($enforce_selection_limit && $response_is_answered && (!$existing || (int) $existing->is_answered !== 1)) {
             $selection_error = $this->selectionLimitError($attempt_id, $owned);
             if ($selection_error !== true) {
-                $this->db->trans_rollback();
                 return array('status' => false, 'message' => $selection_error);
             }
         }
 
-        $is_answered = $response_is_answered || ($existing && !empty($existing->attachment_path));
+        // Typed compact CBT responses are the only source of answered state.
+        // Historical attachment metadata must never revive a retired response.
+        $is_answered = $response_is_answered;
         $mark = $this->autoMark($owned, $normalized, $is_answered);
-
         $data = array(
             'response_json' => $response_json,
             'response_hash' => $response_hash,
@@ -725,30 +764,24 @@ class Onlineexamattempt_model extends CI_Model
             'saved_at' => $now,
             'updated_at' => $now,
         );
-
         if ($existing) {
             $data['version'] = ((int) $existing->version) + 1;
             $this->db->where('id', (int) $existing->id)->update('onlineexam_attempt_answers', $data);
             $answer_id = (int) $existing->id;
         } else {
-            $data['attempt_id'] = (int) $attempt_id;
-            $data['question_snapshot_id'] = (int) $question_snapshot_id;
-            $data['version'] = 1;
-            $data['created_at'] = $now;
+            $data += array(
+                'attempt_id' => (int) $attempt_id,
+                'question_snapshot_id' => (int) $question_snapshot_id,
+                'version' => 1,
+                'created_at' => $now,
+            );
             $this->db->insert('onlineexam_attempt_answers', $data);
             $answer_id = (int) $this->db->insert_id();
         }
-
         $this->db->where('id', (int) $attempt_id)->update('onlineexam_candidate_attempts', array(
             'last_saved_at' => $now,
             'updated_at' => $now,
         ));
-
-        if ($this->db->trans_status() === false) {
-            $this->db->trans_rollback();
-            return array('status' => false, 'message' => 'The answer could not be saved.');
-        }
-        $this->db->trans_commit();
 
         return array(
             'status' => true,
@@ -761,95 +794,13 @@ class Onlineexamattempt_model extends CI_Model
 
     public function attachFile($student_session_id, $attempt_id, $question_snapshot_id, array $file)
     {
-        $this->db->trans_begin();
-        $owned = $this->lockOwnedAttemptQuestion($student_session_id, $attempt_id, $question_snapshot_id);
-        if (!$owned || $owned->attempt_status !== self::STATUS_IN_PROGRESS || $owned->paper_status !== self::STATUS_IN_PROGRESS) {
-            $this->db->trans_rollback();
-            return array('status' => false, 'message' => 'This attachment does not belong to an open paper.');
-        }
-        if (strtotime($owned->paper_deadline_at) <= time()) {
-            $this->db->trans_rollback();
-            return array('status' => false, 'message' => 'The server time for this paper has elapsed.');
-        }
-        $attachment_types = array('descriptive', 'long_answer', 'file_upload', 'oral', 'aural', 'practical', 'project');
-        if (!in_array($owned->question_type, $attachment_types, true)) {
-            $this->db->trans_rollback();
-            return array('status' => false, 'message' => 'Attachments are not allowed for this question type.');
-        }
-        $response_schema = json_decode((string) $owned->response_schema_json, true);
-        if (is_array($response_schema) && !empty($response_schema['allowed_extensions'])) {
-            $extension = strtolower(pathinfo((string) $file['original_name'], PATHINFO_EXTENSION));
-            $allowed_for_question = array_map('strtolower', (array) $response_schema['allowed_extensions']);
-            if (!in_array($extension, $allowed_for_question, true)) {
-                $this->db->trans_rollback();
-                return array('status' => false, 'message' => 'This attachment type is not permitted for this question.');
-            }
-        }
-
-        $now = date('Y-m-d H:i:s');
-        $existing = $this->db->query(
-            'SELECT * FROM `onlineexam_attempt_answers` WHERE `attempt_id` = '
-            . $this->db->escape((int) $attempt_id)
-            . ' AND `question_snapshot_id` = ' . $this->db->escape((int) $question_snapshot_id)
-            . ' LIMIT 1 FOR UPDATE'
-        )->row();
-
-        if (!$existing || (int) $existing->is_answered !== 1) {
-            $selection_error = $this->selectionLimitError($attempt_id, $owned);
-            if ($selection_error !== true) {
-                $this->db->trans_rollback();
-                return array('status' => false, 'message' => $selection_error);
-            }
-        }
-
-        $data = array(
-            'attachment_name' => $file['original_name'],
-            'attachment_path' => $file['stored_name'],
-            'attachment_mime' => $file['mime'],
-            'attachment_size' => (int) $file['size'],
-            'is_answered' => 1,
-            'marking_status' => 'awaiting_manual',
-            'saved_at' => $now,
-            'updated_at' => $now,
-        );
-
-        if ($existing) {
-            $data['version'] = ((int) $existing->version) + 1;
-            $this->db->where('id', (int) $existing->id)->update('onlineexam_attempt_answers', $data);
-            $answer_id = (int) $existing->id;
-        } else {
-            $data += array(
-                'attempt_id' => (int) $attempt_id,
-                'question_snapshot_id' => (int) $question_snapshot_id,
-                'response_json' => null,
-                'response_hash' => null,
-                'auto_mark' => null,
-                'final_mark' => 0,
-                'version' => 1,
-                'created_at' => $now,
-            );
-            $this->db->insert('onlineexam_attempt_answers', $data);
-            $answer_id = (int) $this->db->insert_id();
-        }
-
-        $this->db->where('id', (int) $attempt_id)->update('onlineexam_candidate_attempts', array(
-            'last_saved_at' => $now,
-            'updated_at' => $now,
-        ));
-        if ($this->db->trans_status() === false) {
-            $this->db->trans_rollback();
-            return array('status' => false, 'message' => 'The attachment record could not be saved.');
-        }
-        $this->db->trans_commit();
-        return array(
-            'status' => true,
-            'answer_id' => $answer_id,
-            'saved_at' => $now,
-            'replaced_attachment' => $existing && !empty($existing->attachment_path) ? $existing->attachment_path : null,
-        );
+        // Compact Online Examination accepts typed CBT answers only. Keeping
+        // the method as a hard failure avoids breaking old callers while
+        // ensuring no new attachment record can be created.
+        return array('status' => false, 'message' => 'Answer attachments are no longer supported in Online Examination.');
     }
 
-    public function submitPaper($student_session_id, $attempt_id, $paper_id, $submission_key)
+    public function submitPaper($student_session_id, $attempt_id, $paper_id, $submission_key, array $final_answers = array(), $request_received_at = null)
     {
         $this->db->trans_begin();
         $owned = $this->lockOwnedAttemptPaper($student_session_id, $attempt_id, $paper_id);
@@ -861,16 +812,108 @@ class Onlineexamattempt_model extends CI_Model
             $this->db->trans_rollback();
             return array('status' => false, 'message' => 'The submission token is invalid.');
         }
+        $encoded_final_answers = json_encode($final_answers, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($encoded_final_answers === false
+            || strlen($encoded_final_answers) > self::FINAL_ANSWERS_MAX_BYTES
+            || count($final_answers) > self::FINAL_ANSWERS_MAX_ITEMS) {
+            $this->db->trans_rollback();
+            return array('status' => false, 'code' => 'final_answers_too_large', 'preserve_local_queue' => true, 'message' => 'Too many queued answers were included. Reload the paper and retry.');
+        }
         if (in_array($owned->paper_status, array(self::STATUS_SUBMITTED, self::STATUS_COMPLETED), true)) {
+            if (!empty($final_answers)
+                && !$this->terminalSubmissionAcknowledgesFinalAnswers($student_session_id, $attempt_id, $paper_id, $final_answers)) {
+                $this->db->trans_rollback();
+                return array(
+                    'status' => false,
+                    'code' => 'terminal_submission_mismatch',
+                    'preserve_local_queue' => true,
+                    'message' => 'The paper is already closed, but one or more answers from this device were not recorded. Contact an invigilator.',
+                );
+            }
             $this->db->trans_commit();
-            return array('status' => true, 'idempotent' => true, 'attempt_id' => (int) $attempt_id, 'attempt_status' => $owned->paper_status === self::STATUS_COMPLETED ? self::STATUS_COMPLETED : $owned->attempt_status);
+            return array(
+                'status' => true,
+                'idempotent' => true,
+                'final_answers_applied' => !empty($final_answers),
+                'attempt_id' => (int) $attempt_id,
+                'attempt_status' => $owned->paper_status === self::STATUS_COMPLETED ? self::STATUS_COMPLETED : $owned->attempt_status,
+            );
         }
         if ($owned->attempt_status !== self::STATUS_IN_PROGRESS || $owned->paper_status !== self::STATUS_IN_PROGRESS) {
             $this->db->trans_rollback();
-            return array('status' => false, 'message' => 'This official attempt is no longer open.');
+            return array('status' => false, 'preserve_local_queue' => !empty($final_answers), 'message' => 'This official attempt is no longer open.');
+        }
+        if ($owned->delivery_mode !== 'cbt'
+            || !in_array($owned->paper_type, array('objective', 'theory'), true)
+            || !$this->compactPaperQuestionsSupported($owned->onlineexam_id, $owned->revision, $paper_id, $owned->paper_type)) {
+            $this->db->trans_rollback();
+            return array('status' => false, 'preserve_local_queue' => !empty($final_answers), 'message' => 'This retired paper or response type cannot be submitted in compact CBT.');
         }
 
-        $timed_out = !empty($owned->paper_deadline_at) && strtotime($owned->paper_deadline_at) <= time();
+        $request_received_at = $this->trustedRequestTime($request_received_at);
+        $deadline_timestamp = !empty($owned->paper_deadline_at) ? strtotime($owned->paper_deadline_at) : 0;
+        $timed_out = $deadline_timestamp > 0 && $deadline_timestamp <= $request_received_at;
+        if (!empty($final_answers)
+            && $timed_out
+            && $request_received_at > ($deadline_timestamp + self::FINAL_SUBMISSION_GRACE_SECONDS)) {
+            $this->db->trans_rollback();
+            return array(
+                'status' => false,
+                'code' => 'unsaved_answers_expired',
+                'expired' => true,
+                'preserve_local_queue' => true,
+                'message' => 'Queued answers arrived after the secure final-submission window and were not discarded. Contact an invigilator.',
+            );
+        }
+        $seen_question_ids = array();
+        $final_answer_counts = array('applied' => 0, 'stale' => 0, 'idempotent' => 0);
+        foreach ($final_answers as $index => $answer) {
+            if (!is_array($answer)
+                || empty($answer['question_snapshot_id'])
+                || !array_key_exists('response', $answer)) {
+                $this->db->trans_rollback();
+                return array('status' => false, 'code' => 'invalid_final_answer', 'preserve_local_queue' => true, 'message' => 'A queued answer has an invalid format.');
+            }
+            $question_snapshot_id = (int) $answer['question_snapshot_id'];
+            if (isset($seen_question_ids[$question_snapshot_id])) {
+                $this->db->trans_rollback();
+                return array('status' => false, 'code' => 'duplicate_final_answer', 'preserve_local_queue' => true, 'message' => 'A queued answer was included more than once.');
+            }
+            $seen_question_ids[$question_snapshot_id] = true;
+            $owned_question = $this->lockOwnedAttemptQuestion($student_session_id, $attempt_id, $question_snapshot_id);
+            if (!$owned_question
+                || (int) $owned_question->paper_id !== (int) $paper_id
+                || $owned_question->attempt_status !== self::STATUS_IN_PROGRESS
+                || $owned_question->paper_status !== self::STATUS_IN_PROGRESS) {
+                $this->db->trans_rollback();
+                return array('status' => false, 'code' => 'invalid_final_answer', 'preserve_local_queue' => true, 'message' => 'A queued answer does not belong to this open paper.');
+            }
+            $answer_result = $this->persistAnswerInOpenTransaction(
+                $owned_question,
+                $attempt_id,
+                $question_snapshot_id,
+                $answer['response'],
+                isset($answer['client_sequence']) ? $answer['client_sequence'] : null,
+                false
+            );
+            if (empty($answer_result['status'])) {
+                $this->db->trans_rollback();
+                $answer_result['code'] = 'final_answer_rejected';
+                $answer_result['preserve_local_queue'] = true;
+                return $answer_result;
+            }
+            if (!empty($answer_result['stale'])) {
+                $final_answer_counts['stale']++;
+            } elseif (!empty($answer_result['idempotent'])) {
+                $final_answer_counts['idempotent']++;
+            } else {
+                $final_answer_counts['applied']++;
+            }
+        }
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return array('status' => false, 'code' => 'final_answer_save_failed', 'preserve_local_queue' => true, 'message' => 'Queued answers could not be saved, so the paper was not submitted. Please retry.');
+        }
         if (!$timed_out) {
             $selection_error = $this->validateSectionSelections($attempt_id, $paper_id);
             if ($selection_error !== true) {
@@ -908,8 +951,74 @@ class Onlineexamattempt_model extends CI_Model
             'attempt_id' => (int) $attempt_id,
             'onlineexam_id' => (int) $owned->onlineexam_id,
             'attempt_status' => $attempt_status,
+            'timed_out' => $timed_out,
+            'final_answers_applied' => !empty($final_answers),
+            'final_answer_counts' => $final_answer_counts,
             'paper_score' => $scores,
         );
+    }
+
+    /**
+     * A retry after a lost response may clear browser storage only when every
+     * submitted client sequence is already represented by the terminal paper.
+     */
+    protected function terminalSubmissionAcknowledgesFinalAnswers($student_session_id, $attempt_id, $paper_id, array $final_answers)
+    {
+        $seen = array();
+        foreach ($final_answers as $answer) {
+            if (!is_array($answer)
+                || empty($answer['question_snapshot_id'])
+                || !array_key_exists('response', $answer)
+                || empty($answer['client_sequence'])) {
+                return false;
+            }
+            $question_id = (int) $answer['question_snapshot_id'];
+            if (isset($seen[$question_id])) {
+                return false;
+            }
+            $seen[$question_id] = true;
+
+            $owned_question = $this->lockOwnedAttemptQuestion($student_session_id, $attempt_id, $question_id);
+            if (!$owned_question || (int) $owned_question->paper_id !== (int) $paper_id) {
+                return false;
+            }
+            $normalized = $this->normalizeResponse($answer['response']);
+            $validation = $this->validateAndNormalizeResponse($owned_question, $normalized);
+            if (empty($validation['valid'])) {
+                return false;
+            }
+            $encoded = json_encode($validation['response'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if ($encoded === false) {
+                return false;
+            }
+            $stored = $this->db->query(
+                'SELECT `client_sequence`, `response_hash` FROM `onlineexam_attempt_answers` WHERE `attempt_id` = '
+                . $this->db->escape((int) $attempt_id)
+                . ' AND `question_snapshot_id` = ' . $this->db->escape($question_id)
+                . ' LIMIT 1 FOR UPDATE'
+            )->row();
+            $client_sequence = (int) $answer['client_sequence'];
+            if (!$stored) {
+                return false;
+            }
+            $stored_sequence = (int) $stored->client_sequence;
+            $submitted_hash = hash('sha256', $encoded);
+            // A browser retry can allocate a newer sequence after the first
+            // committed response was lost. It is still safe to acknowledge
+            // when the content is identical. A genuinely newer stored answer
+            // also supersedes an older queued sequence safely.
+            if ($stored_sequence <= $client_sequence
+                && !hash_equals((string) $stored->response_hash, $submitted_hash)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    protected function trustedRequestTime($request_received_at)
+    {
+        $request_received_at = is_numeric($request_received_at) ? (float) $request_received_at : microtime(true);
+        return $request_received_at > 0 ? $request_received_at : microtime(true);
     }
 
     public function getOwnedAttempt($student_session_id, $attempt_id)
@@ -973,10 +1082,55 @@ class Onlineexamattempt_model extends CI_Model
         return array('attempt' => $attempt, 'questions' => $questions);
     }
 
-    protected function validateCandidateContext($context, $extra_time_minutes = 0, $attempt = null)
+    public function isSupportedAssessmentContext($context)
     {
         if (!$context || (int) $context->workflow_version < 2) {
-            return 'This assessment is not available through the localized workflow.';
+            return false;
+        }
+
+        $adapters = array(
+            'ca' => 'standard_component',
+            'midterm' => 'standard_component',
+            'holiday' => 'holiday_assessment',
+            'kindergarten' => 'kindergarten_concept',
+        );
+        $purpose = isset($context->purpose) ? (string) $context->purpose : '';
+        $adapter = isset($context->result_adapter) ? (string) $context->result_adapter : '';
+        if (!isset($adapters[$purpose]) || $adapters[$purpose] !== $adapter) {
+            return false;
+        }
+
+        $onlineexam_id = isset($context->id) ? (int) $context->id : 0;
+        $revision = isset($context->revision) ? (int) $context->revision : 0;
+        if ($onlineexam_id < 1 || $revision < 1) {
+            return false;
+        }
+
+        $active_papers = 0;
+        foreach ($this->getFrozenPapers($onlineexam_id, $revision) as $paper) {
+            if (isset($paper['is_active']) && (int) $paper['is_active'] !== 1) {
+                continue;
+            }
+            $active_papers++;
+            if (!isset($paper['id'], $paper['delivery_mode'], $paper['paper_type'])
+                || $paper['delivery_mode'] !== 'cbt'
+                || !in_array($paper['paper_type'], array('objective', 'theory'), true)
+                || !$this->compactPaperQuestionsSupported(
+                    $onlineexam_id,
+                    $revision,
+                    (int) $paper['id'],
+                    $paper['paper_type']
+                )) {
+                return false;
+            }
+        }
+        return $active_papers > 0;
+    }
+
+    protected function validateCandidateContext($context, $extra_time_minutes = 0, $attempt = null)
+    {
+        if (!$this->isSupportedAssessmentContext($context)) {
+            return 'This historical assessment is read-only.';
         }
         if ($context->candidate_status !== 'assigned') {
             return 'You are not an active candidate for this assessment.';
@@ -997,9 +1151,7 @@ class Onlineexamattempt_model extends CI_Model
         if (!$section_is_assigned) {
             return 'Your current class arm is not assigned to this assessment.';
         }
-        $makeup_open = $attempt && (int) $attempt->attempt_no > 1
-            && !empty($context->makeup_expires_at) && time() < strtotime($context->makeup_expires_at);
-        if ((!in_array($context->lifecycle_status, array('scheduled', 'published', 'in_progress'), true) && !$makeup_open)
+        if (!in_array($context->lifecycle_status, array('scheduled', 'published', 'in_progress'), true)
             || (string) $context->is_active !== '1') {
             return 'This assessment has not been published.';
         }
@@ -1007,7 +1159,7 @@ class Onlineexamattempt_model extends CI_Model
         if (!empty($context->exam_from) && $now < strtotime($context->exam_from)) {
             return 'This assessment has not started.';
         }
-        if (!$makeup_open && !empty($context->exam_to) && $now >= (strtotime($context->exam_to) + (max(0, (int) $extra_time_minutes) * 60))) {
+        if (!empty($context->exam_to) && $now >= (strtotime($context->exam_to) + (max(0, (int) $extra_time_minutes) * 60))) {
             return 'This assessment has closed.';
         }
         return true;
@@ -1017,11 +1169,8 @@ class Onlineexamattempt_model extends CI_Model
     {
         $now = time();
         $starts_at = !empty($paper->starts_at) ? strtotime($paper->starts_at) : strtotime($context->exam_from);
-        $makeup_open = $attempt && (int) $attempt->attempt_no > 1 && !empty($context->makeup_expires_at);
-        $ends_at = $makeup_open
-            ? strtotime($context->makeup_expires_at)
-            : (!empty($paper->ends_at) ? strtotime($paper->ends_at) : strtotime($context->exam_to));
-        if ($ends_at && !$makeup_open) {
+        $ends_at = !empty($paper->ends_at) ? strtotime($paper->ends_at) : strtotime($context->exam_to);
+        if ($ends_at) {
             $ends_at += max(0, (int) $extra_time_minutes) * 60;
         }
         if ($starts_at && $now < $starts_at) {
@@ -1048,25 +1197,14 @@ class Onlineexamattempt_model extends CI_Model
             ->get()
             ->row();
 
-        $is_practice = $context->result_adapter === 'unlinked_practice';
-        $allowed_attempts = $is_practice ? max(1, (int) $context->attempt) : 1;
-        if ($accommodation) {
-            $allowed_attempts += (int) $accommodation->makeup_attempts;
-        }
-
         $attempt = $this->getCurrentAttempt($context->onlineexam_student_id);
         if ($attempt) {
-            if ($attempt->status === self::STATUS_IN_PROGRESS) {
-                return $attempt;
-            }
-            // Result-bearing assessments always retain a single official
-            // non-voided attempt. Practice assessments may open the next one
-            // only after the previous attempt has fully completed.
-            if (!$is_practice || $attempt->status !== self::STATUS_COMPLETED) {
-                return $attempt;
-            }
+            // Opening/reloading a paper always resumes the same non-voided
+            // official attempt. A replacement is possible only after staff
+            // explicitly void the earlier attempt and retain its audit trail.
+            return $attempt;
         }
-        if ($attempt_count >= $allowed_attempts) {
+        if ($attempt_count >= 1) {
             return array('status' => false, 'message' => 'No official attempts remain for this assessment.');
         }
 
@@ -1106,9 +1244,7 @@ class Onlineexamattempt_model extends CI_Model
     {
         $duration = max(1, (int) $paper->duration_minutes) + max(0, (int) $extra_time_minutes);
         $deadline = $now->modify('+' . $duration . ' minutes');
-        $hard_ends = $attempt && (int) $attempt->attempt_no > 1 && !empty($context->makeup_expires_at)
-            ? array($context->makeup_expires_at)
-            : array($paper->ends_at, $context->exam_to);
+        $hard_ends = array($paper->ends_at, $context->exam_to);
         foreach ($hard_ends as $hard_end) {
             if (!empty($hard_end)) {
                 $candidate = new DateTimeImmutable($hard_end);
@@ -1208,10 +1344,16 @@ class Onlineexamattempt_model extends CI_Model
 
     protected function validateAndNormalizeResponse($question, $response)
     {
+        $type = strtolower((string) $question->question_type);
+        if (!in_array($type, array(
+            'singlechoice', 'multichoice', 'true_false', 'short_answer',
+            'numeric', 'matching', 'ordering', 'long_answer'
+        ), true)) {
+            return array('valid' => false, 'response' => null, 'message' => 'This retired response type is not accepted by compact CBT.');
+        }
         if (!$this->isAnswered($response)) {
             return array('valid' => true, 'response' => $response, 'message' => '');
         }
-        $type = strtolower((string) $question->question_type);
         $options = json_decode((string) $question->options_json, true);
         $options = is_array($options) ? $options : array();
         if (in_array($type, array('singlechoice', 'single_choice'), true)) {
@@ -1293,7 +1435,7 @@ class Onlineexamattempt_model extends CI_Model
 
     protected function autoMark($question, $response, $is_answered)
     {
-        $manual_types = array('descriptive', 'long_answer', 'file_upload', 'oral', 'aural', 'practical', 'project');
+        $manual_types = array('long_answer');
         if (in_array($question->question_type, $manual_types, true)) {
             return array(
                 'is_correct' => null,
@@ -1694,5 +1836,36 @@ class Onlineexamattempt_model extends CI_Model
             }
         }
         return null;
+    }
+
+    protected function compactPaperQuestionsSupported($onlineexam_id, $revision, $paper_id, $paper_type = null)
+    {
+        $allowed = array(
+            'singlechoice', 'multichoice', 'true_false', 'short_answer',
+            'numeric', 'matching', 'ordering', 'long_answer'
+        );
+        $total = $this->db->where('onlineexam_id', (int) $onlineexam_id)
+            ->where('revision', (int) $revision)
+            ->where('paper_id', (int) $paper_id)
+            ->count_all_results('onlineexam_question_snapshots');
+        if ($total < 1) {
+            return false;
+        }
+        $unsupported = $this->db->where('onlineexam_id', (int) $onlineexam_id)
+            ->where('revision', (int) $revision)
+            ->where('paper_id', (int) $paper_id)
+            ->where_not_in('question_type', $allowed)
+            ->count_all_results('onlineexam_question_snapshots');
+        if ($unsupported > 0) {
+            return false;
+        }
+        if ($paper_type === 'objective') {
+            return $this->db->where('onlineexam_id', (int) $onlineexam_id)
+                ->where('revision', (int) $revision)
+                ->where('paper_id', (int) $paper_id)
+                ->where('question_type', 'long_answer')
+                ->count_all_results('onlineexam_question_snapshots') === 0;
+        }
+        return true;
     }
 }

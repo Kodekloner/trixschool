@@ -4,7 +4,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
  * Transactional, idempotent adapters from completed online attempts into the
- * existing Nigerian result tables. Report-card publication remains separate.
+ * existing academic result tables. Report-card publication remains separate.
  */
 class Onlineexamresultsync_model extends CI_Model
 {
@@ -64,8 +64,8 @@ class Onlineexamresultsync_model extends CI_Model
                 case 'kindergarten_concept':
                     $result = $this->syncKindergartenConcepts($context);
                     break;
-                case 'unlinked_practice':
-                    $result = $this->syncUnlinkedPractice($context);
+                case 'holiday_assessment':
+                    $result = $this->syncHolidayAssessment($context);
                     break;
                 default:
                     throw new InvalidArgumentException('Unknown result adapter.');
@@ -103,7 +103,7 @@ class Onlineexamresultsync_model extends CI_Model
      * claimed. Authorized replacement is narrow, audited, and only valid while
      * the destination still equals the value observed at conflict time.
      */
-    public function authorizeStandardConflictReplacement($onlineexam_id, $ledger_id, $actor_id, $reason)
+    public function authorizeConflictReplacement($onlineexam_id, $ledger_id, $actor_id, $reason)
     {
         $reason = trim((string) $reason);
         if ($reason === '' || mb_strlen($reason) > 1000) {
@@ -114,9 +114,10 @@ class Onlineexamresultsync_model extends CI_Model
             'SELECT * FROM `onlineexam_result_sync` WHERE `id` = ' . $this->db->escape((int) $ledger_id)
             . ' AND `onlineexam_id` = ' . $this->db->escape((int) $onlineexam_id) . ' LIMIT 1 FOR UPDATE'
         )->row_array();
-        if (empty($row) || $row['status'] !== 'conflict' || $row['adapter'] !== 'standard_component') {
+        if (empty($row) || $row['status'] !== 'conflict'
+            || !in_array($row['adapter'], array('standard_component', 'holiday_assessment'), true)) {
             $this->db->trans_rollback();
-            return array('success' => false, 'reason' => 'Only a held standard-component conflict can be explicitly replaced.');
+            return array('success' => false, 'reason' => 'Only a held numeric-result conflict can be explicitly replaced.');
         }
         $now = date('Y-m-d H:i:s');
         $this->db->where('id', (int) $ledger_id)->update('onlineexam_result_sync', array(
@@ -145,6 +146,12 @@ class Onlineexamresultsync_model extends CI_Model
         return array('success' => true, 'attempt_id' => (int) $row['attempt_id']);
     }
 
+    /** Backwards-compatible internal name used by deployments before v135. */
+    public function authorizeStandardConflictReplacement($onlineexam_id, $ledger_id, $actor_id, $reason)
+    {
+        return $this->authorizeConflictReplacement($onlineexam_id, $ledger_id, $actor_id, $reason);
+    }
+
     protected function syncStandardComponent(array $context)
     {
         $component = strtolower(trim($context['target_component']));
@@ -164,7 +171,31 @@ class Onlineexamresultsync_model extends CI_Model
         $this->lockResultTarget($context, 'score:row');
         $ledger = $this->startLedger($context, $descriptor, $score, $score);
         if ($ledger['idempotent']) {
-            return $this->ledgerResult($ledger['row']);
+            $posted = $ledger['row'];
+            $row = empty($posted['target_record_id']) ? array() : $this->db->query(
+                'SELECT * FROM `score` WHERE `ID` = '
+                . $this->db->escape((int) $posted['target_record_id']) . ' FOR UPDATE'
+            )->row_array();
+            $matches_context = !empty($row)
+                && (int) $row['StudentID'] === (int) $context['student_id']
+                && (int) $row['ClassID'] === (int) $context['exam_class_id']
+                && (int) $row['SectionID'] === (int) $context['student_section_id']
+                && (int) $row['SubjectID'] === (int) $context['subject_id']
+                && (string) $row['Session'] === (string) $context['exam_session_id']
+                && (string) $row['Term'] === (string) $context['term'];
+            if (!$matches_context
+                || !array_key_exists($component, $row)
+                || !$this->sameValue($row[$component], $posted['applied_value'])) {
+                return $this->conflict(
+                    (int) $posted['id'],
+                    'score',
+                    empty($row) ? null : (int) $row['ID'],
+                    $component,
+                    'The previously synchronized score was changed or moved outside this assessment.',
+                    empty($row) || !array_key_exists($component, $row) ? null : $row[$component]
+                );
+            }
+            return $this->ledgerResult($posted);
         }
 
         $rows = $this->lockStandardRows($context);
@@ -203,6 +234,185 @@ class Onlineexamresultsync_model extends CI_Model
         return array('success' => true, 'status' => 'posted', 'record_id' => (int) $row['ID'], 'value' => $score, 'idempotent' => false);
     }
 
+    /**
+     * Post one finalized score into the existing Holiday Assessment row.
+     * Explicit origin/source columns distinguish pre-created zero placeholders
+     * from real manual zeroes, so no ambiguous legacy value is overwritten.
+     */
+    protected function syncHolidayAssessment(array $context)
+    {
+        foreach (array('holiday_assessment_scores', 'holiday_assessment_settings', 'holiday_assessment_subjects') as $table) {
+            if (!$this->db->table_exists($table)) {
+                throw new RuntimeException('Holiday Assessment tables are not installed.');
+            }
+        }
+        foreach (array('score_origin', 'source_onlineexam_id', 'source_attempt_id', 'source_sync_id') as $field) {
+            if (!$this->db->field_exists($field, 'holiday_assessment_scores')) {
+                throw new RuntimeException('Holiday Assessment provenance migration 135 has not been applied.');
+            }
+        }
+
+        $mappings = isset($context['_frozen_result']['holiday_mappings'])
+            && is_array($context['_frozen_result']['holiday_mappings'])
+            ? $context['_frozen_result']['holiday_mappings']
+            : $this->db->where('onlineexam_id', (int) $context['onlineexam_id'])
+                ->get('onlineexam_holiday_mappings')->result_array();
+        $mapping = null;
+        foreach ($mappings as $candidate) {
+            if ((int) $candidate['section_id'] !== (int) $context['student_section_id']) {
+                continue;
+            }
+            if ($mapping !== null) {
+                throw new RuntimeException('More than one Holiday Assessment destination is mapped to this class arm.');
+            }
+            $mapping = $candidate;
+        }
+        if ($mapping === null) {
+            throw new RuntimeException('No Holiday Assessment destination is mapped to this candidate class arm.');
+        }
+
+        $live = $this->db->select('hs.id AS setting_id, hsub.id AS setting_subject_id, hsub.max_score')
+            ->from('holiday_assessment_settings hs')
+            ->join('holiday_assessment_subjects hsub', 'hsub.setting_id = hs.id')
+            ->where('hs.id', (int) $mapping['setting_id'])
+            ->where('hsub.id', (int) $mapping['setting_subject_id'])
+            ->where('hs.class_id', (int) $context['exam_class_id'])
+            ->where('hs.section_id', (int) $context['student_section_id'])
+            ->where('hs.session_id', (int) $context['exam_session_id'])
+            ->where('hs.term', $context['term'])
+            ->where('hs.enabled', 1)
+            ->where('hsub.subject_id', (int) $context['subject_id'])
+            ->limit(2)
+            ->get()->result_array();
+        if (count($live) !== 1
+            || (float) $live[0]['max_score'] <= 0
+            || abs((float) $live[0]['max_score'] - (float) $mapping['max_score']) > 0.001) {
+            throw new RuntimeException('The configured Holiday Assessment destination has changed since publication.');
+        }
+
+        $maximum = round((float) $mapping['max_score'], 2);
+        $score = round((float) $context['final_score'], 2);
+        if ($score < 0 || $score > $maximum
+            || ((float) $context['target_max_score'] > 0
+                && abs((float) $context['target_max_score'] - $maximum) > 0.001)) {
+            throw new InvalidArgumentException('Final score is outside the configured Holiday Assessment maximum.');
+        }
+
+        $descriptor = 'holiday_assessment_scores:score';
+        $this->lockResultTarget($context, $descriptor);
+        $ledger = $this->startLedger($context, $descriptor, $score, $score);
+        if ($ledger['idempotent']) {
+            $posted = $ledger['row'];
+            $row = empty($posted['target_record_id']) ? array() : $this->db->query(
+                'SELECT * FROM `holiday_assessment_scores` WHERE `id` = '
+                . $this->db->escape((int) $posted['target_record_id']) . ' FOR UPDATE'
+            )->row_array();
+            if (empty($row)
+                || !$this->sameValue($row['score'], $posted['applied_value'])
+                || $row['score_origin'] !== 'onlineexam'
+                || (int) $row['source_onlineexam_id'] !== (int) $context['onlineexam_id']
+                || (int) $row['source_attempt_id'] !== (int) $context['attempt_id']
+                || (int) $row['source_sync_id'] !== (int) $posted['id']) {
+                return $this->conflict(
+                    (int) $posted['id'],
+                    'holiday_assessment_scores',
+                    empty($row) ? null : (int) $row['id'],
+                    'score',
+                    'The previously synchronized Holiday score or its provenance was changed outside this assessment.',
+                    empty($row) ? null : $row['score']
+                );
+            }
+            return $this->ledgerResult($posted);
+        }
+
+        $rows = $this->lockHolidayRows($context);
+        if (count($rows) > 1) {
+            return $this->conflict($ledger['id'], 'holiday_assessment_scores', null, 'score', 'Multiple Holiday score rows exist for the same academic context.');
+        }
+
+        $now = date('Y-m-d H:i:s');
+        $applied_metadata = array(
+            'record_existed' => true,
+            'max_score' => $maximum,
+            'score_origin' => 'onlineexam',
+            'source_onlineexam_id' => (int) $context['onlineexam_id'],
+            'source_attempt_id' => (int) $context['attempt_id'],
+            'source_sync_id' => (int) $ledger['id'],
+            'updated_at' => $now,
+        );
+        if (empty($rows)) {
+            $insert = array(
+                'student_id' => (int) $context['student_id'],
+                'class_id' => (int) $context['exam_class_id'],
+                'section_id' => (int) $context['student_section_id'],
+                'subject_id' => (int) $context['subject_id'],
+                'session_id' => (int) $context['exam_session_id'],
+                'term' => $context['term'],
+                'score' => $score,
+                'max_score' => $maximum,
+                'score_origin' => 'onlineexam',
+                'source_onlineexam_id' => (int) $context['onlineexam_id'],
+                'source_attempt_id' => (int) $context['attempt_id'],
+                'source_sync_id' => (int) $ledger['id'],
+                'updated_at' => $now,
+            );
+            $this->db->insert('holiday_assessment_scores', $insert);
+            $record_id = (int) $this->db->insert_id();
+            $this->finishLedger(
+                $ledger['id'], 'holiday_assessment_scores', $record_id, 'score', null, (string) $score,
+                array('record_existed' => false), $applied_metadata
+            );
+            return array('success' => true, 'status' => 'posted', 'record_id' => $record_id, 'value' => $score, 'idempotent' => false);
+        }
+
+        $row = $rows[0];
+        $current = (float) $row['score'];
+        if (abs((float) $row['max_score'] - $maximum) > 0.001) {
+            return $this->conflict($ledger['id'], 'holiday_assessment_scores', $row['id'], 'score', 'The Holiday score row uses a different maximum.', $current);
+        }
+
+        $ownership = $this->latestOwnedSync($context, 'holiday_assessment_scores', $row['id'], 'score');
+        $is_placeholder = $row['score_origin'] === 'placeholder'
+            && $this->sameValue($current, 0)
+            && empty($row['source_onlineexam_id'])
+            && empty($row['source_attempt_id'])
+            && empty($row['source_sync_id']);
+        if (empty($ownership) && !$is_placeholder && !$this->authorizedOverrideMatches($ledger, $current)) {
+            return $this->conflict($ledger['id'], 'holiday_assessment_scores', $row['id'], 'score', 'The Holiday destination contains a manual or unrelated score.', $current);
+        }
+        if (!empty($ownership)
+            && (!$this->sameValue($current, $ownership['applied_value'])
+                || $row['score_origin'] !== 'onlineexam'
+                || (int) $row['source_onlineexam_id'] !== (int) $context['onlineexam_id']
+                || (int) $row['source_attempt_id'] !== (int) $context['attempt_id']
+                || (int) $row['source_sync_id'] !== (int) $ownership['id'])) {
+            return $this->conflict($ledger['id'], 'holiday_assessment_scores', $row['id'], 'score', 'The previously synchronized Holiday score or its provenance was changed outside this assessment.', $current);
+        }
+
+        $previous_metadata = array(
+            'record_existed' => true,
+            'max_score' => (float) $row['max_score'],
+            'score_origin' => $row['score_origin'],
+            'source_onlineexam_id' => $row['source_onlineexam_id'],
+            'source_attempt_id' => $row['source_attempt_id'],
+            'source_sync_id' => $row['source_sync_id'],
+            'updated_at' => isset($row['updated_at']) ? $row['updated_at'] : null,
+        );
+        $this->db->where('id', (int) $row['id'])->update('holiday_assessment_scores', array(
+            'score' => $score,
+            'score_origin' => 'onlineexam',
+            'source_onlineexam_id' => (int) $context['onlineexam_id'],
+            'source_attempt_id' => (int) $context['attempt_id'],
+            'source_sync_id' => (int) $ledger['id'],
+            'updated_at' => $now,
+        ));
+        $this->finishLedger(
+            $ledger['id'], 'holiday_assessment_scores', $row['id'], 'score', (string) $current, (string) $score,
+            $previous_metadata, $applied_metadata
+        );
+        return array('success' => true, 'status' => 'posted', 'record_id' => (int) $row['id'], 'value' => $score, 'idempotent' => false);
+    }
+
     protected function syncBritishOutcome(array $context)
     {
         $profile = isset($context['_frozen_result']['profile']) ? $context['_frozen_result']['profile'] : null;
@@ -219,7 +429,29 @@ class Onlineexamresultsync_model extends CI_Model
         $this->lockResultTarget($context, $descriptor);
         $ledger = $this->startLedger($context, $descriptor, $context['final_score'], $percentage . ':' . $outcome);
         if ($ledger['idempotent']) {
-            return $this->ledgerResult($ledger['row']);
+            $posted = $ledger['row'];
+            $row = empty($posted['target_record_id']) ? array() : $this->db->query(
+                'SELECT * FROM `britishresult` WHERE `ID` = '
+                . $this->db->escape((int) $posted['target_record_id']) . ' FOR UPDATE'
+            )->row_array();
+            $matches_context = !empty($row)
+                && (int) $row['StudentID'] === (int) $context['student_id']
+                && (int) $row['ClassID'] === (int) $context['exam_class_id']
+                && (int) $row['SectionID'] === (int) $context['student_section_id']
+                && (int) $row['SubjectID'] === (int) $context['subject_id']
+                && (string) $row['Session'] === (string) $context['exam_session_id']
+                && (string) $row['Term'] === (string) $context['term'];
+            if (!$matches_context || (string) $row['Remark'] !== (string) $posted['applied_value']) {
+                return $this->conflict(
+                    (int) $posted['id'],
+                    'britishresult',
+                    empty($row) ? null : (int) $row['ID'],
+                    'Remark',
+                    'The previously synchronized British outcome was changed or moved outside this assessment.',
+                    empty($row) ? null : $row['Remark']
+                );
+            }
+            return $this->ledgerResult($posted);
         }
 
         $rows = $this->lockBritishRows($context);
@@ -305,7 +537,30 @@ class Onlineexamresultsync_model extends CI_Model
             $descriptor = 'kindergarten_result:concept:' . (int) $mapping['concept_id'];
             $ledger = $this->startLedger($context, $descriptor, $mapping_percentage, $label);
             if ($ledger['idempotent']) {
-                $prepared[] = array('idempotent' => true, 'ledger' => $ledger['row']);
+                $posted = $ledger['row'];
+                $record = empty($posted['target_record_id']) ? array() : $this->db->query(
+                    'SELECT * FROM `kindergarten_result` WHERE `id` = '
+                    . $this->db->escape((int) $posted['target_record_id']) . ' FOR UPDATE'
+                )->row_array();
+                $matches_context = !empty($record)
+                    && (int) $record['student_id'] === (int) $context['student_id']
+                    && (int) $record['session_id'] === (int) $context['exam_session_id']
+                    && (string) $record['term'] === (string) $context['term']
+                    && (int) $record['assessment_id'] === (int) $mapping['assessment_id']
+                    && (int) $record['subject_id'] === (int) $mapping['subject_id']
+                    && (int) $record['concept_id'] === (int) $mapping['concept_id'];
+                if (!$matches_context
+                    || !$this->sameValue($record['result_label_index'], $posted['applied_value'])) {
+                    $conflicts[] = array(
+                        'ledger_id' => (int) $posted['id'],
+                        'mapping' => $mapping,
+                        'record' => empty($record) ? null : $record,
+                        'current' => empty($record) ? null : $record['result_label_index'],
+                        'reason' => 'The previously synchronized Kindergarten outcome was changed or moved outside this assessment.',
+                    );
+                    continue;
+                }
+                $prepared[] = array('idempotent' => true, 'ledger' => $posted);
                 continue;
             }
 
@@ -393,16 +648,6 @@ class Onlineexamresultsync_model extends CI_Model
         return array('success' => true, 'status' => 'posted', 'results' => $results);
     }
 
-    protected function syncUnlinkedPractice(array $context)
-    {
-        $ledger = $this->startLedger($context, 'unlinked:none', $context['final_score'], $context['final_score']);
-        if ($ledger['idempotent']) {
-            return $this->ledgerResult($ledger['row']);
-        }
-        $this->finishLedger($ledger['id'], null, null, null, null, (string) $context['final_score']);
-        return array('success' => true, 'status' => 'recorded', 'value' => (float) $context['final_score'], 'idempotent' => false);
-    }
-
     /**
      * Reverses values still owned by one attempt and voids it atomically.
      * Any externally changed destination becomes a conflict; it is never
@@ -453,6 +698,7 @@ class Onlineexamresultsync_model extends CI_Model
             $field = $last['target_field'];
             $current = null;
             $row = array();
+            $provenance_matches = true;
             if ($table === 'score' && in_array($field, $this->standard_components, true)) {
                 $row = $this->db->query('SELECT * FROM `score` WHERE `ID` = ' . $this->db->escape($record_id) . ' FOR UPDATE')->row_array();
                 $current = isset($row[$field]) ? $row[$field] : null;
@@ -462,11 +708,19 @@ class Onlineexamresultsync_model extends CI_Model
             } elseif ($table === 'kindergarten_result' && strpos((string) $field, 'concept:') === 0) {
                 $row = $this->db->query('SELECT * FROM `kindergarten_result` WHERE `id` = ' . $this->db->escape($record_id) . ' FOR UPDATE')->row_array();
                 $current = isset($row['result_label_index']) ? $row['result_label_index'] : null;
+            } elseif ($table === 'holiday_assessment_scores' && $field === 'score') {
+                $row = $this->db->query('SELECT * FROM `holiday_assessment_scores` WHERE `id` = ' . $this->db->escape($record_id) . ' FOR UPDATE')->row_array();
+                $current = isset($row['score']) ? $row['score'] : null;
+                $provenance_matches = !empty($row)
+                    && isset($row['score_origin']) && $row['score_origin'] === 'onlineexam'
+                    && (int) $row['source_onlineexam_id'] === (int) $onlineexam_id
+                    && (int) $row['source_attempt_id'] === (int) $attempt_id
+                    && (int) $row['source_sync_id'] === (int) $last['id'];
             } else {
                 $this->db->trans_rollback();
                 return array('success' => false, 'errors' => array('A synchronized destination is not eligible for automatic reversal.'));
             }
-            if (empty($row) || !$this->sameValue($current, $last['applied_value'])) {
+            if (empty($row) || !$this->sameValue($current, $last['applied_value']) || !$provenance_matches) {
                 $this->db->trans_rollback();
                 return array(
                     'success' => false,
@@ -480,13 +734,33 @@ class Onlineexamresultsync_model extends CI_Model
                 $this->db->where('ID', $record_id)->update('score', array($field => $original === null ? 0 : (float) $original));
             } elseif ($table === 'britishresult') {
                 $this->db->where('ID', $record_id)->update('britishresult', array('Remark' => $original));
-            } elseif ($original === null) {
+            } elseif ($table === 'kindergarten_result' && $original === null) {
                 $this->db->where('id', $record_id)->delete('kindergarten_result');
-            } else {
+            } elseif ($table === 'kindergarten_result') {
                 $this->db->where('id', $record_id)->update('kindergarten_result', array(
                     'result_label_index' => (int) $original,
                     'updated_at' => date('Y-m-d H:i:s'),
                 ));
+            } elseif ($table === 'holiday_assessment_scores') {
+                $metadata = !empty($first['previous_metadata_json'])
+                    ? json_decode($first['previous_metadata_json'], true) : null;
+                if (!is_array($metadata) || !array_key_exists('record_existed', $metadata)) {
+                    $this->db->trans_rollback();
+                    return array('success' => false, 'errors' => array('Holiday result provenance is incomplete; automatic reversal was stopped safely.'));
+                }
+                if (!$metadata['record_existed']) {
+                    $this->db->where('id', $record_id)->delete('holiday_assessment_scores');
+                } else {
+                    $this->db->where('id', $record_id)->update('holiday_assessment_scores', array(
+                        'score' => $original,
+                        'max_score' => $metadata['max_score'],
+                        'score_origin' => $metadata['score_origin'],
+                        'source_onlineexam_id' => $metadata['source_onlineexam_id'],
+                        'source_attempt_id' => $metadata['source_attempt_id'],
+                        'source_sync_id' => $metadata['source_sync_id'],
+                        'updated_at' => $metadata['updated_at'],
+                    ));
+                }
             }
         }
 
@@ -603,6 +877,17 @@ class Onlineexamresultsync_model extends CI_Model
             . ' AND `SubjectID` = ' . $this->db->escape((int) $context['subject_id'])
             . ' AND `Session` = ' . $this->db->escape((string) $context['exam_session_id'])
             . ' AND `Term` = ' . $this->db->escape($context['term']) . ' LIMIT 2 FOR UPDATE';
+        return $this->db->query($sql)->result_array();
+    }
+
+    protected function lockHolidayRows(array $context)
+    {
+        $sql = 'SELECT * FROM `holiday_assessment_scores` WHERE `student_id` = ' . $this->db->escape((int) $context['student_id'])
+            . ' AND `class_id` = ' . $this->db->escape((int) $context['exam_class_id'])
+            . ' AND `section_id` = ' . $this->db->escape((int) $context['student_section_id'])
+            . ' AND `subject_id` = ' . $this->db->escape((int) $context['subject_id'])
+            . ' AND `session_id` = ' . $this->db->escape((int) $context['exam_session_id'])
+            . ' AND `term` = ' . $this->db->escape($context['term']) . ' LIMIT 2 FOR UPDATE';
         return $this->db->query($sql)->result_array();
     }
 
@@ -858,10 +1143,10 @@ class Onlineexamresultsync_model extends CI_Model
         )->row_array();
     }
 
-    protected function finishLedger($ledger_id, $table, $record_id, $field, $previous, $applied)
+    protected function finishLedger($ledger_id, $table, $record_id, $field, $previous, $applied, $previous_metadata = null, $applied_metadata = null)
     {
         $now = date('Y-m-d H:i:s');
-        $this->db->where('id', (int) $ledger_id)->update('onlineexam_result_sync', array(
+        $updates = array(
             'target_table' => $table,
             'target_record_id' => $record_id,
             'target_field' => $field,
@@ -872,7 +1157,14 @@ class Onlineexamresultsync_model extends CI_Model
             'error_message' => null,
             'synced_at' => $now,
             'updated_at' => $now,
-        ));
+        );
+        if ($this->db->field_exists('previous_metadata_json', 'onlineexam_result_sync')) {
+            $updates['previous_metadata_json'] = $previous_metadata === null ? null : json_encode($previous_metadata);
+        }
+        if ($this->db->field_exists('applied_metadata_json', 'onlineexam_result_sync')) {
+            $updates['applied_metadata_json'] = $applied_metadata === null ? null : json_encode($applied_metadata);
+        }
+        $this->db->where('id', (int) $ledger_id)->update('onlineexam_result_sync', $updates);
     }
 
     protected function conflict($ledger_id, $table, $record_id, $field, $reason, $current = null)

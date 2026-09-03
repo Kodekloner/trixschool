@@ -48,7 +48,7 @@ SET @trix_ddl := (
     UNION ALL SELECT 3, 'class_id', 'INT(11) NULL'
     UNION ALL SELECT 4, 'subject_id', 'INT(11) NULL'
     UNION ALL SELECT 5, 'purpose', 'VARCHAR(32) NULL'
-    UNION ALL SELECT 6, 'result_adapter', 'VARCHAR(32) DEFAULT ''unlinked_practice'''
+    UNION ALL SELECT 6, 'result_adapter', 'VARCHAR(32) DEFAULT ''standard_component'''
     UNION ALL SELECT 7, 'target_component', 'VARCHAR(16) NULL'
     UNION ALL SELECT 8, 'result_type', 'VARCHAR(20) NULL'
     UNION ALL SELECT 9, 'target_max_score', 'DECIMAL(10,2) NULL'

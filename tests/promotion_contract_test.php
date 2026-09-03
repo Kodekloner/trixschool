@@ -112,8 +112,9 @@ foreach (array('Teacher', 'Admin', 'Head Teacher', 'Super Admin') as $role) {
 
 $migrationConfig = file_get_contents($root . '/application/config/migration.php');
 promotion_contract_assert(
-    strpos($migrationConfig, "migration_version'] = 133") !== false,
-    'The configured migration target must include promotion migration 133.'
+    preg_match('/migration_version[\'\"]?\]\s*=\s*(\d+)\s*;/', $migrationConfig, $migrationMatch) === 1
+        && (int) $migrationMatch[1] >= 133,
+    'The configured migration target must include promotion migration 133 or a later migration.'
 );
 
 $manualSql = file_get_contents($manualSqlPath);

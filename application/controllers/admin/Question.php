@@ -20,6 +20,10 @@ class Question extends Admin_Controller
             access_denied();
         }
 
+        $id = (int) $id;
+        if (!$this->question_model->canAccessQuestion($id)) {
+            access_denied();
+        }
         $this->session->set_userdata('top_menu', 'Online_Examinations');
         $this->session->set_userdata('sub_menu', 'Online_Examinations/question');
         $question                    = $this->question_model->get($id);
@@ -59,7 +63,14 @@ class Question extends Admin_Controller
 
     public function getQuestionByID()
     {
-        $id = $this->input->post('recordid');
+        if (!$this->rbac->hasPrivilege('question_bank', 'can_view')) {
+            access_denied();
+        }
+
+        $id = (int) $this->input->post('recordid');
+        if (!$this->question_model->canAccessQuestion($id)) {
+            access_denied();
+        }
 
         $question_result = $this->question_model->get($id);
 
@@ -68,6 +79,10 @@ class Question extends Admin_Controller
 	
 	 public function exportformat()
     {
+        if (!$this->rbac->hasPrivilege('import_question', 'can_view')) {
+            access_denied();
+        }
+
         $this->load->helper('download');
         $filepath = "./backend/import/import_question_sample_file.csv";
         $data     = file_get_contents($filepath);
@@ -77,14 +92,42 @@ class Question extends Admin_Controller
 	
     public function bulkdelete()
     {
-        $question_array=$this->input->post('recordid');
-        $question_result = $this->question_model->bulkdelete($question_array);
-        echo json_encode(array('status' => 1, 'message' =>  $this->lang->line('delete_message')));
+        if (!$this->rbac->hasPrivilege('question_bank', 'can_delete')) {
+            access_denied();
+        }
+
+        $question_array = array_values(array_unique(array_filter(array_map('intval', (array) $this->input->post('recordid')))));
+        if (empty($question_array)) {
+            echo json_encode(array('status' => 0, 'message' => $this->lang->line('no_record_selected')));
+            return;
+        }
+        if (!empty($this->question_model->getInaccessibleQuestionIds($question_array))) {
+            echo json_encode(array('status' => 0, 'message' => 'One or more selected questions are outside your permitted Question Bank scope.'));
+            return;
+        }
+
+        $deletion = $this->question_model->deleteUnassigned($question_array);
+        $deleted_ids = $deletion['deleted_ids'];
+        $assigned_ids = $deletion['assigned_ids'];
+
+        $message = count($deleted_ids) . ' question(s) deleted.';
+        if (!empty($assigned_ids)) {
+            $message .= ' ' . count($assigned_ids) . ' question(s) were kept because they are assigned to an online assessment.';
+        }
+        echo json_encode(array(
+            'status' => !empty($deleted_ids) ? 1 : 0,
+            'message' => $message,
+            'deleted_count' => count($deleted_ids),
+            'skipped_count' => count($assigned_ids),
+        ));
 
     }
 	
     public function uploadfile()
     {
+        if (!$this->rbac->hasPrivilege('import_question', 'can_view')) {
+            access_denied();
+        }
 
         $this->form_validation->set_rules('file', $this->lang->line('image'), 'callback_handle_upload');
         $this->form_validation->set_rules('class_id', $this->lang->line('class'), 'trim|required|xss_clean');
@@ -100,6 +143,13 @@ class Question extends Admin_Controller
             $array = array('status' => 0, 'error' => $data);
             echo json_encode($array);
         } else {
+            if (!$this->question_model->canAccessQuestionScope(
+                (int) $this->input->post('class_id'),
+                (int) $this->input->post('section_id')
+            )) {
+                echo json_encode(array('status' => 0, 'error' => array(), 'message' => 'The selected class or section is outside your permitted Question Bank scope.'));
+                return;
+            }
             $insert_array = array();
 //====================
             if (isset($_FILES["file"]) && !empty($_FILES['file']['name'])) {
@@ -185,8 +235,12 @@ class Question extends Admin_Controller
 
     public function add()
     {
-
-        if (!$this->rbac->hasPrivilege('question_bank', 'can_add')) {
+        $record_id = (int) $this->input->post('recordid');
+        $required_action = $record_id > 0 ? 'can_edit' : 'can_add';
+        if (!$this->rbac->hasPrivilege('question_bank', $required_action)) {
+            access_denied();
+        }
+        if ($record_id > 0 && !$this->question_model->canAccessQuestion($record_id)) {
             access_denied();
         }
         $this->form_validation->set_rules('subject_id', $this->lang->line('subject'), 'trim|required|xss_clean');
@@ -231,6 +285,13 @@ class Question extends Admin_Controller
             $array = array('status' => 0, 'error' => $msg, 'message' => '');
 
         } else {
+            if (!$this->question_model->canAccessQuestionScope(
+                (int) $this->input->post('class_id'),
+                (int) $this->input->post('section_id')
+            )) {
+                echo json_encode(array('status' => 0, 'error' => array(), 'message' => 'The selected class or section is outside your permitted Question Bank scope.'));
+                return;
+            }
 
             $insert_data = array(
                 'subject_id'    => $this->input->post('subject_id'),
@@ -276,7 +337,7 @@ class Question extends Admin_Controller
                 $insert_data['correct'] = "";
             }
 
-            $id = $this->input->post('recordid');
+            $id = $record_id;
             if ($id != 0) {
                 $insert_data['id'] = $id;
             }
@@ -292,7 +353,14 @@ class Question extends Admin_Controller
 
     public function getRecord($id)
     {
+        if (!$this->rbac->hasPrivilege('question_bank', 'can_view')) {
+            access_denied();
+        }
 
+        $id = (int) $id;
+        if (!$this->question_model->canAccessQuestion($id)) {
+            access_denied();
+        }
         $result            = $this->question_model->get_result($id);
         $result['options'] = $this->question_model->get_option($id);
         $result['ans']     = $this->question_model->get_answer($id);
@@ -302,6 +370,10 @@ class Question extends Admin_Controller
 
     public function addform()
     {
+        if (!$this->rbac->hasPrivilege('question_bank', 'can_add')) {
+            access_denied();
+        }
+
         $data                        = array();
         $data['classList']           = $this->class_model->get();
         $subject_result              = $this->subject_model->get();
@@ -318,8 +390,15 @@ class Question extends Admin_Controller
 
     public function editform()
     {
+        if (!$this->rbac->hasPrivilege('question_bank', 'can_edit')) {
+            access_denied();
+        }
+
         $data                        = array();
-        $data['recordid']            = $this->input->post('recordid');
+        $data['recordid']            = (int) $this->input->post('recordid');
+        if (!$this->question_model->canAccessQuestion($data['recordid'])) {
+            access_denied();
+        }
         $question_result             = $this->question_model->get($data['recordid']);
         $data['question_result']     = $question_result;
         $data['classList']           = $this->class_model->get();
@@ -340,12 +419,25 @@ class Question extends Admin_Controller
         if (!$this->rbac->hasPrivilege('question_bank', 'can_delete')) {
             access_denied();
         }
-        $this->question_model->remove($id);
+        $id = (int) $id;
+        if (!$this->question_model->canAccessQuestion($id)) {
+            access_denied();
+        }
+        $deletion = $this->question_model->deleteUnassigned(array($id));
+        if (empty($deletion['deleted_ids'])) {
+            $this->session->set_flashdata('msg', '<div class="alert alert-danger">This question is assigned to an online assessment and cannot be deleted.</div>');
+            redirect('admin/question', 'refresh');
+            return;
+        }
         redirect('admin/question', 'refresh');
     }
 
     public function getimages()
     {
+        if (!$this->rbac->hasPrivilege('question_bank', 'can_view')) {
+            access_denied();
+        }
+
         $keyword         = "";
         $page            = $this->input->post('page');
         $keyword         = $this->input->post('query');
@@ -465,6 +557,9 @@ class Question extends Admin_Controller
 
  
     public function getDatatable(){
+        if (!$this->rbac->hasPrivilege('question_bank', 'can_view')) {
+            access_denied();
+        }
         $question_type      = $this->config->item('question_type');
         $question_level      = $this->config->item('question_level');
         $question_dt = $this->question_model->getAllRecord();
@@ -488,9 +583,15 @@ class Question extends Admin_Controller
                 $row[] = ($value->question_type != "") ? $question_type[$value->question_type]:"";
                 $row[] = ($value->level != "" )? $question_level[$value->level]:"";
                 $row[] = readmorelink($value->question,site_url('admin/question/read/'.$value->id));
+                $actions = array();
+                $actions[] = '<a target="_blank" href="' . site_url('admin/question/read/' . $value->id) . '" class="btn btn-default btn-xs" data-toggle="tooltip" title="' . html_escape($this->lang->line('view')) . '"><i class="fa fa-eye"></i></a>';
                 if ($this->rbac->hasPrivilege('question_bank', 'can_edit')) {
-                $row[] ='<a target="_blank" href="'.site_url('admin/question/read/'.$value->id).'" class="btn btn-default btn-xs"  data-toggle="tooltip" title='.$this->lang->line("view").' ><i class="fa fa-eye"></i></a><button type="button" data-placement="left" class="btn btn-default btn-xs question-btn-edit" data-toggle="tooltip" id="load" data-recordid="'.$value->id.'" title="'.$this->lang->line("edit").'" ><i class="fa fa-pencil"></i></button><a data-placement="left" href="'.base_url().'admin/question/delete/'.$value->id.'" class="btn btn-default btn-xs"  data-toggle="tooltip" title='.$delete_title.' onclick="return confirm('.$delete.')"><i class="fa fa-remove"></i></a>';
-            }
+                    $actions[] = '<button type="button" data-placement="left" class="btn btn-default btn-xs question-btn-edit" data-toggle="tooltip" data-recordid="' . (int) $value->id . '" title="' . html_escape($this->lang->line('edit')) . '"><i class="fa fa-pencil"></i></button>';
+                }
+                if ($this->rbac->hasPrivilege('question_bank', 'can_delete')) {
+                    $actions[] = '<a data-placement="left" href="' . base_url() . 'admin/question/delete/' . (int) $value->id . '" class="btn btn-default btn-xs" data-toggle="tooltip" title=' . $delete_title . ' onclick="return confirm(' . $delete . ')"><i class="fa fa-remove"></i></a>';
+                }
+                $row[] = '<span class="question-bank-row-actions">' . implode(' ', $actions) . '</span>';
            
 
                 if($role_id==2){

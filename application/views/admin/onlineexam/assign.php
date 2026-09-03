@@ -1,6 +1,7 @@
-
-<div class="content-wrapper">    
+<?php $this->load->view('admin/onlineexam/_assessment_styles'); ?>
+<div class="content-wrapper onlineexam-ui onlineexam-roster-page">
     <!-- Main content -->
+    <section class="content-header"><h1>Candidate roster <small><?php echo html_escape($onlineexam->exam); ?></small></h1></section>
     <section class="content">  
         <div class="row">
             <div class="col-md-12">
@@ -19,7 +20,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                     <label><?php echo $this->lang->line('class'); ?></label>  <small class="req"> *</small>
-                                    <select autofocus="" id="class_id" name="class_id" class="form-control" >
+                                    <select autofocus="" id="class_id" name="class_id" class="form-control" <?php echo $is_workflow ? 'disabled' : ''; ?>>
                                         <option value=""><?php echo $this->lang->line('select'); ?></option>
                                         <?php
                                         foreach ($classlist as $class) {
@@ -28,11 +29,12 @@
                                             if(set_value('class_id', $is_workflow ? $onlineexam->class_id : '') == $class['id']) {
                                                 echo "selected=selected";
                                             }
-                                            ?>><?php echo $class['class'] ?></option>
+                                            ?>><?php echo html_escape($class['class']); ?></option>
                                                     <?php
                                                 }
                                                 ?>
                                     </select>
+                                    <?php if ($is_workflow) { ?><input type="hidden" name="class_id" value="<?php echo (int) $onlineexam->class_id; ?>"><?php } ?>
                                     <span class="text-danger"><?php echo form_error('class_id'); ?></span>
                                 </div>
                                 </div>
@@ -64,6 +66,7 @@
                 
                 <form method="post" action="<?php echo site_url('admin/onlineexam/addstudent') ?>" id="assign_form">
 
+                    <?php echo $this->customlib->getCSRF(); ?>
                     <?php if (!empty($is_workflow)) { ?><input type="hidden" name="onlineexam_workflow_token" value="<?php echo html_escape($workflow_csrf); ?>"><?php } ?>
 
 
@@ -78,24 +81,12 @@
                                 </div>
                             </div>
                             <div class="box-body">
-                                <div class="row">
-                                        <div class="col-md-4">
-                                            <div class="table-responsive">
-
-                                                <h4>
-                                                    <input type="hidden" name="onlineexam_id" value="<?php echo $onlineexam->id; ?>">
-                                                    <input type="hidden" name="post_class_id" value="<?php echo $class_id; ?>">
-                                                    <input type="hidden" name="post_section_id" value="<?php echo $section_id; ?>">
-                                                    <a href="#" data-toggle="popover" class="detail_popover"><?php echo $onlineexam->exam; ?></a>
-                                                </h4>
-
-                                             
-
-                                            </div>
-                                        </div>
-                                        <div class="col-md-8">
-                                            <div class=" table-responsive">
-                                                <table class="table table-striped">
+                                <input type="hidden" name="onlineexam_id" value="<?php echo $onlineexam->id; ?>">
+                                <input type="hidden" name="post_class_id" value="<?php echo $class_id; ?>">
+                                <input type="hidden" name="post_section_id" value="<?php echo $section_id; ?>">
+                                <h4><a href="#" data-toggle="popover" class="detail_popover"><?php echo html_escape($onlineexam->exam); ?></a></h4>
+                                <div class="table-responsive onlineexam-scroll">
+                                                <table class="table table-striped table-bordered candidate-roster-table">
                                                     <tbody>
                                                         <tr>
                                                             <th><input style="vertical-align: text-top;" type="checkbox" id="select_all"/> <?php echo $this->lang->line('all'); ?></th>
@@ -108,7 +99,7 @@
                                                             <th><?php echo $this->lang->line('father_name'); ?></th><?php }   if($sch_setting->category){ ?>
                                                             <th><?php echo $this->lang->line('category'); ?></th>
                                                         <?php } ?>
-                                                            <th class="pull-right"><?php echo $this->lang->line('gender'); ?></th>
+                                                            <th class="text-right"><?php echo $this->lang->line('gender'); ?></th>
                                                       
                                                         </tr>
                                                         <?php
@@ -140,15 +131,15 @@
 
                                                                     </td>
 
-                                                                    <td><?php echo $student['admission_no']; ?></td>
+                                                                    <td><?php echo html_escape($student['admission_no']); ?></td>
 
-                 <td><?php echo $this->customlib->getFullName($student['firstname'],$student['middlename'],$student['lastname'],$sch_setting->middlename,$sch_setting->lastname); ?></td>
-                                                                    <td><?php echo $student['class']." (".$student['section'].")"; ?></td><?php if($sch_setting->father_name){ ?>
-                                                                    <td><?php echo $student['father_name']; ?></td>
+                 <td><?php echo html_escape($this->customlib->getFullName($student['firstname'],$student['middlename'],$student['lastname'],$sch_setting->middlename,$sch_setting->lastname)); ?></td>
+                                                                    <td><?php echo html_escape($student['class']." (".$student['section'].")"); ?></td><?php if($sch_setting->father_name){ ?>
+                                                                    <td><?php echo html_escape($student['father_name']); ?></td>
                                                                 <?php } if($sch_setting->category){ ?>
-                                                                    <td><?php echo $student['category']; ?></td>
+                                                                    <td><?php echo html_escape($student['category']); ?></td>
                                                                 <?php } ?>
-                                                                    <td class="pull-right"><?php echo $student['gender']; ?></td>
+                                                                    <td class="text-right"><?php echo html_escape($student['gender']); ?></td>
 
                                                                 </tr>
                                                                 <?php
@@ -158,17 +149,11 @@
                                                         ?>
                                                     </tbody>
                                                 </table>
-
-                                            </div>
-                                            <?php if($this->rbac->hasPrivilege('online_assign_view_student','can_edit')){ ?>
-                                            <button type="submit" class="allot-fees btn btn-primary btn-sm pull-right" id="load" data-loading-text="<i class='fa fa-spinner fa-spin '></i> Please Wait.."><?php echo $this->lang->line('save'); ?>
-                                            </button>
-                                        <?php } ?>
-                                            <br/>
-                                            <br/>
-                                        </div>
-                                   
                                 </div>
+                                <?php if($this->rbac->hasPrivilege('online_assign_view_student','can_edit')){ ?>
+                                    <button type="submit" class="allot-fees btn btn-primary btn-sm pull-right" id="load" data-loading-text="<i class='fa fa-spinner fa-spin '></i> Please Wait.."><?php echo $this->lang->line('save'); ?></button>
+                                <?php } ?>
+                                <div class="clearfix"></div>
 
                             </div>
                         </div>
@@ -297,4 +282,3 @@
 
 
 </script>
-

@@ -1,6 +1,11 @@
 <?php
-$paper_types = array('objective' => 'Objective', 'theory' => 'Theory / Essay', 'practical' => 'Practical', 'oral' => 'Oral', 'aural' => 'Aural', 'project' => 'Project', 'custom' => 'Custom');
-$delivery_modes = array('cbt' => 'CBT / online', 'paper' => 'Paper / manual entry', 'hybrid' => 'Hybrid');
+$paper_types = array('objective' => 'Objective', 'theory' => 'Theory / Essay');
+$allowed_question_types = array('singlechoice', 'multichoice', 'true_false', 'short_answer', 'numeric', 'matching', 'ordering', 'grouped_passage', 'long_answer');
+$native_question_types = array_intersect_key((array) $native_question_types, array_flip($allowed_question_types));
+$question_type = array_intersect_key((array) $question_type, array_flip($allowed_question_types));
+$component_label = !empty($exam->target_component)
+    ? strtoupper($exam->target_component) . ' (max ' . number_format($exam->target_max_score, 2) . ')'
+    : ucwords(str_replace('_', ' ', $exam->purpose)) . (!empty($exam->target_max_score) ? ' (max ' . number_format($exam->target_max_score, 2) . ')' : '');
 $format_datetime = function ($value) {
     return $value ? $this->customlib->dateyyyymmddToDateTimeformat($value, false) : '';
 };
@@ -32,7 +37,8 @@ foreach ((array) $authored_questions as $authored_question) {
     );
 }
 ?>
-<div class="content-wrapper">
+<?php $this->load->view('admin/onlineexam/_assessment_styles'); ?>
+<div class="content-wrapper onlineexam-ui onlineexam-builder-page">
     <section class="content-header">
         <h1><?php echo html_escape($exam->exam); ?> <small>Paper and section builder</small></h1>
     </section>
@@ -40,26 +46,29 @@ foreach ((array) $authored_questions as $authored_question) {
         <?php if ($this->session->flashdata('msg')) { echo $this->session->flashdata('msg'); } ?>
 
         <div class="box box-primary">
-            <div class="box-header with-border">
+            <div class="box-header with-border assessment-box-header">
                 <h3 class="box-title">Academic assessment</h3>
                 <div class="box-tools">
                     <span class="label label-<?php echo $exam->lifecycle_status === 'draft' ? 'warning' : 'success'; ?>"><?php echo html_escape(ucwords(str_replace('_', ' ', $exam->lifecycle_status))); ?></span>
                     <span class="label label-default">Revision <?php echo (int) $exam->revision; ?></span>
                 </div>
             </div>
-            <div class="box-body">
-                <div class="row">
-                    <div class="col-md-3"><strong>Session / Term</strong><br><?php echo html_escape($exam->session_name . ' / ' . strtoupper($exam->term) . ' Term'); ?></div>
-                    <div class="col-md-3"><strong>Class / Arms</strong><br><?php echo html_escape($exam->class_name . ' (' . implode(', ', $exam->section_names) . ')'); ?></div>
-                    <div class="col-md-3"><strong>Subject</strong><br><?php echo html_escape($exam->subject_name); ?></div>
-                    <div class="col-md-3"><strong>Result destination</strong><br><?php echo html_escape(ucwords(str_replace('_', ' ', $exam->result_adapter))); ?><?php if ($exam->target_component) { ?> / <?php echo html_escape(strtoupper($exam->target_component)); ?> (max <?php echo number_format($exam->target_max_score, 2); ?>)<?php } ?></div>
+            <div class="box-body no-padding">
+                <div class="onlineexam-scroll">
+                    <table class="table table-condensed assessment-meta-table">
+                        <tbody><tr>
+                            <td><strong>Session / Term</strong><br><?php echo html_escape($exam->session_name . ' / ' . strtoupper($exam->term) . ' Term'); ?></td>
+                            <td><strong>Class / Arms</strong><br><?php echo html_escape($exam->class_name . ' (' . implode(', ', $exam->section_names) . ')'); ?></td>
+                            <td><strong>Subject</strong><br><?php echo html_escape($exam->subject_name); ?></td>
+                            <td><strong>Result component</strong><br><?php echo html_escape($component_label); ?></td>
+                        </tr></tbody>
+                    </table>
                 </div>
             </div>
-            <div class="box-footer clearfix">
+            <div class="box-footer assessment-toolbar">
                 <a href="<?php echo site_url('admin/onlineexam'); ?>" class="btn btn-default btn-sm"><i class="fa fa-arrow-left"></i> Examination list</a>
                 <a href="<?php echo site_url('admin/onlineexam/assign/' . $exam->id); ?>" class="btn btn-default btn-sm"><i class="fa fa-users"></i> Candidate roster</a>
-                <a href="<?php echo site_url('admin/onlineexam/printpaper/' . $exam->id); ?>" target="_blank" class="btn btn-default btn-sm"><i class="fa fa-print"></i> Print paper</a>
-                <a href="<?php echo site_url('admin/onlineexam/evalution/' . $exam->id); ?>" class="btn btn-default btn-sm"><i class="fa fa-check-square-o"></i> Manual marking</a>
+                <a href="<?php echo site_url('admin/onlineexam/operations/' . $exam->id); ?>" class="btn btn-default btn-sm"><i class="fa fa-dashboard"></i> Operations</a>
                 <?php if ($editable) { ?><a href="<?php echo site_url('admin/onlineexam/workflow/' . $exam->id); ?>" class="btn btn-default btn-sm"><i class="fa fa-pencil"></i> Edit context</a><?php } ?>
             </div>
         </div>
@@ -141,61 +150,79 @@ foreach ((array) $authored_questions as $authored_question) {
 
         <div class="row">
             <?php if ($editable) { ?>
-            <div class="col-md-4">
+            <div class="col-md-12">
                 <div class="box box-info">
                     <div class="box-header with-border"><h3 class="box-title">Add paper</h3></div>
                     <form method="post" action="<?php echo site_url('admin/onlineexam/paperSave'); ?>">
                         <?php echo $this->customlib->getCSRF(); ?>
                         <input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>">
+                        <input type="hidden" name="delivery_mode" value="cbt">
                         <div class="box-body">
-                            <div class="row">
-                                <div class="col-sm-8"><div class="form-group"><label>Paper title *</label><input type="text" name="title" class="form-control" placeholder="e.g. Paper 1 — Objective" required></div></div>
-                                <div class="col-sm-4"><div class="form-group"><label>Code</label><input type="text" name="paper_code" class="form-control" placeholder="P1"></div></div>
+                            <div class="alert alert-info paper-field-guide">
+                                <dl>
+                                    <div><dt>Paper title:</dt> <dd>The name candidates see for this part.</dd></div>
+                                    <div><dt>Code:</dt> <dd>An optional short identifier, such as P1.</dd></div>
+                                    <div><dt>Paper type:</dt> <dd>Choose Objective for auto-marking or Theory / Essay for teacher review.</dd></div>
+                                    <div><dt>Minutes:</dt> <dd>The countdown time allowed for this paper.</dd></div>
+                                    <div><dt>Raw max:</dt> <dd>The total marks available before scaling.</dd></div>
+                                    <div><dt>Contribution:</dt> <dd>This paper's percentage of the combined assessment.</dd></div>
+                                    <div><dt>Display order:</dt> <dd>The order candidates see multiple papers.</dd></div>
+                                    <div><dt>Starts / Ends:</dt> <dd>The paper's CBT window, within the main assessment window.</dd></div>
+                                    <div><dt>Instructions:</dt> <dd>Directions candidates read before answering this paper.</dd></div>
+                                    <div><dt>Active:</dt> <dd>Include this paper when the assessment is published.</dd></div>
+                                </dl>
                             </div>
-                            <div class="row">
-                                <div class="col-sm-6"><div class="form-group"><label>Paper type *</label><select name="paper_type" class="form-control"><?php foreach ($paper_types as $value => $label) { ?><option value="<?php echo $value; ?>"><?php echo $label; ?></option><?php } ?></select></div></div>
-                                <div class="col-sm-6"><div class="form-group"><label>Delivery *</label><select name="delivery_mode" class="form-control"><?php foreach ($delivery_modes as $value => $label) { ?><option value="<?php echo $value; ?>"><?php echo $label; ?></option><?php } ?></select></div></div>
+                            <div class="paper-form-scroll">
+                                <div class="paper-form-grid">
+                                    <div class="form-group"><label>Paper title *</label><input type="text" name="title" class="form-control" placeholder="e.g. Paper 1 — Objective" required></div>
+                                    <div class="form-group"><label>Code</label><input type="text" name="paper_code" class="form-control" placeholder="P1"></div>
+                                    <div class="form-group"><label>Paper type *</label><select name="paper_type" class="form-control"><?php foreach ($paper_types as $value => $label) { ?><option value="<?php echo $value; ?>"><?php echo $label; ?></option><?php } ?></select></div>
+                                    <div class="form-group"><label>Minutes *</label><input type="number" name="duration_minutes" min="1" value="60" class="form-control" required></div>
+                                    <div class="form-group"><label>Raw max *</label><input type="number" name="raw_max_score" min="0.01" step="0.01" value="100" class="form-control" required></div>
+                                    <div class="form-group"><label>Contribution *</label><div class="input-group"><input type="number" name="contribution_score" min="0.01" max="100" step="0.01" value="100" class="form-control" required><span class="input-group-addon">%</span></div></div>
+                                    <div class="form-group"><label>Display order</label><input type="number" name="display_order" min="0" value="0" class="form-control"></div>
+                                </div>
                             </div>
-                            <div class="row">
-                                <div class="col-sm-4"><div class="form-group"><label>Minutes *</label><input type="number" name="duration_minutes" min="1" value="60" class="form-control" required></div></div>
-                                <div class="col-sm-4"><div class="form-group"><label>Raw max *</label><input type="number" name="raw_max_score" min="0.01" step="0.01" value="100" class="form-control" required></div></div>
-                                <div class="col-sm-4"><div class="form-group"><label>Contribution *</label><div class="input-group"><input type="number" name="contribution_score" min="0.01" max="100" step="0.01" value="100" class="form-control" required><span class="input-group-addon">%</span></div></div></div>
+                            <div class="paper-form-scroll">
+                                <div class="paper-form-grid paper-form-grid-secondary">
+                                    <div class="form-group"><label>Starts</label><input type="text" name="starts_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($exam->exam_from)); ?>"></div>
+                                    <div class="form-group"><label>Ends</label><input type="text" name="ends_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($exam->exam_to)); ?>"></div>
+                                    <div class="form-group"><label>Instructions</label><textarea name="instructions" rows="2" class="form-control" placeholder="Instructions candidates see before starting"></textarea></div>
+                                    <div class="form-group"><label>&nbsp;</label><div><label><input type="checkbox" name="is_active" value="1" checked> Active</label></div></div>
+                                    <div class="form-group"><label>&nbsp;</label><button class="btn btn-info btn-block" type="submit"><i class="fa fa-plus"></i> Add</button></div>
+                                </div>
                             </div>
-                            <div class="row">
-                                <div class="col-sm-6"><div class="form-group"><label>Starts</label><input type="text" name="starts_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($exam->exam_from)); ?>"></div></div>
-                                <div class="col-sm-6"><div class="form-group"><label>Ends</label><input type="text" name="ends_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($exam->exam_to)); ?>"></div></div>
-                            </div>
-                            <div class="form-group"><label>Instructions</label><textarea name="instructions" rows="4" class="form-control"></textarea></div>
-                            <div class="row"><div class="col-sm-6"><div class="form-group"><label>Display order</label><input type="number" name="display_order" min="0" value="0" class="form-control"></div></div><div class="col-sm-6"><div class="form-group"><label>&nbsp;</label><div><label><input type="checkbox" name="is_active" value="1" checked> Active paper</label></div></div></div></div>
                         </div>
-                        <div class="box-footer"><button class="btn btn-info pull-right" type="submit"><i class="fa fa-plus"></i> Add paper</button></div>
                     </form>
                 </div>
             </div>
             <?php } ?>
 
-            <div class="col-md-<?php echo $editable ? '8' : '12'; ?>">
+            <div class="col-md-12">
                 <?php if (empty($papers)) { ?>
-                    <div class="alert alert-warning">No paper has been created. Add Objective, Theory, Practical, Oral, Project, or another paper part.</div>
+                    <div class="alert alert-warning">No paper has been created. Add an Objective or Theory / Essay paper.</div>
                 <?php } ?>
                 <?php foreach ($papers as $paper) { ?>
                     <div class="box box-solid box-default">
-                        <div class="box-header with-border">
+                        <div class="box-header with-border assessment-box-header">
                             <h3 class="box-title"><?php echo html_escape($paper['title']); ?> <?php if ($paper['paper_code']) { ?><small><?php echo html_escape($paper['paper_code']); ?></small><?php } ?></h3>
-                            <div class="box-tools">
-                                <span class="label label-info"><?php echo html_escape($paper_types[$paper['paper_type']]); ?></span>
-                                <span class="label label-default"><?php echo html_escape($delivery_modes[$paper['delivery_mode']]); ?></span>
+                            <div class="box-tools paper-header-labels">
+                                <span class="label label-info"><?php echo html_escape(isset($paper_types[$paper['paper_type']]) ? $paper_types[$paper['paper_type']] : ucwords($paper['paper_type'])); ?></span>
+                                <span class="label label-default">Online CBT</span>
                                 <span class="badge"><?php echo (int) $paper['question_count']; ?> question(s)</span>
                                 <?php if ($editable) { ?><button type="button" class="btn btn-box-tool" data-toggle="collapse" data-target="#paper-edit-<?php echo (int) $paper['id']; ?>"><i class="fa fa-pencil"></i></button><?php } ?>
                             </div>
                         </div>
-                        <div class="box-body">
-                            <div class="row">
-                                <div class="col-sm-3"><strong>Raw maximum</strong><br><?php echo number_format($paper['raw_max_score'], 2); ?></div>
-                                <div class="col-sm-3"><strong>Contribution</strong><br><?php echo number_format($paper['contribution_score'], 2); ?>%</div>
-                                <div class="col-sm-3"><strong>Duration</strong><br><?php echo (int) $paper['duration_minutes']; ?> minutes</div>
-                                <div class="col-sm-3"><strong>Schedule</strong><br><small><?php echo html_escape($format_datetime($paper['starts_at'])); ?><br><?php echo html_escape($format_datetime($paper['ends_at'])); ?></small></div>
+                        <div class="box-body no-padding">
+                            <div class="onlineexam-scroll">
+                                <table class="table table-condensed paper-summary-table"><tbody><tr>
+                                    <td><strong>Raw maximum</strong><br><?php echo number_format($paper['raw_max_score'], 2); ?></td>
+                                    <td><strong>Contribution</strong><br><?php echo number_format($paper['contribution_score'], 2); ?>%</td>
+                                    <td><strong>Duration</strong><br><?php echo (int) $paper['duration_minutes']; ?> minutes</td>
+                                    <td><strong>Schedule</strong><br><small><?php echo html_escape($format_datetime($paper['starts_at'])); ?><br><?php echo html_escape($format_datetime($paper['ends_at'])); ?></small></td>
+                                </tr></tbody></table>
                             </div>
+                            <div style="padding:0 10px 10px">
                             <?php if ($paper['instructions']) { ?><div class="well well-sm" style="margin-top:12px;margin-bottom:8px"><?php echo nl2br(html_escape(strip_tags($paper['instructions']))); ?></div><?php } ?>
 
                             <h4>Sections</h4>
@@ -218,32 +245,44 @@ foreach ((array) $authored_questions as $authored_question) {
                             <form method="post" action="<?php echo site_url('admin/onlineexam/paperSectionSave'); ?>" class="well well-sm">
                                 <?php echo $this->customlib->getCSRF(); ?>
                                 <input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>"><input type="hidden" name="paper_id" value="<?php echo (int) $paper['id']; ?>">
-                                <div class="row">
-                                    <div class="col-sm-3"><input type="text" name="title" class="form-control" placeholder="Section A" required></div>
-                                    <div class="col-sm-3"><select name="answer_rule" class="form-control"><option value="all">Answer all</option><option value="answer_any">Answer any N</option><option value="compulsory_plus_choice">Compulsory + choice</option></select></div>
-                                    <div class="col-sm-2"><input type="number" name="answer_count" min="0" value="0" class="form-control" title="Number to answer"></div>
-                                    <div class="col-sm-3"><input type="text" name="instructions" class="form-control" placeholder="Section instructions"></div>
-                                    <div class="col-sm-1"><input type="hidden" name="display_order" value="<?php echo count($paper['sections']); ?>"><button class="btn btn-default" title="Add section"><i class="fa fa-plus"></i></button></div>
+                                <div class="paper-section-scroll">
+                                    <div class="paper-section-grid">
+                                        <input type="text" name="title" class="form-control" placeholder="Section A" aria-label="Section title" required>
+                                        <select name="answer_rule" class="form-control" aria-label="Answer rule"><option value="all">Answer all</option><option value="answer_any">Answer any N</option><option value="compulsory_plus_choice">Compulsory + choice</option></select>
+                                        <input type="number" name="answer_count" min="0" value="0" class="form-control" title="Number to answer" aria-label="Number to answer">
+                                        <input type="text" name="instructions" class="form-control" placeholder="Section instructions" aria-label="Section instructions">
+                                        <div><input type="hidden" name="display_order" value="<?php echo count($paper['sections']); ?>"><button class="btn btn-default" title="Add section" aria-label="Add section"><i class="fa fa-plus"></i></button></div>
+                                    </div>
                                 </div>
                             </form>
                             <?php } ?>
+                            </div>
                         </div>
 
                         <?php if ($editable) { ?>
                         <div id="paper-edit-<?php echo (int) $paper['id']; ?>" class="collapse">
                             <form method="post" action="<?php echo site_url('admin/onlineexam/paperSave'); ?>" class="box-footer">
-                                <?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>"><input type="hidden" name="paper_id" value="<?php echo (int) $paper['id']; ?>">
-                                <div class="row">
-                                    <div class="col-sm-3"><div class="form-group"><label>Title</label><input type="text" name="title" class="form-control" value="<?php echo html_escape($paper['title']); ?>" required></div></div>
-                                    <div class="col-sm-1"><div class="form-group"><label>Code</label><input type="text" name="paper_code" class="form-control" value="<?php echo html_escape($paper['paper_code']); ?>"></div></div>
-                                    <div class="col-sm-2"><div class="form-group"><label>Type</label><select name="paper_type" class="form-control"><?php foreach ($paper_types as $value => $label) { ?><option value="<?php echo $value; ?>" <?php echo $paper['paper_type'] === $value ? 'selected' : ''; ?>><?php echo $label; ?></option><?php } ?></select></div></div>
-                                    <div class="col-sm-2"><div class="form-group"><label>Delivery</label><select name="delivery_mode" class="form-control"><?php foreach ($delivery_modes as $value => $label) { ?><option value="<?php echo $value; ?>" <?php echo $paper['delivery_mode'] === $value ? 'selected' : ''; ?>><?php echo $label; ?></option><?php } ?></select></div></div>
-                                    <div class="col-sm-1"><div class="form-group"><label>Minutes</label><input type="number" name="duration_minutes" min="1" class="form-control" value="<?php echo (int) $paper['duration_minutes']; ?>"></div></div>
-                                    <div class="col-sm-1"><div class="form-group"><label>Raw max</label><input type="number" name="raw_max_score" min="0.01" step="0.01" class="form-control" value="<?php echo html_escape($paper['raw_max_score']); ?>"></div></div>
-                                    <div class="col-sm-1"><div class="form-group"><label>Contrib.</label><input type="number" name="contribution_score" min="0.01" max="100" step="0.01" class="form-control" value="<?php echo html_escape($paper['contribution_score']); ?>"></div></div>
-                                    <div class="col-sm-1"><div class="form-group"><label>Order</label><input type="number" name="display_order" min="0" class="form-control" value="<?php echo (int) $paper['display_order']; ?>"></div></div>
+                                <?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>"><input type="hidden" name="paper_id" value="<?php echo (int) $paper['id']; ?>"><input type="hidden" name="delivery_mode" value="cbt">
+                                <div class="paper-form-scroll">
+                                    <div class="paper-form-grid">
+                                        <div class="form-group"><label>Title</label><input type="text" name="title" class="form-control" value="<?php echo html_escape($paper['title']); ?>" required></div>
+                                        <div class="form-group"><label>Code</label><input type="text" name="paper_code" class="form-control" value="<?php echo html_escape($paper['paper_code']); ?>"></div>
+                                        <div class="form-group"><label>Type</label><select name="paper_type" class="form-control"><?php foreach ($paper_types as $value => $label) { ?><option value="<?php echo $value; ?>" <?php echo $paper['paper_type'] === $value ? 'selected' : ''; ?>><?php echo $label; ?></option><?php } ?></select></div>
+                                        <div class="form-group"><label>Minutes</label><input type="number" name="duration_minutes" min="1" class="form-control" value="<?php echo (int) $paper['duration_minutes']; ?>"></div>
+                                        <div class="form-group"><label>Raw max</label><input type="number" name="raw_max_score" min="0.01" step="0.01" class="form-control" value="<?php echo html_escape($paper['raw_max_score']); ?>"></div>
+                                        <div class="form-group"><label>Contribution</label><input type="number" name="contribution_score" min="0.01" max="100" step="0.01" class="form-control" value="<?php echo html_escape($paper['contribution_score']); ?>"></div>
+                                        <div class="form-group"><label>Order</label><input type="number" name="display_order" min="0" class="form-control" value="<?php echo (int) $paper['display_order']; ?>"></div>
+                                    </div>
                                 </div>
-                                <div class="row"><div class="col-sm-3"><input type="text" name="starts_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($paper['starts_at'])); ?>"></div><div class="col-sm-3"><input type="text" name="ends_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($paper['ends_at'])); ?>"></div><div class="col-sm-4"><input type="text" name="instructions" class="form-control" value="<?php echo html_escape(strip_tags($paper['instructions'])); ?>" placeholder="Instructions"></div><div class="col-sm-1"><label><input type="checkbox" name="is_active" value="1" <?php echo $paper['is_active'] ? 'checked' : ''; ?>> Active</label></div><div class="col-sm-1"><button class="btn btn-primary btn-sm">Save</button></div></div>
+                                <div class="paper-form-scroll">
+                                    <div class="paper-form-grid paper-form-grid-secondary">
+                                        <div class="form-group"><label>Starts</label><input type="text" name="starts_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($paper['starts_at'])); ?>"></div>
+                                        <div class="form-group"><label>Ends</label><input type="text" name="ends_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($paper['ends_at'])); ?>"></div>
+                                        <div class="form-group"><label>Instructions</label><textarea name="instructions" rows="2" class="form-control" placeholder="Instructions candidates see before starting"><?php echo html_escape(strip_tags($paper['instructions'])); ?></textarea></div>
+                                        <div class="form-group"><label>&nbsp;</label><div><label><input type="checkbox" name="is_active" value="1" <?php echo $paper['is_active'] ? 'checked' : ''; ?>> Active</label></div></div>
+                                        <div class="form-group"><label>&nbsp;</label><button class="btn btn-primary btn-block">Save</button></div>
+                                    </div>
+                                </div>
                             </form>
                             <form method="post" action="<?php echo site_url('admin/onlineexam/paperDelete'); ?>" class="box-footer" onsubmit="return confirm('Remove this paper and all of its draft sections/question assignments?');">
                                 <?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>"><input type="hidden" name="paper_id" value="<?php echo (int) $paper['id']; ?>"><button class="btn btn-danger btn-xs"><i class="fa fa-trash"></i> Delete paper</button>
@@ -257,12 +296,12 @@ foreach ((array) $authored_questions as $authored_question) {
 
         <?php if ($editable && !empty($papers)) { ?>
         <div class="box box-primary" id="author-question">
-            <div class="box-header with-border">
+            <div class="box-header with-border assessment-box-header">
                 <h3 class="box-title" id="workflow-author-title">Create a structured question</h3>
                 <div class="box-tools"><button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button></div>
             </div>
             <?php if (!empty($authored_question_json)) { ?>
-            <div class="box-body no-padding"><div class="table-responsive"><table class="table table-condensed table-striped" style="margin-bottom:0"><thead><tr><th>Structured question</th><th>Paper / section</th><th>Type</th><th>Marks</th><th></th></tr></thead><tbody><?php foreach ((array) $authored_questions as $authored_question) { if (!isset($authored_question_json[(int) $authored_question['id']])) { continue; } $definition = $authored_question_json[(int) $authored_question['id']]['definition']; ?><tr><td><?php echo html_escape(mb_substr(trim(strip_tags($authored_question['question'])), 0, 100)); ?></td><td><?php echo html_escape($authored_question['paper_title'] . (!empty($authored_question['section_title']) ? ' / ' . $authored_question['section_title'] : '')); ?></td><td><?php echo html_escape(isset($native_question_types[$definition['presentation_type']]) ? $native_question_types[$definition['presentation_type']] : $definition['question_type']); ?></td><td><?php echo number_format((float) $authored_question['marks'], 2); ?></td><td><button type="button" class="btn btn-default btn-xs workflow-edit-authored" data-assignment-id="<?php echo (int) $authored_question['id']; ?>"><i class="fa fa-pencil"></i> Edit</button></td></tr><?php } ?></tbody></table></div></div>
+            <div class="box-body no-padding"><div class="table-responsive onlineexam-scroll"><table class="table table-condensed table-striped structured-question-table" style="margin-bottom:0"><thead><tr><th>Structured question</th><th>Paper / section</th><th>Type</th><th>Marks</th><th></th></tr></thead><tbody><?php foreach ((array) $authored_questions as $authored_question) { if (!isset($authored_question_json[(int) $authored_question['id']])) { continue; } $definition = $authored_question_json[(int) $authored_question['id']]['definition']; ?><tr><td><?php echo html_escape(mb_substr(trim(strip_tags($authored_question['question'])), 0, 100)); ?></td><td><?php echo html_escape($authored_question['paper_title'] . (!empty($authored_question['section_title']) ? ' / ' . $authored_question['section_title'] : '')); ?></td><td><?php echo html_escape(isset($native_question_types[$definition['presentation_type']]) ? $native_question_types[$definition['presentation_type']] : $definition['question_type']); ?></td><td><?php echo number_format((float) $authored_question['marks'], 2); ?></td><td><button type="button" class="btn btn-default btn-xs workflow-edit-authored" data-assignment-id="<?php echo (int) $authored_question['id']; ?>"><i class="fa fa-pencil"></i> Edit</button></td></tr><?php } ?></tbody></table></div></div>
             <?php } ?>
             <form method="post" action="<?php echo site_url('admin/onlineexam/workflowQuestionAuthor'); ?>" id="workflow-author-form">
                 <?php echo $this->customlib->getCSRF(); ?>
@@ -272,10 +311,9 @@ foreach ((array) $authored_questions as $authored_question) {
                 <div class="box-body">
                     <p class="help-block">This creates the question in the existing bank, assigns it to this assessment, and preserves its structured answer definition when the revision is frozen.</p>
                     <div class="row">
-                        <div class="col-md-3"><div class="form-group"><label>Destination paper *</label><select name="paper_id" id="author_paper_id" class="form-control" required><option value="">Select paper</option><?php foreach ($papers as $paper) { ?><option value="<?php echo (int) $paper['id']; ?>"><?php echo html_escape($paper['title']); ?></option><?php } ?></select></div></div>
+                        <div class="col-md-3"><div class="form-group"><label>Paper *</label><select name="paper_id" id="author_paper_id" class="form-control" required><option value="">Select paper</option><?php foreach ($papers as $paper) { ?><option value="<?php echo (int) $paper['id']; ?>"><?php echo html_escape($paper['title']); ?></option><?php } ?></select></div></div>
                         <div class="col-md-3"><div class="form-group"><label>Section</label><select name="paper_section_id" id="author_section_id" class="form-control"><option value="">No named section</option></select></div></div>
-                        <div class="col-md-4"><div class="form-group"><label>Question type *</label><select name="authored_question_type" id="author_question_type" class="form-control" required><option value="">Select type</option><?php foreach ($native_question_types as $value => $label) { ?><option value="<?php echo html_escape($value); ?>"><?php echo html_escape($label); ?></option><?php } ?></select></div></div>
-                        <div class="col-md-2"><div class="form-group"><label>Difficulty</label><select name="question_level" class="form-control"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div></div>
+                        <div class="col-md-6"><div class="form-group"><label>Question type *</label><select name="authored_question_type" id="author_question_type" class="form-control" required><option value="">Select type</option><?php foreach ($native_question_types as $value => $label) { ?><option value="<?php echo html_escape($value); ?>"><?php echo html_escape($label); ?></option><?php } ?></select></div></div>
                     </div>
 
                     <div class="workflow-passage-fields well well-sm" style="display:none">
@@ -298,16 +336,16 @@ foreach ((array) $authored_questions as $authored_question) {
                     <div class="workflow-author-fields workflow-true-false-fields" style="display:none"><div class="form-group"><label>Correct answer *</label><select name="true_false_answer" class="form-control"><option value="">Select</option><option value="true">True</option><option value="false">False</option></select></div></div>
                     <div class="workflow-author-fields workflow-short-answer-fields" style="display:none"><div class="form-group"><label>Accepted answers *</label><textarea name="accepted_answers" rows="4" class="form-control" placeholder="Enter one accepted answer per line"></textarea><p class="help-block">Comparison ignores surrounding spaces and letter case.</p></div></div>
                     <div class="workflow-author-fields workflow-numeric-fields" style="display:none"><div class="row"><div class="col-md-6"><div class="form-group"><label>Correct numeric value *</label><input type="number" step="any" name="numeric_answer" class="form-control"></div></div><div class="col-md-6"><div class="form-group"><label>Accepted tolerance *</label><input type="number" step="any" min="0" name="numeric_tolerance" value="0" class="form-control"><p class="help-block">Example: answer 12.5 with tolerance 0.1 accepts 12.4 through 12.6.</p></div></div></div></div>
-                    <div class="workflow-author-fields workflow-matching-fields" style="display:none"><div class="form-group"><label>Matching pairs *</label><textarea name="matching_pairs" rows="6" class="form-control" placeholder="Nigeria => Abuja&#10;Ghana => Accra"></textarea><p class="help-block">Enter one pair per line using <code>Left =&gt; Right</code>. Candidates receive a dropdown for each left item.</p></div></div>
+                    <div class="workflow-author-fields workflow-matching-fields" style="display:none"><div class="form-group"><label>Matching pairs *</label><textarea name="matching_pairs" rows="6" class="form-control" placeholder="Item A => Match 1&#10;Item B => Match 2"></textarea><p class="help-block">Enter one pair per line using <code>Left =&gt; Right</code>. Candidates receive a dropdown for each left item.</p></div></div>
                     <div class="workflow-author-fields workflow-ordering-fields" style="display:none"><div class="form-group"><label>Items in the correct order *</label><textarea name="ordering_items" rows="6" class="form-control" placeholder="First step&#10;Second step&#10;Third step"></textarea><p class="help-block">The candidate sees a shuffled choice list and selects the item for each position.</p></div></div>
-                    <div class="workflow-author-fields workflow-manual-fields" style="display:none"><div class="alert alert-info">This response is marked by an authorized teacher. File, oral, and aural types also enable a secure candidate attachment.</div></div>
+                    <div class="workflow-author-fields workflow-manual-fields" style="display:none"><div class="alert alert-info">Theory responses are reviewed and marked by an authorized teacher after submission.</div></div>
 
                     <div class="row">
                         <div class="col-md-2"><div class="form-group"><label>Marks *</label><input type="number" name="marks" min="0.01" max="10000" step="0.01" value="1" class="form-control" required></div></div>
                         <div class="col-md-2"><div class="form-group"><label>Negative mark</label><input type="number" name="neg_marks" min="0" step="0.01" value="0" class="form-control" <?php echo empty($exam->is_neg_marking) ? 'disabled' : ''; ?>></div></div>
                         <div class="col-md-2"><div class="form-group"><label>Display order</label><input type="number" name="display_order" min="0" value="0" class="form-control"></div></div>
                         <div class="col-md-2"><div class="form-group"><label>&nbsp;</label><div><label><input type="checkbox" name="is_compulsory" value="1"> Compulsory</label></div></div></div>
-                        <div class="col-md-4"><div class="form-group"><label>Marking scheme / rubric</label><textarea name="marking_scheme" rows="3" class="form-control" placeholder="Required for manually marked responses"></textarea></div></div>
+                        <div class="col-md-4"><div class="form-group"><label>Marking scheme / rubric</label><textarea name="marking_scheme" rows="3" class="form-control" placeholder="Required for Theory answer review"></textarea></div></div>
                     </div>
                 </div>
                 <div class="box-footer"><button type="button" class="btn btn-default workflow-author-reset" style="display:none"><i class="fa fa-times"></i> Cancel editing</button><button type="submit" class="btn btn-primary pull-right workflow-author-submit"><i class="fa fa-plus"></i> Create and assign question</button><div class="clearfix"></div></div>
@@ -319,9 +357,9 @@ foreach ((array) $authored_questions as $authored_question) {
         <div class="box box-success">
             <div class="box-header with-border"><h3 class="box-title">Question bank — <?php echo html_escape($exam->subject_name . ', ' . $exam->class_name); ?></h3></div>
             <div class="box-body">
-                <div class="alert alert-info">Select the destination paper and optional section, then assign or update questions below. The server restricts results to this assessment’s class and subject.</div>
+                <div class="alert alert-info">Select a paper and optional section, then assign or update questions below. The server restricts results to this assessment’s class and subject.</div>
                 <div class="row">
-                    <div class="col-md-3"><div class="form-group"><label>Destination paper *</label><select id="builder_paper_id" class="form-control"><option value="">Select paper</option><?php foreach ($papers as $paper) { ?><option value="<?php echo (int) $paper['id']; ?>"><?php echo html_escape($paper['title']); ?></option><?php } ?></select></div></div>
+                    <div class="col-md-3"><div class="form-group"><label>Paper *</label><select id="builder_paper_id" class="form-control"><option value="">Select paper</option><?php foreach ($papers as $paper) { ?><option value="<?php echo (int) $paper['id']; ?>"><?php echo html_escape($paper['title']); ?></option><?php } ?></select></div></div>
                     <div class="col-md-3"><div class="form-group"><label>Section</label><select id="builder_section_id" class="form-control"><option value="">No named section</option></select></div></div>
                     <div class="col-md-3"><div class="form-group"><label>Keyword</label><input type="text" id="builder_keyword" class="form-control"></div></div>
                     <div class="col-md-2"><div class="form-group"><label>Question type</label><select id="builder_question_type" class="form-control"><option value="">All types</option><?php foreach ($question_type as $value => $label) { ?><option value="<?php echo html_escape($value); ?>"><?php echo html_escape($label); ?></option><?php } ?></select></div></div>
@@ -336,7 +374,7 @@ foreach ((array) $authored_questions as $authored_question) {
         <div class="box box-warning">
             <div class="box-header with-border"><h3 class="box-title">Freeze and publish assessment</h3></div>
             <div class="box-body">
-                <p>Publishing freezes an immutable copy of the questions, marks, paper rules, and result destination. It does <strong>not</strong> publish the official report card.</p>
+                <p>Publishing freezes an immutable copy of the questions, marks, paper rules, and result component. It does <strong>not</strong> publish the official report card.</p>
                 <?php if (!empty($publish_errors) && in_array($exam->lifecycle_status, array('draft', 'scheduled'), true)) { ?>
                     <ul class="text-danger"><?php foreach ($publish_errors as $error) { ?><li><?php echo html_escape($error); ?></li><?php } ?></ul>
                 <?php } ?>
@@ -379,6 +417,13 @@ foreach ((array) $authored_questions as $authored_question) {
         $.each(paperSections[paperId] || [], function (_, section) {
             select.append($('<option>', {value: section.id, text: section.title}));
         });
+        updateBankNegativeMarks();
+    }
+
+    function updateBankNegativeMarks() {
+        var paperId = parseInt($('#builder_paper_id').val(), 10);
+        var allowNegative = negativeMarkingEnabled && paperTypes[paperId] === 'objective';
+        $('.question-neg-marks').prop('disabled', !allowNegative);
     }
 
     function updateAuthorSections() {
@@ -414,7 +459,7 @@ foreach ((array) $authored_questions as $authored_question) {
             $('.workflow-matching-fields').show().find('textarea').prop('required', true);
         } else if (responseType === 'ordering') {
             $('.workflow-ordering-fields').show().find('textarea').prop('required', true);
-        } else if ($.inArray(responseType, ['long_answer', 'file_upload', 'oral', 'aural', 'practical', 'project']) !== -1) {
+        } else if (responseType === 'long_answer') {
             $('.workflow-manual-fields').show();
             $('textarea[name="marking_scheme"]').prop('required', true);
         }
@@ -493,12 +538,18 @@ foreach ((array) $authored_questions as $authored_question) {
             type: 'POST',
             url: '<?php echo site_url('admin/onlineexam/searchQuestionByExamID'); ?>',
             dataType: 'json',
-            data: {page: page || 1, exam_id: examId, search: '', keyword: $('#builder_keyword').val(), question_type: $('#builder_question_type').val(), question_level: '', class_id: '', section_id: '', is_quiz: 0, onlineexam_workflow_token: workflowToken},
+            data: {page: page || 1, exam_id: examId, search: '', keyword: $('#builder_keyword').val(), question_type: $('#builder_question_type').val(), class_id: '', section_id: '', onlineexam_workflow_token: workflowToken},
             success: function (response) {
                 $('#builder_question_results').html(response.content || '<div class="alert alert-warning">No matching questions.</div>');
                 $('#builder_question_pagination').html(response.navigation || '');
+                updateBankNegativeMarks();
             },
-            error: function () { errorMsg('The question bank could not be loaded.'); }
+            error: function (xhr) {
+                var message = xhr.responseJSON && xhr.responseJSON.message
+                    ? xhr.responseJSON.message
+                    : 'The question bank could not be loaded.';
+                errorMsg(message);
+            }
         });
     }
 
@@ -514,7 +565,7 @@ foreach ((array) $authored_questions as $authored_question) {
         var button = $(this);
         var row = button.closest('.workflow-question-row');
         var paperId = $('#builder_paper_id').val();
-        if (!paperId) { errorMsg('Select the destination paper first.'); return; }
+        if (!paperId) { errorMsg('Select a paper first.'); return; }
         button.button('loading');
         $.post('<?php echo site_url('admin/onlineexam/workflowQuestionSave'); ?>', {
             onlineexam_id: examId,

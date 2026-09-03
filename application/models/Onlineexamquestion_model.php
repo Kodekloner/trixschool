@@ -34,13 +34,22 @@ class Onlineexamquestion_model extends CI_Model
             if (isset($where_search['question_type']) && $where_search['question_type'] != "") {
                 $this->db->where('question_type', $where_search['question_type']);
             }
+            if (!empty($where_search['allowed_question_types']) && is_array($where_search['allowed_question_types'])) {
+                $this->db->where_in('questions.question_type', $where_search['allowed_question_types']);
+            }
             if (isset($where_search['class_id']) && $where_search['class_id'] != "") {
                 $this->db->where('class_id', $where_search['class_id']);
             }
             if (isset($where_search['section_id']) && $where_search['section_id'] != "") {
                 $this->db->where('section_id', $where_search['section_id']);
             }
-           if ($where_search['is_quiz'] == 1) {
+            if (isset($where_search['allowed_section_ids']) && is_array($where_search['allowed_section_ids'])) {
+                $this->db->where_in('questions.section_id', array_map('intval', $where_search['allowed_section_ids']));
+            }
+            if (isset($where_search['question_staff_id'])) {
+                $this->db->where('questions.staff_id', (int) $where_search['question_staff_id']);
+            }
+           if (isset($where_search['is_quiz']) && $where_search['is_quiz'] == 1) {
                 $this->db->where('questions.question_type !=','descriptive');
             }
 
@@ -120,13 +129,22 @@ class Onlineexamquestion_model extends CI_Model
             if (isset($where_search['question_type']) && $where_search['question_type'] != "") {
                 $this->db->where('question_type', $where_search['question_type']);
             }
+            if (!empty($where_search['allowed_question_types']) && is_array($where_search['allowed_question_types'])) {
+                $this->db->where_in('questions.question_type', $where_search['allowed_question_types']);
+            }
             if (isset($where_search['class_id']) && $where_search['class_id'] != "") {
                 $this->db->where('class_id', $where_search['class_id']);
             }
             if (isset($where_search['section_id']) && $where_search['section_id'] != "") {
                 $this->db->where('section_id', $where_search['section_id']);
             }
-              if ($where_search['is_quiz'] == 1) {
+            if (isset($where_search['allowed_section_ids']) && is_array($where_search['allowed_section_ids'])) {
+                $this->db->where_in('questions.section_id', array_map('intval', $where_search['allowed_section_ids']));
+            }
+            if (isset($where_search['question_staff_id'])) {
+                $this->db->where('questions.staff_id', (int) $where_search['question_staff_id']);
+            }
+              if (isset($where_search['is_quiz']) && $where_search['is_quiz'] == 1) {
                 $this->db->where('questions.question_type !=','descriptive');
             }
 

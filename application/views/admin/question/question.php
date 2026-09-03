@@ -1,5 +1,64 @@
 <style type="text/css">
-    .loading-overlay {
+.question-bank-page .question-bank-header {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+}
+.question-bank-page .question-bank-header .box-title {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.question-bank-page .question-bank-actions {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+}
+.question-bank-page .question-bank-actions .btn {
+    margin: 0;
+    white-space: nowrap;
+}
+.question-bank-page .question-bank-table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.question-bank-page .question-bank-table-scroll > table {
+    min-width: 820px;
+}
+.question-bank-page .question-bank-table-scroll th,
+.question-bank-page .question-bank-table-scroll td {
+    vertical-align: middle;
+}
+.question-bank-page .question-bank-row-actions {
+    display: inline-flex;
+    gap: 4px;
+    white-space: nowrap;
+}
+.question-bank-page .modal-dialog {
+    max-width: calc(100% - 20px);
+}
+@media (max-width: 767px) {
+    .question-bank-page .question-bank-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+    .question-bank-page .question-bank-actions {
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+    .question-bank-page .question-bank-actions .btn {
+        min-height: 40px;
+    }
+    .question-bank-page .modal-dialog {
+        margin: 10px;
+        width: auto;
+    }
+}
+.loading-overlay {
     display: none;
     position: absolute;
     left: 0;
@@ -38,20 +97,22 @@
 <script src="<?php echo base_url(); ?>backend/plugins/ckeditor/ckeditor.js"></script>
 <script src="<?php echo base_url(); ?>backend/js/ckeditor_config.js"></script>
 
-<div class="content-wrapper">
+<div class="content-wrapper question-bank-page">
     <section class="content-header">
-        <h1><i class="fa fa-bus"></i> <?php echo $this->lang->line('question'); ?></h1>
+        <h1><i class="fa fa-question-circle"></i> <?php echo $this->lang->line('question'); ?></h1>
     </section>
     <section class="content">
         <div class="row">
 
             <div class="col-md-12">
                 <div class="box box-primary" id="route">
-                    <div class="box-header ptbnull">
+                    <div class="box-header ptbnull question-bank-header">
                         <h3 class="box-title titlefix pt5"><?php echo $this->lang->line('question') . " " . $this->lang->line('bank'); ?></h3>
-                      
-<div class="pull-right">  
+
+<div class="question-bank-actions">
+    <?php if ($this->rbac->hasPrivilege('question_bank', 'can_delete')) { ?>
      <button class="btn btn-primary btn-sm deleteSelected" data-loading-text="<i class='fa fa-spinner fa-spin '></i> Please wait..."><i class="fa fa-trash"></i> <?php echo $this->lang->line('bulk_delete'); ?></button>
+    <?php } ?>
     <?php 
     if ($this->rbac->hasPrivilege('import_question', 'can_view')) {
     ?>
@@ -71,7 +132,7 @@ if ($this->rbac->hasPrivilege('question_bank', 'can_add')) {
                             <div class="pull-right">
                             </div>
                         </div>
-                        <div class="mailbox-messages table-responsive">
+                        <div class="mailbox-messages table-responsive question-bank-table-scroll">
                           
 
                             <!-- <textarea class="form-control question" id="question" name="question"></textarea> -->
@@ -84,7 +145,7 @@ if ($this->rbac->hasPrivilege('question_bank', 'can_add')) {
                                         <th><?php echo $this->lang->line('question_type')?></th>
                                         <th><?php echo $this->lang->line('level');?></th>
                                         <th><?php echo $this->lang->line('question') ?></th>
-                                        <th class="pull-right no-print"><?php echo $this->lang->line('action'); ?></th>
+                                        <th class="text-right no-print"><?php echo $this->lang->line('action'); ?></th>
                                     </tr>
                                 </thead>
                       
@@ -380,7 +441,7 @@ console.log(data);
                 success: function (data) {
           
              if (data.status == "0") {
-             var message = "";
+             var message = data.message || "";
              $.each(data.error, function (index, value) {
               message += value;
             });
@@ -427,7 +488,7 @@ console.log(data);
             {
 
             if (!data.status) {
-            var message = "";
+            var message = data.message || "";
             $.each(data.error, function (index, value) {
 
             message += value;
@@ -664,7 +725,9 @@ $(document).on('change', '#class_id', function (e) {
                 success: function (data) {
                     if(data.status){
                         successMsg(data.message);
-                     table.ajax.reload( null, false );
+                        table.ajax.reload(null, false);
+                    } else {
+                        errorMsg(data.message || '<?php echo $this->lang->line('something_went_wrong'); ?>');
                     }
                     $this.button('reset');
                 },
