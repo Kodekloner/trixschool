@@ -120,8 +120,8 @@ class Onlineexam extends Admin_Controller
                     if ($compact_supported && $this->rbac->hasPrivilege('add_questions_in_exam', 'can_view')) {
                        $addquestion_btn=" <a class='btn btn-primary btn-xs' href='".base_url().'admin/onlineexam/builder/'.$subject_value->id."' data-toggle='tooltip' title='Paper and section builder'><i class='fa fa-sitemap'></i></a>" ;
                     }
-                    if ($compact_supported && $this->rbac->hasPrivilege('online_examination', 'can_edit')) {
-                        $editbtn = " <a data-toggle='tooltip' class='btn btn-default btn-xs' href='".base_url().'admin/onlineexam/'.($subject_value->lifecycle_status === 'draft' ? 'workflow/' : 'builder/').$subject_value->id."' title='".($subject_value->lifecycle_status === 'draft' ? $this->lang->line('edit') : 'View frozen revision')."'><i class='fa fa-pencil'></i></a>";
+                    if ($compact_supported && $subject_value->lifecycle_status === 'draft' && $this->rbac->hasPrivilege('online_examination', 'can_edit')) {
+                        $editbtn = " <a data-toggle='tooltip' class='btn btn-default btn-xs' href='".base_url().'admin/onlineexam/workflow/'.$subject_value->id."' title='".$this->lang->line('edit')."'><i class='fa fa-pencil'></i></a>";
                     }
                     if ($compact_supported && $this->rbac->hasPrivilege('online_examination', 'can_delete') && $subject_value->lifecycle_status === 'draft') {
                             $deletebtn = " <form method='post' action='" . base_url('admin/onlineexam/workflowDelete/' . $subject_value->id) . "' style='display:inline' onsubmit='return confirm(\"Delete this unattempted draft assessment?\")'>"
@@ -469,6 +469,7 @@ class Onlineexam extends Admin_Controller
             'question_type'    => array_diff_key($this->localizedQuestionTypes(), array('grouped_passage' => true)),
             'native_question_types' => $this->localizedQuestionTypes(),
             'authored_questions' => $this->onlineexam_model->getWorkflowAuthoredQuestions($exam->id),
+            'compact_supported' => $compact_supported,
             'editable'         => $compact_supported && $exam->lifecycle_status === 'draft' && !$this->onlineexam_model->hasWorkflowAttemptsForRevision($exam->id, $exam->revision),
             'publish_errors'   => $publish_validation['valid'] ? array() : $publish_validation['errors'],
             'configuration'    => $this->onlineexam_model->getAcademicConfiguration(

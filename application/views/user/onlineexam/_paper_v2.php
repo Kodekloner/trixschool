@@ -11,6 +11,7 @@ $decode = function ($value, $fallback = array()) {
 $current_section = '__first__';
 $current_passage = '__first__';
 $question_count = !empty($questions) ? count($questions) : 0;
+$navigator_id = 'v2QuestionNavigator_' . (int) $attempt->id . '_' . (int) $paper->id;
 ?>
 <div class="v2-paper" data-attempt-id="<?php echo (int) $attempt->id; ?>" data-paper-id="<?php echo (int) $paper->id; ?>" data-submission-key="<?php echo html_escape($attempt->submission_key); ?>">
     <div class="alert alert-info v2-paper-intro">
@@ -22,6 +23,30 @@ $question_count = !empty($questions) ? count($questions) : 0;
 
     <?php if (empty($questions)) { ?>
         <div class="alert alert-warning">No questions are available. Please contact the examination officer.</div>
+    <?php } ?>
+
+    <?php if (!empty($questions)) { ?>
+        <nav class="v2-question-navigation" aria-label="Question navigation">
+            <div class="v2-question-nav-heading">
+                <strong>Question navigator</strong>
+                <button type="button" class="btn btn-default btn-sm v2-toggle-navigator" aria-expanded="false" aria-controls="<?php echo $navigator_id; ?>">
+                    Show questions (<?php echo $question_count; ?>)
+                </button>
+            </div>
+            <div id="<?php echo $navigator_id; ?>" class="v2-question-nav-panel" hidden>
+                <div class="v2-question-nav-grid">
+                    <?php foreach ($questions as $navigator_index => $navigator_question) { ?>
+                        <button type="button" id="v2QuestionNav_<?php echo (int) $navigator_question->id; ?>" class="btn btn-default v2-question-nav-button" data-question-target="<?php echo (int) $navigator_question->id; ?>" data-question-label="Question <?php echo (int) $navigator_index + 1; ?>" aria-label="Question <?php echo (int) $navigator_index + 1; ?>, unanswered" aria-current="false">
+                            <?php echo (int) $navigator_index + 1; ?>
+                        </button>
+                    <?php } ?>
+                </div>
+                <div class="v2-question-nav-key" aria-hidden="true">
+                    <span><i class="v2-nav-swatch v2-nav-swatch-current"></i> Current</span>
+                    <span><i class="v2-nav-swatch v2-nav-swatch-answered"></i> Answered</span>
+                </div>
+            </div>
+        </nav>
     <?php } ?>
 
     <?php foreach ($questions as $number => $question) {
@@ -48,6 +73,7 @@ $question_count = !empty($questions) ? count($questions) : 0;
                         </span>
                         <span class="label label-info v2-section-counter" aria-live="polite">0 / <?php echo $answer_count; ?> answered</span>
                     </div>
+                    <div class="v2-section-limit-message help-block" role="status" aria-live="polite"></div>
                 <?php } ?>
             </div>
             <?php
@@ -80,7 +106,7 @@ $question_count = !empty($questions) ? count($questions) : 0;
         }
         ?>
 
-        <div class="panel panel-default v2-question" data-question-id="<?php echo (int) $question->id; ?>" data-question-type="<?php echo html_escape($type); ?>" data-section-id="<?php echo (int) $question->paper_section_id; ?>" data-compulsory="<?php echo (int) $question->is_compulsory; ?>" data-client-sequence="<?php echo isset($question->answer_client_sequence) ? (int) $question->answer_client_sequence : 0; ?>">
+        <div id="v2Question_<?php echo (int) $question->id; ?>" class="panel panel-default v2-question" tabindex="-1" data-question-id="<?php echo (int) $question->id; ?>" data-question-number="<?php echo (int) $number + 1; ?>" data-question-type="<?php echo html_escape($type); ?>" data-section-id="<?php echo (int) $question->paper_section_id; ?>" data-compulsory="<?php echo (int) $question->is_compulsory; ?>" data-client-sequence="<?php echo isset($question->answer_client_sequence) ? (int) $question->answer_client_sequence : 0; ?>">
             <div class="panel-heading v2-question-heading">
                 <strong>Question <?php echo (int) $number + 1; ?><?php echo (int) $question->is_compulsory === 1 ? ' (Compulsory)' : ''; ?></strong>
                 <span class="v2-question-marks"><?php echo number_format((float) $question->marks, 2); ?> mark<?php echo (float) $question->marks === 1.0 ? '' : 's'; ?></span>
@@ -135,6 +161,7 @@ $question_count = !empty($questions) ? count($questions) : 0;
                             </select>
                         </div>
                     <?php } ?>
+                    <small class="v2-ordering-message text-muted" role="status" aria-live="polite">Each item can be selected only once.</small>
                 <?php } elseif ($type === 'matching' && !empty($options['matching_left']) && !empty($options['matching_right'])) {
                     $saved_matches = is_array($saved) ? $saved : array();
                     $right_choices = $options['matching_right'];
@@ -162,6 +189,7 @@ $question_count = !empty($questions) ? count($questions) : 0;
                 <?php } ?>
 
                 <?php if (in_array($type, array('singlechoice', 'single_choice', 'true_false', 'true/false', 'multichoice', 'multiple_choice', 'short_answer', 'fill_blank', 'numeric', 'ordering', 'matching', 'long_answer'), true) || $type === '') { ?>
+                <div id="v2QuestionLock_<?php echo (int) $question->id; ?>" class="alert alert-warning v2-choice-lock-notice" role="status" hidden>Answer limit reached for this section. Clear one selected answer before choosing this question.</div>
                 <div class="v2-question-actions">
                     <button type="button" class="btn btn-default btn-sm v2-clear-answer"><i class="fa fa-eraser" aria-hidden="true"></i> Clear answer</button>
                     <small class="v2-save-state text-muted" role="status" aria-live="polite">No changes yet</small>
@@ -175,6 +203,10 @@ $question_count = !empty($questions) ? count($questions) : 0;
         <div class="v2-progress-summary" role="status" aria-live="polite">
             <strong class="v2-progress-count">0 of <?php echo $question_count; ?> answered</strong>
             <span>Check your answers before submitting.</span>
+        </div>
+        <div class="v2-paper-step-controls" aria-label="Move between questions">
+            <button type="button" class="btn btn-default v2-previous-question"><i class="fa fa-chevron-left" aria-hidden="true"></i> Previous</button>
+            <button type="button" class="btn btn-default v2-next-question">Next <i class="fa fa-chevron-right" aria-hidden="true"></i></button>
         </div>
         <button type="button" class="btn btn-success btn-lg v2-submit-paper" <?php echo empty($questions) ? 'disabled' : ''; ?>>Submit answers</button>
     </div>

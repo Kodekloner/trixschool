@@ -1,4 +1,8 @@
-<?php $this->load->view('admin/onlineexam/_assessment_styles'); ?>
+<?php
+$can_edit_roster = $this->rbac->hasPrivilege('online_assign_view_student', 'can_edit');
+$roster_column_count = 5 + (!empty($sch_setting->father_name) ? 1 : 0) + (!empty($sch_setting->category) ? 1 : 0);
+$this->load->view('admin/onlineexam/_assessment_styles');
+?>
 <div class="content-wrapper onlineexam-ui onlineexam-roster-page">
     <!-- Main content -->
     <section class="content-header"><h1>Candidate roster <small><?php echo html_escape($onlineexam->exam); ?></small></h1></section>
@@ -19,7 +23,7 @@
                            
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                    <label><?php echo $this->lang->line('class'); ?></label>  <small class="req"> *</small>
+                                    <label for="class_id"><?php echo $this->lang->line('class'); ?></label>  <small class="req"> *</small>
                                     <select autofocus="" id="class_id" name="class_id" class="form-control" <?php echo $is_workflow ? 'disabled' : ''; ?>>
                                         <option value=""><?php echo $this->lang->line('select'); ?></option>
                                         <?php
@@ -42,7 +46,7 @@
                                 <div class="col-md-6">
 
                                     <div class="form-group">
-                                        <label for="exampleInputEmail1"><?php echo $this->lang->line('section'); ?></label>
+                                        <label for="section_id"><?php echo $this->lang->line('section'); ?></label>
                                         <select  id="section_id" name="section_id" class="form-control" >
                                             <option value=""><?php echo $this->lang->line('select'); ?></option>
                                             <?php if ($is_workflow && !empty($workflow_sections)) { foreach ($workflow_sections as $workflow_section) { if (in_array((int) $workflow_section['id'], array_map('intval', $onlineexam->section_ids), true)) { ?>
@@ -55,10 +59,8 @@
                           
 
                           
-                            <div class="form-group">
-                                <div class="col-md-12">
-                                    <button type="submit" name="search" value="search_filter" class="btn btn-primary pull-right btn-sm checkbox-toggle"><i class="fa fa-search"></i> <?php echo $this->lang->line('search'); ?></button>
-                                </div>
+                            <div class="col-md-12 single-action-footer">
+                                <button type="submit" name="search" value="search_filter" class="btn btn-primary btn-sm checkbox-toggle"><i class="fa fa-search"></i> <?php echo $this->lang->line('search'); ?></button>
                             </div>
                         </form>
 
@@ -85,33 +87,37 @@
                                 <input type="hidden" name="post_class_id" value="<?php echo $class_id; ?>">
                                 <input type="hidden" name="post_section_id" value="<?php echo $section_id; ?>">
                                 <h4><a href="#" data-toggle="popover" class="detail_popover"><?php echo html_escape($onlineexam->exam); ?></a></h4>
-                                <div class="table-responsive onlineexam-scroll">
+                                <div class="table-responsive onlineexam-scroll" role="region" aria-label="Candidate roster" tabindex="0">
                                                 <table class="table table-striped table-bordered candidate-roster-table">
-                                                    <tbody>
+                                                    <caption class="sr-only">Students eligible for this online assessment</caption>
+                                                    <thead>
                                                         <tr>
-                                                            <th><input style="vertical-align: text-top;" type="checkbox" id="select_all"/> <?php echo $this->lang->line('all'); ?></th>
+                                                            <th scope="col"><input style="vertical-align: text-top;" type="checkbox" id="select_all" aria-label="Select all candidates" <?php echo $can_edit_roster ? '' : 'disabled'; ?>/> <?php echo $this->lang->line('all'); ?></th>
 
-                                                            <th><?php echo $this->lang->line('admission_no'); ?></th>
-                                                            <th><?php echo $this->lang->line('student_name'); ?></th>
+                                                            <th scope="col"><?php echo $this->lang->line('admission_no'); ?></th>
+                                                            <th scope="col"><?php echo $this->lang->line('student_name'); ?></th>
 
-                                                            <th><?php echo $this->lang->line('class'); ?></th>
+                                                            <th scope="col"><?php echo $this->lang->line('class'); ?></th>
                                                             <?php if($sch_setting->father_name){ ?>
-                                                            <th><?php echo $this->lang->line('father_name'); ?></th><?php }   if($sch_setting->category){ ?>
-                                                            <th><?php echo $this->lang->line('category'); ?></th>
+                                                            <th scope="col"><?php echo $this->lang->line('father_name'); ?></th><?php }   if($sch_setting->category){ ?>
+                                                            <th scope="col"><?php echo $this->lang->line('category'); ?></th>
                                                         <?php } ?>
-                                                            <th class="text-right"><?php echo $this->lang->line('gender'); ?></th>
+                                                            <th scope="col" class="text-right"><?php echo $this->lang->line('gender'); ?></th>
                                                       
                                                         </tr>
+                                                    </thead>
+                                                    <tbody>
                                                         <?php
                                                         if (empty($resultlist)) {
                                                             ?>
                                                             <tr>
-                                                                <td colspan="7" class="text-danger text-center"><?php echo $this->lang->line('no_record_found'); ?></td>
+                                                                <td colspan="<?php echo (int) $roster_column_count; ?>" class="text-danger text-center"><?php echo $this->lang->line('no_record_found'); ?></td>
                                                             </tr>
                                                             <?php
                                                         } else {
                                                             $count = 1;
                                                             foreach ($resultlist as $student) {
+                                                                $student_name = $this->customlib->getFullName($student['firstname'], $student['middlename'], $student['lastname'], $sch_setting->middlename, $sch_setting->lastname);
                                                      
                                                                 ?>
                                                                 <tr>
@@ -126,14 +132,14 @@
                                                                         ?>
                                                                         <input type="hidden" name="all_students[]" value="<?php echo $student['onlineexam_student_session_id']; ?>">
 
-                                                                        <input class="checkbox" type="checkbox" name="students_id[]"  value="<?php echo $student['student_session_id']; ?>" <?php echo $sel; ?>/>
+                                                                        <input class="checkbox" type="checkbox" name="students_id[]" value="<?php echo $student['student_session_id']; ?>" aria-label="Assign <?php echo html_escape($student_name); ?>" <?php echo $sel; ?> <?php echo $can_edit_roster ? '' : 'disabled'; ?>/>
 
 
                                                                     </td>
 
                                                                     <td><?php echo html_escape($student['admission_no']); ?></td>
 
-                 <td><?php echo html_escape($this->customlib->getFullName($student['firstname'],$student['middlename'],$student['lastname'],$sch_setting->middlename,$sch_setting->lastname)); ?></td>
+                 <td><?php echo html_escape($student_name); ?></td>
                                                                     <td><?php echo html_escape($student['class']." (".$student['section'].")"); ?></td><?php if($sch_setting->father_name){ ?>
                                                                     <td><?php echo html_escape($student['father_name']); ?></td>
                                                                 <?php } if($sch_setting->category){ ?>
@@ -150,8 +156,8 @@
                                                     </tbody>
                                                 </table>
                                 </div>
-                                <?php if($this->rbac->hasPrivilege('online_assign_view_student','can_edit')){ ?>
-                                    <button type="submit" class="allot-fees btn btn-primary btn-sm pull-right" id="load" data-loading-text="<i class='fa fa-spinner fa-spin '></i> Please Wait.."><?php echo $this->lang->line('save'); ?></button>
+                                <?php if($can_edit_roster){ ?>
+                                    <div class="single-action-footer"><button type="submit" class="allot-fees btn btn-primary btn-sm" id="load" data-loading-text="<i class='fa fa-spinner fa-spin '></i> Please Wait.."><?php echo $this->lang->line('save'); ?></button></div>
                                 <?php } ?>
                                 <div class="clearfix"></div>
 

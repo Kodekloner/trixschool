@@ -13,19 +13,20 @@
                     </div>
                     <div class="box-body">
                         <div class="mailbox-messages">
-                            <div class="table-responsive onlineexam-scroll">
+                            <div class="table-responsive onlineexam-scroll" role="region" aria-label="Online assessment list" tabindex="0">
                                 <table class="table table-striped table-bordered table-hover exam-list onlineexam-list-table" data-export-title="Online assessment list">
+                                    <caption class="sr-only">Online assessments and workflow actions</caption>
                                     <thead>
                                         <tr>
-                                            <th>Assessment</th>
-                                            <th class="text-center">Purpose</th>
-                                            <th class="text-center">Papers / questions</th>
-                                            <th>Opens</th>
-                                            <th>Closes</th>
-                                            <th>Duration</th>
-                                            <th class="text-center">Status</th>
-                                            <th class="text-center">Feedback</th>
-                                            <th class="text-right noExport onlineexam-action-cell">Actions</th>
+                                            <th scope="col">Assessment</th>
+                                            <th scope="col" class="text-center">Purpose</th>
+                                            <th scope="col" class="text-center">Papers / questions</th>
+                                            <th scope="col">Opens</th>
+                                            <th scope="col">Closes</th>
+                                            <th scope="col">Duration</th>
+                                            <th scope="col" class="text-center">Status</th>
+                                            <th scope="col" class="text-center">Feedback</th>
+                                            <th scope="col" class="text-right noExport onlineexam-action-cell">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>

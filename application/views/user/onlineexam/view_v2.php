@@ -106,10 +106,11 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
                     <div class="box box-success assessment-feedback-box">
                         <div class="box-header with-border"><h3 class="box-title">Answer review</h3></div>
                         <div class="box-body">
-                            <div class="table-responsive assessment-feedback-wrap">
+                            <div class="table-responsive assessment-feedback-wrap" role="region" aria-label="Released answer review" tabindex="0">
                                 <table class="table table-bordered table-condensed assessment-feedback-table">
+                                    <caption class="sr-only">Released answers, expected answers, and marks</caption>
                                     <thead>
-                                        <tr><th>Question</th><th>Your answer</th><th>Expected answer</th><th>Mark</th></tr>
+                                        <tr><th scope="col">Question</th><th scope="col">Your answer</th><th scope="col">Expected answer</th><th scope="col">Mark</th></tr>
                                     </thead>
                                     <tbody>
                                         <?php foreach ($released_feedback['questions'] as $feedback_question) { ?>
@@ -138,10 +139,11 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
                     <h4>Assessment parts</h4>
                     <span class="text-muted">Start each available part below.</span>
                 </div>
-                <div class="table-responsive assessment-parts-wrap">
+                <div class="table-responsive assessment-parts-wrap" role="region" aria-label="Assessment parts" tabindex="0">
                     <table class="table table-bordered table-striped assessment-parts-table">
+                        <caption class="sr-only">Assessment parts, schedules, status, and start actions</caption>
                         <thead>
-                            <tr><th>Part</th><th>Type</th><th>Schedule</th><th>Duration</th><th>Status</th><th class="text-right">Action</th></tr>
+                            <tr><th scope="col">Part</th><th scope="col">Type</th><th scope="col">Schedule</th><th scope="col">Duration</th><th scope="col">Status</th><th scope="col" class="text-right">Action</th></tr>
                         </thead>
                         <tbody>
                             <?php if (!empty($papers)) { ?>
@@ -214,6 +216,7 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
 </div>
 
 <style>
+.online-assessment-page .content-header h1,.online-assessment-page .box-title{max-width:100%;white-space:normal;overflow-wrap:anywhere}
 .online-assessment-page .assessment-overview>.box-body{padding:18px}
 .online-assessment-page .assessment-summary{margin:0 -7px 12px}
 .online-assessment-page .assessment-summary>div{padding:0 7px;margin-bottom:14px}
@@ -221,6 +224,7 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
 .online-assessment-page .assessment-summary-label{display:block;margin-bottom:5px;color:#66717c;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
 .online-assessment-page .candidate-card{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px 14px;border-left:4px solid #3c8dbc;background:#f5f9fc}
 .online-assessment-page .candidate-card>i{flex:0 0 auto;color:#3c8dbc;font-size:28px}
+.online-assessment-page .candidate-card>div{min-width:0}
 .online-assessment-page .candidate-card strong,.online-assessment-page .candidate-card span{display:block;overflow-wrap:anywhere}
 .online-assessment-page .candidate-card span{margin-top:2px;color:#66717c}
 .online-assessment-page .assessment-description img,.online-assessment-page .feedback-question-text img{max-width:100%;height:auto}
@@ -240,28 +244,46 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
 .online-assessment-page .assessment-part-status{display:inline-block;padding:5px 8px;font-size:11px}
 .online-assessment-page .assessment-part-action .btn{min-width:84px;min-height:34px}
 .modal-dialogfullwidth{width:calc(100% - 30px);max-width:1280px;margin:12px auto}
-.modal-contentfull{display:flex;flex-direction:column;height:calc(100vh - 24px);min-height:480px}
+.modal-contentfull{display:flex;flex-direction:column;height:calc(100vh - 24px);height:calc(100dvh - 24px);min-height:480px}
 .online-assessment-modal .v2-modal-header{display:flex;align-items:center;justify-content:space-between;gap:15px;flex:0 0 auto;padding:11px 15px}
 .online-assessment-modal .v2-modal-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;min-width:0;flex:1}
 .online-assessment-modal .modal-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.online-assessment-modal .v2-modal-statuses{display:flex;align-items:center;gap:9px;white-space:nowrap}
-.online-assessment-modal #v2SyncState{padding:6px 9px;font-size:11px}
+.online-assessment-modal .v2-modal-statuses{display:flex;align-items:center;flex-wrap:wrap;gap:9px;min-width:0}
+.online-assessment-modal #v2SyncState{max-width:100%;padding:6px 9px;font-size:11px;line-height:1.3;white-space:normal;text-align:left;overflow-wrap:anywhere}
 .online-assessment-modal .v2-timer-state{display:inline-block;padding:5px 9px;border:1px solid #c8d0d8;border-radius:4px;background:#f8fafb;color:#263746;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
 .online-assessment-modal .v2-timer-state.v2-timer-warning{border-color:#e6a23c;background:#fff8e8;color:#8a5a00}
 .online-assessment-modal .v2-timer-state.v2-timer-danger{border-color:#dd4b39;background:#fff1ef;color:#b52b1d;animation:v2-timer-pulse 1s ease-in-out infinite alternate}
 .online-assessment-modal .v2-leave-paper{flex:0 0 auto;min-height:36px}
-.online-assessment-modal .modal-body{flex:1 1 auto;padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#f5f7f9}
+.online-assessment-modal .modal-body{flex:1 1 auto;padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:#f5f7f9}
 .online-assessment-modal .v2-paper{max-width:980px;margin:0 auto}
 .online-assessment-modal .v2-paper-intro{overflow-wrap:anywhere}
 .online-assessment-modal .v2-paper-title{display:block;font-size:17px}
 .online-assessment-modal .v2-paper-instructions{margin-top:6px}
 .online-assessment-modal .v2-paper-instructions,.online-assessment-modal .v2-section-instructions,.online-assessment-modal .v2-question-text,.online-assessment-modal .v2-passage .panel-body{max-width:100%;overflow-x:auto;word-wrap:break-word}
 .online-assessment-modal .v2-paper-instructions img,.online-assessment-modal .v2-section-instructions img,.online-assessment-modal .v2-question-text img,.online-assessment-modal .v2-passage img,.online-assessment-modal .v2-paper-instructions iframe,.online-assessment-modal .v2-section-instructions iframe,.online-assessment-modal .v2-question-text iframe,.online-assessment-modal .v2-passage iframe{max-width:100%!important;height:auto!important}
+.online-assessment-modal .v2-question-navigation{margin:12px 0;padding:10px 12px;border:1px solid #cfd8df;border-radius:5px;background:#fff}
+.online-assessment-modal .v2-question-nav-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.online-assessment-modal .v2-question-nav-heading strong{min-width:0;overflow-wrap:anywhere}
+.online-assessment-modal .v2-toggle-navigator{flex:0 0 auto;min-height:36px;white-space:normal}
+.online-assessment-modal .v2-question-nav-panel{padding-top:10px}
+.online-assessment-modal .v2-question-nav-grid{display:flex;flex-wrap:wrap;gap:7px}
+.online-assessment-modal .v2-question-nav-button{width:40px;height:40px;padding:0;border-radius:4px;font-weight:600;font-variant-numeric:tabular-nums}
+.online-assessment-modal .v2-question-nav-button.v2-nav-answered{border-color:#00a65a;background:#eaf8f0;color:#08743f}
+.online-assessment-modal .v2-question-nav-button.v2-nav-current{border-color:#3c8dbc;box-shadow:0 0 0 2px rgba(60,141,188,.22);color:#205f82}
+.online-assessment-modal .v2-question-nav-key{display:flex;flex-wrap:wrap;gap:12px;margin-top:9px;color:#66717c;font-size:12px}
+.online-assessment-modal .v2-question-nav-key span{display:inline-flex;align-items:center;gap:5px}
+.online-assessment-modal .v2-nav-swatch{display:inline-block;width:13px;height:13px;border:1px solid #b8c1c8;border-radius:2px;background:#fff}
+.online-assessment-modal .v2-nav-swatch-current{border-color:#3c8dbc;box-shadow:0 0 0 2px rgba(60,141,188,.22)}
+.online-assessment-modal .v2-nav-swatch-answered{border-color:#00a65a;background:#eaf8f0}
 .online-assessment-modal .v2-section-heading{margin:20px 0 12px;padding:12px 14px;border-left:4px solid #3c8dbc;border-radius:0 4px 4px 0;background:#eef5fa;overflow-wrap:anywhere}
 .online-assessment-modal .v2-section-heading h4{margin:0 0 7px}
 .online-assessment-modal .v2-section-rule{display:flex;align-items:flex-start;flex-wrap:wrap;gap:7px;margin-top:9px}
 .online-assessment-modal .v2-section-rule .label{display:inline-block;max-width:100%;padding:6px 8px;white-space:normal;text-align:left;line-height:1.35}
+.online-assessment-modal .v2-section-limit-message{margin:7px 0 0;color:#56616c}
+.online-assessment-modal .v2-section-limit-message.text-danger{color:#a94442;font-weight:600}
 .online-assessment-modal .v2-question{border-color:#d7dde3;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.online-assessment-modal .v2-question:focus{outline:2px solid #3c8dbc;outline-offset:2px}
+.online-assessment-modal .v2-question.v2-question-current{box-shadow:0 0 0 2px rgba(60,141,188,.14)}
 .online-assessment-modal .v2-question.v2-question-answered{border-left:4px solid #00a65a}
 .online-assessment-modal .v2-question.v2-choice-locked{opacity:.68}
 .online-assessment-modal .v2-question.v2-choice-locked .panel-body{background:#f4f4f4}
@@ -271,15 +293,20 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
 .online-assessment-modal .v2-option{display:flex;align-items:flex-start;gap:10px;min-height:46px;margin:7px 0;padding:12px;border:1px solid #dce2e7;border-radius:5px;background:#fff;font-weight:normal;line-height:1.35;cursor:pointer;overflow-wrap:anywhere}
 .online-assessment-modal .v2-option:hover,.online-assessment-modal .v2-option:focus-within{border-color:#3c8dbc;background:#f4f9fc}
 .online-assessment-modal .v2-option input{flex:0 0 auto;margin:2px 0 0}
+.online-assessment-modal .v2-option span{min-width:0;overflow-wrap:anywhere}
 .online-assessment-modal .v2-answer-control.form-control{min-height:42px;font-size:16px}
 .online-assessment-modal textarea.v2-answer-control{min-height:150px;resize:vertical}
 .online-assessment-modal .v2-match-label{padding-top:9px;overflow-wrap:anywhere}
+.online-assessment-modal .v2-ordering-message{display:block;margin:-1px 0 10px;overflow-wrap:anywhere}
+.online-assessment-modal .v2-choice-lock-notice{margin:12px 0 0;padding:8px 10px}
 .online-assessment-modal .v2-question-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid #edf0f2}
 .online-assessment-modal .v2-clear-answer{min-height:36px}
 .online-assessment-modal .v2-save-state{text-align:right;overflow-wrap:anywhere}
-.online-assessment-modal .v2-submit-bar{position:sticky;bottom:-16px;z-index:4;display:flex;align-items:center;justify-content:space-between;gap:16px;margin:20px -16px -16px;padding:13px 16px;border-top:1px solid #cfd6dc;background:#fff;box-shadow:0 -2px 7px rgba(0,0,0,.08)}
+.online-assessment-modal .v2-submit-bar{position:sticky;bottom:0;z-index:4;display:flex;align-items:center;justify-content:space-between;gap:16px;margin:20px -16px -16px;padding:13px 16px;padding:13px 16px calc(13px + env(safe-area-inset-bottom));border-top:1px solid #cfd6dc;background:#fff;box-shadow:0 -2px 7px rgba(0,0,0,.08)}
 .online-assessment-modal .v2-progress-summary strong,.online-assessment-modal .v2-progress-summary span{display:block}
 .online-assessment-modal .v2-progress-summary span{margin-top:2px;color:#66717c;font-size:12px}
+.online-assessment-modal .v2-paper-step-controls{display:flex;flex:0 0 auto;gap:7px}
+.online-assessment-modal .v2-paper-step-controls .btn{min-height:40px}
 .online-assessment-modal .v2-submit-paper{flex:0 0 auto;min-width:170px}
 @keyframes v2-timer-pulse{from{box-shadow:0 0 0 rgba(221,75,57,0)}to{box-shadow:0 0 0 3px rgba(221,75,57,.16)}}
 @media (max-width:767px){
@@ -287,28 +314,43 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
     .online-assessment-page .assessment-overview>.box-body{padding:12px}
     .online-assessment-page .assessment-summary-item{min-height:0}
     .online-assessment-page .assessment-parts-heading{display:block}
-    .online-assessment-page .assessment-part-action .btn{min-height:40px}
+    .online-assessment-page .assessment-parts-wrap,.online-assessment-page .assessment-feedback-wrap{overflow-x:visible}
+    .online-assessment-page .assessment-parts-table,.online-assessment-page .assessment-feedback-table{display:block;width:100%!important;min-width:0;border:0;background:transparent}
+    .online-assessment-page .assessment-parts-table thead,.online-assessment-page .assessment-feedback-table thead{display:none}
+    .online-assessment-page .assessment-parts-table tbody,.online-assessment-page .assessment-parts-table tr,.online-assessment-page .assessment-parts-table td,.online-assessment-page .assessment-feedback-table tbody,.online-assessment-page .assessment-feedback-table tr,.online-assessment-page .assessment-feedback-table td{display:block;width:100%!important}
+    .online-assessment-page .assessment-parts-table tr,.online-assessment-page .assessment-feedback-table tr{margin-bottom:12px;border:1px solid #dce2e7;border-radius:6px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);overflow:hidden}
+    .online-assessment-page .assessment-parts-table td,.online-assessment-page .assessment-feedback-table td{position:relative;min-height:42px;padding:10px 10px 10px 42%!important;border:0!important;border-top:1px solid #edf0f2!important;text-align:left!important;overflow-wrap:anywhere}
+    .online-assessment-page .assessment-parts-table td:first-child,.online-assessment-page .assessment-feedback-table td:first-child{border-top:0!important}
+    .online-assessment-page .assessment-parts-table td:before,.online-assessment-page .assessment-feedback-table td:before{content:attr(data-label);position:absolute;left:10px;top:10px;width:36%;color:#596570;font-weight:600;line-height:1.35}
+    .online-assessment-page .assessment-parts-table td[colspan]{padding-left:10px!important;text-align:center!important}
+    .online-assessment-page .assessment-parts-table td[colspan]:before{display:none}
+    .online-assessment-page .assessment-parts-table .assessment-part-action{padding-left:10px!important}
+    .online-assessment-page .assessment-parts-table .assessment-part-action:before{position:static;display:block;width:auto;margin-bottom:7px}
+    .online-assessment-page .assessment-part-action .btn{width:100%;min-height:42px;white-space:normal}
+    .online-assessment-page .assessment-feedback-table .feedback-mark{white-space:normal!important}
     .modal-dialogfullwidth{width:100%;max-width:none;height:100%;margin:0}
-    .modal-contentfull{height:100vh;min-height:0;border:0;border-radius:0}
-    .online-assessment-modal .v2-modal-header{align-items:stretch;padding:8px 10px}
+    .modal-contentfull{height:100vh;height:100dvh;min-height:0;border:0;border-radius:0}
+    .online-assessment-modal .v2-modal-header{align-items:stretch;padding:8px 10px;padding:calc(8px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right)) 8px calc(10px + env(safe-area-inset-left))}
     .online-assessment-modal .v2-modal-heading{display:block}
     .online-assessment-modal .modal-title{margin-bottom:7px;font-size:16px}
     .online-assessment-modal .v2-modal-statuses{justify-content:flex-start;gap:6px}
-    .online-assessment-modal #v2SyncState{max-width:150px;overflow:hidden;text-overflow:ellipsis}
+    .online-assessment-modal #v2SyncState{flex:1 1 160px;max-width:none}
     .online-assessment-modal .v2-timer-state{font-size:15px}
     .online-assessment-modal .v2-leave-paper{align-self:center;min-height:42px;padding:9px 10px}
-    .online-assessment-modal .modal-body{padding:10px}
+    .online-assessment-modal .modal-body{padding:10px;padding:10px calc(10px + env(safe-area-inset-right)) 10px calc(10px + env(safe-area-inset-left))}
+    .online-assessment-modal .v2-question-nav-button{width:42px;height:42px}
     .online-assessment-modal .v2-question .panel-heading,.online-assessment-modal .v2-question .panel-body{padding:10px}
     .online-assessment-modal .v2-question-text{font-size:15px}
-    .online-assessment-modal .v2-submit-bar{bottom:-10px;display:block;margin:18px -10px -10px;padding:10px}
+    .online-assessment-modal .v2-submit-bar{bottom:0;display:block;margin:18px -10px -10px;padding:10px;padding:10px calc(10px + env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left))}
     .online-assessment-modal .v2-progress-summary{margin-bottom:9px}
+    .online-assessment-modal .v2-paper-step-controls{width:100%;margin-bottom:8px}
+    .online-assessment-modal .v2-paper-step-controls .btn{flex:1 1 50%}
     .online-assessment-modal .v2-submit-paper{width:100%;min-height:46px}
 }
 @media (max-width:380px){
     .online-assessment-page .content-header h1{font-size:20px}
     .online-assessment-page .candidate-card{align-items:flex-start}
     .online-assessment-modal .v2-modal-header{gap:7px}
-    .online-assessment-modal #v2SyncState{max-width:112px}
     .online-assessment-modal .v2-leave-paper{font-size:12px}
     .online-assessment-modal .v2-question-heading{align-items:flex-start}
     .online-assessment-modal .v2-question-actions{display:block}
@@ -317,9 +359,14 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
 @media (max-width:480px){
     .online-assessment-modal .v2-modal-header{display:block}
     .online-assessment-modal .v2-modal-heading{width:100%}
-    .online-assessment-modal .v2-modal-statuses{justify-content:space-between}
-    .online-assessment-modal #v2SyncState{max-width:calc(100% - 105px)}
+    .online-assessment-modal .v2-modal-statuses{justify-content:flex-start}
+    .online-assessment-modal #v2SyncState{flex:1 1 100%}
     .online-assessment-modal .v2-leave-paper{width:100%;margin-top:8px}
+}
+@media (max-height:520px){
+    .modal-dialogfullwidth{height:100%;margin-top:0;margin-bottom:0}
+    .modal-contentfull{height:100vh;height:100dvh;min-height:0;border-radius:0}
+    .online-assessment-modal .v2-modal-header{padding-top:6px;padding-bottom:6px}
 }
 </style>
 
@@ -335,6 +382,7 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
     var isSubmitting = false;
     var finalSubmissionPending = false;
     var finalSubmissionTimedOut = false;
+    var currentQuestionId = null;
     var queuePrefix = 'onlineexam-v2-save-queue:<?php echo (int) $assignment->student_session_id; ?>:';
 
     function message(text, type) {
@@ -497,6 +545,113 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
         $question.find('.v2-answer-control').first().val($.isArray(value) || $.isPlainObject(value) ? JSON.stringify(value) : (value || ''));
     }
 
+    function refreshOrderingChoices($question) {
+        var counts = {};
+        var $controls = $question.find('.v2-order-control');
+        $controls.each(function () {
+            var selected = String($(this).val() || '');
+            if (selected !== '') {
+                counts[selected] = (counts[selected] || 0) + 1;
+            }
+        });
+
+        var hasDuplicates = false;
+        $controls.each(function () {
+            var $control = $(this);
+            var current = String($control.val() || '');
+            var duplicate = current !== '' && counts[current] > 1;
+            hasDuplicates = hasDuplicates || duplicate;
+            $control.attr('aria-invalid', duplicate ? 'true' : 'false');
+            $control.find('option').each(function () {
+                var value = String(this.value || '');
+                this.disabled = value !== '' && value !== current && Boolean(counts[value]);
+            });
+        });
+
+        $question.find('.v2-ordering-message')
+            .text(hasDuplicates ? 'An item is selected more than once. Change one position before submitting.' : 'Each item can be selected only once.')
+            .toggleClass('text-danger', hasDuplicates)
+            .toggleClass('text-muted', !hasDuplicates);
+    }
+
+    function refreshStructuredChoices() {
+        $('#v2PaperContainer .v2-question').filter(function () {
+            return String($(this).data('question-type') || '').toLowerCase() === 'ordering';
+        }).each(function () {
+            refreshOrderingChoices($(this));
+        });
+    }
+
+    function findNavigatorButton(questionId) {
+        var button = document.getElementById('v2QuestionNav_' + String(questionId));
+        return button ? $(button) : $();
+    }
+
+    function updateStepControls() {
+        var $questions = $('#v2PaperContainer .v2-question');
+        var currentIndex = -1;
+        $questions.each(function (index) {
+            if (String($(this).data('question-id')) === String(currentQuestionId)) {
+                currentIndex = index;
+                return false;
+            }
+        });
+        $('.v2-previous-question').prop('disabled', currentIndex <= 0);
+        $('.v2-next-question').prop('disabled', currentIndex < 0 || currentIndex >= $questions.length - 1);
+    }
+
+    function setCurrentQuestion($question, moveFocus) {
+        if (!$question || !$question.length) {
+            return;
+        }
+        currentQuestionId = String($question.data('question-id'));
+        $('#v2PaperContainer .v2-question').removeClass('v2-question-current');
+        $question.addClass('v2-question-current');
+        $('#v2PaperContainer .v2-question-nav-button').removeClass('v2-nav-current').attr('aria-current', 'false');
+        findNavigatorButton(currentQuestionId).addClass('v2-nav-current').attr('aria-current', 'true');
+        updateStepControls();
+
+        if (moveFocus && $question[0]) {
+            try {
+                $question[0].focus({preventScroll: true});
+            } catch (error) {
+                $question[0].focus();
+            }
+            try {
+                $question[0].scrollIntoView({behavior: 'smooth', block: 'start'});
+            } catch (error) {
+                $question[0].scrollIntoView(true);
+            }
+        }
+    }
+
+    function initialiseQuestionNavigation() {
+        var $questions = $('#v2PaperContainer .v2-question');
+        currentQuestionId = null;
+        if (!$questions.length) {
+            updateStepControls();
+            return;
+        }
+        var $firstUnanswered = $questions.filter(function () { return !questionAnswered($(this)); }).first();
+        setCurrentQuestion($firstUnanswered.length ? $firstUnanswered : $questions.first(), false);
+    }
+
+    function moveQuestion(offset) {
+        var $questions = $('#v2PaperContainer .v2-question');
+        var currentIndex = -1;
+        $questions.each(function (index) {
+            if (String($(this).data('question-id')) === String(currentQuestionId)) {
+                currentIndex = index;
+                return false;
+            }
+        });
+        var targetIndex = Math.max(0, Math.min($questions.length - 1, currentIndex + offset));
+        if (currentIndex < 0 && $questions.length) {
+            targetIndex = 0;
+        }
+        setCurrentQuestion($questions.eq(targetIndex), true);
+    }
+
     function questionAnswered($question) {
         var value = valueFor($question);
         if ($.isArray(value)) {
@@ -517,11 +672,25 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
     function refreshProgress() {
         var $questions = $('#v2PaperContainer .v2-question');
         var answered = $questions.filter(function () { return questionAnswered($(this)); }).length;
-        $questions.each(function () { $(this).toggleClass('v2-question-answered', questionAnswered($(this))); });
+        $questions.each(function () {
+            var $question = $(this);
+            var isAnswered = questionAnswered($question);
+            var questionId = $question.data('question-id');
+            var $navigatorButton = findNavigatorButton(questionId);
+            var label = String($navigatorButton.data('question-label') || ('Question ' + $question.data('question-number')));
+            $question.toggleClass('v2-question-answered', isAnswered);
+            $navigatorButton.toggleClass('v2-nav-answered', isAnswered).attr('aria-label', label + (isAnswered ? ', answered' : ', unanswered'));
+        });
         $('.v2-progress-count').text(answered + ' of ' + $questions.length + ' answered');
+        updateStepControls();
     }
 
-    function refreshSectionRules() {
+    function refreshSectionRules($changedQuestion) {
+        if ($changedQuestion && $changedQuestion.length && String($changedQuestion.data('question-type') || '').toLowerCase() === 'ordering') {
+            refreshOrderingChoices($changedQuestion);
+        } else if (!$changedQuestion) {
+            refreshStructuredChoices();
+        }
         $('#v2PaperContainer .v2-section-heading').each(function () {
             var $rule = $(this);
             var sectionId = String($rule.data('section-id'));
@@ -540,11 +709,29 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
             $rule.find('.v2-section-counter').text(answered + ' / ' + maximum + ' answered')
                 .toggleClass('label-danger', answered > maximum)
                 .toggleClass('label-info', answered <= maximum);
+            var remaining = Math.max(0, maximum - answered);
+            var noun = rule === 'compulsory_plus_choice' ? 'optional question' : 'question';
+            var limitMessage = answered > maximum
+                ? 'Too many answers are selected. Clear ' + (answered - maximum) + ' before submitting.'
+                : (remaining === 0
+                    ? 'Answer limit reached. Clear one selected answer before choosing another.'
+                    : 'You can answer ' + remaining + ' more ' + noun + (remaining === 1 ? '' : 's') + ' in this section.');
+            var $limitStatus = $rule.find('.v2-section-limit-message');
+            if ($limitStatus.text() !== limitMessage) {
+                $limitStatus.text(limitMessage);
+            }
+            $limitStatus.toggleClass('text-danger', answered > maximum);
             $eligible.each(function () {
                 var $question = $(this);
                 var lock = maximum > 0 && answered >= maximum && !questionAnswered($question);
                 $question.find('.v2-answer-control').prop('disabled', lock);
                 $question.toggleClass('v2-choice-locked', lock).attr('aria-disabled', lock ? 'true' : 'false');
+                $question.find('.v2-choice-lock-notice').prop('hidden', !lock);
+                if (lock) {
+                    $question.attr('aria-describedby', 'v2QuestionLock_' + $question.data('question-id'));
+                } else {
+                    $question.removeAttr('aria-describedby');
+                }
             });
         });
         refreshProgress();
@@ -694,6 +881,7 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
                 $('#v2PaperContainer').html(data.page);
                 applyQueuedAnswers(active.attempt_id);
                 refreshSectionRules();
+                initialiseQuestionNavigation();
                 refreshSyncState(active.attempt_id);
                 $('#v2PaperModal').modal({show: true, backdrop: 'static', keyboard: false});
                 $('#v2PaperContainer').focus();
@@ -708,19 +896,52 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
             });
     });
 
+    $(document).on('click', '.v2-toggle-navigator', function () {
+        var $button = $(this);
+        var panel = document.getElementById($button.attr('aria-controls'));
+        if (!panel) {
+            return;
+        }
+        var willOpen = panel.hidden;
+        panel.hidden = !willOpen;
+        $button.attr('aria-expanded', willOpen ? 'true' : 'false')
+            .text(willOpen ? 'Hide questions' : 'Show questions (' + $(panel).find('.v2-question-nav-button').length + ')');
+    });
+
+    $(document).on('click', '.v2-question-nav-button', function () {
+        var questionId = $(this).data('question-target');
+        var $question = $('#v2PaperContainer .v2-question').filter(function () {
+            return String($(this).data('question-id')) === String(questionId);
+        }).first();
+        setCurrentQuestion($question, true);
+    });
+
+    $(document).on('click', '.v2-previous-question', function () { moveQuestion(-1); });
+    $(document).on('click', '.v2-next-question', function () { moveQuestion(1); });
+
+    $(document).on('focusin', '#v2PaperContainer .v2-question', function () {
+        setCurrentQuestion($(this), false);
+    });
+
+    $(document).on('mousedown touchstart', '#v2PaperContainer .v2-question', function () {
+        setCurrentQuestion($(this), false);
+    });
+
     $(document).on('change input', '.v2-answer-control', function () {
         var $question = $(this).closest('.v2-question');
         var id = $question.data('question-id');
-        refreshSectionRules();
+        setCurrentQuestion($question, false);
+        refreshSectionRules($question);
         clearTimeout(saveTimers[id]);
         saveTimers[id] = setTimeout(function () { saveQuestion($question); }, 700);
     });
 
     $(document).on('click', '.v2-clear-answer', function () {
         var $question = $(this).closest('.v2-question');
+        setCurrentQuestion($question, false);
         $question.find('input[type=radio], input[type=checkbox]').prop('checked', false);
         $question.find('textarea, input[type=number], input[type=text], select').val('');
-        refreshSectionRules();
+        refreshSectionRules($question);
         saveQuestion($question);
     });
 
@@ -731,6 +952,25 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
     function submitPaper(timedOut) {
         if (!active || isSubmitting) {
             return;
+        }
+
+        if (!timedOut) {
+            var $invalidOrderingQuestion = $();
+            $('#v2PaperContainer .v2-question').filter(function () {
+                return String($(this).data('question-type') || '').toLowerCase() === 'ordering';
+            }).each(function () {
+                var $question = $(this);
+                refreshOrderingChoices($question);
+                if ($question.find('.v2-order-control[aria-invalid="true"]').length) {
+                    $invalidOrderingQuestion = $question;
+                    return false;
+                }
+            });
+            if ($invalidOrderingQuestion.length) {
+                setCurrentQuestion($invalidOrderingQuestion, true);
+                message('One ordering question uses the same item more than once. Correct it before submitting.');
+                return;
+            }
         }
 
         isSubmitting = true;

@@ -8,9 +8,10 @@
     <section class="content">
         <div class="box box-primary">
             <div class="box-header with-border"><h3 class="box-title">Paper performance</h3></div>
-            <div class="box-body table-responsive onlineexam-scroll">
+            <div class="box-body table-responsive onlineexam-scroll" role="region" aria-label="Paper performance" tabindex="0">
                 <table class="table table-bordered table-striped operations-table">
-                    <thead><tr><th>Revision / paper</th><th>Type</th><th>Candidates</th><th>Submitted</th><th>Average raw</th><th>Average contribution</th></tr></thead>
+                    <caption class="sr-only">Performance summary for each assessment paper</caption>
+                    <thead><tr><th scope="col">Revision / paper</th><th scope="col">Type</th><th scope="col">Candidates</th><th scope="col">Submitted</th><th scope="col">Average raw</th><th scope="col">Average contribution</th></tr></thead>
                     <tbody>
                     <?php foreach ($analysis['papers'] as $paper) { ?>
                         <tr>
@@ -30,9 +31,10 @@
 
         <div class="box box-default">
             <div class="box-header with-border"><h3 class="box-title">Question analysis</h3></div>
-            <div class="box-body table-responsive onlineexam-scroll">
+            <div class="box-body table-responsive onlineexam-scroll" role="region" aria-label="Question analysis" tabindex="0">
                 <table class="table table-bordered table-condensed operations-wide-table">
-                    <thead><tr><th>Revision / paper / question</th><th>Type</th><th>Candidates</th><th>Answered</th><th>Correct / incorrect</th><th>Average mark</th><th>Facility</th></tr></thead>
+                    <caption class="sr-only">Response and performance analysis for each assessment question</caption>
+                    <thead><tr><th scope="col">Revision / paper / question</th><th scope="col">Type</th><th scope="col">Candidates</th><th scope="col">Answered</th><th scope="col">Correct / incorrect</th><th scope="col">Average mark</th><th scope="col">Facility</th></tr></thead>
                     <tbody>
                     <?php foreach ($analysis['questions'] as $question) { ?>
                         <tr>

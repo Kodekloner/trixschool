@@ -36,13 +36,13 @@ $format_datetime = function ($value) {
                     <div class="row">
                         <div class="col-md-8">
                             <div class="form-group">
-                                <label>Assessment title <small class="req">*</small></label>
-                                <input type="text" name="exam" class="form-control" value="<?php echo html_escape(set_value('exam', $is_edit ? $exam->exam : '')); ?>" required>
+                                <label for="assessment_title">Assessment title <small class="req">*</small></label>
+                                <input type="text" id="assessment_title" name="exam" class="form-control" value="<?php echo html_escape(set_value('exam', $is_edit ? $exam->exam : '')); ?>" required>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label>Purpose <small class="req">*</small></label>
+                                <label for="purpose">Purpose <small class="req">*</small></label>
                                 <select name="purpose" id="purpose" class="form-control" required>
                                     <option value="">Select purpose</option>
                                     <?php foreach ($purposes as $value => $label) { ?>
@@ -55,7 +55,7 @@ $format_datetime = function ($value) {
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label>Academic session <small class="req">*</small></label>
+                                <label for="academic_session_id">Academic session <small class="req">*</small></label>
                                 <select id="academic_session_id" name="session_id" class="form-control" required>
                                     <?php foreach ($sessionList as $session) { ?>
                                         <option value="<?php echo $session['id']; ?>" <?php echo set_select('session_id', $session['id'], (int) ($is_edit ? $exam->session_id : $current_session_id) === (int) $session['id']); ?>><?php echo html_escape($session['session']); ?></option>
@@ -65,7 +65,7 @@ $format_datetime = function ($value) {
                         </div>
                         <div class="col-md-2">
                             <div class="form-group">
-                                <label>Term <small class="req">*</small></label>
+                                <label for="academic_term">Term <small class="req">*</small></label>
                                 <select name="term" id="academic_term" class="form-control" required>
                                     <option value="1st" <?php echo set_select('term', '1st', $is_edit && $exam->term === '1st'); ?>>1st Term</option>
                                     <option value="2nd" <?php echo set_select('term', '2nd', $is_edit && $exam->term === '2nd'); ?>>2nd Term</option>
@@ -75,7 +75,7 @@ $format_datetime = function ($value) {
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label>Class <small class="req">*</small></label>
+                                <label for="academic_class_id">Class <small class="req">*</small></label>
                                 <select name="class_id" id="academic_class_id" class="form-control" required>
                                     <option value="">Select</option>
                                     <?php foreach ($classList as $class) { ?>
@@ -86,7 +86,7 @@ $format_datetime = function ($value) {
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label>Subject <small class="req">*</small></label>
+                                <label for="academic_subject_id">Subject <small class="req">*</small></label>
                                 <select name="subject_id" id="academic_subject_id" class="form-control" required>
                                     <option value="">Select</option>
                                     <?php foreach ($subjectList as $subject) { ?>
@@ -97,8 +97,8 @@ $format_datetime = function ($value) {
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Class arms / sections <small class="req">*</small></label>
-                        <div id="academic_sections" class="well well-sm assessment-rule-options" style="margin-bottom:0">
+                        <label id="academic_sections_label">Class arms / sections <small class="req">*</small></label>
+                        <div id="academic_sections" class="well well-sm assessment-rule-options" style="margin-bottom:0" role="group" aria-labelledby="academic_sections_label" aria-live="polite" aria-busy="false">
                             <?php if (empty($sections)) { ?><span class="text-muted">Select a class to load its arms.</span><?php } ?>
                             <?php foreach ($sections as $section) { ?>
                                 <label class="checkbox-inline">
@@ -114,11 +114,11 @@ $format_datetime = function ($value) {
             <div class="box box-info">
                 <div class="box-header with-border"><h3 class="box-title">2. Assessment component</h3></div>
                 <div class="box-body">
-                    <div id="result_configuration_message" class="alert alert-info" style="<?php echo !empty($academic_configuration['message']) ? '' : 'display:none'; ?>"><?php echo !empty($academic_configuration['message']) ? html_escape($academic_configuration['message']) : ''; ?></div>
+                    <div id="result_configuration_message" class="alert alert-info" role="status" aria-live="polite" style="<?php echo !empty($academic_configuration['message']) ? '' : 'display:none'; ?>"><?php echo !empty($academic_configuration['message']) ? html_escape($academic_configuration['message']) : ''; ?></div>
                     <div class="row">
                         <div class="col-md-6" id="target_component_group" style="<?php echo $academic_configuration && !empty($academic_configuration['valid']) && !empty($academic_configuration['components']) ? '' : 'display:none'; ?>">
                             <div class="form-group">
-                                <label>Result component <small class="req">*</small></label>
+                                <label for="target_component">Result component <small class="req">*</small></label>
                                 <select name="target_component" id="target_component" class="form-control">
                                     <option value="">Select</option>
                                     <?php if ($academic_configuration && !empty($academic_configuration['valid'])) { foreach ($academic_configuration['components'] as $component) { ?>
@@ -139,14 +139,14 @@ $format_datetime = function ($value) {
                 <div class="box-header with-border"><h3 class="box-title">3. Delivery window and rules</h3></div>
                 <div class="box-body">
                     <div class="row">
-                        <div class="col-md-3"><div class="form-group"><label>Opens <small class="req">*</small></label><input type="text" name="exam_from" class="form-control datetime_twelve_hour" value="<?php echo html_escape(set_value('exam_from', $is_edit ? $format_datetime($exam->exam_from) : '')); ?>" required></div></div>
-                        <div class="col-md-3"><div class="form-group"><label>Closes <small class="req">*</small></label><input type="text" name="exam_to" class="form-control datetime_twelve_hour" value="<?php echo html_escape(set_value('exam_to', $is_edit ? $format_datetime($exam->exam_to) : '')); ?>" required></div></div>
-                        <div class="col-md-3"><div class="form-group"><label>Duration (minutes) <small class="req">*</small></label><input type="number" name="duration_minutes" min="1" max="1439" class="form-control" value="<?php echo html_escape(set_value('duration_minutes', $duration_minutes)); ?>" required></div></div>
-                        <div class="col-md-3"><div class="form-group"><label>Pass percentage <small class="req">*</small></label><input type="number" name="passing_percentage" min="0" max="100" step="0.01" class="form-control" value="<?php echo html_escape(set_value('passing_percentage', $is_edit ? $exam->passing_percentage : 40)); ?>" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label for="assessment_opens">Opens <small class="req">*</small></label><input type="text" id="assessment_opens" name="exam_from" class="form-control datetime_twelve_hour" value="<?php echo html_escape(set_value('exam_from', $is_edit ? $format_datetime($exam->exam_from) : '')); ?>" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label for="assessment_closes">Closes <small class="req">*</small></label><input type="text" id="assessment_closes" name="exam_to" class="form-control datetime_twelve_hour" value="<?php echo html_escape(set_value('exam_to', $is_edit ? $format_datetime($exam->exam_to) : '')); ?>" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label for="assessment_duration">Duration (minutes) <small class="req">*</small></label><input type="number" id="assessment_duration" name="duration_minutes" min="1" max="1439" class="form-control" value="<?php echo html_escape(set_value('duration_minutes', $duration_minutes)); ?>" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label for="assessment_pass_mark">Pass percentage <small class="req">*</small></label><input type="number" id="assessment_pass_mark" name="passing_percentage" min="0" max="100" step="0.01" class="form-control" value="<?php echo html_escape(set_value('passing_percentage', $is_edit ? $exam->passing_percentage : 40)); ?>" required></div></div>
                     </div>
                     <div class="form-group">
-                        <label>Description / general instructions</label>
-                        <textarea name="description" class="form-control" rows="5"><?php echo html_escape(set_value('description', $is_edit ? $exam->description : '')); ?></textarea>
+                        <label for="assessment_description">Description / general instructions</label>
+                        <textarea id="assessment_description" name="description" class="form-control" rows="5"><?php echo html_escape(set_value('description', $is_edit ? $exam->description : '')); ?></textarea>
                     </div>
                     <div class="form-group assessment-rule-options">
                         <label class="checkbox-inline"><input type="checkbox" name="is_random_question" value="1" <?php echo set_checkbox('is_random_question', '1', $is_edit && $exam->is_random_question); ?>> Randomize questions within their paper/section</label>
@@ -154,9 +154,9 @@ $format_datetime = function ($value) {
                         <label class="checkbox-inline"><input type="checkbox" name="is_marks_display" value="1" <?php echo set_checkbox('is_marks_display', '1', $is_edit && $exam->is_marks_display); ?>> Display marks during review</label>
                     </div>
                 </div>
-                <div class="box-footer">
+                <div class="box-footer assessment-form-actions">
                     <a href="<?php echo site_url('admin/onlineexam'); ?>" class="btn btn-default">Cancel</a>
-                    <button type="submit" class="btn btn-primary pull-right"><i class="fa fa-save"></i> Save and build papers</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Save and build papers</button>
                 </div>
             </div>
         </form>
@@ -174,6 +174,7 @@ $format_datetime = function ($value) {
         $('#target_component').empty().append($('<option>', {value: '', text: 'Select'})).prop('required', false);
         $('#target_component_group').hide();
         $('#result_configuration_message').toggle(!!message).text(message || '');
+        $('#academic_sections').attr('aria-busy', 'false');
     }
 
     function renderConfiguration(payload) {
@@ -218,6 +219,10 @@ $format_datetime = function ($value) {
         } else {
             selectedSections = selectedSectionIds();
         }
+        if (configurationRequest) {
+            configurationRequest.abort();
+            configurationRequest = null;
+        }
         if (!classId || !subjectId || !purpose) {
             clearConfiguration('Select a purpose, class and subject to load the available result component.');
             return;
@@ -225,9 +230,8 @@ $format_datetime = function ($value) {
         if (!resetSections) {
             selectedComponent = $('#target_component').val() || selectedComponent;
         }
-        if (configurationRequest) {
-            configurationRequest.abort();
-        }
+        $('#academic_sections').attr('aria-busy', 'true');
+        $('#result_configuration_message').show().text('Loading the class arms and result configuration…');
         var request = configurationRequest = $.getJSON('<?php echo site_url('admin/onlineexam/academicconfiguration'); ?>', {
             class_id: classId,
             subject_id: subjectId,
@@ -238,6 +242,8 @@ $format_datetime = function ($value) {
         }).done(function (response) {
             if (response.status) {
                 renderConfiguration(response);
+            } else {
+                clearConfiguration(response.message || 'The selected academic configuration is unavailable.');
             }
         }).fail(function (xhr, status) {
             if (status === 'abort') {
@@ -250,6 +256,7 @@ $format_datetime = function ($value) {
         }).always(function () {
             if (configurationRequest === request) {
                 configurationRequest = null;
+                $('#academic_sections').attr('aria-busy', 'false');
             }
         });
     }

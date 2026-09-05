@@ -48,18 +48,19 @@ $status_classes = array(
                 <?php if (empty($onlineexam)) { ?>
                     <div class="alert alert-info" role="status">You do not have any online assessments at the moment.</div>
                 <?php } else { ?>
-                <div class="table-responsive assessment-table-wrap">
+                <div class="table-responsive assessment-table-wrap" role="region" aria-label="My online assessments" tabindex="0">
                     <div class="download_label">Online Assessments</div>
                     <table class="table table-striped table-bordered table-hover example online-assessment-table">
+                        <caption class="sr-only">Online assessments assigned to this student</caption>
                         <thead>
                             <tr>
-                                <th>Assessment</th>
-                                <th>Academic period</th>
-                                <th>Opens</th>
-                                <th>Closes</th>
-                                <th>Duration</th>
-                                <th>Status</th>
-                                <th class="text-right">Action</th>
+                                <th scope="col">Assessment</th>
+                                <th scope="col">Academic period</th>
+                                <th scope="col">Opens</th>
+                                <th scope="col">Closes</th>
+                                <th scope="col">Duration</th>
+                                <th scope="col">Status</th>
+                                <th scope="col" class="text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -68,8 +69,23 @@ $status_classes = array(
                                     $purpose = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose_key] : ($purpose_key !== '' ? ucwords(str_replace('_', ' ', $purpose_key)) : 'Online Assessment');
                                     $term = isset($exam->term) ? trim((string) $exam->term) : '';
                                     $status_key = !empty($exam->candidate_attempt_status) ? strtolower((string) $exam->candidate_attempt_status) : 'not_started';
-                                    $status_label = $status_key === 'not_started' ? 'Available' : ucwords(str_replace('_', ' ', $status_key));
                                     $status_class = isset($status_classes[$status_key]) ? $status_classes[$status_key] : 'label-default';
+                                    if ($status_key === 'not_started') {
+                                        $now = time();
+                                        $opens_at = !empty($exam->exam_from) ? strtotime($exam->exam_from) : false;
+                                        $closes_at = !empty($exam->exam_to) ? strtotime($exam->exam_to) : false;
+                                        if ($opens_at && $now < $opens_at) {
+                                            $status_label = 'Upcoming';
+                                            $status_class = 'label-default';
+                                        } elseif ($closes_at && $now >= $closes_at) {
+                                            $status_label = 'Closed';
+                                            $status_class = 'label-danger';
+                                        } else {
+                                            $status_label = 'Available';
+                                        }
+                                    } else {
+                                        $status_label = ucwords(str_replace('_', ' ', $status_key));
+                                    }
                                     ?>
                                     <tr>
                                         <td data-label="Assessment" class="assessment-name">
@@ -100,6 +116,7 @@ $status_classes = array(
 </div>
 
 <style>
+.online-assessment-list .content-header h1,.online-assessment-list .box-title{max-width:100%;white-space:normal;overflow-wrap:anywhere}
 .online-assessment-list .assessment-list-intro{margin-bottom:18px}
 .online-assessment-list .assessment-table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .online-assessment-list .online-assessment-table{width:100%;min-width:860px;margin-bottom:0}
@@ -113,8 +130,18 @@ $status_classes = array(
     .online-assessment-list .box-body{padding:12px}
     .online-assessment-list .dataTables_wrapper .dataTables_length,.online-assessment-list .dataTables_wrapper .dataTables_filter{text-align:left}
     .online-assessment-list .dataTables_wrapper .dataTables_filter label,.online-assessment-list .dataTables_wrapper .dataTables_filter input{display:block;width:100%;margin-left:0}
-    .online-assessment-list .dataTables_wrapper .dt-buttons{margin-bottom:8px}
-    .online-assessment-list .assessment-action .btn{min-height:40px;padding:8px 12px}
+    .online-assessment-list .dataTables_wrapper .dt-buttons{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+    .online-assessment-list .assessment-table-wrap{overflow-x:visible}
+    .online-assessment-list .online-assessment-table{display:block;width:100%!important;min-width:0;border:0;background:transparent}
+    .online-assessment-list .online-assessment-table thead{display:none}
+    .online-assessment-list .online-assessment-table tbody,.online-assessment-list .online-assessment-table tr,.online-assessment-list .online-assessment-table td{display:block;width:100%!important}
+    .online-assessment-list .online-assessment-table tr{margin-bottom:12px;border:1px solid #dce2e7;border-radius:6px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04);overflow:hidden}
+    .online-assessment-list .online-assessment-table td{position:relative;min-height:42px;padding:10px 10px 10px 42%!important;border:0!important;border-top:1px solid #edf0f2!important;text-align:left!important;overflow-wrap:anywhere}
+    .online-assessment-list .online-assessment-table td:first-child{border-top:0!important}
+    .online-assessment-list .online-assessment-table td:before{content:attr(data-label);position:absolute;left:10px;top:10px;width:36%;color:#596570;font-weight:600;line-height:1.35}
+    .online-assessment-list .online-assessment-table .assessment-action{padding-left:10px!important}
+    .online-assessment-list .online-assessment-table .assessment-action:before{position:static;display:block;width:auto;margin-bottom:7px}
+    .online-assessment-list .assessment-action .btn{width:100%;min-height:42px;padding:9px 12px;white-space:normal}
 }
 @media (max-width:380px){
     .online-assessment-list .content-header h1{font-size:20px}
