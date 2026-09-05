@@ -30,6 +30,9 @@ compact_ui_assert(strpos($assessment_form, 'name="target_component"') !== false,
 compact_ui_assert(strpos($assessment_form, 'name="attempts"') === false, 'The one-official-attempt rule must not be exposed as a form field.');
 compact_ui_assert(strpos($assessment_form, '>Destination<') === false, 'Result adapters must not be exposed as a Destination field.');
 compact_ui_assert(strpos($assessment_form, 'assessment-rule-options') !== false, 'Assessment checkboxes need the responsive alignment wrapper.');
+$abort_position = strpos($assessment_form, 'configurationRequest.abort()');
+$incomplete_selection_position = strpos($assessment_form, 'if (!classId || !subjectId || !purpose)');
+compact_ui_assert($abort_position !== false && $incomplete_selection_position !== false && $abort_position < $incomplete_selection_position, 'Clearing a required assessment selection must abort any stale configuration request first.');
 
 $builder = compact_ui_source('application/views/admin/onlineexam/builder.php');
 compact_ui_assert(strpos($builder, 'name="delivery_mode" value="cbt"') !== false, 'New papers must be fixed to online CBT delivery.');
@@ -39,6 +42,16 @@ compact_ui_assert(strpos($builder, 'printpaper') === false, 'The builder must no
 compact_ui_assert(strpos($builder, 'paper-field-guide') !== false, 'Paper fields need concise explanations for staff.');
 compact_ui_assert(strpos($builder, 'paper-form-grid') !== false, 'Paper fields need the full-width responsive grid.');
 compact_ui_assert(strpos($builder, 'workflow-edit-authored') !== false, 'Assigned structured questions need in-place edit controls.');
+compact_ui_assert(strpos($builder, 'question-bank-filter-grid') !== false, 'Question-bank filters need a responsive grid.');
+compact_ui_assert(strpos($builder, 'builder_question_status') !== false && strpos($builder, "aria-busy', 'true") !== false, 'Question-bank loading needs a visible accessible state.');
+compact_ui_assert(strpos($builder, 'paper-section-item') !== false && strpos($builder, 'paper-section-actions') !== false, 'Paper-section labels and actions need a non-overlapping flex layout.');
+compact_ui_assert(strpos($builder, '$can_view_roster') !== false && strpos($builder, '$can_view_operations') !== false, 'Builder navigation must respect destination-page privileges.');
+compact_ui_assert(substr_count($builder, '!empty($compact_supported)') >= 2, 'Historical builder views must not link into retired roster or operations routes.');
+
+$question_assignment = compact_ui_source('application/views/admin/onlineexam/_searchQuestionByExamID.php');
+compact_ui_assert(substr_count($question_assignment, 'question-type-cell') >= 2, 'The question type column needs an explicit width class on its header and cells.');
+compact_ui_assert(substr_count($question_assignment, 'question-required-cell') >= 2, 'The Required column needs an explicit width class on its header and cells.');
+compact_ui_assert(strpos($question_assignment, 'aria-label="Question assignment table"') !== false, 'The scrollable question table needs an accessible region label.');
 
 $admin_controller = compact_ui_source('application/controllers/admin/Onlineexam.php');
 compact_ui_assert(
@@ -50,6 +63,11 @@ $admin_styles = compact_ui_source('application/views/admin/onlineexam/_assessmen
 compact_ui_assert(strpos($admin_styles, 'overflow-x: auto') !== false, 'Online Examination tables need horizontal overflow support.');
 compact_ui_assert(strpos($admin_styles, '.assessment-toolbar') !== false && strpos($admin_styles, 'flex-wrap: nowrap') !== false, 'Assessment actions must remain on one scrollable line.');
 compact_ui_assert(strpos($admin_styles, '@media (max-width: 991px)') !== false, 'Administration views need an explicit tablet/mobile layout.');
+compact_ui_assert(strpos($admin_styles, '.question-assignment-table .question-type-cell') !== false, 'Question types need a protected table column width.');
+compact_ui_assert(strpos($admin_styles, '.question-assignment-table .question-required-cell') !== false, 'Required controls need a protected table column width.');
+compact_ui_assert(strpos($admin_styles, 'table-layout: auto') !== false, 'The question table must let explicit column minimums determine its safe width.');
+compact_ui_assert(strpos($admin_styles, '@media (max-width: 1199px)') !== false, 'Paper and section forms need a responsive laptop/tablet breakpoint.');
+compact_ui_assert(strpos($admin_styles, 'grid-template-columns: 1fr') !== false, 'Administration forms need a single-column phone layout.');
 compact_ui_assert(
     !preg_match('/assessment-meta-table[^}]*display\s*:\s*block|paper-summary-table[^}]*display\s*:\s*block/s', $admin_styles),
     'Assessment summary tables must stay horizontal instead of stacking into tall mobile cards.'
@@ -59,9 +77,23 @@ $analysis = compact_ui_source('application/views/admin/onlineexam/analysis_v2.ph
 compact_ui_assert(strpos($analysis, 'onlineexam-analysis-page') !== false, 'Assessment analysis must use the scoped responsive layout.');
 compact_ui_assert(substr_count($analysis, 'onlineexam-scroll') >= 2, 'Both assessment-analysis tables need horizontal scrolling on narrow screens.');
 
+$operations = compact_ui_source('application/views/admin/onlineexam/operations.php');
+compact_ui_assert(strpos($operations, "implode(', ', (array) \$exam->section_names)") !== false, 'Operations must render class-arm names without an Array warning.');
+compact_ui_assert(strpos($operations, 'attempt-void-form') !== false && strpos($operations, 'incident-resolution-form') !== false, 'Operations write controls need wrapping responsive layouts.');
+compact_ui_assert(strpos($operations, 'Create official attempt') !== false && strpos($operations, 'onsubmit="return confirm') !== false, 'Starting an official attempt needs an explicit, confirmed action.');
+compact_ui_assert(strpos($operations, '$can_view_builder') !== false, 'Operations must hide the builder link from roles without question-builder access.');
+
+$marking = compact_ui_source('application/views/admin/onlineexam/marking_v2.php');
+compact_ui_assert(strpos($marking, 'class="theory-response"') !== false, 'Long Theory responses need protected wrapping and overflow.');
+compact_ui_assert(strpos($marking, '$can_edit_marking') !== false, 'Read-only reviewers must not receive marking mutation controls.');
+
+$roster = compact_ui_source('application/views/admin/onlineexam/assign.php');
+compact_ui_assert(strpos($roster, '<thead>') !== false && strpos($roster, '$roster_column_count') !== false, 'The candidate roster needs a semantic header and a correct dynamic empty-state colspan.');
+
 $student_list = compact_ui_source('application/views/user/onlineexam/onlineexamlist.php');
 compact_ui_assert(strpos($student_list, 'assessment-table-wrap') !== false, 'The student assessment list needs a contained scroller.');
-compact_ui_assert(strpos($student_list, 'min-width:860px') !== false, 'The student assessment list must stay horizontal on small screens.');
+compact_ui_assert(strpos($student_list, 'min-width:860px') !== false, 'The student assessment list needs a stable desktop table width before its phone-card override.');
+compact_ui_assert(strpos($student_list, 'content:attr(data-label)') !== false && strpos($student_list, 'min-width:0') !== false, 'The student assessment list must become labelled cards on phones.');
 
 $student_view = compact_ui_source('application/views/user/onlineexam/view_v2.php');
 compact_ui_assert(strpos($student_view, 'assessment-parts-wrap') !== false, 'Student paper status needs a responsive table wrapper.');
@@ -71,6 +103,12 @@ compact_ui_assert(strpos($student_view, 'displayDeadline - Date.now()') !== fals
 compact_ui_assert(strpos($student_view, 'final_answers: JSON.stringify(finalAnswers)') !== false, 'Paper submission must send one atomic final-answer packet.');
 compact_ui_assert(strpos($student_view, 'terminal_submission_mismatch') === false, 'Server error codes must not be hard-coded into the student interface.');
 compact_ui_assert(strpos($student_view, 'clearAttemptQueue(attemptId)') !== false && strpos($student_view, '.done(function (data)') !== false, 'The browser queue may be cleared only after a successful terminal response.');
+compact_ui_assert(strpos($student_view, 'height:100dvh') !== false && strpos($student_view, 'safe-area-inset-bottom') !== false, 'The examination modal must account for dynamic mobile viewports and safe areas.');
+compact_ui_assert(strpos($student_view, 'initialiseQuestionNavigation') !== false && strpos($student_view, 'v2-nav-answered') !== false, 'Long papers need current and answered question navigation.');
+compact_ui_assert(strpos($student_view, 'refreshOrderingChoices') !== false, 'Ordering questions must prevent duplicate choices before submission.');
+compact_ui_assert(strpos($student_view, "$(document).on('mousedown touchstart', '#v2PaperContainer .v2-question'") !== false, 'Touch and pointer interaction must keep Previous/Next navigation aligned with the visible question.');
+compact_ui_assert(strpos($student_view, '.v2-order-control[aria-invalid="true"]') !== false, 'Manual submission must focus and block a recovered duplicate ordering answer.');
+compact_ui_assert(strpos($student_view, "toggleClass('text-danger', answered > maximum)") !== false, 'A section at its valid answer limit must not be styled as an error.');
 
 $student_paper = compact_ui_source('application/views/user/onlineexam/_paper_v2.php');
 foreach (array('file_upload', 'data-has-attachment', 'type="file"') as $retired_response_marker) {
@@ -78,6 +116,8 @@ foreach (array('file_upload', 'data-has-attachment', 'type="file"') as $retired_
 }
 compact_ui_assert(strpos($student_paper, "elseif (\$type === 'long_answer')") !== false, 'Theory answers must use an explicit long-answer branch.');
 compact_ui_assert(strpos($student_paper, 'v2-unsupported-question') !== false, 'An unexpected historical response type must render a non-interactive warning.');
+compact_ui_assert(strpos($student_paper, 'v2-question-navigation') !== false && strpos($student_paper, 'v2-paper-step-controls') !== false, 'The candidate paper needs numbered and previous/next navigation.');
+compact_ui_assert(strpos($student_paper, 'v2-choice-lock-notice') !== false, 'Answer-any-N locks need a visible explanation.');
 
 $question_bank = compact_ui_source('application/views/admin/question/question.php');
 compact_ui_assert(strpos($question_bank, 'question-bank-table-scroll') !== false, 'Question Bank needs a horizontal table scroller.');
