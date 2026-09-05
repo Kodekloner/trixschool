@@ -17,16 +17,13 @@
                         <div class="mailbox-messages">
                               <div class="row mb10">
                 
-                           <div class="col-lg-3 col-md-3 col-sm-12">
+                           <div class="col-lg-4 col-md-4 col-sm-12">
                              <b> <?php echo $this->lang->line('subject'); ?></b> :<?php echo $question->name; ?>
                            </div>
-                           <div class="col-lg-3 col-md-3 col-sm-12">
-                            <b> <?php echo $this->lang->line('level'); ?></b> :<?php echo $question_level[$question->level]; ?>
-                           </div>
-                           <div class="col-lg-3 col-md-3 col-sm-12">
+                           <div class="col-lg-4 col-md-4 col-sm-12">
                              <b> <?php echo $this->lang->line('question_type'); ?> </b>  :<?php echo $question_type[$question->question_type]; ?>
                            </div>
-                           <div class="col-lg-3 col-md-3 col-sm-12">
+                           <div class="col-lg-4 col-md-4 col-sm-12">
                             <?php 
 
 $question_class=($question->section_name != "")? $question->class_name."(". $question->section_name.")" : $question->class_name;

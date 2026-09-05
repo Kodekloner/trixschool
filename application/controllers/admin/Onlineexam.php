@@ -36,7 +36,6 @@ class Onlineexam extends Admin_Controller
         $questionOpt            = $this->customlib->getQuesOption();
         $data['questionOpt']    = $questionOpt;
         $data['question_type']  = $this->config->item('question_type');
-        $data['question_level'] = $this->config->item('question_level');
         $data['classList']      = $this->class_model->get();
         $data['sessionList']    = $this->session_model->get();
         $data['current_session_id'] = $this->setting_model->getCurrentSession();
@@ -61,7 +60,6 @@ class Onlineexam extends Admin_Controller
         $questionOpt            = $this->customlib->getQuesOption();
         $questionOpt    = $questionOpt;
         $question_type  = $this->config->item('question_type');
-        $question_level = $this->config->item('question_level');
         $classList      = $this->class_model->get();
         $m       = json_decode($questionList);
 
@@ -992,9 +990,6 @@ class Onlineexam extends Admin_Controller
             'staff_id' => (int) $this->customlib->getStaffID(),
             'subject_id' => (int) $exam->subject_id,
             'question_type' => $question_type,
-            // The shared question bank still requires its legacy level field;
-            // compact Online Examination authoring no longer exposes difficulty.
-            'level' => 'medium',
             'class_id' => (int) $exam->class_id,
             'section_id' => $source_section_id,
             'class_section_id' => !empty($class_section) ? (int) $class_section['id'] : null,
@@ -3069,7 +3064,6 @@ class Onlineexam extends Admin_Controller
         $data['questions']        = $this->onlineexamquestion_model->getExamQuestions($exam_id);
         $data['questionSubjects'] = $this->onlineexamquestion_model->getExamQuestionSubjects($exam_id);
         $data['question_type']    = $this->config->item('question_type');
-        $data['question_level']   = $this->config->item('question_level');
 
         $questionList = $this->load->view('admin/onlineexam/_getexamquestions', $data, true);
         echo json_encode(array('status' => 1, 'result' => $questionList, 'exam' => $exam));

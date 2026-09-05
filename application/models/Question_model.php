@@ -138,8 +138,9 @@ class Question_model extends MY_model
         $this->datatables->join('classes', 'classes.id = questions.class_id', 'left');
         $this->datatables->join('sections', 'sections.id = questions.section_id', 'left');
 
-        $this->datatables->searchable('questions.id,subjects.name,questions.question_type,questions.level,questions.question,classes.class');
-        $this->datatables->orderable('questions.id,subjects.name,questions.question_type,questions.level,questions.question,classes.class');
+        $this->datatables->searchable('questions.id,subjects.name,questions.question_type,questions.question,classes.class');
+        // Match the visible checkbox, ID, subject, type, question and action columns.
+        $this->datatables->orderable('questions.id,questions.id,subjects.name,questions.question_type,questions.question,questions.id');
         $this->datatables->from('questions');
         return $this->datatables->generate('json');
     }

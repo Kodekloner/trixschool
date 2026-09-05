@@ -143,7 +143,6 @@ if ($this->rbac->hasPrivilege('question_bank', 'can_add')) {
                                         <th><?php echo $this->lang->line('q_id'); ?></th>
                                         <th><?php echo $this->lang->line('subject') ?></th>
                                         <th><?php echo $this->lang->line('question_type')?></th>
-                                        <th><?php echo $this->lang->line('level');?></th>
                                         <th><?php echo $this->lang->line('question') ?></th>
                                         <th class="text-right no-print"><?php echo $this->lang->line('action'); ?></th>
                                     </tr>

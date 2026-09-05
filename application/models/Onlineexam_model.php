@@ -311,7 +311,7 @@ class Onlineexam_model extends MY_model
 
     public function getExamQuestions($id = null, $random_type = false)
     {
-        $this->db->select('onlineexam_questions.*,questions.subject_id,questions.question,questions.opt_a,questions.opt_b,questions.opt_c,questions.opt_d,questions.opt_e,questions.correct,questions.question_type,questions.level,questions.class_id,questions.section_id')->from('onlineexam_questions');
+        $this->db->select('onlineexam_questions.*,questions.subject_id,questions.question,questions.opt_a,questions.opt_b,questions.opt_c,questions.opt_d,questions.opt_e,questions.correct,questions.question_type,questions.class_id,questions.section_id')->from('onlineexam_questions');
         $this->db->join('questions', 'questions.id = onlineexam_questions.question_id');
         $this->db->where('onlineexam_questions.onlineexam_id', $id);
         if ($random_type) {
