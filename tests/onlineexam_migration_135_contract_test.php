@@ -16,7 +16,8 @@ function migration_135_source($relative_path)
 }
 
 $config = migration_135_source('application/config/migration.php');
-migration_135_assert(strpos($config, "\$config['migration_version'] = 135;") !== false, 'CodeIgniter must target migration 135.');
+preg_match('/\$config\[\'migration_version\'\]\s*=\s*(\d+)\s*;/', $config, $version_match);
+migration_135_assert(isset($version_match[1]) && (int) $version_match[1] >= 135, 'CodeIgniter must include migration 135.');
 
 $migration = migration_135_source('application/migrations/135_compact_online_examination.php');
 $standalone = migration_135_source('docs/online_examination_compact_cbt_migration.sql');

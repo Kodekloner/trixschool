@@ -43,13 +43,9 @@ foreach ($questionSubjects as $questionSubjects_key => $questionSubjects_value) 
                          <?php echo $question_value->question; ?>
                        <div class="pt5">
                             <div class="row">
-                                 <div class="col-lg-2 col-md-6 col-sm-12">
+                                 <div class="col-lg-4 col-md-6 col-sm-12">
                                     <label for="email"><?php echo $this->lang->line('question_type'); ?>:</label>
                                         <?php echo ($question_value->question_type != "")?$question_type[$question_value->question_type]:""; ?>
-                                </div>
-                                 <div class="col-lg-2 col-md-6 col-sm-12">
-                                    <label for="email"><?php echo $this->lang->line('level');?>:</label>
-                                        <?php echo ($question_value->level !="")? $question_level[$question_value->level]:""; ?>
                                 </div>
                                  
                                 <div class="col-lg-4 col-md-6 col-sm-12">

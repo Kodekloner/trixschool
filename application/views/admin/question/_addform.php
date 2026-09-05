@@ -16,7 +16,7 @@ foreach ($subjectlist as $subject_key => $subject_value) {
                         <span class="text text-danger subject_id_error"></span>
                     </div>
                         
-                      <div class="form-group col-md-3">
+                      <div class="form-group col-md-6">
                         <label for="question_type"><?php echo $this->lang->line('question_type'); ?></label><small class="req"> *</small>
 
                         <select class="form-control" name="question_type" id="question_type">
@@ -30,21 +30,6 @@ foreach ($question_type as $question_type_key => $question_type_value) {
 ?>
                         </select>
                         <span class="text text-danger question_type_error"></span>
-                    </div>
-                      <div class="form-group col-md-3">
-                        <label for="question_level"><?php echo $this->lang->line('question_level');?></label><small class="req"> *</small>
-
-                        <select class="form-control" name="question_level">
-                       <option value=""><?php echo $this->lang->line('select'); ?></option>
-                            <?php
-foreach ($question_level as $question_level_key => $question_level_value) {
-    ?>
-    <option value="<?php echo $question_level_key; ?>"><?php echo $question_level_value; ?></option>
-                                <?php
-}
-?>
-                        </select>
-                        <span class="text text-danger question_level_error"></span>
                     </div>
                     </div>
                    <div class="row">

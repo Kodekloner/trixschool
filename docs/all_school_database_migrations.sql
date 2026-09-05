@@ -1,12 +1,15 @@
--- SchoolLift consolidated tenant-database migrations (126 through 135).
--- Generated for deployment to every school database on 2026-09-02.
+-- SchoolLift consolidated tenant-database migrations (126 through 136).
+-- Updated for deployment to every school database on 2026-09-05.
 --
 -- IMPORTANT:
 --   * Select exactly one school database before importing this file.
 --   * Take and verify a backup before running it in production.
 --   * Run during a maintenance window because MySQL DDL commits implicitly.
 --   * Repeat the import separately for each school database.
---   * This bundle is rerunnable and does not delete application data.
+--   * This bundle is rerunnable. Migration 136 permanently removes only the
+--     retired questions.level difficulty labels; questions and results remain.
+--   * Keep question/exam authoring in maintenance while deploying the matching
+--     application code and this SQL, then reopen it after both are installed.
 --   * It is a delta for a complete SchoolLift schema at level 125 or later;
 --     it is not an installer for an empty database.
 --   * It intentionally does NOT update the CodeIgniter `migrations` table.
@@ -24,6 +27,7 @@
 --   133_add_promotion_system.php
 --   134_add_external_email_notifications.php
 --   135_compact_online_examination.php
+--   136_remove_question_level.php
 --
 -- Supported targets: MySQL 5.7+/8.0 and compatible MariaDB releases.
 -- This is a schema/permission migration bundle, not a full database dump.
@@ -2439,9 +2443,50 @@ SET `result_adapter` = 'legacy_read_only',
 WHERE `result_adapter` = 'unlinked_practice';
 
 -- ========================================================================
+-- Migration 136: remove retired Question Bank difficulty/Level
+-- Only questions.level and its labels are removed. Options, answers, attempts,
+-- results, academic/class levels, and frozen examination history are preserved.
+-- Restore removed difficulty labels from the pre-upgrade backup if needed.
+-- ========================================================================
+
+SET @onlineexam_136_preflight_sql := IF(
+  DATABASE() IS NOT NULL AND EXISTS (
+    SELECT 1 FROM `INFORMATION_SCHEMA`.`COLUMNS`
+    WHERE `TABLE_SCHEMA` = DATABASE()
+      AND `TABLE_NAME` = 'questions'
+      AND `COLUMN_NAME` = 'id'
+  ),
+  'SELECT 1 AS question_bank_ready',
+  'SELECT * FROM `SCHOOLLIFT_136_SELECT_A_SCHOOL_DATABASE_WITH_QUESTIONS`'
+);
+PREPARE onlineexam_136_stmt FROM @onlineexam_136_preflight_sql;
+EXECUTE onlineexam_136_stmt;
+DEALLOCATE PREPARE onlineexam_136_stmt;
+
+SET @onlineexam_136_sql := IF(
+  EXISTS (
+    SELECT 1 FROM `INFORMATION_SCHEMA`.`COLUMNS`
+    WHERE `TABLE_SCHEMA` = DATABASE()
+      AND `TABLE_NAME` = 'questions'
+      AND `COLUMN_NAME` = 'level'
+  ),
+  'ALTER TABLE `questions` DROP COLUMN `level`',
+  'SELECT 1 AS question_level_already_removed'
+);
+PREPARE onlineexam_136_stmt FROM @onlineexam_136_sql;
+EXECUTE onlineexam_136_stmt;
+DEALLOCATE PREPARE onlineexam_136_stmt;
+
+-- ========================================================================
 -- Consolidated verification
 -- Every result set below must be empty.
 -- ========================================================================
+
+SELECT `TABLE_NAME`, `COLUMN_NAME` AS `retired_question_column_still_present`
+FROM `INFORMATION_SCHEMA`.`COLUMNS`
+WHERE `TABLE_SCHEMA` = DATABASE()
+  AND `TABLE_NAME` = 'questions'
+  AND `COLUMN_NAME` = 'level';
 
 SELECT required.`table_name` AS `missing_migration_table`
 FROM (
@@ -2625,4 +2670,10 @@ WHERE COALESCE((
     AND `COLUMN_NAME` = 'result_adapter'
 ), '') <> 'standard_component';
 
-SELECT 'IMPORT FINISHED: empty missing_* result sets mean OK; any returned row requires review.' AS `status`;
+SELECT `TABLE_NAME`, `COLUMN_NAME` AS `retired_question_column_still_present`
+FROM `INFORMATION_SCHEMA`.`COLUMNS`
+WHERE `TABLE_SCHEMA` = DATABASE()
+  AND `TABLE_NAME` = 'questions'
+  AND `COLUMN_NAME` = 'level';
+
+SELECT 'IMPORT FINISHED: empty verification result sets mean OK; any returned row requires review.' AS `status`;

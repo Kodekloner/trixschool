@@ -58,12 +58,6 @@ $config['question_type']=array(
 'descriptive'=>'Descriptive'
 );
 
-$config['question_level']=array(
-'low'=>'Low',
-'medium'=>'Medium',
-'high'=>'High'
-);
-
 $config['question_true_false']=array(
 'true'=>'TRUE',
 'false'=>'FALSE'

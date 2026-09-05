@@ -29,7 +29,6 @@ class Question extends Admin_Controller
         $question                    = $this->question_model->get($id);
         $data['question']            = $question;
         $data['question_type']       = $this->config->item('question_type');
-        $data['question_level']      = $this->config->item('question_level');
         $data['question_true_false'] = $this->config->item('question_true_false');
         $questionOpt                 = $this->customlib->getQuesOption();
         $data['questionOpt']         = $questionOpt;
@@ -52,7 +51,6 @@ class Question extends Admin_Controller
         $subjectlist            = $this->subject_model->get();
         $data['subjectlist']    = $subjectlist;
         $data['question_type']  = $this->config->item('question_type');
-        $data['question_level'] = $this->config->item('question_level');
         $questionList           = $this->question_model->get();
        
      
@@ -150,46 +148,34 @@ class Question extends Admin_Controller
                 echo json_encode(array('status' => 0, 'error' => array(), 'message' => 'The selected class or section is outside your permitted Question Bank scope.'));
                 return;
             }
-            $insert_array = array();
-//====================
-            if (isset($_FILES["file"]) && !empty($_FILES['file']['name'])) {
-
-                $fileName = $_FILES["file"]["tmp_name"];
-                if (isset($_FILES["file"]) && !empty($_FILES['file']['name']) && $_FILES["file"]["size"] > 0) {
-                    $file = fopen($fileName, "r");
-                    $flag = true;
-                    while (($column = fgetcsv($file, 10000, ",")) !== false) {
-                        if ($flag) {
-                            $flag = false;
-                            continue;
-                        }
-                        if (trim($column['0']) != "" && trim($column['1']) != "" && trim($column['2']) != "") {
-                            $insert_array[] = array(
-                                'staff_id'      => $this->customlib->getStaffID(),
-                                'subject_id'    => $this->input->post('subject_id'),
-                                'class_id'      => $this->input->post('class_id'),
-                                'section_id'    => $this->input->post('section_id'),
-                                'question_type' => trim($column['0']),
-                                'level'         => trim($column['1']),
-                                'question'      => trim($column['2']),
-                                'opt_a'         => trim($column['3']),
-                                'opt_b'         => trim($column['4']),
-                                'opt_c'         => trim($column['5']),
-                                'opt_d'         => trim($column['6']),
-                                'opt_e'         => trim($column['7']),
-                                'correct'       => trim($column['8']),
-                            );
-                        }
-                    }
-                }
-				
-                if (!empty($insert_array)) {
-                    $this->question_model->add_question_bulk($insert_array);
-                }
-                $array = array('status' => '1', 'error' => '', 'message' => $this->lang->line('success_message'));
-                echo json_encode($array);
+            $this->load->helper('question_import');
+            $file = fopen($_FILES['file']['tmp_name'], 'r');
+            if ($file === false) {
+                echo json_encode(array('status' => 0, 'error' => array(), 'message' => 'The CSV could not be read. Please upload it again.'));
+                return;
             }
-            //=============
+            try {
+                $questions = parse_question_import_csv($file);
+            } catch (InvalidArgumentException $exception) {
+                echo json_encode(array('status' => 0, 'error' => array(), 'message' => $exception->getMessage()));
+                return;
+            } finally {
+                fclose($file);
+            }
+            $insert_array = array();
+            foreach ($questions as $question) {
+                $insert_array[] = array_merge($question, array(
+                    'staff_id'   => $this->customlib->getStaffID(),
+                    'subject_id' => $this->input->post('subject_id'),
+                    'class_id'   => $this->input->post('class_id'),
+                    'section_id' => $this->input->post('section_id'),
+                ));
+            }
+            if ($this->question_model->add_question_bulk($insert_array) === false) {
+                echo json_encode(array('status' => 0, 'error' => array(), 'message' => 'The questions could not be imported. Please contact your administrator.'));
+                return;
+            }
+            echo json_encode(array('status' => 1, 'error' => '', 'message' => $this->lang->line('success_message')));
         }
     }
 
@@ -246,7 +232,6 @@ class Question extends Admin_Controller
         $this->form_validation->set_rules('subject_id', $this->lang->line('subject'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('question', $this->lang->line('question'), 'trim|required');
         $this->form_validation->set_rules('question_type', $this->lang->line('question_type'), 'trim|required|xss_clean');
-        $this->form_validation->set_rules('question_level', $this->lang->line('question_level'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('class_id', $this->lang->line('class'), 'trim|required|xss_clean');
         if ($this->input->post('question_type') == "singlechoice") {
             $this->form_validation->set_rules('opt_a', $this->lang->line('option_A'), 'trim|required');
@@ -266,7 +251,6 @@ class Question extends Admin_Controller
                 'subject_id'     => form_error('subject_id'),
                 'question'       => form_error('question'),
                 'question_type'  => form_error('question_type'),
-                'question_level' => form_error('question_level'),
                 'class_id'       => form_error('class_id'),
 
             );
@@ -297,7 +281,6 @@ class Question extends Admin_Controller
                 'subject_id'    => $this->input->post('subject_id'),
                 'question'      => $this->input->post('question'),
                 'question_type' => $this->input->post('question_type'),
-                'level'         => $this->input->post('question_level'),
                 'class_id'      => $this->input->post('class_id'),
                 'staff_id'      => $this->customlib->getStaffID(),
 
@@ -342,7 +325,10 @@ class Question extends Admin_Controller
                 $insert_data['id'] = $id;
             }
 
-            $this->question_model->add($insert_data);
+            if ($this->question_model->add($insert_data) === false) {
+                echo json_encode(array('status' => 0, 'error' => array(), 'message' => 'The question could not be saved. Please contact your administrator.'));
+                return;
+            }
 
             $array = array('status' => 1, 'error' => '', 'message' => $this->lang->line('success_message'));
 
@@ -380,7 +366,6 @@ class Question extends Admin_Controller
         $data['subjectlist']         = $subject_result;
         $data['question_true_false'] = $this->config->item('question_true_false');
         $data['question_type']       = $this->config->item('question_type');
-        $data['question_level']      = $this->config->item('question_level');
         $questionOpt                 = $this->customlib->getQuesOption();
         $data['questionOpt']         = $questionOpt;
         $data['recordid']            = $this->input->post('recordid');
@@ -407,7 +392,6 @@ class Question extends Admin_Controller
         $data['subjectlist']         = $subject_result;
         $data['question_true_false'] = $this->config->item('question_true_false');
         $data['question_type']       = $this->config->item('question_type');
-        $data['question_level']      = $this->config->item('question_level');
         $questionOpt                 = $this->customlib->getQuesOption();
         $data['questionOpt']         = $questionOpt;
         $page                        = $this->load->view('admin/question/_editform', $data, true);
@@ -561,7 +545,6 @@ class Question extends Admin_Controller
             access_denied();
         }
         $question_type      = $this->config->item('question_type');
-        $question_level      = $this->config->item('question_level');
         $question_dt = $this->question_model->getAllRecord();
 
         $question_dt = json_decode($question_dt);
@@ -581,7 +564,6 @@ class Question extends Admin_Controller
                 $row[] = $value->id;
                 $row[] = $value->name;
                 $row[] = ($value->question_type != "") ? $question_type[$value->question_type]:"";
-                $row[] = ($value->level != "" )? $question_level[$value->level]:"";
                 $row[] = readmorelink($value->question,site_url('admin/question/read/'.$value->id));
                 $actions = array();
                 $actions[] = '<a target="_blank" href="' . site_url('admin/question/read/' . $value->id) . '" class="btn btn-default btn-xs" data-toggle="tooltip" title="' . html_escape($this->lang->line('view')) . '"><i class="fa fa-eye"></i></a>';
