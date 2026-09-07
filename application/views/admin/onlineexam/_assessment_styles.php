@@ -105,24 +105,6 @@
     position: static;
     margin: 3px 0 0;
 }
-.onlineexam-ui .paper-field-guide {
-    margin-bottom: 12px;
-}
-.onlineexam-ui .paper-field-guide dl {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px 18px;
-    margin: 0;
-}
-.onlineexam-ui .paper-field-guide dt,
-.onlineexam-ui .paper-field-guide dd {
-    display: inline;
-    margin: 0;
-}
-.onlineexam-ui .paper-field-guide dd:after {
-    content: '';
-    display: block;
-}
 .onlineexam-ui .paper-form-scroll,
 .onlineexam-ui .paper-section-scroll {
     width: 100%;
@@ -131,9 +113,9 @@
 }
 .onlineexam-ui .paper-form-grid {
     display: grid;
-    grid-template-columns: minmax(220px, 2.3fr) minmax(90px, .8fr) minmax(145px, 1.2fr) minmax(92px, .8fr) minmax(105px, .9fr) minmax(120px, 1fr) minmax(82px, .7fr);
+    grid-template-columns: minmax(220px, 2.3fr) minmax(90px, .8fr) minmax(145px, 1.2fr) minmax(92px, .8fr) minmax(120px, 1fr) minmax(82px, .7fr);
     gap: 10px;
-    min-width: 990px;
+    min-width: 850px;
     align-items: end;
 }
 .onlineexam-ui .paper-form-grid.paper-form-grid-secondary {
@@ -470,9 +452,6 @@
         display: flex;
         width: 100%;
         margin: 0 0 9px !important;
-    }
-    .onlineexam-ui .paper-field-guide dl {
-        grid-template-columns: 1fr;
     }
     .onlineexam-ui .paper-form-grid,
     .onlineexam-ui .paper-form-grid.paper-form-grid-secondary {

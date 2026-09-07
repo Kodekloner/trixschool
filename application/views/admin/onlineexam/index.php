@@ -7,6 +7,7 @@
                 <div class="box box-primary" id="route">
                     <div class="box-header ptbnull assessment-box-header">
                         <h3 class="box-title titlefix pt5">Online assessment list</h3>
+                        <a class="btn btn-default btn-sm" href="<?php echo site_url('admin/onlineexam/review'); ?>"><i class="fa fa-table"></i> Review students and scores</a>
                         <?php if ($this->rbac->hasPrivilege('online_examination', 'can_add')) { ?>
                             <a class="btn btn-primary btn-sm" href="<?php echo site_url('admin/onlineexam/workflow'); ?>"><i class="fa fa-plus"></i> Add academic assessment</a>
                         <?php } ?>

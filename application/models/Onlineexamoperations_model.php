@@ -401,6 +401,297 @@ class Onlineexamoperations_model extends CI_Model
         return array('success' => true, 'attempt' => $payload, 'idempotent' => false);
     }
 
+    /** Reopen just one missed/incomplete paper; retain the same official attempt. */
+    public function rescheduleCandidatePaper($onlineexam_id, $student_session_id, $paper_id, $starts_at, $ends_at, $reason, $actor_id, array $scope = array())
+    {
+        $start = $this->reviewDateTime($starts_at);
+        $end = $this->reviewDateTime($ends_at);
+        if ($start === null || $end === null || strtotime($end) <= time() || strtotime($start) >= strtotime($end)) {
+            return $this->failure('invalid_window', 'Choose a valid start and end time with an end in the future.');
+        }
+        $context = $this->beginCandidatePaperReview($onlineexam_id, $student_session_id, $paper_id, $reason, $actor_id, $scope);
+        if (empty($context['success'])) {
+            return $context;
+        }
+        $paper = $context['paper'];
+        if ((strtotime($end) - strtotime($start)) < ((int) $paper['duration_minutes'] * 60)) {
+            $this->db->trans_rollback();
+            return $this->failure('window_too_short', 'The start-to-end interval must allow the full paper duration.');
+        }
+        $error = $this->candidatePaperRecoveryError($context);
+        if ($error !== null) {
+            $this->db->trans_rollback();
+            return $this->failure('paper_not_recoverable', $error);
+        }
+        $now = date('Y-m-d H:i:s');
+        $window = array(
+            'onlineexam_id' => (int) $onlineexam_id,
+            'onlineexam_student_id' => (int) $context['candidate']['id'],
+            'paper_id' => (int) $paper_id,
+            'revision' => (int) $context['attempt']['revision'],
+            'starts_at' => $start,
+            'ends_at' => $end,
+            'reason' => trim((string) $reason),
+            'scheduled_by' => (int) $actor_id,
+            'updated_at' => $now,
+        );
+        if (empty($context['window'])) {
+            $window['created_at'] = $now;
+            $this->db->insert('onlineexam_candidate_paper_windows', $window);
+        } else {
+            $this->db->where('id', (int) $context['window']['id'])->update('onlineexam_candidate_paper_windows', $window);
+        }
+        $updates = array(
+            'status' => 'pending', 'started_at' => null, 'deadline_at' => null,
+            'submitted_at' => null, 'completion_source' => null,
+            'manual_score' => null, 'manual_marking_status' => 'not_required',
+            'updated_at' => $now,
+        );
+        // Existing answers and marks are kept for safe resume. The immutable
+        // history row also captures their state before this authorization.
+        $this->db->where('id', (int) $context['attempt_paper']['id'])->update('onlineexam_attempt_papers', $updates);
+        $this->db->where('id', (int) $context['attempt']['id'])->update('onlineexam_candidate_attempts', array(
+            'status' => 'in_progress', 'submitted_at' => null, 'final_score' => null,
+            'marking_status' => 'pending', 'updated_at' => $now,
+        ));
+        $this->db->where('id', (int) $context['candidate']['id'])->update('onlineexam_students', array('is_attempted' => 0));
+        $this->saveCandidatePaperHistory($context, 'reschedule_paper', $reason, $actor_id, array('window' => $window, 'paper' => $updates));
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return $this->failure('database_error', 'The paper could not be rescheduled.');
+        }
+        $this->db->trans_commit();
+        $this->load->model('onlineexamattempt_model');
+        $this->onlineexamattempt_model->refreshAssessmentLifecycle((int) $onlineexam_id);
+        return array('success' => true, 'attempt_id' => (int) $context['attempt']['id'], 'onlineexam_student_id' => (int) $context['candidate']['id'], 'paper_id' => (int) $paper_id);
+    }
+
+    /** Record a supervised offline replacement score for a missed/incomplete paper. */
+    public function recordCandidatePaperScore($onlineexam_id, $student_session_id, $paper_id, $raw_marks, $reason, $actor_id, array $scope = array())
+    {
+        if (!is_numeric($raw_marks) || !is_finite((float) $raw_marks)) {
+            return $this->failure('invalid_score', 'Enter a numeric score.');
+        }
+        $raw_marks = round((float) $raw_marks, 2);
+        $context = $this->beginCandidatePaperReview($onlineexam_id, $student_session_id, $paper_id, $reason, $actor_id, $scope);
+        if (empty($context['success'])) {
+            return $context;
+        }
+        $maximum = (float) $context['paper']['raw_max_score'];
+        if (!$this->canRecordWholePaperScore($onlineexam_id, $context['attempt']['revision'], $paper_id)) {
+            $this->db->trans_rollback();
+            return $this->failure('concept_scores_required', 'This Kindergarten paper assesses separate concepts. Reschedule the paper or record each concept in Kindergarten results.');
+        }
+        if ($raw_marks < 0 || $raw_marks > $maximum) {
+            $this->db->trans_rollback();
+            return $this->failure('score_out_of_range', 'The score must be between 0 and ' . number_format($maximum, 2, '.', '') . '.');
+        }
+        $latest = $this->db->where('attempt_paper_id', (int) $context['attempt_paper']['id'])
+            ->order_by('marking_version', 'DESC')->limit(1)->get('onlineexam_paper_marking')->row_array();
+        if ($context['attempt_paper']['completion_source'] === 'manual' && !empty($latest)
+            && $latest['status'] === 'finalized' && (float) $latest['raw_marks'] === $raw_marks
+            && trim((string) $latest['remark']) === trim((string) $reason)) {
+            $this->db->trans_commit();
+            return $this->tryFinalizeIfReady($onlineexam_id, $context['attempt']['id'], $actor_id, $scope,
+                array('success' => true, 'idempotent' => true, 'attempt_id' => (int) $context['attempt']['id']));
+        }
+        $error = $this->candidatePaperRecoveryError($context);
+        if ($error !== null) {
+            $this->db->trans_rollback();
+            return $this->failure('paper_not_recoverable', $error);
+        }
+        $now = date('Y-m-d H:i:s');
+        $version = empty($latest) ? 1 : (int) $latest['marking_version'] + 1;
+        $this->db->insert('onlineexam_paper_marking', array(
+            'attempt_paper_id' => (int) $context['attempt_paper']['id'], 'marking_version' => $version,
+            'raw_marks' => $raw_marks, 'rubric_json' => null, 'remark' => trim((string) $reason),
+            'status' => 'finalized', 'marked_by' => (int) $actor_id, 'marked_at' => $now,
+            'reviewed_by' => (int) $actor_id, 'reviewed_at' => $now, 'created_at' => $now,
+        ));
+        $updates = array(
+            'status' => 'submitted', 'submitted_at' => $now, 'completion_source' => 'manual',
+            'raw_score' => $raw_marks, 'raw_max_score' => $maximum,
+            'contribution_score' => $maximum > 0 ? round($raw_marks / $maximum * (float) $context['paper']['contribution_score'], 4) : 0,
+            'contribution_max_score' => (float) $context['paper']['contribution_score'],
+            'manual_score' => $raw_marks, 'manual_marking_status' => 'finalized',
+            'marked_by' => (int) $actor_id, 'marked_at' => $now,
+            'marking_notes' => trim((string) $reason), 'updated_at' => $now,
+        );
+        $this->db->where('id', (int) $context['attempt_paper']['id'])->update('onlineexam_attempt_papers', $updates);
+        $this->db->where('id', (int) $context['attempt']['id'])->update('onlineexam_candidate_attempts', array(
+            'status' => 'in_progress', 'final_score' => null, 'marking_status' => 'pending', 'updated_at' => $now,
+        ));
+        $this->refreshAttemptSubmissionState($context['attempt']['id'], $this->getFrozenPapers($onlineexam_id, $context['attempt']['revision']), $now);
+        $this->saveCandidatePaperHistory($context, 'record_paper_score', $reason, $actor_id, array('paper' => $updates, 'marking_version' => $version));
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return $this->failure('database_error', 'The paper score could not be saved.');
+        }
+        $this->db->trans_commit();
+        return $this->tryFinalizeIfReady($onlineexam_id, $context['attempt']['id'], $actor_id, $scope,
+            array('success' => true, 'attempt_id' => (int) $context['attempt']['id'], 'paper_id' => (int) $paper_id));
+    }
+
+    protected function reviewDateTime($value)
+    {
+        $value = str_replace('T', ' ', trim((string) $value));
+        foreach (array('Y-m-d H:i:s', 'Y-m-d H:i') as $format) {
+            $date = DateTimeImmutable::createFromFormat('!' . $format, $value);
+            if ($date && $date->format($format) === $value) {
+                return $date->format('Y-m-d H:i:s');
+            }
+        }
+        return null;
+    }
+
+    /** A single score cannot infer separate Kindergarten section outcomes. */
+    public function canRecordWholePaperScore($onlineexam_id, $revision, $paper_id)
+    {
+        $snapshot = $this->db->where('onlineexam_id', (int) $onlineexam_id)->where('revision', (int) $revision)
+            ->get('onlineexam_revision_snapshots')->row_array();
+        $configuration = empty($snapshot['configuration_json']) ? array() : json_decode($snapshot['configuration_json'], true);
+        $result = isset($configuration['result']) ? $configuration['result'] : array();
+        if (!isset($result['adapter']) || $result['adapter'] !== 'kindergarten_concept') {
+            return true;
+        }
+        $mappings = isset($result['mappings']) ? (array) $result['mappings']
+            : $this->db->where('onlineexam_id', (int) $onlineexam_id)->get('onlineexam_kindergarten_mappings')->result_array();
+        foreach ($mappings as $mapping) {
+            if ((int) $mapping['paper_id'] === (int) $paper_id && !empty($mapping['paper_section_id'])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Returns with a transaction open only on success. */
+    protected function beginCandidatePaperReview($onlineexam_id, $student_session_id, $paper_id, $reason, $actor_id, array $scope)
+    {
+        if (!$this->db->table_exists('onlineexam_candidate_paper_windows')
+            || !$this->db->table_exists('onlineexam_candidate_paper_history')
+            || !$this->db->field_exists('completion_source', 'onlineexam_attempt_papers')) {
+            return $this->failure('migration_required', 'Install Online Examination migration 137 before using paper review.');
+        }
+        if ((int) $actor_id < 1 || trim((string) $reason) === '' || mb_strlen((string) $reason) > 5000) {
+            return $this->failure('reason_required', 'Enter a reason of up to 5,000 characters.');
+        }
+        $access = $this->resolveScope($onlineexam_id, $scope);
+        if (empty($access['success'])) {
+            return $access;
+        }
+        $this->db->trans_begin();
+        $exam = $this->db->query('SELECT * FROM onlineexam WHERE id = ' . (int) $onlineexam_id . ' FOR UPDATE')->row_array();
+        if (empty($exam) || !empty($exam['deleted_at']) || empty($exam['frozen_at']) || (string) $exam['is_active'] !== '1'
+            || !in_array($exam['lifecycle_status'], array('scheduled', 'published', 'in_progress', 'marking', 'completed'), true)) {
+            $this->db->trans_rollback();
+            return $this->failure('assessment_unavailable', 'Only a published assessment can be reviewed.');
+        }
+        $student = $this->db->select('ss.*')->from('student_session ss')->join('students s', 's.id = ss.student_id')
+            ->where('ss.id', (int) $student_session_id)->where('ss.session_id', (int) $exam['session_id'])
+            ->where('ss.class_id', (int) $exam['class_id'])->where('s.is_active', 'yes')->get()->row_array();
+        if (empty($student) || empty($access['section_ids']) || !in_array((int) $student['section_id'], $access['section_ids'], true)) {
+            $this->db->trans_rollback();
+            return $this->failure('candidate_out_of_scope', 'The student does not belong to this assessment class and arm.');
+        }
+        $candidate = $this->db->query('SELECT * FROM onlineexam_students WHERE onlineexam_id = ' . (int) $onlineexam_id
+            . ' AND student_session_id = ' . (int) $student_session_id . ' FOR UPDATE')->row_array();
+        if (empty($candidate)) {
+            if (empty($scope['allow_assign_candidate'])) {
+                $this->db->trans_rollback();
+                return $this->failure('assignment_permission_required', 'You do not have permission to assign this student.');
+            }
+            $this->db->insert('onlineexam_students', array('onlineexam_id' => (int) $onlineexam_id, 'student_session_id' => (int) $student_session_id,
+                'candidate_status' => 'assigned', 'is_attempted' => 0));
+            $candidate = array('id' => (int) $this->db->insert_id(), 'onlineexam_id' => (int) $onlineexam_id, 'student_session_id' => (int) $student_session_id);
+            $this->audit($onlineexam_id, null, $actor_id, 'assign_review_candidate', 'onlineexam_students', $candidate['id'], null, $candidate);
+        } elseif ($candidate['candidate_status'] !== 'assigned') {
+            $this->db->trans_rollback();
+            return $this->failure('candidate_excluded', 'Assign this excluded student before scheduling their paper.');
+        }
+        $prepared = $this->ensureOfficialAttempt($onlineexam_id, $candidate['id'], $actor_id, $scope);
+        if (empty($prepared['success'])) {
+            $this->db->trans_rollback();
+            return $prepared;
+        }
+        $attempt = $this->lockAttemptContext($onlineexam_id, $prepared['attempt']['id']);
+        $paper = $this->findFrozenPaper($onlineexam_id, (int) $attempt['revision'], $paper_id);
+        if (empty($paper) || $paper['delivery_mode'] !== 'cbt' || !in_array($paper['paper_type'], array('objective', 'theory'), true)) {
+            $this->db->trans_rollback();
+            return $this->failure('paper_not_found', 'The selected paper does not belong to this frozen assessment.');
+        }
+        $attempt_paper = $this->db->query('SELECT * FROM onlineexam_attempt_papers WHERE attempt_id = ' . (int) $attempt['id']
+            . ' AND paper_id = ' . (int) $paper_id . ' FOR UPDATE')->row_array();
+        $answers = $this->db->select('aa.*, qs.paper_section_id, qs.is_compulsory')
+            ->from('onlineexam_question_snapshots qs')
+            ->join('onlineexam_attempt_answers aa', 'aa.question_snapshot_id = qs.id AND aa.attempt_id = ' . (int) $attempt['id'], 'left')
+            ->where('qs.onlineexam_id', (int) $onlineexam_id)->where('qs.revision', (int) $attempt['revision'])
+            ->where('qs.paper_id', (int) $paper_id)->get()->result_array();
+        $question_count = $this->db->where('onlineexam_id', (int) $onlineexam_id)->where('revision', (int) $attempt['revision'])
+            ->where('paper_id', (int) $paper_id)->count_all_results('onlineexam_question_snapshots');
+        $window = $this->db->where('onlineexam_id', (int) $onlineexam_id)->where('onlineexam_student_id', (int) $candidate['id'])
+            ->where('paper_id', (int) $paper_id)->get('onlineexam_candidate_paper_windows')->row_array();
+        return array('success' => true, 'exam' => $exam, 'candidate' => $candidate, 'attempt' => $attempt,
+            'paper' => $paper, 'attempt_paper' => $attempt_paper, 'answers' => $answers,
+            'question_count' => $question_count, 'window' => $window);
+    }
+
+    protected function candidatePaperRecoveryError(array $context)
+    {
+        $row = $context['attempt_paper'];
+        $source = isset($row['completion_source']) ? $row['completion_source'] : null;
+        if ($source === 'manual' || $source === 'submitted') {
+            return 'This student has already completed this paper. Its submitted score cannot be replaced here.';
+        }
+        if (in_array($row['status'], array('submitted', 'completed'), true)) {
+            $progress = $this->candidatePaperRequirementProgress($context);
+            $timed_out = $source === 'timed_out' || ($source === null && !empty($row['deadline_at'])
+                && !empty($row['submitted_at']) && strtotime($row['submitted_at']) >= strtotime($row['deadline_at']));
+            if (!$timed_out || $progress['met']) {
+                return 'This student has already completed this paper. Its submitted score cannot be replaced here.';
+            }
+        }
+        if ($row['status'] === 'in_progress' && !empty($row['deadline_at'])
+            && strtotime($row['deadline_at']) + 15 >= time()) {
+            return 'The student is still taking this paper. Wait until their current time has ended.';
+        }
+        return null;
+    }
+
+    protected function candidatePaperRequirementProgress(array $context)
+    {
+        $grouped = array();
+        foreach ((array) $context['answers'] as $answer) {
+            $section_id = empty($answer['paper_section_id']) ? 0 : (int) $answer['paper_section_id'];
+            $compulsory = !empty($answer['is_compulsory']) ? 1 : 0;
+            $key = $section_id . ':' . $compulsory;
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = array('section_id' => $section_id, 'is_compulsory' => $compulsory,
+                    'question_count' => 0, 'answered_count' => 0);
+            }
+            $grouped[$key]['question_count']++;
+            $grouped[$key]['answered_count'] += !empty($answer['is_answered']) ? 1 : 0;
+        }
+        $this->load->library('onlineexam_review');
+        return $this->onlineexam_review->requirementProgress(
+            array_values($grouped),
+            !empty($context['paper']['sections']) ? (array) $context['paper']['sections'] : array()
+        );
+    }
+
+    protected function saveCandidatePaperHistory(array $context, $action, $reason, $actor_id, array $after)
+    {
+        $before = array('attempt' => $context['attempt'], 'paper' => $context['attempt_paper'],
+            'answers' => $context['answers'], 'window' => $context['window']);
+        $this->db->insert('onlineexam_candidate_paper_history', array(
+            'onlineexam_id' => (int) $context['exam']['id'], 'onlineexam_student_id' => (int) $context['candidate']['id'],
+            'attempt_id' => (int) $context['attempt']['id'], 'paper_id' => (int) $context['paper']['id'],
+            'action' => $action, 'reason' => trim((string) $reason), 'before_json' => json_encode($before),
+            'after_json' => json_encode($after), 'actor_id' => (int) $actor_id, 'created_at' => date('Y-m-d H:i:s'),
+        ));
+        $this->audit($context['exam']['id'], $context['attempt']['id'], $actor_id, $action,
+            'onlineexam_attempt_papers', $context['attempt_paper']['id'], $before, $after);
+    }
+
     /**
      * Stores a versioned, finalized total raw score for a paper-delivered
      * paper. Migration 128 must include onlineexam_paper_marking; when
@@ -961,6 +1252,12 @@ class Onlineexamoperations_model extends CI_Model
             $this->db->trans_rollback();
             return $this->failure('attempt_not_submitted', 'Manual marking can begin only after the candidate submits the attempt.');
         }
+        $reviewed_paper = $this->db->where('attempt_id', (int) $answer['attempt_id'])
+            ->where('paper_id', (int) $answer['paper_id'])->get('onlineexam_attempt_papers')->row_array();
+        if (!empty($reviewed_paper['completion_source']) && $reviewed_paper['completion_source'] === 'manual') {
+            $this->db->trans_rollback();
+            return $this->failure('paper_score_recorded', 'A supervised score has already been recorded for this paper. Its earlier answers are kept as history.');
+        }
         if ((int) $answer['is_answered'] !== 1) {
             $this->db->trans_rollback();
             return $this->failure('unanswered_question', 'An unanswered question already scores zero and does not require a manual mark.');
@@ -1080,11 +1377,13 @@ class Onlineexamoperations_model extends CI_Model
             );
         }
 
+        $this->excludeManuallyReplacedAnswers();
         $manual_total = $this->db->from('onlineexam_attempt_answers')
             ->where('attempt_id', (int) $attempt_id)
             ->where('is_answered', 1)
             ->where('auto_mark IS NULL', null, false)
             ->count_all_results();
+        $this->excludeManuallyReplacedAnswers();
         $manual_pending = $this->db->from('onlineexam_attempt_answers')
             ->where('attempt_id', (int) $attempt_id)
             ->where('is_answered', 1)
@@ -1380,14 +1679,15 @@ class Onlineexamoperations_model extends CI_Model
         $total = 0;
         $pending = 0;
         foreach ($this->getFrozenPapers($onlineexam_id, $revision) as $paper) {
-            if ($paper['delivery_mode'] !== 'paper') {
-                continue;
-            }
             $attempt_paper = $this->db->where('attempt_id', (int) $attempt_id)
                 ->where('paper_id', (int) $paper['id'])
                 ->limit(1)
                 ->get('onlineexam_attempt_papers')
                 ->row_array();
+            if ($paper['delivery_mode'] !== 'paper'
+                && (empty($attempt_paper['completion_source']) || $attempt_paper['completion_source'] !== 'manual')) {
+                continue;
+            }
             $latest = empty($attempt_paper) ? null : $this->db
                 ->where('attempt_paper_id', (int) $attempt_paper['id'])
                 ->order_by('marking_version', 'DESC')
@@ -1402,6 +1702,13 @@ class Onlineexamoperations_model extends CI_Model
         return array('success' => true, 'total' => $total, 'pending' => $pending);
     }
 
+    protected function excludeManuallyReplacedAnswers()
+    {
+        if ($this->db->field_exists('completion_source', 'onlineexam_attempt_papers')) {
+            $this->db->where("NOT EXISTS (SELECT 1 FROM onlineexam_question_snapshots review_q JOIN onlineexam_attempt_papers review_p ON review_p.paper_id = review_q.paper_id AND review_p.attempt_id = onlineexam_attempt_answers.attempt_id WHERE review_q.id = onlineexam_attempt_answers.question_snapshot_id AND review_p.completion_source = 'manual')", null, false);
+        }
+    }
+
     protected function resolveScope($onlineexam_id, array $scope)
     {
         $exam = $this->db->where('id', (int) $onlineexam_id)
@@ -1409,7 +1716,7 @@ class Onlineexamoperations_model extends CI_Model
             ->limit(1)
             ->get('onlineexam')
             ->row_array();
-        if (empty($exam)) {
+        if (empty($exam) || !empty($exam['deleted_at'])) {
             return $this->failure('assessment_not_found', 'The assessment was not found.');
         }
         $this->load->model('onlineexamattempt_model');

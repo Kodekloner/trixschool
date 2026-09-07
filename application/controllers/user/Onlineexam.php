@@ -13,6 +13,7 @@ class Onlineexam extends Student_Controller
         $this->sch_setting_detail = $this->setting_model->getSetting();
         $this->config->load("mailsms");
         $this->load->model('onlineexamattempt_model');
+        $this->load->helper('onlineexam_student');
 
         if (!$this->session->userdata('onlineexam_v2_token')) {
             $this->session->set_userdata('onlineexam_v2_token', bin2hex(random_bytes(32)));
@@ -28,7 +29,21 @@ class Onlineexam extends Student_Controller
         $student_session_id    = $student_current_class->student_session_id;
 
         $onlineexam         = $this->onlineexam_model->getStudentexam($student_session_id);
-        $data['onlineexam'] = $onlineexam;
+        $data['onlineexam'] = array();
+        foreach ($onlineexam as $exam) {
+            if (!empty($exam->deleted_at)) {
+                continue;
+            }
+            $attempt = $this->onlineexamattempt_model->getCurrentAttempt($exam->onlineexam_student_id);
+            $papers = $this->onlineexamattempt_model->getCandidatePapers($exam->id, $attempt ? $attempt->id : null, $exam->onlineexam_student_id);
+            $states = array();
+            foreach ($papers as $paper) {
+                $states[] = onlineexam_student_paper_state($exam, $paper, $attempt);
+            }
+            $exam->student_state = onlineexam_student_assessment_state($attempt, $states);
+            $exam->student_result = onlineexam_student_result($exam, $attempt);
+            $data['onlineexam'][] = $exam;
+        }
         $this->load->view('layout/student/header');
         $this->load->view('user/onlineexam/onlineexamlist', $data);
         $this->load->view('layout/student/footer');
@@ -47,6 +62,10 @@ class Onlineexam extends Student_Controller
         $student                     = $this->student_model->getByStudentSession($student_session_id);
         $data['question_true_false'] = $this->config->item('question_true_false');
         $exam                        = $this->onlineexam_model->get($id);
+        if (!$exam || !empty($exam->deleted_at)) {
+            show_404();
+            return;
+        }
         if ($exam && isset($exam->workflow_version) && (int) $exam->workflow_version >= 2) {
             return $this->viewLocalizedExam($exam, $online_exam_validate, $student_session_id);
         }
@@ -237,7 +256,9 @@ class Onlineexam extends Student_Controller
         if (!empty($result['onlineexam_id'])) {
             $this->onlineexamattempt_model->refreshAssessmentLifecycle((int) $result['onlineexam_id']);
         }
-        return $this->jsonResponse($result);
+        // Posting/marking details contain scores even while feedback is held.
+        // The student needs only the acknowledgement to clear the local queue.
+        return $this->jsonResponse(onlineexam_student_submission_receipt($result));
     }
 
     protected function viewLocalizedExam($exam, $assignment, $student_session_id)
@@ -270,13 +291,21 @@ class Onlineexam extends Student_Controller
 
         $attempt = $this->onlineexamattempt_model->getCurrentAttempt($assignment->id);
         $student = $this->student_model->getByStudentSession($student_session_id);
+        $papers = $this->onlineexamattempt_model->getCandidatePapers($exam->id, $attempt ? $attempt->id : null, $assignment->id);
+        $paper_states = array();
+        foreach ($papers as $paper) {
+            $paper->student_state = onlineexam_student_paper_state($context, $paper, $attempt);
+            $paper_states[] = $paper->student_state;
+        }
         $data = array(
             'exam' => $context,
             'assignment' => $assignment,
             'student' => $student,
             'sch_setting' => $this->sch_setting_detail,
             'attempt' => $attempt,
-            'papers' => $this->onlineexamattempt_model->getPapers($exam->id, $attempt ? $attempt->id : null),
+            'papers' => $papers,
+            'student_state' => onlineexam_student_assessment_state($attempt, $paper_states),
+            'student_result' => onlineexam_student_result($context, $attempt),
             'workflow_token' => $this->session->userdata('onlineexam_v2_token'),
             'released_feedback' => $attempt ? $this->onlineexamattempt_model->getReleasedFeedback($student_session_id, $attempt->id) : array(),
         );
