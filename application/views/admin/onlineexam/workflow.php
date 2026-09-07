@@ -1,6 +1,8 @@
 <?php
 $is_edit = !empty($exam);
-$selected_sections = (array) ($this->input->post('section_ids') !== null ? $this->input->post('section_ids') : ($is_edit ? $exam->section_ids : array()));
+$form_value = function ($name, $default = '') { return set_value($name, $default, false); };
+$is_post = $this->input->server('REQUEST_METHOD') === 'POST';
+$selected_sections = (array) ($is_post ? $this->input->post('section_ids') : ($is_edit ? $exam->section_ids : array()));
 $selected_component = set_value('target_component', $is_edit ? $exam->target_component : '');
 $duration_minutes = 60;
 if ($is_edit && !empty($exam->duration)) {
@@ -37,7 +39,7 @@ $format_datetime = function ($value) {
                         <div class="col-md-8">
                             <div class="form-group">
                                 <label for="assessment_title">Assessment title <small class="req">*</small></label>
-                                <input type="text" id="assessment_title" name="exam" class="form-control" value="<?php echo html_escape(set_value('exam', $is_edit ? $exam->exam : '')); ?>" required>
+                                <input type="text" id="assessment_title" name="exam" class="form-control" value="<?php echo html_escape($form_value('exam', $is_edit ? $exam->exam : '')); ?>" required>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -139,19 +141,19 @@ $format_datetime = function ($value) {
                 <div class="box-header with-border"><h3 class="box-title">3. Delivery window and rules</h3></div>
                 <div class="box-body">
                     <div class="row">
-                        <div class="col-md-3"><div class="form-group"><label for="assessment_opens">Opens <small class="req">*</small></label><input type="text" id="assessment_opens" name="exam_from" class="form-control datetime_twelve_hour" value="<?php echo html_escape(set_value('exam_from', $is_edit ? $format_datetime($exam->exam_from) : '')); ?>" required></div></div>
-                        <div class="col-md-3"><div class="form-group"><label for="assessment_closes">Closes <small class="req">*</small></label><input type="text" id="assessment_closes" name="exam_to" class="form-control datetime_twelve_hour" value="<?php echo html_escape(set_value('exam_to', $is_edit ? $format_datetime($exam->exam_to) : '')); ?>" required></div></div>
-                        <div class="col-md-3"><div class="form-group"><label for="assessment_duration">Duration (minutes) <small class="req">*</small></label><input type="number" id="assessment_duration" name="duration_minutes" min="1" max="1439" class="form-control" value="<?php echo html_escape(set_value('duration_minutes', $duration_minutes)); ?>" required></div></div>
-                        <div class="col-md-3"><div class="form-group"><label for="assessment_pass_mark">Pass percentage <small class="req">*</small></label><input type="number" id="assessment_pass_mark" name="passing_percentage" min="0" max="100" step="0.01" class="form-control" value="<?php echo html_escape(set_value('passing_percentage', $is_edit ? $exam->passing_percentage : 40)); ?>" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label for="assessment_opens">Opens <small class="req">*</small></label><input type="text" id="assessment_opens" name="exam_from" class="form-control datetime_twelve_hour" value="<?php echo html_escape($form_value('exam_from', $is_edit ? $format_datetime($exam->exam_from) : '')); ?>" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label for="assessment_closes">Closes <small class="req">*</small></label><input type="text" id="assessment_closes" name="exam_to" class="form-control datetime_twelve_hour" value="<?php echo html_escape($form_value('exam_to', $is_edit ? $format_datetime($exam->exam_to) : '')); ?>" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label for="assessment_duration">Duration (minutes) <small class="req">*</small></label><input type="number" id="assessment_duration" name="duration_minutes" min="1" max="1439" class="form-control" value="<?php echo html_escape($form_value('duration_minutes', $duration_minutes)); ?>" required></div></div>
+                        <div class="col-md-3"><div class="form-group"><label for="assessment_pass_mark">Pass percentage <small class="req">*</small></label><input type="number" id="assessment_pass_mark" name="passing_percentage" min="0" max="100" step="0.01" class="form-control" value="<?php echo html_escape($form_value('passing_percentage', $is_edit ? $exam->passing_percentage : 40)); ?>" required></div></div>
                     </div>
                     <div class="form-group">
                         <label for="assessment_description">Description / general instructions</label>
-                        <textarea id="assessment_description" name="description" class="form-control" rows="5"><?php echo html_escape(set_value('description', $is_edit ? $exam->description : '')); ?></textarea>
+                        <textarea id="assessment_description" name="description" class="form-control" rows="5"><?php echo html_escape($form_value('description', $is_edit ? $exam->description : '')); ?></textarea>
                     </div>
                     <div class="form-group assessment-rule-options">
-                        <label class="checkbox-inline"><input type="checkbox" name="is_random_question" value="1" <?php echo set_checkbox('is_random_question', '1', $is_edit && $exam->is_random_question); ?>> Randomize questions within their paper/section</label>
-                        <label class="checkbox-inline"><input type="checkbox" name="is_neg_marking" value="1" <?php echo set_checkbox('is_neg_marking', '1', $is_edit && $exam->is_neg_marking); ?>> Enable negative marking for attempted wrong objective answers</label>
-                        <label class="checkbox-inline"><input type="checkbox" name="is_marks_display" value="1" <?php echo set_checkbox('is_marks_display', '1', $is_edit && $exam->is_marks_display); ?>> Display marks during review</label>
+                        <label class="checkbox-inline"><input type="checkbox" name="is_random_question" value="1" <?php echo ($is_post ? $this->input->post('is_random_question') : ($is_edit && $exam->is_random_question)) ? 'checked' : ''; ?>> Randomize questions within their paper/section</label>
+                        <label class="checkbox-inline"><input type="checkbox" name="is_neg_marking" value="1" <?php echo ($is_post ? $this->input->post('is_neg_marking') : ($is_edit && $exam->is_neg_marking)) ? 'checked' : ''; ?>> Enable negative marking for attempted wrong objective answers</label>
+                        <label class="checkbox-inline"><input type="checkbox" name="is_marks_display" value="1" <?php echo ($is_post ? $this->input->post('is_marks_display') : ($is_edit && $exam->is_marks_display)) ? 'checked' : ''; ?>> Display marks during review</label>
                     </div>
                 </div>
                 <div class="box-footer assessment-form-actions">
@@ -163,6 +165,7 @@ $format_datetime = function ($value) {
     </section>
 </div>
 
+<?php $this->load->view('admin/onlineexam/_setup_validation'); ?>
 <script>
 (function ($) {
     'use strict';
@@ -178,12 +181,19 @@ $format_datetime = function ($value) {
     }
 
     function renderConfiguration(payload) {
+        var subjectId = $('#academic_subject_id').val();
+        var $subjects = $('#academic_subject_id').empty().append($('<option>', {value: '', text: 'Select subject'}));
+        $.each(payload.subjects || [], function (_, subject) {
+            $subjects.append($('<option>', {value: subject.id, text: subject.name + (subject.code ? ' (' + subject.code + ')' : '')}));
+        });
+        $subjects.val(subjectId);
         var sectionsHtml = '';
         $.each(payload.sections || [], function (_, section) {
             var checked = $.inArray(parseInt(section.id, 10), selectedSections) !== -1 ? ' checked' : '';
             sectionsHtml += '<label class="checkbox-inline"><input type="checkbox" name="section_ids[]" value="' + section.id + '"' + checked + '> ' + $('<div>').text(section.section).html() + '</label>';
         });
         $('#academic_sections').html(sectionsHtml || '<span class="text-danger">No active class arms are configured for this class.</span>');
+        selectedSections = selectedSectionIds();
 
         var config = payload.configuration || {};
         var availableComponents = config.valid ? (config.components || []) : [];
@@ -223,8 +233,9 @@ $format_datetime = function ($value) {
             configurationRequest.abort();
             configurationRequest = null;
         }
-        if (!classId || !subjectId || !purpose) {
-            clearConfiguration('Select a purpose, class and subject to load the available result component.');
+        if (!classId) {
+            $('#academic_subject_id').empty().append($('<option>', {value: '', text: 'Select a class first'}));
+            clearConfiguration('Select a class to load available subjects.');
             return;
         }
         if (!resetSections) {
@@ -261,8 +272,15 @@ $format_datetime = function ($value) {
         });
     }
 
-    $('#academic_class_id').on('change', function () { loadConfiguration(true); });
-    $('#academic_subject_id, #academic_session_id, #academic_term, #purpose').on('change', function () { loadConfiguration(false); });
+    $('#academic_class_id, #academic_session_id, #academic_term').on('change', function () {
+        $('#academic_subject_id').val('');
+        loadConfiguration(true);
+    });
+    $('#academic_subject_id').on('change', function () { loadConfiguration(true); });
+    $('#purpose').on('change', function () { loadConfiguration(false); });
     $(document).on('change', '#academic_sections input[name="section_ids[]"]', function () { loadConfiguration(false); });
+    $('#academic-assessment-form').on('submit', function (event) {
+        if (!window.onlineexamValidateWindow(this, 'exam_from', 'exam_to')) { event.preventDefault(); }
+    });
 })(jQuery);
 </script>

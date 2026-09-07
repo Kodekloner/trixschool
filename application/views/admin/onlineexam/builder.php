@@ -6,7 +6,7 @@ $question_type = array_intersect_key((array) $question_type, array_flip($allowed
 $can_edit_assessment = !empty($editable) && $this->rbac->hasPrivilege('online_examination', 'can_edit');
 $can_edit_questions = !empty($editable) && $this->rbac->hasPrivilege('add_questions_in_exam', 'can_edit');
 $can_view_roster = !empty($compact_supported) && $this->rbac->hasPrivilege('online_assign_view_student', 'can_view');
-$can_view_operations = !empty($compact_supported) && $this->rbac->hasPrivilege('online_examination', 'can_view');
+$can_view_operations = !empty($compact_supported) && $exam->lifecycle_status !== 'draft' && $this->rbac->hasPrivilege('online_examination', 'can_view');
 $component_label = !empty($exam->target_component)
     ? strtoupper($exam->target_component) . ' (max ' . number_format($exam->target_max_score, 2) . ')'
     : ucwords(str_replace('_', ' ', $exam->purpose)) . (!empty($exam->target_max_score) ? ' (max ' . number_format($exam->target_max_score, 2) . ')' : '');
@@ -72,7 +72,7 @@ foreach ((array) $authored_questions as $authored_question) {
             <div class="box-footer assessment-toolbar">
                 <a href="<?php echo site_url('admin/onlineexam'); ?>" class="btn btn-default btn-sm"><i class="fa fa-arrow-left"></i> Examination list</a>
                 <?php if ($can_view_roster) { ?><a href="<?php echo site_url('admin/onlineexam/assign/' . $exam->id); ?>" class="btn btn-default btn-sm"><i class="fa fa-users"></i> Candidate roster</a><?php } ?>
-                <?php if ($can_view_operations) { ?><a href="<?php echo site_url('admin/onlineexam/operations/' . $exam->id); ?>" class="btn btn-default btn-sm"><i class="fa fa-dashboard"></i> Operations</a><?php } ?>
+                <?php if ($can_view_operations) { ?><a href="<?php echo site_url('admin/onlineexam/operations/' . $exam->id); ?>" class="btn btn-default btn-sm"><i class="fa fa-table"></i> Review</a><?php } ?>
                 <?php if ($can_edit_assessment) { ?><a href="<?php echo site_url('admin/onlineexam/workflow/' . $exam->id); ?>" class="btn btn-default btn-sm"><i class="fa fa-pencil"></i> Edit context</a><?php } ?>
             </div>
         </div>
@@ -161,32 +161,17 @@ foreach ((array) $authored_questions as $authored_question) {
             <div class="col-md-12">
                 <div class="box box-info">
                     <div class="box-header with-border"><h3 class="box-title">Add paper</h3></div>
-                    <form method="post" action="<?php echo site_url('admin/onlineexam/paperSave'); ?>">
+                    <form method="post" action="<?php echo site_url('admin/onlineexam/paperSave'); ?>" data-builder-form="paper">
                         <?php echo $this->customlib->getCSRF(); ?>
                         <input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>">
                         <input type="hidden" name="delivery_mode" value="cbt">
                         <div class="box-body">
-                            <div class="alert alert-info paper-field-guide">
-                                <dl>
-                                    <div><dt>Paper title:</dt> <dd>The name candidates see for this part.</dd></div>
-                                    <div><dt>Code:</dt> <dd>An optional short identifier, such as P1.</dd></div>
-                                    <div><dt>Paper type:</dt> <dd>Choose Objective for auto-marking or Theory / Essay for teacher review.</dd></div>
-                                    <div><dt>Minutes:</dt> <dd>The countdown time allowed for this paper.</dd></div>
-                                    <div><dt>Raw max:</dt> <dd>The total marks available before scaling.</dd></div>
-                                    <div><dt>Contribution:</dt> <dd>This paper's percentage of the combined assessment.</dd></div>
-                                    <div><dt>Display order:</dt> <dd>The order candidates see multiple papers.</dd></div>
-                                    <div><dt>Starts / Ends:</dt> <dd>The paper's CBT window, within the main assessment window.</dd></div>
-                                    <div><dt>Instructions:</dt> <dd>Directions candidates read before answering this paper.</dd></div>
-                                    <div><dt>Active:</dt> <dd>Include this paper when the assessment is published.</dd></div>
-                                </dl>
-                            </div>
                             <div class="paper-form-scroll">
                                 <div class="paper-form-grid">
                                     <div class="form-group"><label>Paper title *</label><input type="text" name="title" class="form-control" placeholder="e.g. Paper 1 — Objective" required></div>
                                     <div class="form-group"><label>Code</label><input type="text" name="paper_code" class="form-control" placeholder="P1"></div>
                                     <div class="form-group"><label>Paper type *</label><select name="paper_type" class="form-control"><?php foreach ($paper_types as $value => $label) { ?><option value="<?php echo $value; ?>"><?php echo $label; ?></option><?php } ?></select></div>
-                                    <div class="form-group"><label>Minutes *</label><input type="number" name="duration_minutes" min="1" value="60" class="form-control" required></div>
-                                    <div class="form-group"><label>Raw max *</label><input type="number" name="raw_max_score" min="0.01" step="0.01" value="100" class="form-control" required></div>
+                                    <div class="form-group"><label>Minutes *</label><input type="number" name="duration_minutes" min="1" value="<?php $duration_parts = explode(':', $exam->duration); echo (int) $duration_parts[0] * 60 + (int) $duration_parts[1]; ?>" class="form-control" required></div>
                                     <div class="form-group"><label>Contribution *</label><div class="input-group"><input type="number" name="contribution_score" min="0.01" max="100" step="0.01" value="100" class="form-control" required><span class="input-group-addon">%</span></div></div>
                                     <div class="form-group"><label>Display order</label><input type="number" name="display_order" min="0" value="0" class="form-control"></div>
                                 </div>
@@ -224,7 +209,7 @@ foreach ((array) $authored_questions as $authored_question) {
                         <div class="box-body no-padding">
                             <div class="onlineexam-scroll">
                                 <table class="table table-condensed paper-summary-table"><tbody><tr>
-                                    <td><strong>Raw maximum</strong><br><?php echo number_format($paper['raw_max_score'], 2); ?></td>
+                                    <td><strong>Maximum score</strong><br><?php echo number_format($paper['raw_max_score'], 2); ?></td>
                                     <td><strong>Contribution</strong><br><?php echo number_format($paper['contribution_score'], 2); ?>%</td>
                                     <td><strong>Duration</strong><br><?php echo (int) $paper['duration_minutes']; ?> minutes</td>
                                     <td><strong>Schedule</strong><br><small><?php echo html_escape($format_datetime($paper['starts_at'])); ?><br><?php echo html_escape($format_datetime($paper['ends_at'])); ?></small></td>
@@ -252,7 +237,7 @@ foreach ((array) $authored_questions as $authored_question) {
                             </ul>
 
                             <?php if ($can_edit_assessment) { ?>
-                            <form method="post" action="<?php echo site_url('admin/onlineexam/paperSectionSave'); ?>" class="well well-sm">
+                            <form method="post" action="<?php echo site_url('admin/onlineexam/paperSectionSave'); ?>" class="well well-sm" data-builder-form="section">
                                 <?php echo $this->customlib->getCSRF(); ?>
                                 <input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>"><input type="hidden" name="paper_id" value="<?php echo (int) $paper['id']; ?>">
                                 <div class="paper-section-scroll">
@@ -271,7 +256,7 @@ foreach ((array) $authored_questions as $authored_question) {
 
                         <?php if ($can_edit_assessment) { ?>
                         <div id="paper-edit-<?php echo (int) $paper['id']; ?>" class="collapse">
-                            <form method="post" action="<?php echo site_url('admin/onlineexam/paperSave'); ?>" class="box-footer">
+                            <form method="post" action="<?php echo site_url('admin/onlineexam/paperSave'); ?>" class="box-footer" data-builder-form="paper">
                                 <?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>"><input type="hidden" name="paper_id" value="<?php echo (int) $paper['id']; ?>"><input type="hidden" name="delivery_mode" value="cbt">
                                 <div class="paper-form-scroll">
                                     <div class="paper-form-grid">
@@ -279,7 +264,6 @@ foreach ((array) $authored_questions as $authored_question) {
                                         <div class="form-group"><label>Code</label><input type="text" name="paper_code" class="form-control" value="<?php echo html_escape($paper['paper_code']); ?>"></div>
                                         <div class="form-group"><label>Type</label><select name="paper_type" class="form-control"><?php foreach ($paper_types as $value => $label) { ?><option value="<?php echo $value; ?>" <?php echo $paper['paper_type'] === $value ? 'selected' : ''; ?>><?php echo $label; ?></option><?php } ?></select></div>
                                         <div class="form-group"><label>Minutes</label><input type="number" name="duration_minutes" min="1" class="form-control" value="<?php echo (int) $paper['duration_minutes']; ?>"></div>
-                                        <div class="form-group"><label>Raw max</label><input type="number" name="raw_max_score" min="0.01" step="0.01" class="form-control" value="<?php echo html_escape($paper['raw_max_score']); ?>"></div>
                                         <div class="form-group"><label>Contribution</label><input type="number" name="contribution_score" min="0.01" max="100" step="0.01" class="form-control" value="<?php echo html_escape($paper['contribution_score']); ?>"></div>
                                         <div class="form-group"><label>Order</label><input type="number" name="display_order" min="0" class="form-control" value="<?php echo (int) $paper['display_order']; ?>"></div>
                                     </div>
@@ -354,7 +338,7 @@ foreach ((array) $authored_questions as $authored_question) {
                         <div class="col-md-2"><div class="form-group"><label>Marks *</label><input type="number" name="marks" min="0.01" max="10000" step="0.01" value="1" class="form-control" required></div></div>
                         <div class="col-md-2"><div class="form-group"><label>Negative mark</label><input type="number" name="neg_marks" min="0" step="0.01" value="0" class="form-control" <?php echo empty($exam->is_neg_marking) ? 'disabled' : ''; ?>></div></div>
                         <div class="col-md-2"><div class="form-group"><label>Display order</label><input type="number" name="display_order" min="0" value="0" class="form-control"></div></div>
-                        <div class="col-md-2"><div class="form-group"><label>&nbsp;</label><div><label><input type="checkbox" name="is_compulsory" value="1"> Compulsory</label></div></div></div>
+                        <div class="col-md-2"><div class="form-group"><label>&nbsp;</label><div><label><input type="hidden" name="is_compulsory" value="0"><input type="checkbox" name="is_compulsory" value="1" checked> Compulsory</label></div></div></div>
                         <div class="col-md-4"><div class="form-group"><label>Marking scheme / rubric</label><textarea name="marking_scheme" rows="3" class="form-control" placeholder="Required for Theory answer review"></textarea></div></div>
                     </div>
                 </div>
@@ -409,6 +393,7 @@ foreach ((array) $authored_questions as $authored_question) {
     </section>
 </div>
 
+<?php $this->load->view('admin/onlineexam/_setup_validation'); ?>
 <script>
 (function ($) {
     'use strict';
@@ -419,12 +404,16 @@ foreach ((array) $authored_questions as $authored_question) {
     var negativeMarkingEnabled = <?php echo empty($exam->is_neg_marking) ? 'false' : 'true'; ?>;
     var canEditQuestions = <?php echo $can_edit_questions ? 'true' : 'false'; ?>;
     var questionRequest = null;
+    var retainedInput = <?php echo json_encode(!empty($builder_input) ? $builder_input : null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     var authoredQuestions = <?php echo json_encode($authored_question_json, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     var kindergartenLabels = <?php echo isset($kindergarten_label_map) ? json_encode($kindergarten_label_map) : '{}'; ?>;
     $('form[method="post"]').each(function () {
         if (!$(this).find('input[name="onlineexam_workflow_token"]').length) {
             $(this).append($('<input>', {type: 'hidden', name: 'onlineexam_workflow_token', value: workflowToken}));
         }
+    });
+    $('form[data-builder-form="paper"]').on('submit', function (event) {
+        if (!window.onlineexamValidateWindow(this, 'starts_at', 'ends_at')) { event.preventDefault(); }
     });
 
     function updateSections() {
@@ -653,6 +642,37 @@ foreach ((array) $authored_questions as $authored_question) {
     updateKindergartenThresholds();
     updateAuthorSections();
     updateAuthorFields();
+
+    if (retainedInput && retainedInput.values && parseInt(retainedInput.values.onlineexam_id, 10) === examId) {
+        var restored = retainedInput.values;
+        var $restoreForm = retainedInput.form === 'author' ? $('#workflow-author-form')
+            : $('form[data-builder-form="' + retainedInput.form + '"]').filter(function () {
+                return parseInt($(this).find('[name="paper_id"]').val() || 0, 10) === parseInt(restored.paper_id || 0, 10);
+            }).first();
+        function restoreValues() {
+            $restoreForm.find('input, textarea, select').each(function () {
+                if (this.type === 'hidden' && this.name !== 'onlineexam_question_id') { return; }
+                if (this.type === 'checkbox') {
+                    $(this).prop('checked', String(restored[this.name] || '') === this.value);
+                } else if (Object.prototype.hasOwnProperty.call(restored, this.name)) {
+                    $(this).val(restored[this.name]);
+                }
+            });
+        }
+        restoreValues();
+        if (retainedInput.form === 'author') {
+            updateAuthorSections();
+            restoreValues();
+            updateAuthorFields();
+            if (parseInt(restored.onlineexam_question_id || 0, 10) > 0) {
+                $('#workflow-author-title').text('Edit structured question');
+                $('.workflow-author-submit').html('<i class="fa fa-save"></i> Save structured question');
+                $('.workflow-author-reset').show();
+            }
+        }
+        $restoreForm.closest('.collapse').addClass('in');
+        $restoreForm.find('input:visible, textarea:visible, select:visible').first().focus();
+    }
 
     <?php if (!empty($papers)) { ?>
     $('#builder_paper_id').val('<?php echo (int) $papers[0]['id']; ?>');

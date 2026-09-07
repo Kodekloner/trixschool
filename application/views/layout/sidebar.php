@@ -581,6 +581,7 @@
                             if ($this->rbac->hasPrivilege('online_examination', 'can_view')) {
                             ?>
                                 <li class="<?php echo set_Submenu('Online_Examinations/Onlineexam'); ?>"><a href="<?php echo base_url(); ?>admin/onlineexam"><i class="fa fa-angle-double-right"></i> <?php echo $this->lang->line('online') . " " . $this->lang->line('exam'); ?></a></li>
+                                <li class="<?php echo set_Submenu('Online_Examinations/review'); ?>"><a href="<?php echo base_url(); ?>admin/onlineexam/review"><i class="fa fa-angle-double-right"></i> Online Examination Review</a></li>
                             <?php
                             }
                             if ($this->rbac->hasPrivilege('question_bank', 'can_view')) {

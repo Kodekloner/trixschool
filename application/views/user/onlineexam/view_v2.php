@@ -12,13 +12,6 @@ $paper_type_labels = array(
     'theory'    => 'Theory',
     'essay'     => 'Theory',
 );
-$paper_status_classes = array(
-    'not_started' => 'label-info',
-    'in_progress' => 'label-warning',
-    'submitted'   => 'label-primary',
-    'completed'   => 'label-success',
-    'timed_out'   => 'label-danger',
-);
 $purpose_key = isset($exam->purpose) ? strtolower((string) $exam->purpose) : '';
 $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose_key] : ($purpose_key !== '' ? ucwords(str_replace('_', ' ', $purpose_key)) : 'Online Assessment');
 ?>
@@ -72,6 +65,12 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
                     <div class="alert alert-info assessment-description"><?php echo $this->security->xss_clean($exam->description); ?></div>
                 <?php } ?>
 
+                <?php if (in_array($student_state['label'], array('Missed', 'Incomplete'), true)) { ?>
+                    <div class="alert alert-warning" role="status">
+                        <?php echo $student_state['label'] === 'Missed' ? 'You missed this assessment.' : 'You did not complete all parts of this assessment.'; ?> Contact your teacher to arrange another time.
+                    </div>
+                <?php } ?>
+
                 <?php if ($attempt && in_array($attempt->status, array('submitted', 'marking'), true)) { ?>
                     <div class="alert alert-warning" role="status">
                         Your answers have been submitted. <?php echo $attempt->status === 'marking' ? 'Written responses are being reviewed.' : 'Your result is being finalised.'; ?>
@@ -80,11 +79,11 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
                     <div class="alert alert-warning" role="status">Time has ended and your saved answers have been submitted.</div>
                 <?php } elseif ($attempt && $attempt->status === 'completed') { ?>
                     <div class="alert alert-success" role="status">
-                        This assessment is complete.
-                        <?php if ($exam->feedback_status === 'released' && $attempt->final_score !== null) { ?>
-                            Your score is <strong><?php echo number_format((float) $attempt->final_score, 2); ?><?php echo $exam->target_max_score ? ' / ' . number_format((float) $exam->target_max_score, 2) : ''; ?></strong>.
+                        <?php if ($student_result['visible']) { ?>
+                            This assessment is complete. Your score is <strong><?php echo number_format($student_result['score'], 2); ?><?php echo $student_result['maximum'] !== null ? ' / ' . number_format($student_result['maximum'], 2) : ''; ?></strong>.
+                            <?php if ($student_result['outcome']) { ?><strong><?php echo html_escape($student_result['outcome']); ?></strong><?php } ?>
                         <?php } else { ?>
-                            Your school will release the result when it is ready.
+                            This assessment is complete. The result will be released when it is ready.
                         <?php } ?>
                     </div>
                 <?php } ?>
@@ -137,7 +136,7 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
 
                 <div class="assessment-parts-heading">
                     <h4>Assessment parts</h4>
-                    <span class="text-muted">Start each available part below.</span>
+                    <span class="text-muted">Your papers and their current status.</span>
                 </div>
                 <div class="table-responsive assessment-parts-wrap" role="region" aria-label="Assessment parts" tabindex="0">
                     <table class="table table-bordered table-striped assessment-parts-table">
@@ -148,22 +147,10 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
                         <tbody>
                             <?php if (!empty($papers)) { ?>
                                 <?php foreach ($papers as $paper) {
-                                    $paper_status_key = !empty($paper->attempt_paper_status) ? strtolower((string) $paper->attempt_paper_status) : 'not_started';
-                                    $paper_status_label = $paper_status_key === 'not_started' ? 'Not started' : ucwords(str_replace('_', ' ', $paper_status_key));
-                                    $paper_status_class = isset($paper_status_classes[$paper_status_key]) ? $paper_status_classes[$paper_status_key] : 'label-default';
+                                    $paper_state = $paper->student_state;
                                     $paper_type_key = strtolower((string) $paper->paper_type);
                                     $paper_type_label = isset($paper_type_labels[$paper_type_key]) ? $paper_type_labels[$paper_type_key] : 'Assessment';
-                                    $now = time();
-                                    $starts = $paper->starts_at ? strtotime($paper->starts_at) : strtotime($exam->exam_from);
-                                    $is_makeup = $attempt && (int) $attempt->attempt_no > 1 && !empty($exam->makeup_expires_at);
-                                    $ends = $is_makeup ? strtotime($exam->makeup_expires_at) : ($paper->ends_at ? strtotime($paper->ends_at) : strtotime($exam->exam_to));
-                                    if ($ends && !$is_makeup && !empty($exam->accommodation_extra_time_minutes)) {
-                                        $ends += (int) $exam->accommodation_extra_time_minutes * 60;
-                                    }
-                                    $available = (!$starts || $now >= $starts) && (!$ends || $now < $ends);
                                     $is_cbt = !isset($paper->delivery_mode) || strtolower((string) $paper->delivery_mode) === 'cbt';
-                                    $launchable_status = in_array($paper_status_key, array('not_started', 'in_progress'), true);
-                                    $can_launch = $is_cbt && $launchable_status && (!$attempt || !in_array($attempt->status, array('submitted', 'timed_out', 'marking', 'completed'), true));
                                     ?>
                                     <tr>
                                         <td data-label="Part" class="assessment-part-name">
@@ -171,17 +158,27 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
                                             <?php if (!empty($paper->paper_code)) { ?><span><?php echo html_escape($paper->paper_code); ?></span><?php } ?>
                                         </td>
                                         <td data-label="Type"><?php echo html_escape($paper_type_label); ?></td>
-                                        <td data-label="Schedule"><?php echo $paper->starts_at ? $this->customlib->dateyyyymmddToDateTimeformat($paper->starts_at, false) : 'Assessment window'; ?></td>
+                                        <td data-label="Schedule">
+                                            <?php if ($paper_state['starts_at'] && $paper_state['ends_at']) { ?>
+                                                <?php echo $this->customlib->dateyyyymmddToDateTimeformat(date('Y-m-d H:i:s', $paper_state['starts_at']), false); ?><br>
+                                                <small>Closes: <?php echo $this->customlib->dateyyyymmddToDateTimeformat(date('Y-m-d H:i:s', $paper_state['ends_at']), false); ?></small>
+                                                <?php if (!empty($paper->is_rescheduled)) { ?><br><span class="label label-info">Rescheduled</span><?php } ?>
+                                            <?php } else { ?>Not available<?php } ?>
+                                        </td>
                                         <td data-label="Duration"><?php echo (int) $paper->duration_minutes; ?> minutes</td>
-                                        <td data-label="Status"><span class="label <?php echo $paper_status_class; ?> assessment-part-status"><?php echo html_escape($paper_status_label); ?></span></td>
+                                        <td data-label="Status"><span class="label <?php echo $paper_state['class']; ?> assessment-part-status"><?php echo html_escape($paper_state['label']); ?></span></td>
                                         <td data-label="Action" class="text-right assessment-part-action">
-                                            <?php if ($can_launch) { ?>
-                                                <button type="button" class="btn btn-primary btn-sm v2-start-paper" data-exam-id="<?php echo (int) $exam->id; ?>" data-paper-id="<?php echo (int) $paper->id; ?>" <?php echo $available ? '' : 'disabled aria-disabled="true" title="This assessment part is not currently available"'; ?>>
-                                                    <i class="fa <?php echo $paper_status_key === 'in_progress' ? 'fa-play-circle' : 'fa-play'; ?>" aria-hidden="true"></i>
-                                                    <?php echo $paper_status_key === 'in_progress' ? 'Resume' : 'Start'; ?>
+                                            <?php if ($paper_state['can_launch']) { ?>
+                                                <button type="button" class="btn btn-primary btn-sm v2-start-paper" data-exam-id="<?php echo (int) $exam->id; ?>" data-paper-id="<?php echo (int) $paper->id; ?>">
+                                                    <i class="fa fa-play" aria-hidden="true"></i>
+                                                    <?php echo html_escape($paper_state['action']); ?>
                                                 </button>
                                             <?php } elseif (!$is_cbt) { ?>
                                                 <span class="text-muted">Unavailable online</span>
+                                            <?php } elseif (in_array($paper_state['key'], array('missed', 'incomplete'), true)) { ?>
+                                                <span class="text-muted">Contact your teacher</span>
+                                            <?php } else { ?>
+                                                <span class="text-muted">—</span>
                                             <?php } ?>
                                         </td>
                                     </tr>
@@ -739,7 +736,7 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
 
     function createPayload($question) {
         var previousSequence = parseInt($question.attr('data-client-sequence') || '0', 10);
-        var clientSequence = Math.max(Date.now(), previousSequence + 1);
+        var clientSequence = Math.max(new Date().getTime(), previousSequence + 1);
         $question.attr('data-client-sequence', clientSequence);
         return {
             attempt_id: active.attempt_id,
@@ -841,15 +838,21 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
 
     function startTimer(seconds) {
         clearInterval(timerHandle);
-        seconds = parseInt(seconds, 10);
-        if (isNaN(seconds) || seconds < 0) {
-            seconds = 0;
+        timerHandle = null;
+        if (seconds === null || seconds === '' || typeof seconds === 'boolean' || !isFinite(Number(seconds) * 1000) || Number(seconds) < 0) {
+            $('#v2PaperTimer').text('--:--:--');
+            $('#v2TimerState').attr('aria-label', 'Time unavailable');
+            message('The remaining time could not be read. Save and leave, then reopen this paper to refresh the timer.');
+            return;
         }
-        var displayDeadline = Date.now() + (seconds * 1000);
+        seconds = Math.floor(Number(seconds));
+        // The shared DateJS library replaces Date.now() with a Date object.
+        // Use a numeric timestamp explicitly, otherwise addition makes a string.
+        var displayDeadline = new Date().getTime() + (seconds * 1000);
         var expiryHandled = false;
 
         function render() {
-            var remaining = Math.max(0, Math.ceil((displayDeadline - Date.now()) / 1000));
+            var remaining = Math.max(0, Math.ceil((displayDeadline - new Date().getTime()) / 1000));
             var hours = Math.floor(remaining / 3600);
             var minutes = Math.floor((remaining % 3600) / 60);
             var secs = remaining % 60;
@@ -865,7 +868,9 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
         }
 
         render();
-        timerHandle = setInterval(render, 1000);
+        if (!expiryHandled) {
+            timerHandle = setInterval(render, 1000);
+        }
     }
 
     $(document).on('click', '.v2-start-paper', function () {
@@ -874,6 +879,10 @@ $purpose_label = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose
         $button.prop('disabled', true).html('<i class="fa fa-spinner fa-spin" aria-hidden="true"></i> Opening…');
         post(baseurl + 'user/onlineexam/startpaper', {onlineexam_id: $button.data('exam-id'), paper_id: $button.data('paper-id')})
             .done(function (data) {
+                if (!data.status || !data.page || !data.attempt_id) {
+                    message(data.message || 'The assessment could not be opened. Please try again.');
+                    return;
+                }
                 active = data;
                 isSubmitting = false;
                 finalSubmissionPending = false;

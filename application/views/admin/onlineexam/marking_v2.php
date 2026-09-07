@@ -19,7 +19,7 @@ $render_answer = function ($value) {
         <div class="box box-primary">
             <div class="box-header with-border assessment-box-header">
                 <h3 class="box-title"><?php echo html_escape(isset($student['student_name']) ? $student['student_name'] : 'Candidate'); ?></h3>
-                <div class="box-tools pull-right"><a class="btn btn-default btn-sm" href="<?php echo base_url('admin/onlineexam/operations/' . $exam->id); ?>"><i class="fa fa-arrow-left"></i> Operations</a></div>
+                <div class="box-tools pull-right"><a class="btn btn-default btn-sm" href="<?php echo base_url('admin/onlineexam/operations/' . $exam->id); ?>"><i class="fa fa-arrow-left"></i> Review</a></div>
             </div>
             <div class="box-body">
                 <p>

@@ -47,6 +47,9 @@ class Onlineexam_model extends MY_model
 
     public function get($id = null, $publish = null)
     {
+        if ($this->db->field_exists('deleted_at', 'onlineexam')) {
+            $this->db->where('onlineexam.deleted_at', null);
+        }
         $this->db->select('onlineexam.*,(select count(*) from onlineexam_questions where onlineexam_questions.onlineexam_id=onlineexam.id ) as `total_ques`, (select count(*) from onlineexam_questions INNER JOIN questions on questions.id=onlineexam_questions.question_id where onlineexam_questions.onlineexam_id=onlineexam.id and questions.question_type="descriptive" ) as `total_descriptive_ques`')->from('onlineexam');
         if ($id != null) {
             $this->db->where('onlineexam.id', $id);
@@ -68,6 +71,9 @@ class Onlineexam_model extends MY_model
 
     public function getexamlist($teacher_id = null)
     {
+        if ($this->db->field_exists('deleted_at', 'onlineexam')) {
+            $this->datatables->where('onlineexam.deleted_at IS NULL', null, false, false);
+        }
        
          $this->datatables
             ->select('onlineexam.*,(select count(*) from onlineexam_questions where onlineexam_questions.onlineexam_id=onlineexam.id ) as `total_ques`, (select count(*) from onlineexam_questions INNER JOIN questions on questions.id=onlineexam_questions.question_id where onlineexam_questions.onlineexam_id=onlineexam.id and questions.question_type="descriptive" ) as `total_descriptive_ques`, (select classes.class from classes where classes.id=onlineexam.class_id) as class_name, (select subjects.name from subjects where subjects.id=onlineexam.subject_id) as subject_name, (select sessions.session from sessions where sessions.id=onlineexam.session_id) as session_name, (select GROUP_CONCAT(sections.section ORDER BY sections.section SEPARATOR ", ") from onlineexam_class_sections INNER JOIN sections on sections.id=onlineexam_class_sections.section_id where onlineexam_class_sections.onlineexam_id=onlineexam.id) as section_names, (select count(*) from onlineexam_papers where onlineexam_papers.onlineexam_id=onlineexam.id and onlineexam_papers.is_active=1) as total_papers')
@@ -281,6 +287,7 @@ class Onlineexam_model extends MY_model
 
     public function getStudentexam($student_session_id)
     {
+        $not_deleted = $this->db->field_exists('deleted_at', 'onlineexam') ? ' AND onlineexam.deleted_at IS NULL ' : '';
         $query = "SELECT onlineexam.*, onlineexam_students.id AS onlineexam_student_id,
             CASE WHEN onlineexam.workflow_version >= 2
                 THEN (SELECT COUNT(*) FROM onlineexam_candidate_attempts WHERE onlineexam_candidate_attempts.onlineexam_student_id = onlineexam_students.id AND onlineexam_candidate_attempts.status != 'voided')
@@ -298,7 +305,7 @@ class Onlineexam_model extends MY_model
                     OR (onlineexam.purpose='holiday' AND onlineexam.result_adapter='holiday_assessment')
                     OR (onlineexam.purpose='kindergarten' AND onlineexam.result_adapter='kindergarten_concept')
               )
-            ORDER BY onlineexam.exam_from DESC";
+            " . $not_deleted . " ORDER BY onlineexam.exam_from DESC";
 
         $query = $this->db->query($query);
         $rows = $query->result();
@@ -372,10 +379,10 @@ class Onlineexam_model extends MY_model
         // concurrent requests from both observing a missing assignment and
         // inserting duplicate candidate rows in the legacy table.
         $locked_exam = $this->db->query(
-            'SELECT `id` FROM `onlineexam` WHERE `id` = '
+            'SELECT * FROM `onlineexam` WHERE `id` = '
             . $this->db->escape($onlineexam_id) . ' LIMIT 1 FOR UPDATE'
         )->row();
-        if (!$locked_exam) {
+        if (!$locked_exam || !empty($locked_exam->deleted_at)) {
             $this->db->trans_rollback();
             return array('success' => false, 'message' => 'The assessment no longer exists.');
         }
@@ -446,6 +453,9 @@ class Onlineexam_model extends MY_model
      */
     public function getWorkflow($id)
     {
+        if ($this->db->field_exists('deleted_at', 'onlineexam')) {
+            $this->db->where('onlineexam.deleted_at', null);
+        }
         $this->db->select('onlineexam.*, classes.class as class_name, subjects.name as subject_name, sessions.session as session_name');
         $this->db->from('onlineexam');
         $this->db->join('classes', 'classes.id=onlineexam.class_id', 'left');
@@ -496,6 +506,37 @@ class Onlineexam_model extends MY_model
             ->where('class_sections.class_id', (int) $class_id)
             ->order_by('sections.section')
             ->get()->result_array();
+    }
+
+    /** Curriculum assignments are session-wide: these tables have no term column. */
+    public function getWorkflowAcademicChoices($class_id, $session_id, $term, $subject_id = 0, $teacher_id = null)
+    {
+        if ((int) $class_id < 1 || (int) $session_id < 1 || !in_array($term, array('1st', '2nd', '3rd'), true)) {
+            return array('subjects' => array(), 'sections' => array());
+        }
+        $this->db->distinct()->select('subjects.id, subjects.name, subjects.code, sections.id AS section_id, sections.section')
+            ->from('class_sections')
+            ->join('sections', 'sections.id=class_sections.section_id')
+            ->join('subject_group_class_sections sgcs', 'sgcs.class_section_id=class_sections.id')
+            ->join('subject_group_subjects sgs', 'sgs.subject_group_id=sgcs.subject_group_id')
+            ->join('subjects', 'subjects.id=sgs.subject_id')
+            ->where('class_sections.class_id', (int) $class_id)
+            ->where('sgcs.session_id', (int) $session_id)
+            ->where('sgs.session_id', (int) $session_id);
+        if ($teacher_id !== null) {
+            $this->db->join('teacher_subjects ts', 'ts.class_section_id=class_sections.id AND ts.subject_id=subjects.id')
+                ->where('ts.teacher_id', (int) $teacher_id)->where('ts.session_id', (int) $session_id);
+        }
+        $rows = $this->db->order_by('subjects.name')->order_by('sections.section')->get()->result_array();
+        $subjects = array();
+        $sections = array();
+        foreach ($rows as $row) {
+            $subjects[(int) $row['id']] = array('id' => (int) $row['id'], 'name' => $row['name'], 'code' => $row['code']);
+            if ((int) $row['id'] === (int) $subject_id) {
+                $sections[(int) $row['section_id']] = array('id' => (int) $row['section_id'], 'section' => $row['section']);
+            }
+        }
+        return array('subjects' => array_values($subjects), 'sections' => array_values($sections));
     }
 
     /**
@@ -771,6 +812,13 @@ class Onlineexam_model extends MY_model
 
     public function saveWorkflow($exam_data, $section_ids, array $holiday_mappings = array())
     {
+        $this->load->library('onlineexam_setup');
+        $duration = explode(':', isset($exam_data['duration']) ? $exam_data['duration'] : '');
+        $minutes = count($duration) >= 2 ? (int) $duration[0] * 60 + (int) $duration[1] : 0;
+        if ($this->onlineexam_setup->windowError($exam_data['exam_from'], $exam_data['exam_to'], $minutes)
+            || $this->onlineexam_setup->paperMaximum($exam_data['target_max_score']) === null) {
+            return false;
+        }
         $this->db->trans_begin();
         $id = isset($exam_data['id']) ? (int) $exam_data['id'] : 0;
         $selected_section_ids = array_values(array_unique(array_filter(array_map('intval', (array) $section_ids))));
@@ -790,9 +838,20 @@ class Onlineexam_model extends MY_model
         }
 
         if ($id > 0) {
+            $existing = $this->db->query('SELECT * FROM onlineexam WHERE id = ? FOR UPDATE', array($id))->row_array();
+            if (empty($existing) || $existing['lifecycle_status'] !== 'draft'
+                || $this->hasWorkflowAttemptsForRevision($id, $existing['revision'])) {
+                $this->db->trans_rollback();
+                return false;
+            }
             $this->db->where('id', $id);
             $this->db->where('workflow_version', 2);
             $this->db->update('onlineexam', $exam_data);
+            // Only mutable draft papers follow a changed component maximum.
+            $this->db->where('onlineexam_id', $id)->update('onlineexam_papers', array(
+                'raw_max_score' => $this->onlineexam_setup->paperMaximum($exam_data['target_max_score']),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ));
         } else {
             unset($exam_data['id']);
             $this->db->insert('onlineexam', $exam_data);
@@ -883,18 +942,42 @@ class Onlineexam_model extends MY_model
 
     public function saveWorkflowPaper($data)
     {
+        $this->load->library('onlineexam_setup');
+        $this->db->trans_begin();
+        $exam = $this->db->query('SELECT * FROM onlineexam WHERE id = ? FOR UPDATE', array((int) $data['onlineexam_id']))->row();
+        if (!$exam || (int) $exam->workflow_version !== 2 || !empty($exam->deleted_at) || $exam->lifecycle_status !== 'draft'
+            || $this->hasWorkflowAttemptsForRevision($exam->id, $exam->revision)
+            || $this->onlineexam_setup->windowError($data['starts_at'], $data['ends_at'], $data['duration_minutes'], $exam->exam_from, $exam->exam_to)) {
+            $this->db->trans_rollback();
+            return false;
+        }
+        $data['raw_max_score'] = $this->onlineexam_setup->paperMaximum($exam->target_max_score);
+        if ($data['raw_max_score'] === null) {
+            $this->db->trans_rollback();
+            return false;
+        }
         if (!empty($data['id'])) {
             $id = (int) $data['id'];
+            $owned = $this->db->where('id', $id)->where('onlineexam_id', (int) $exam->id)->count_all_results('onlineexam_papers');
+            if ($owned !== 1) {
+                $this->db->trans_rollback();
+                return false;
+            }
             $data['updated_at'] = date('Y-m-d H:i:s');
-            $this->db->where('id', $id)->update('onlineexam_papers', $data);
-            return $id;
+            $saved = $this->db->where('id', $id)->where('onlineexam_id', (int) $data['onlineexam_id'])->update('onlineexam_papers', $data);
+        } else {
+            unset($data['id']);
+            $data['created_at'] = date('Y-m-d H:i:s');
+            $data['updated_at'] = date('Y-m-d H:i:s');
+            $saved = $this->db->insert('onlineexam_papers', $data);
+            $id = (int) $this->db->insert_id();
         }
-
-        unset($data['id']);
-        $data['created_at'] = date('Y-m-d H:i:s');
-        $data['updated_at'] = date('Y-m-d H:i:s');
-        $this->db->insert('onlineexam_papers', $data);
-        return (int) $this->db->insert_id();
+        if (!$saved || $this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return false;
+        }
+        $this->db->trans_commit();
+        return $id;
     }
 
     public function removeWorkflowPaper($paper_id, $onlineexam_id)
@@ -926,15 +1009,15 @@ class Onlineexam_model extends MY_model
         if (!empty($data['id'])) {
             $id = (int) $data['id'];
             $data['updated_at'] = date('Y-m-d H:i:s');
-            $this->db->where('id', $id)->update('onlineexam_paper_sections', $data);
-            return $id;
+            $saved = $this->db->where('id', $id)->where('paper_id', (int) $data['paper_id'])->update('onlineexam_paper_sections', $data);
+            return $saved ? $id : false;
         }
 
         unset($data['id']);
         $data['created_at'] = date('Y-m-d H:i:s');
         $data['updated_at'] = date('Y-m-d H:i:s');
-        $this->db->insert('onlineexam_paper_sections', $data);
-        return (int) $this->db->insert_id();
+        $saved = $this->db->insert('onlineexam_paper_sections', $data);
+        return $saved ? (int) $this->db->insert_id() : false;
     }
 
     public function getWorkflowPaperSection($section_id)
@@ -967,6 +1050,9 @@ class Onlineexam_model extends MY_model
 
     public function assignWorkflowQuestion($data)
     {
+        if (!array_key_exists('is_compulsory', $data)) {
+            $data['is_compulsory'] = 1;
+        }
         $this->db->trans_begin();
         $source_question = $this->db->query(
             'SELECT `id` FROM `questions` WHERE `id` = '
@@ -1016,6 +1102,9 @@ class Onlineexam_model extends MY_model
      */
     public function createWorkflowAuthoredQuestion(array $source, array $assignment)
     {
+        if (!array_key_exists('is_compulsory', $assignment)) {
+            $assignment['is_compulsory'] = 1;
+        }
         $this->db->trans_begin();
         $this->db->insert('questions', $source);
         $question_id = (int) $this->db->insert_id();

@@ -22,15 +22,6 @@ $format_duration = function ($duration) {
     return $duration;
 };
 
-$status_classes = array(
-    'not_started' => 'label-info',
-    'in_progress' => 'label-warning',
-    'submitted'   => 'label-primary',
-    'marking'     => 'label-warning',
-    'completed'   => 'label-success',
-    'timed_out'   => 'label-danger',
-    'voided'      => 'label-default',
-);
 ?>
 <div class="content-wrapper online-assessment-list">
     <section class="content-header">
@@ -43,7 +34,7 @@ $status_classes = array(
                 <h3 class="box-title">My assessments</h3>
             </div>
             <div class="box-body">
-                <p class="text-muted assessment-list-intro">Open an assessment to read its instructions, check availability, and start or resume your work.</p>
+                <p class="text-muted assessment-list-intro">View your assessment, available papers, and released results.</p>
 
                 <?php if (empty($onlineexam)) { ?>
                     <div class="alert alert-info" role="status">You do not have any online assessments at the moment.</div>
@@ -60,6 +51,7 @@ $status_classes = array(
                                 <th scope="col">Closes</th>
                                 <th scope="col">Duration</th>
                                 <th scope="col">Status</th>
+                                <th scope="col">Result</th>
                                 <th scope="col" class="text-right">Action</th>
                             </tr>
                         </thead>
@@ -68,24 +60,9 @@ $status_classes = array(
                                     $purpose_key = isset($exam->purpose) ? strtolower((string) $exam->purpose) : '';
                                     $purpose = isset($purpose_labels[$purpose_key]) ? $purpose_labels[$purpose_key] : ($purpose_key !== '' ? ucwords(str_replace('_', ' ', $purpose_key)) : 'Online Assessment');
                                     $term = isset($exam->term) ? trim((string) $exam->term) : '';
-                                    $status_key = !empty($exam->candidate_attempt_status) ? strtolower((string) $exam->candidate_attempt_status) : 'not_started';
-                                    $status_class = isset($status_classes[$status_key]) ? $status_classes[$status_key] : 'label-default';
-                                    if ($status_key === 'not_started') {
-                                        $now = time();
-                                        $opens_at = !empty($exam->exam_from) ? strtotime($exam->exam_from) : false;
-                                        $closes_at = !empty($exam->exam_to) ? strtotime($exam->exam_to) : false;
-                                        if ($opens_at && $now < $opens_at) {
-                                            $status_label = 'Upcoming';
-                                            $status_class = 'label-default';
-                                        } elseif ($closes_at && $now >= $closes_at) {
-                                            $status_label = 'Closed';
-                                            $status_class = 'label-danger';
-                                        } else {
-                                            $status_label = 'Available';
-                                        }
-                                    } else {
-                                        $status_label = ucwords(str_replace('_', ' ', $status_key));
-                                    }
+                                    $status_label = $exam->student_state['label'];
+                                    $status_class = $exam->student_state['class'];
+                                    $result = $exam->student_result;
                                     ?>
                                     <tr>
                                         <td data-label="Assessment" class="assessment-name">
@@ -99,6 +76,12 @@ $status_classes = array(
                                         <td data-label="Closes"><?php echo $this->customlib->dateyyyymmddToDateTimeformat($exam->exam_to, false); ?></td>
                                         <td data-label="Duration"><?php echo html_escape($format_duration($exam->duration)); ?></td>
                                         <td data-label="Status"><span class="label <?php echo $status_class; ?> assessment-status"><?php echo html_escape($status_label); ?></span></td>
+                                        <td data-label="Result">
+                                            <?php if ($result['visible']) { ?>
+                                                <strong><?php echo number_format($result['score'], 2); ?><?php echo $result['maximum'] !== null ? ' / ' . number_format($result['maximum'], 2) : ''; ?></strong>
+                                                <?php if ($result['outcome']) { ?><span class="label <?php echo $result['outcome'] === 'Pass' ? 'label-success' : 'label-danger'; ?> assessment-status"><?php echo html_escape($result['outcome']); ?></span><?php } ?>
+                                            <?php } else { ?><span class="text-muted"><?php echo $status_label === 'Completed' ? 'Awaiting release' : '—'; ?></span><?php } ?>
+                                        </td>
                                         <td data-label="Action" class="text-right assessment-action">
                                             <a href="<?php echo site_url('user/onlineexam/view/' . (int) $exam->id); ?>" class="btn btn-primary btn-sm" aria-label="View <?php echo html_escape($exam->exam); ?>">
                                                 <i class="fa fa-eye" aria-hidden="true"></i> <span>View details</span>

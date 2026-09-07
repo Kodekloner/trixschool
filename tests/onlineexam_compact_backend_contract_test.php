@@ -63,7 +63,7 @@ compact_backend_assert(strpos($student, 'final_answers') !== false && strpos($st
 $model = compact_backend_source('application/models/Onlineexam_model.php');
 compact_backend_assert(strpos($model, '$copied = $reference_count > 1;') !== false, 'Authored question edits need copy-on-write only for shared sources.');
 compact_backend_assert(strpos($model, 'LIMIT 1 FOR UPDATE') !== false, 'Question assignment and candidate synchronization need transactional row locks.');
-compact_backend_assert(strpos($model, "SELECT `id` FROM `onlineexam` WHERE `id` =") !== false, 'Roster saves must serialize on the assessment row to prevent duplicate candidates.');
+compact_backend_assert(strpos($model, "SELECT * FROM `onlineexam` WHERE `id` =") !== false && strpos($model, '!empty($locked_exam->deleted_at)') !== false, 'Roster saves must lock the assessment and reject a concurrently archived roster.');
 compact_backend_assert(
     strpos($model, 'onlineexam.exam,onlineexam.purpose,total_ques,onlineexam.exam_from,onlineexam.exam_to,onlineexam.duration,onlineexam.lifecycle_status,onlineexam.feedback_status," "') !== false,
     'Server-side list ordering must match the compact table\'s nine visible columns.'
@@ -81,5 +81,10 @@ $migration = compact_backend_source('application/migrations/135_compact_online_e
 foreach (array('onlineexam_holiday_mappings', 'score_origin', 'source_onlineexam_id', 'source_attempt_id', 'source_sync_id', 'previous_metadata_json', 'applied_metadata_json') as $required) {
     compact_backend_assert(strpos($migration, $required) !== false, 'Migration 135 is missing ' . $required . '.');
 }
+
+$review = compact_backend_source('application/models/Onlineexamreview_model.php');
+compact_backend_assert(strpos($review, 'syncCompletedAttempt') !== false && strpos($review, "'deleted_at'") !== false, 'Completed removal must reconcile results before soft-archiving the assessment.');
+compact_backend_assert(strpos($review, "->where('s.is_active', 'yes')") !== false, 'Review rows must come from the authoritative active enrollment roster.');
+compact_backend_assert(strpos($admin, 'requireWorkflowCsrf') !== false && strpos($admin, 'allow_assign_candidate') !== false, 'Review writes must retain CSRF and explicit assignment permissions.');
 
 echo "onlineexam compact backend contract tests passed" . PHP_EOL;

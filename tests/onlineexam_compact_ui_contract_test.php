@@ -31,7 +31,7 @@ compact_ui_assert(strpos($assessment_form, 'name="attempts"') === false, 'The on
 compact_ui_assert(strpos($assessment_form, '>Destination<') === false, 'Result adapters must not be exposed as a Destination field.');
 compact_ui_assert(strpos($assessment_form, 'assessment-rule-options') !== false, 'Assessment checkboxes need the responsive alignment wrapper.');
 $abort_position = strpos($assessment_form, 'configurationRequest.abort()');
-$incomplete_selection_position = strpos($assessment_form, 'if (!classId || !subjectId || !purpose)');
+$incomplete_selection_position = strpos($assessment_form, 'if (!classId)');
 compact_ui_assert($abort_position !== false && $incomplete_selection_position !== false && $abort_position < $incomplete_selection_position, 'Clearing a required assessment selection must abort any stale configuration request first.');
 
 $builder = compact_ui_source('application/views/admin/onlineexam/builder.php');
@@ -39,7 +39,8 @@ compact_ui_assert(strpos($builder, 'name="delivery_mode" value="cbt"') !== false
 compact_ui_assert(strpos($builder, '<select name="delivery_mode"') === false, 'Paper/manual/hybrid delivery choices must not be exposed.');
 compact_ui_assert(strpos($builder, 'name="question_level"') === false, 'Difficulty must not be part of compact assessment authoring.');
 compact_ui_assert(strpos($builder, 'printpaper') === false, 'The builder must not expose print-paper actions.');
-compact_ui_assert(strpos($builder, 'paper-field-guide') !== false, 'Paper fields need concise explanations for staff.');
+compact_ui_assert(strpos($builder, 'paper-field-guide') === false, 'Training-only paper field descriptions must not clutter the builder.');
+compact_ui_assert(strpos($builder, 'name="raw_max_score"') === false, 'Paper maximums must come from the selected assessment component.');
 compact_ui_assert(strpos($builder, 'paper-form-grid') !== false, 'Paper fields need the full-width responsive grid.');
 compact_ui_assert(strpos($builder, 'workflow-edit-authored') !== false, 'Assigned structured questions need in-place edit controls.');
 compact_ui_assert(strpos($builder, 'question-bank-filter-grid') !== false, 'Question-bank filters need a responsive grid.');
@@ -77,11 +78,13 @@ $analysis = compact_ui_source('application/views/admin/onlineexam/analysis_v2.ph
 compact_ui_assert(strpos($analysis, 'onlineexam-analysis-page') !== false, 'Assessment analysis must use the scoped responsive layout.');
 compact_ui_assert(substr_count($analysis, 'onlineexam-scroll') >= 2, 'Both assessment-analysis tables need horizontal scrolling on narrow screens.');
 
-$operations = compact_ui_source('application/views/admin/onlineexam/operations.php');
-compact_ui_assert(strpos($operations, "implode(', ', (array) \$exam->section_names)") !== false, 'Operations must render class-arm names without an Array warning.');
-compact_ui_assert(strpos($operations, 'attempt-void-form') !== false && strpos($operations, 'incident-resolution-form') !== false, 'Operations write controls need wrapping responsive layouts.');
-compact_ui_assert(strpos($operations, 'Create official attempt') !== false && strpos($operations, 'onsubmit="return confirm') !== false, 'Starting an official attempt needs an explicit, confirmed action.');
-compact_ui_assert(strpos($operations, '$can_view_builder') !== false, 'Operations must hide the builder link from roles without question-builder access.');
+$review = compact_ui_source('application/views/admin/onlineexam/review.php');
+compact_ui_assert(strpos($review, 'Online Examination Review') !== false && strpos($review, 'Select Criteria') !== false, 'The simpler class review must replace the retired operations dashboard.');
+compact_ui_assert(strpos($review, 'review-student') !== false && strpos($review, 'position:sticky') !== false, 'The review matrix needs a stable student column while papers scroll.');
+compact_ui_assert(strpos($review, 'table-responsive onlineexam-scroll review-scroll') !== false, 'The class review needs a contained responsive table.');
+compact_ui_assert(strpos($review, 'Incident register') === false && strpos($review, 'Automatic result-posting ledger') === false, 'Internal incident and posting ledgers must not clutter the class review.');
+$review_cell = compact_ui_source('application/views/admin/onlineexam/_review_cell.php');
+compact_ui_assert(strpos($review_cell, 'Reschedule this paper') !== false && strpos($review_cell, 'Record score from a supervised paper exam') !== false, 'Missed-paper recovery actions must be available from the review cell.');
 
 $marking = compact_ui_source('application/views/admin/onlineexam/marking_v2.php');
 compact_ui_assert(strpos($marking, 'class="theory-response"') !== false, 'Long Theory responses need protected wrapping and overflow.');
@@ -99,7 +102,7 @@ $student_view = compact_ui_source('application/views/user/onlineexam/view_v2.php
 compact_ui_assert(strpos($student_view, 'assessment-parts-wrap') !== false, 'Student paper status needs a responsive table wrapper.');
 compact_ui_assert(strpos($student_view, 'queueSave') !== false && strpos($student_view, 'flushQueue') !== false, 'Weak-network answer retry must remain enabled.');
 compact_ui_assert(strpos($student_view, 'remaining_seconds') !== false, 'The student countdown must use server-provided remaining time.');
-compact_ui_assert(strpos($student_view, 'displayDeadline - Date.now()') !== false, 'The countdown must recover elapsed time after a backgrounded or suspended browser tab.');
+compact_ui_assert(strpos($student_view, 'displayDeadline - new Date().getTime()') !== false, 'The countdown must use numeric elapsed wall time even when the portal DateJS overrides Date.now().');
 compact_ui_assert(strpos($student_view, 'final_answers: JSON.stringify(finalAnswers)') !== false, 'Paper submission must send one atomic final-answer packet.');
 compact_ui_assert(strpos($student_view, 'terminal_submission_mismatch') === false, 'Server error codes must not be hard-coded into the student interface.');
 compact_ui_assert(strpos($student_view, 'clearAttemptQueue(attemptId)') !== false && strpos($student_view, '.done(function (data)') !== false, 'The browser queue may be cleared only after a successful terminal response.');

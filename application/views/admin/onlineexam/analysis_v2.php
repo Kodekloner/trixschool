@@ -3,7 +3,7 @@
 <div class="content-wrapper onlineexam-ui onlineexam-analysis-page">
     <section class="content-header">
         <h1><i class="fa fa-bar-chart"></i> <?php echo html_escape($exam->exam); ?> <small>frozen paper and question analysis</small></h1>
-        <a href="<?php echo base_url('admin/onlineexam/operations/' . (int) $exam->id); ?>">&larr; Back to operations</a>
+        <a href="<?php echo base_url('admin/onlineexam/operations/' . (int) $exam->id); ?>">&larr; Back to review</a>
     </section>
     <section class="content">
         <div class="box box-primary">

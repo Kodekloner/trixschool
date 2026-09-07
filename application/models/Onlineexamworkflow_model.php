@@ -184,6 +184,13 @@ class Onlineexamworkflow_model extends CI_Model
         if ((int) $exam['attempt'] !== 1) {
             $errors[] = 'Result-bearing online assessments permit one official attempt only.';
         }
+        $this->load->library('onlineexam_setup');
+        $duration_parts = explode(':', (string) $exam['duration']);
+        $duration_minutes = count($duration_parts) >= 2 ? (int) $duration_parts[0] * 60 + (int) $duration_parts[1] : 0;
+        $window_error = $this->onlineexam_setup->windowError($exam['exam_from'], $exam['exam_to'], $duration_minutes);
+        if ($window_error) {
+            $errors[] = $window_error;
+        }
 
         $sections = $this->db->where('onlineexam_id', (int) $onlineexam_id)->get('onlineexam_class_sections')->result_array();
         if (empty($sections)) {
@@ -235,8 +242,16 @@ class Onlineexamworkflow_model extends CI_Model
             if ((float) $paper['raw_max_score'] <= 0 || (float) $paper['contribution_score'] <= 0) {
                 $errors[] = 'Paper ' . $paper['title'] . ' must have positive raw and contribution maximums.';
             }
-            if (!empty($paper['starts_at']) && !empty($paper['ends_at']) && strtotime($paper['ends_at']) <= strtotime($paper['starts_at'])) {
-                $errors[] = 'Paper ' . $paper['title'] . ' must end after it starts.';
+            $paper_window_error = $this->onlineexam_setup->windowError(
+                $paper['starts_at'] ?: $exam['exam_from'], $paper['ends_at'] ?: $exam['exam_to'],
+                $paper['duration_minutes'], $exam['exam_from'], $exam['exam_to']
+            );
+            if ($paper_window_error) {
+                $errors[] = 'Paper ' . $paper['title'] . ': ' . $paper_window_error;
+            }
+            if (in_array($exam['lifecycle_status'], array('draft', 'scheduled'), true)
+                && abs((float) $paper['raw_max_score'] - (float) $exam['target_max_score']) > 0.001) {
+                $errors[] = 'Save paper ' . $paper['title'] . ' again so its maximum matches the selected assessment component.';
             }
             $total_contribution += (float) $paper['contribution_score'];
             $this->validatePaperQuestions($paper, $errors);
@@ -534,12 +549,15 @@ class Onlineexamworkflow_model extends CI_Model
             if (isset($paper['is_active']) && (int) $paper['is_active'] !== 1) {
                 continue;
             }
-            if (isset($paper['delivery_mode']) && $paper['delivery_mode'] === 'paper') {
-                $paper_attempt = $this->db->where('attempt_id', (int) $attempt_id)
-                    ->where('paper_id', (int) $paper['id'])
-                    ->limit(1)
-                    ->get('onlineexam_attempt_papers')
-                    ->row_array();
+            $paper_attempt = $this->db->where('attempt_id', (int) $attempt_id)
+                ->where('paper_id', (int) $paper['id'])->limit(1)
+                ->get('onlineexam_attempt_papers')->row_array();
+            if (empty($paper_attempt) || !in_array($paper_attempt['status'], array('submitted', 'completed'), true)) {
+                $this->db->trans_rollback();
+                return array('success' => false, 'errors' => array('Every paper must be completed before calculating the assessment result.'));
+            }
+            if ((isset($paper['delivery_mode']) && $paper['delivery_mode'] === 'paper')
+                || (!empty($paper_attempt['completion_source']) && $paper_attempt['completion_source'] === 'manual')) {
                 if (empty($paper_attempt) || $paper_attempt['manual_marking_status'] !== 'finalized') {
                     $paper_manual_pending[] = $paper['title'];
                 }
@@ -602,7 +620,7 @@ class Onlineexamworkflow_model extends CI_Model
             if (empty($existing)) {
                 $this->db->insert('onlineexam_attempt_papers', $row);
             } else {
-                unset($row['created_at']);
+                unset($row['created_at'], $row['submitted_at']);
                 $this->db->where('id', $existing['id'])->update('onlineexam_attempt_papers', $row);
             }
         }
@@ -1079,7 +1097,10 @@ class Onlineexamworkflow_model extends CI_Model
 
     protected function calculateAttemptPaperEarned($attempt_id, array $paper)
     {
-        if (isset($paper['delivery_mode']) && $paper['delivery_mode'] === 'paper') {
+        $existing_paper = $this->db->where('attempt_id', (int) $attempt_id)
+            ->where('paper_id', (int) $paper['id'])->limit(1)->get('onlineexam_attempt_papers')->row_array();
+        if ((isset($paper['delivery_mode']) && $paper['delivery_mode'] === 'paper')
+            || (!empty($existing_paper['completion_source']) && $existing_paper['completion_source'] === 'manual')) {
             $paper_attempt = $this->db->select('onlineexam_attempt_papers.manual_score, onlineexam_attempt_papers.manual_marking_status, onlineexam_paper_marking.raw_marks')
                 ->from('onlineexam_attempt_papers')
                 ->join('onlineexam_paper_marking', "onlineexam_paper_marking.attempt_paper_id = onlineexam_attempt_papers.id AND onlineexam_paper_marking.status = 'finalized'", 'left')

@@ -23,6 +23,9 @@ class Onlineexamattempt_model extends CI_Model
 
     public function getCandidateContext($student_session_id, $onlineexam_id)
     {
+        if ($this->db->field_exists('deleted_at', 'onlineexam')) {
+            $this->db->where('onlineexam.deleted_at IS NULL', null, false);
+        }
         return $this->db
             ->select('onlineexam.*, onlineexam_students.id AS onlineexam_student_id, onlineexam_students.student_session_id, onlineexam_students.candidate_status, student_session.student_id, student_session.class_id AS enrolled_class_id, student_session.section_id AS enrolled_section_id, COALESCE(onlineexam_accommodations.extra_time_minutes, 0) AS accommodation_extra_time_minutes', false)
             ->from('onlineexam_students')
@@ -136,7 +139,7 @@ class Onlineexamattempt_model extends CI_Model
 
         $results = array();
         foreach ($expired as $paper) {
-            $results[] = $this->submitPaper(
+            $results[] = $this->submitExpiredPaper(
                 $student_session_id,
                 $attempt->id,
                 $paper->paper_id,
@@ -144,6 +147,117 @@ class Onlineexamattempt_model extends CI_Model
             );
         }
         return $results;
+    }
+
+    /** Candidate view of frozen papers, including authorized individual windows. */
+    public function getCandidatePapers($onlineexam_id, $attempt_id = null, $onlineexam_student_id = null)
+    {
+        $attempt = $attempt_id ? $this->db->where('id', (int) $attempt_id)
+            ->where('onlineexam_id', (int) $onlineexam_id)->get('onlineexam_candidate_attempts')->row() : null;
+        if ($attempt_id && !$attempt) {
+            return array();
+        }
+        if ($attempt) {
+            if ($onlineexam_student_id && (int) $attempt->onlineexam_student_id !== (int) $onlineexam_student_id) {
+                return array();
+            }
+            $onlineexam_student_id = (int) $attempt->onlineexam_student_id;
+        }
+        $exam = $this->db->where('id', (int) $onlineexam_id)->get('onlineexam')->row();
+        if (!$exam) {
+            return array();
+        }
+        $extra = $attempt ? (int) $attempt->extra_time_minutes : 0;
+        if (!$attempt && $onlineexam_student_id) {
+            $accommodation = $this->db->where('onlineexam_id', (int) $onlineexam_id)
+                ->where('onlineexam_student_id', (int) $onlineexam_student_id)->get('onlineexam_accommodations')->row();
+            $extra = $accommodation ? (int) $accommodation->extra_time_minutes : 0;
+        }
+        $rows = array();
+        if ($attempt) {
+            foreach ($this->db->where('attempt_id', (int) $attempt_id)->get('onlineexam_attempt_papers')->result() as $row) {
+                $rows[(int) $row->paper_id] = $row;
+            }
+        }
+        $counts = $this->db->select('q.paper_id, COALESCE(q.paper_section_id, 0) AS section_id, q.is_compulsory, COUNT(q.id) AS question_count, SUM(CASE WHEN aa.is_answered = 1 THEN 1 ELSE 0 END) AS answered_count', false)
+            ->from('onlineexam_question_snapshots q')->join('onlineexam_attempt_answers aa',
+                'aa.question_snapshot_id = q.id AND aa.attempt_id = ' . (int) $attempt_id, 'left')
+            ->where('q.onlineexam_id', (int) $onlineexam_id)->where('q.revision', $attempt ? (int) $attempt->revision : (int) $exam->revision)
+            ->group_by(array('q.paper_id', 'q.paper_section_id', 'q.is_compulsory'))->get()->result();
+        $by_paper = array();
+        foreach ($counts as $count) {
+            $by_paper[(int) $count->paper_id][] = array(
+                'section_id' => (int) $count->section_id,
+                'is_compulsory' => (int) $count->is_compulsory,
+                'question_count' => (int) $count->question_count,
+                'answered_count' => (int) $count->answered_count,
+            );
+        }
+        $papers = $this->getPapers($onlineexam_id, $attempt_id);
+        $frozen_sections = array();
+        foreach ($this->getFrozenPapers($onlineexam_id, $attempt ? (int) $attempt->revision : (int) $exam->revision) as $frozen_paper) {
+            $frozen_sections[(int) $frozen_paper['id']] = isset($frozen_paper['sections']) ? (array) $frozen_paper['sections'] : array();
+        }
+        $this->load->library('onlineexam_review');
+        foreach ($papers as $paper) {
+            $window = $onlineexam_student_id ? $this->candidatePaperWindow($onlineexam_id, $onlineexam_student_id, $paper->id,
+                $attempt ? $attempt->revision : $exam->revision) : null;
+            $paper->is_rescheduled = !empty($window);
+            if ($window) {
+                $paper->starts_at = $window->starts_at;
+                $paper->ends_at = $window->ends_at;
+            }
+            $paper->effective_starts_at = !empty($paper->starts_at) ? $paper->starts_at : $exam->exam_from;
+            $end = !empty($paper->ends_at) ? $paper->ends_at : $exam->exam_to;
+            $paper->effective_ends_at = !empty($end) && strtotime($end) !== false
+                ? date('Y-m-d H:i:s', strtotime($end) + max(0, $extra) * 60) : null;
+            $row = isset($rows[(int) $paper->id]) ? $rows[(int) $paper->id] : null;
+            $paper->raw_score = $row ? (float) $row->raw_score : null;
+            $paper->completion_source = $row && isset($row->completion_source) ? $row->completion_source : null;
+            $paper->manual_marking_status = $row ? $row->manual_marking_status : 'not_required';
+            $paper->attempt_paper_started_at = $row ? $row->started_at : null;
+            $groups = isset($by_paper[(int) $paper->id]) ? $by_paper[(int) $paper->id] : array();
+            $progress = $this->onlineexam_review->requirementProgress(
+                $groups,
+                isset($frozen_sections[(int) $paper->id]) ? $frozen_sections[(int) $paper->id] : array()
+            );
+            $paper->question_count = array_sum(array_column($groups, 'question_count'));
+            $paper->answered_count = array_sum(array_column($groups, 'answered_count'));
+            $paper->required_answer_count = $progress['required'];
+            $paper->completed_required_count = $progress['completed'];
+            $paper->requirements_met = $progress['met'];
+        }
+        return $papers;
+    }
+
+    protected function candidatePaperWindow($onlineexam_id, $candidate_id, $paper_id, $revision)
+    {
+        if (!$this->db->table_exists('onlineexam_candidate_paper_windows')) {
+            return null;
+        }
+        return $this->db->where('onlineexam_id', (int) $onlineexam_id)->where('onlineexam_student_id', (int) $candidate_id)
+            ->where('paper_id', (int) $paper_id)->where('revision', (int) $revision)
+            ->get('onlineexam_candidate_paper_windows')->row();
+    }
+
+    /** Recheck under the same lock as submission: a stale cron selection must not close a rescheduled paper. */
+    protected function submitExpiredPaper($student_session_id, $attempt_id, $paper_id, $submission_key)
+    {
+        $this->db->trans_begin();
+        $owned = $this->lockOwnedAttemptPaper($student_session_id, $attempt_id, $paper_id);
+        if (!$owned || $owned->paper_status !== self::STATUS_IN_PROGRESS
+            || empty($owned->paper_deadline_at)
+            || strtotime($owned->paper_deadline_at) + self::FINAL_SUBMISSION_GRACE_SECONDS >= time()) {
+            $this->db->trans_commit();
+            return array('status' => true, 'skipped' => true);
+        }
+        $result = $this->submitPaper($student_session_id, $attempt_id, $paper_id, $submission_key);
+        if (empty($result['status']) || $this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+        } else {
+            $this->db->trans_commit();
+        }
+        return $result;
     }
 
     /**
@@ -172,12 +286,15 @@ class Onlineexamattempt_model extends CI_Model
 
         $summary = array('prepared' => $prepared, 'processed' => count($rows), 'submitted' => 0, 'finalized' => 0, 'reconciled' => 0, 'errors' => array());
         foreach ($rows as $row) {
-            $result = $this->submitPaper(
+            $result = $this->submitExpiredPaper(
                 (int) $row['student_session_id'],
                 (int) $row['attempt_id'],
                 (int) $row['paper_id'],
                 (string) $row['submission_key']
             );
+            if (!empty($result['skipped'])) {
+                continue;
+            }
             if (empty($result['status'])) {
                 $summary['errors'][] = 'Attempt ' . (int) $row['attempt_id'] . ', paper ' . (int) $row['paper_id'] . ': ' . $result['message'];
                 continue;
@@ -310,7 +427,7 @@ class Onlineexamattempt_model extends CI_Model
     protected function prepareExpiredUnstartedPapers($limit)
     {
         $attempts = $this->db
-            ->select('a.id, a.onlineexam_id, a.revision, a.attempt_no, a.deadline_at, a.extra_time_minutes, e.exam_to')
+            ->select('a.id, a.onlineexam_id, a.onlineexam_student_id, a.revision, a.attempt_no, a.deadline_at, a.extra_time_minutes, e.exam_to')
             ->from('onlineexam_candidate_attempts a')
             ->join('onlineexam e', 'e.id = a.onlineexam_id')
             ->where('a.status', self::STATUS_IN_PROGRESS)
@@ -323,6 +440,8 @@ class Onlineexamattempt_model extends CI_Model
         $now_timestamp = time();
         $now = date('Y-m-d H:i:s');
         foreach ($attempts as $attempt) {
+            $this->db->trans_begin();
+            $this->db->query('SELECT id FROM onlineexam_students WHERE id = ' . (int) $attempt['onlineexam_student_id'] . ' FOR UPDATE');
             foreach ($this->getFrozenPapers($attempt['onlineexam_id'], $attempt['revision']) as $paper) {
                 if ((isset($paper['is_active']) && (int) $paper['is_active'] !== 1)
                     || $paper['delivery_mode'] !== 'cbt'
@@ -331,6 +450,10 @@ class Onlineexamattempt_model extends CI_Model
                     continue;
                 }
                 $hard_end = !empty($paper['ends_at']) ? $paper['ends_at'] : $attempt['exam_to'];
+                $window = $this->candidatePaperWindow($attempt['onlineexam_id'], $attempt['onlineexam_student_id'], $paper['id'], $attempt['revision']);
+                if ($window) {
+                    $hard_end = $window->ends_at;
+                }
                 if (empty($hard_end)) {
                     continue;
                 }
@@ -384,6 +507,11 @@ class Onlineexamattempt_model extends CI_Model
                     ));
                 }
             }
+            if ($this->db->trans_status() === false) {
+                $this->db->trans_rollback();
+            } else {
+                $this->db->trans_commit();
+            }
         }
         return $prepared;
     }
@@ -393,12 +521,25 @@ class Onlineexamattempt_model extends CI_Model
         $context = $this->getCandidateContext($student_session_id, $onlineexam_id);
         $extra_time_minutes = $context ? max(0, (int) $context->accommodation_extra_time_minutes) : 0;
         $current_attempt = $context ? $this->getCurrentAttempt($context->onlineexam_student_id) : null;
+        if ($context && $current_attempt) {
+            $context->revision = (int) $current_attempt->revision;
+        }
+        $window = $context ? $this->candidatePaperWindow($onlineexam_id, $context->onlineexam_student_id, $paper_id, $context->revision) : null;
+        if ($window) {
+            $context->candidate_paper_override = true;
+            $context->exam_from = $window->starts_at;
+            $context->exam_to = $window->ends_at;
+        }
         $validation = $this->validateCandidateContext($context, $extra_time_minutes, $current_attempt);
         if ($validation !== true) {
             return array('status' => false, 'message' => $validation);
         }
 
         $paper = $this->getFrozenPaper($onlineexam_id, (int) $context->revision, $paper_id);
+        if ($paper && $window) {
+            $paper->starts_at = $window->starts_at;
+            $paper->ends_at = $window->ends_at;
+        }
 
         if (!$paper) {
             return array('status' => false, 'message' => 'The selected paper does not belong to this assessment.');
@@ -434,6 +575,12 @@ class Onlineexamattempt_model extends CI_Model
         $this->db->trans_begin();
         // Serialize all starts for this candidate. This turns concurrent tabs
         // into a safe resume instead of competing attempt_no=1 inserts.
+        $locked_exam = $this->db->query('SELECT * FROM onlineexam WHERE id = ' . (int) $onlineexam_id . ' FOR UPDATE')->row();
+        if (!$locked_exam || !empty($locked_exam->deleted_at) || (string) $locked_exam->is_active !== '1'
+            || in_array($locked_exam->lifecycle_status, array('draft', 'cancelled', 'legacy'), true)) {
+            $this->db->trans_rollback();
+            return array('status' => false, 'message' => 'This assessment is no longer available.');
+        }
         $locked_candidate = $this->db->query(
             'SELECT id, candidate_status FROM `onlineexam_students` WHERE id = '
             . $this->db->escape((int) $context->onlineexam_student_id)
@@ -443,6 +590,18 @@ class Onlineexamattempt_model extends CI_Model
         if (!$locked_candidate || $locked_candidate->candidate_status !== 'assigned') {
             $this->db->trans_rollback();
             return array('status' => false, 'message' => 'You are no longer an active candidate for this assessment.');
+        }
+        // A staff reschedule may have occurred between the initial page request
+        // and this lock. Revalidate the current window before starting a timer.
+        $locked_window = $this->candidatePaperWindow($onlineexam_id, $context->onlineexam_student_id, $paper_id, $context->revision);
+        if ($locked_window) {
+            $paper->starts_at = $context->exam_from = $locked_window->starts_at;
+            $paper->ends_at = $context->exam_to = $locked_window->ends_at;
+        }
+        $window_error = $this->validatePaperWindow($paper, $context, $extra_time_minutes, $current_attempt);
+        if ($window_error !== true) {
+            $this->db->trans_rollback();
+            return array('status' => false, 'message' => $window_error);
         }
         $attempt = $this->getOrCreateAttempt($context);
         if (is_array($attempt) && isset($attempt['status']) && $attempt['status'] === false) {
@@ -523,7 +682,7 @@ class Onlineexamattempt_model extends CI_Model
     {
         $exam = $this->db->where('id', (int) $onlineexam_id)
             ->where('workflow_version', 2)->limit(1)->get('onlineexam')->row_array();
-        if (empty($exam) || in_array($exam['lifecycle_status'], array('draft', 'cancelled', 'legacy'), true)) {
+        if (empty($exam) || !empty($exam['deleted_at']) || in_array($exam['lifecycle_status'], array('draft', 'cancelled', 'legacy'), true)) {
             return empty($exam) ? null : $exam['lifecycle_status'];
         }
         $now = time();
@@ -532,6 +691,13 @@ class Onlineexamattempt_model extends CI_Model
         $max_extra = (int) $this->db->select_max('extra_time_minutes', 'minutes')
             ->where('onlineexam_id', (int) $onlineexam_id)->get('onlineexam_accommodations')->row()->minutes;
         $normal_close = empty($exam['exam_to']) ? 0 : strtotime($exam['exam_to']) + ($max_extra * 60);
+        if ($this->db->table_exists('onlineexam_candidate_paper_windows')) {
+            $last_window = $this->db->select_max('ends_at', 'last_end')->where('onlineexam_id', (int) $onlineexam_id)
+                ->get('onlineexam_candidate_paper_windows')->row();
+            if ($last_window && !empty($last_window->last_end)) {
+                $normal_close = max($normal_close, strtotime($last_window->last_end) + $max_extra * 60);
+            }
+        }
 
         if (!empty($exam['exam_from']) && $now < strtotime($exam['exam_from'])) {
             $desired = 'scheduled';
@@ -926,18 +1092,19 @@ class Onlineexamattempt_model extends CI_Model
         $this->createUnansweredRows($attempt_id, $paper_id, $now);
 
         $scores = $this->calculatePaperScore($attempt_id, $paper_id, $owned);
+        $submission_updates = array(
+            'status' => self::STATUS_SUBMITTED, 'submitted_at' => $now,
+            'raw_score' => $scores['raw_score'], 'raw_max_score' => $scores['raw_max_score'],
+            'contribution_score' => $scores['contribution_score'], 'contribution_max_score' => $scores['contribution_max_score'],
+            'updated_at' => $now,
+        );
+        if ($this->db->field_exists('completion_source', 'onlineexam_attempt_papers')) {
+            $submission_updates['completion_source'] = $timed_out ? 'timed_out' : 'submitted';
+        }
         $this->db
             ->where('attempt_id', (int) $attempt_id)
             ->where('paper_id', (int) $paper_id)
-            ->update('onlineexam_attempt_papers', array(
-                'status' => self::STATUS_SUBMITTED,
-                'submitted_at' => $now,
-                'raw_score' => $scores['raw_score'],
-                'raw_max_score' => $scores['raw_max_score'],
-                'contribution_score' => $scores['contribution_score'],
-                'contribution_max_score' => $scores['contribution_max_score'],
-                'updated_at' => $now,
-            ));
+            ->update('onlineexam_attempt_papers', $submission_updates);
 
         $attempt_status = $this->recalculateAttempt($attempt_id, $now, $timed_out);
         if ($this->db->trans_status() === false) {
@@ -1051,6 +1218,10 @@ class Onlineexamattempt_model extends CI_Model
         if (empty($attempt)) {
             return array();
         }
+        if ($this->db->field_exists('completion_source', 'onlineexam_attempt_papers')) {
+            $this->db->where("NOT EXISTS (SELECT 1 FROM onlineexam_attempt_papers feedback_p WHERE feedback_p.attempt_id = " . (int) $attempt_id
+                . " AND feedback_p.paper_id = qs.paper_id AND feedback_p.completion_source = 'manual')", null, false);
+        }
         $questions = $this->db
             ->select('qs.id, qs.paper_id, qs.paper_section_id, qs.question_type, qs.question_text, qs.options_json, qs.correct_answer_json, qs.marking_scheme, qs.marks, qs.display_order, aa.response_json, aa.is_answered, aa.is_correct, aa.final_mark, aa.marking_status, aa.attachment_name')
             ->from('onlineexam_question_snapshots qs')
@@ -1084,7 +1255,7 @@ class Onlineexamattempt_model extends CI_Model
 
     public function isSupportedAssessmentContext($context)
     {
-        if (!$context || (int) $context->workflow_version < 2) {
+        if (!$context || !empty($context->deleted_at) || (int) $context->workflow_version < 2) {
             return false;
         }
 
@@ -1151,7 +1322,10 @@ class Onlineexamattempt_model extends CI_Model
         if (!$section_is_assigned) {
             return 'Your current class arm is not assigned to this assessment.';
         }
-        if (!in_array($context->lifecycle_status, array('scheduled', 'published', 'in_progress'), true)
+        $allowed_lifecycles = !empty($context->candidate_paper_override)
+            ? array('scheduled', 'published', 'in_progress', 'marking', 'completed')
+            : array('scheduled', 'published', 'in_progress');
+        if (!in_array($context->lifecycle_status, $allowed_lifecycles, true)
             || (string) $context->is_active !== '1') {
             return 'This assessment has not been published.';
         }
@@ -1719,12 +1893,15 @@ class Onlineexamattempt_model extends CI_Model
     protected function recalculateAttempt($attempt_id, $now, $timed_out = false)
     {
         $summary = $this->db
-            ->select("COUNT(*) AS paper_count, SUM(CASE WHEN onlineexam_attempt_papers.status = 'submitted' THEN 1 ELSE 0 END) AS submitted_count, COALESCE(SUM(onlineexam_attempt_papers.raw_score), 0) AS raw_score, COALESCE(SUM(onlineexam_attempt_papers.raw_max_score), 0) AS raw_max_score, COALESCE(SUM(onlineexam_attempt_papers.contribution_score), 0) AS weighted_score, COALESCE(SUM(onlineexam_attempt_papers.contribution_max_score), 0) AS weighted_max_score", false)
+            ->select("COUNT(*) AS paper_count, SUM(CASE WHEN onlineexam_attempt_papers.status IN ('submitted','completed') THEN 1 ELSE 0 END) AS submitted_count, COALESCE(SUM(onlineexam_attempt_papers.raw_score), 0) AS raw_score, COALESCE(SUM(onlineexam_attempt_papers.raw_max_score), 0) AS raw_max_score, COALESCE(SUM(onlineexam_attempt_papers.contribution_score), 0) AS weighted_score, COALESCE(SUM(onlineexam_attempt_papers.contribution_max_score), 0) AS weighted_max_score", false)
             ->from('onlineexam_attempt_papers')
             ->where('attempt_id', (int) $attempt_id)
             ->get()
             ->row();
 
+        if ($this->db->field_exists('completion_source', 'onlineexam_attempt_papers')) {
+            $this->db->where("NOT EXISTS (SELECT 1 FROM onlineexam_question_snapshots review_q JOIN onlineexam_attempt_papers review_p ON review_p.paper_id = review_q.paper_id AND review_p.attempt_id = onlineexam_attempt_answers.attempt_id WHERE review_q.id = onlineexam_attempt_answers.question_snapshot_id AND review_p.completion_source = 'manual')", null, false);
+        }
         $manual_pending = $this->db
             ->from('onlineexam_attempt_answers')
             ->where('attempt_id', (int) $attempt_id)
