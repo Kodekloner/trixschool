@@ -221,7 +221,16 @@ class Onlineexamworkflow_model extends CI_Model
             }
         }
 
+        if (!$this->db->table_exists('onlineexam_academic_slots')) {
+            $errors[] = 'Install Online Examination migration 138 before publishing this assessment.';
+        } elseif (count($sections) !== (int) $this->db->where('onlineexam_id', (int) $onlineexam_id)
+            ->count_all_results('onlineexam_academic_slots')) {
+            $errors[] = 'This subject overlaps another online examination for the selected class arm, term and result component. Edit the academic context and save it again.';
+        }
+
         $target_snapshot = $this->validateResultTarget($exam, $errors);
+        $paper_count = (int) $this->db->where('onlineexam_id', (int) $onlineexam_id)
+            ->count_all_results('onlineexam_papers');
         $papers = $this->db->where('onlineexam_id', (int) $onlineexam_id)
             ->where('is_active', 1)
             ->order_by('display_order', 'ASC')
@@ -229,6 +238,9 @@ class Onlineexamworkflow_model extends CI_Model
             ->result_array();
         if (empty($papers)) {
             $errors[] = 'At least one active paper is required.';
+        }
+        if ($paper_count > 1) {
+            $errors[] = 'Only one paper is allowed for each subject assessment. Delete the extra paper before publishing.';
         }
 
         $total_contribution = 0.0;
@@ -258,6 +270,8 @@ class Onlineexamworkflow_model extends CI_Model
         }
         if ($total_contribution <= 0) {
             $errors[] = 'Combined paper contribution must be greater than zero.';
+        } elseif (count($papers) === 1 && abs($total_contribution - 100.0) > 0.001) {
+            $errors[] = 'The single subject paper must contribute 100 percent of the selected result component. Save the paper again.';
         }
 
         return array(

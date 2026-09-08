@@ -30,6 +30,7 @@ compact_ui_assert(strpos($assessment_form, 'name="target_component"') !== false,
 compact_ui_assert(strpos($assessment_form, 'name="attempts"') === false, 'The one-official-attempt rule must not be exposed as a form field.');
 compact_ui_assert(strpos($assessment_form, '>Destination<') === false, 'Result adapters must not be exposed as a Destination field.');
 compact_ui_assert(strpos($assessment_form, 'assessment-rule-options') !== false, 'Assessment checkboxes need the responsive alignment wrapper.');
+compact_ui_assert(strpos($assessment_form, 'admin/onlineexam/academicclasses') !== false, 'Changing sessions must refresh the teacher\'s assigned classes.');
 $abort_position = strpos($assessment_form, 'configurationRequest.abort()');
 $incomplete_selection_position = strpos($assessment_form, 'if (!classId)');
 compact_ui_assert($abort_position !== false && $incomplete_selection_position !== false && $abort_position < $incomplete_selection_position, 'Clearing a required assessment selection must abort any stale configuration request first.');
@@ -80,6 +81,9 @@ compact_ui_assert(substr_count($analysis, 'onlineexam-scroll') >= 2, 'Both asses
 
 $review = compact_ui_source('application/views/admin/onlineexam/review.php');
 compact_ui_assert(strpos($review, 'Online Examination Review') !== false && strpos($review, 'Select Criteria') !== false, 'The simpler class review must replace the retired operations dashboard.');
+compact_ui_assert(strpos($review, 'name="component"') !== false, 'The review criteria must include a CA / Exam component.');
+compact_ui_assert(strpos($review, "html_escape(\$column['assessment'])") === false && strpos($review, "html_escape(\$column['title'])") === false, 'Review headers must display only the subject name.');
+compact_ui_assert(strpos($review, '.review-cell { display:inline-block; width:auto;') !== false, 'Review result buttons must size to their content.');
 compact_ui_assert(strpos($review, 'review-student') !== false && strpos($review, 'position:sticky') !== false, 'The review matrix needs a stable student column while papers scroll.');
 compact_ui_assert(strpos($review, 'table-responsive onlineexam-scroll review-scroll') !== false, 'The class review needs a contained responsive table.');
 compact_ui_assert(strpos($review, 'Incident register') === false && strpos($review, 'Automatic result-posting ledger') === false, 'Internal incident and posting ledgers must not clutter the class review.');

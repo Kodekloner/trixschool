@@ -172,6 +172,7 @@ $format_datetime = function ($value) {
     var selectedSections = <?php echo json_encode(array_values(array_map('intval', $selected_sections))); ?>;
     var selectedComponent = <?php echo json_encode($selected_component); ?>;
     var configurationRequest = null;
+    var classesRequest = null;
 
     function clearConfiguration(message) {
         $('#target_component').empty().append($('<option>', {value: '', text: 'Select'})).prop('required', false);
@@ -272,7 +273,42 @@ $format_datetime = function ($value) {
         });
     }
 
-    $('#academic_class_id, #academic_session_id, #academic_term').on('change', function () {
+    function loadClasses() {
+        if (classesRequest) {
+            classesRequest.abort();
+        }
+        if (configurationRequest) {
+            configurationRequest.abort();
+            configurationRequest = null;
+        }
+        var $classes = $('#academic_class_id').empty().append($('<option>', {value: '', text: 'Loading classes…'}));
+        $('#academic_subject_id').empty().append($('<option>', {value: '', text: 'Select a class first'}));
+        $('#academic_sections').html('<span class="text-muted">Select a class and subject to load available arms.</span>');
+        clearConfiguration('Select a class to load available subjects.');
+        var request = classesRequest = $.getJSON('<?php echo site_url('admin/onlineexam/academicclasses'); ?>', {
+            session_id: $('#academic_session_id').val()
+        }).done(function (response) {
+            $classes.empty().append($('<option>', {value: '', text: 'Select'}));
+            $.each(response.classes || [], function (_, row) {
+                $classes.append($('<option>', {value: row.id, text: row['class']}));
+            });
+            if (!(response.classes || []).length) {
+                $('#result_configuration_message').show().text('No class and subject assignment is available in this session.');
+            }
+        }).fail(function (xhr, status) {
+            if (status !== 'abort') {
+                $classes.empty().append($('<option>', {value: '', text: 'Unable to load classes'}));
+                clearConfiguration('Classes could not be loaded for the selected session.');
+            }
+        }).always(function () {
+            if (classesRequest === request) {
+                classesRequest = null;
+            }
+        });
+    }
+
+    $('#academic_session_id').on('change', loadClasses);
+    $('#academic_class_id, #academic_term').on('change', function () {
         $('#academic_subject_id').val('');
         loadConfiguration(true);
     });

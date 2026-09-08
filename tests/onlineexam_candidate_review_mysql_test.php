@@ -25,7 +25,14 @@ class CI_Model {
 }
 class CI_Migration extends CI_Model {}
 class MY_model extends CI_Model {}
-class ReviewTestSettings { public function getCurrentSession() { return 1; } }
+class ReviewTestSettings {
+    public function getCurrentSession() { return 1; }
+    public function getSetting() { return (object) array('class_teacher'=>'yes','my_question'=>'1'); }
+}
+class ReviewTestCustomlib {
+    public function getUserData() { return array('role_id'=>2); }
+    public function getStaffID() { return 10; }
+}
 class ReviewTestInput { public function ip_address() { return '127.0.0.1'; } }
 class ReviewTestLoader {
     public function library($name) {
@@ -46,7 +53,8 @@ require_once BASEPATH . 'database/DB.php';
 $db = DB(array('hostname' => $socket, 'username' => 'root', 'password' => '', 'database' => $database,
     'dbdriver' => 'mysqli', 'db_debug' => true, 'char_set' => 'utf8mb4', 'dbcollat' => 'utf8mb4_unicode_ci'), true);
 review_assert($db->query('SHOW TABLES')->num_rows() === 0, 'The test database must be empty; existing tables will not be changed.');
-$GLOBALS['review_services'] = array('db' => $db, 'load' => new ReviewTestLoader(), 'setting_model' => new ReviewTestSettings(), 'input' => new ReviewTestInput());
+$GLOBALS['review_services'] = array('db' => $db, 'load' => new ReviewTestLoader(), 'setting_model' => new ReviewTestSettings(),
+    'customlib' => new ReviewTestCustomlib(), 'input' => new ReviewTestInput());
 require_once BASEPATH . 'database/DB_forge.php';
 require_once BASEPATH . 'database/drivers/mysqli/mysqli_forge.php';
 $GLOBALS['review_services']['dbforge'] = new CI_DB_mysqli_forge($db);
@@ -55,24 +63,25 @@ $GLOBALS['review_services']['dbforge'] = new CI_DB_mysqli_forge($db);
 $migration = file_get_contents(APPPATH . 'migrations/128_localize_online_examination.php');
 preg_match_all('/CREATE TABLE `([^`]+)` \((.*?)\) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4/s', $migration, $matches);
 foreach ($matches[0] as $statement) { $db->query($statement); }
-$db->query("CREATE TABLE onlineexam (id INT PRIMARY KEY, workflow_version INT, revision INT, session_id INT, class_id INT, subject_id INT,
+$db->query("CREATE TABLE onlineexam (id INT AUTO_INCREMENT PRIMARY KEY, workflow_version INT, revision INT, session_id INT, class_id INT, subject_id INT,
     term VARCHAR(20), purpose VARCHAR(24), result_adapter VARCHAR(32), target_component VARCHAR(20), target_max_score DECIMAL(10,2),
     lifecycle_status VARCHAR(24), frozen_at DATETIME, exam_from DATETIME, exam_to DATETIME, is_active INT, is_random_question INT DEFAULT 0,
-    is_neg_marking INT DEFAULT 0, lifecycle_checked_at DATETIME NULL, exam VARCHAR(100) DEFAULT 'Test assessment')");
+    is_neg_marking INT DEFAULT 0, lifecycle_checked_at DATETIME NULL, exam VARCHAR(100) DEFAULT 'Test assessment', duration TIME DEFAULT '00:30:00')");
 $db->query("CREATE TABLE onlineexam_students (id INT AUTO_INCREMENT PRIMARY KEY, onlineexam_id INT, student_session_id INT,
     candidate_status VARCHAR(24) DEFAULT 'assigned', is_attempted INT DEFAULT 0, UNIQUE KEY candidate (onlineexam_id,student_session_id))");
 $db->query("CREATE TABLE students (id INT PRIMARY KEY, is_active VARCHAR(10), firstname VARCHAR(30) DEFAULT 'Test', middlename VARCHAR(30) DEFAULT '', lastname VARCHAR(30) DEFAULT 'Student', admission_no VARCHAR(30) DEFAULT '')");
 $db->query("CREATE TABLE student_session (id INT PRIMARY KEY, student_id INT, session_id INT, class_id INT, section_id INT)");
-$db->query("CREATE TABLE onlineexam_questions (id INT PRIMARY KEY, is_compulsory TINYINT DEFAULT 0)");
+$db->query("CREATE TABLE onlineexam_questions (id INT PRIMARY KEY, onlineexam_id INT NULL, paper_id INT NULL, question_id INT NULL, is_compulsory TINYINT DEFAULT 0)");
 $db->query("CREATE TABLE score (ID INT AUTO_INCREMENT PRIMARY KEY, StudentID INT, ClassID INT, SectionID INT, SubjectID INT,
     Session VARCHAR(20), Term VARCHAR(20), ca1 DECIMAL(10,2) DEFAULT 0)");
 $db->query("CREATE TABLE subjects (id INT PRIMARY KEY, name VARCHAR(100), code VARCHAR(10))");
+$db->query("CREATE TABLE classes (id INT PRIMARY KEY, class VARCHAR(100))");
 $db->query("CREATE TABLE sections (id INT PRIMARY KEY, section VARCHAR(30))");
 $db->query("CREATE TABLE class_sections (id INT PRIMARY KEY, class_id INT, section_id INT)");
 $db->query("CREATE TABLE teacher_subjects (id INT AUTO_INCREMENT PRIMARY KEY, teacher_id INT, subject_id INT, session_id INT, class_section_id INT)");
 $db->query("CREATE TABLE subject_group_class_sections (id INT AUTO_INCREMENT PRIMARY KEY, subject_group_id INT, class_section_id INT, session_id INT)");
 $db->query("CREATE TABLE subject_group_subjects (id INT AUTO_INCREMENT PRIMARY KEY, subject_group_id INT, subject_id INT, session_id INT)");
-$db->query("INSERT INTO onlineexam_questions VALUES (1,0)");
+$db->query("INSERT INTO onlineexam_questions (id,is_compulsory) VALUES (1,0)");
 $fixture_time = date('Y-m-d H:i:s');
 $db->insert('onlineexam', array('id'=>98,'workflow_version'=>2,'revision'=>1,'target_max_score'=>20,
     'lifecycle_status'=>'published','frozen_at'=>$fixture_time));
@@ -97,6 +106,16 @@ $db->where_in('id', array(98, 99))->delete('onlineexam');
 // Run standalone phpMyAdmin SQL twice as well as the framework migration.
 foreach (array(1, 2) as $run) {
     $sql = file_get_contents(__DIR__ . '/../docs/online_examination_candidate_review_migration.sql');
+    $db->conn_id->multi_query($sql);
+    do { if ($result = $db->conn_id->store_result()) { $result->free(); } } while ($db->conn_id->more_results() && $db->conn_id->next_result());
+}
+require_once APPPATH . 'migrations/138_onlineexam_single_subject_slots.php';
+$slot_upgrade = new Migration_Onlineexam_single_subject_slots();
+$slot_upgrade->up();
+$slot_upgrade->up();
+review_assert($db->table_exists('onlineexam_academic_slots'), 'Migration 138 must install the academic-slot table.');
+foreach (array(1, 2) as $run) {
+    $sql = file_get_contents(__DIR__ . '/../docs/online_examination_single_subject_slot_migration.sql');
     $db->conn_id->multi_query($sql);
     do { if ($result = $db->conn_id->store_result()) { $result->free(); } } while ($db->conn_id->more_results() && $db->conn_id->next_result());
 }
@@ -132,7 +151,10 @@ $db->insert('onlineexam', array('id'=>1,'workflow_version'=>2,'revision'=>1,'ses
     'purpose'=>'ca','result_adapter'=>'standard_component','target_component'=>'ca1','target_max_score'=>20,'lifecycle_status'=>'marking',
     'frozen_at'=>$past,'exam_from'=>$past,'exam_to'=>$close,'is_active'=>1));
 $db->insert('onlineexam_class_sections', array('onlineexam_id'=>1,'section_id'=>1,'created_at'=>$past));
+$slot_upgrade->up();
+review_assert($db->where('onlineexam_id',1)->where('section_id',1)->count_all_results('onlineexam_academic_slots') === 1, 'Migration 138 must backfill a published assessment slot idempotently.');
 $db->query("INSERT INTO subjects VALUES (1,'Science','SCI'),(2,'English','ENG'),(3,'Previous session','OLD')");
+$db->query("INSERT INTO classes VALUES (1,'Primary 1'),(2,'Primary 2')");
 $db->query("INSERT INTO sections VALUES (1,'A'),(2,'B')");
 $db->query("INSERT INTO class_sections VALUES (1,1,1),(2,1,2)");
 $db->query("INSERT INTO subject_group_class_sections(subject_group_id,class_section_id,session_id) VALUES (1,1,1),(2,2,1),(3,1,2)");
@@ -143,7 +165,52 @@ review_assert(array_column($choices['subjects'],'id') === array(2,1), 'Subjects 
 review_assert(array_column($choices['sections'],'id') === array(1), 'Class arms must be filtered by the chosen subject.');
 $choices = $legacy->getWorkflowAcademicChoices(1,1,'2nd',1,10);
 review_assert(array_column($choices['subjects'],'id') === array(1), 'Teacher assignments from other sessions must not grant subject access.');
+review_assert(array_column($legacy->getWorkflowClassChoices(1,10),'id') === array(1), 'Teachers must see only classes with an assignment in the selected session.');
 review_assert($legacy->getWorkflowAcademicChoices(1,1,'4th',1)['subjects'] === array(), 'Invalid terms must be rejected.');
+
+// The shared Question Bank must apply the same exact session/class-arm/subject
+// boundary; a class assignment alone must never expose its other subjects.
+$db->query("CREATE TABLE questions (id INT PRIMARY KEY, staff_id INT, subject_id INT, class_id INT, section_id INT)");
+$db->query("INSERT INTO questions VALUES (1,10,1,1,1),(2,10,2,1,2),(3,10,1,1,2),(4,11,1,1,0)");
+require_once APPPATH . 'models/Question_model.php';
+$question_bank = new Question_model();
+review_assert($question_bank->canAccessQuestionScope(1,1,1), 'A teacher must access their assigned subject and arm.');
+review_assert(!$question_bank->canAccessQuestionScope(1,2,1), 'An assignment in another arm must not grant access here.');
+review_assert(!$question_bank->canAccessQuestionScope(1,2,2), 'Another teacher\'s subject in the same class must remain inaccessible.');
+review_assert($question_bank->canAccessQuestion(1) && !$question_bank->canAccessQuestion(2) && !$question_bank->canAccessQuestion(3), 'Question reads must enforce exact subject and arm ownership.');
+review_assert($question_bank->canAccessQuestion(2,2), 'Assessment authoring must evaluate the teaching assignment in that assessment\'s session.');
+review_assert($question_bank->canAccessQuestion(4), 'A class-wide question remains reusable only when the teacher has that subject in the class.');
+$question_choices = $question_bank->getQuestionBankAcademicChoices(1,1);
+review_assert(array_column($question_choices['subjects'],'id') === array(1) && array_column($question_choices['sections'],'id') === array(1), 'Question Bank dropdowns must contain only the teacher\'s assigned class-arm subjects.');
+
+$future_start = date('Y-m-d H:i:s', time()+3600);
+$future_end = date('Y-m-d H:i:s', time()+7200);
+$draft_record = array('workflow_version'=>2,'revision'=>1,'session_id'=>1,'class_id'=>1,'subject_id'=>1,
+    'term'=>'1st','purpose'=>'ca','result_adapter'=>'standard_component','target_component'=>'ca1','target_max_score'=>20,
+    'lifecycle_status'=>'draft','frozen_at'=>null,'exam_from'=>$future_start,'exam_to'=>$future_end,'duration'=>'00:30:00',
+    'is_active'=>0,'exam'=>'Duplicate Science CA1');
+review_assert($legacy->saveWorkflow($draft_record,array(1)) === false, 'A duplicate subject/arm/component assessment must be rejected.');
+review_assert(strpos($legacy->getWorkflowSaveError(),'already has an online examination') !== false, 'Duplicate slots need a useful validation message.');
+$draft_record['subject_id'] = 2;
+$draft_record['exam'] = 'English CA1';
+$english_ca1 = $legacy->saveWorkflow($draft_record,array(1));
+review_assert($english_ca1 > 0, 'A different subject may use the same class-arm component.');
+$paper_data = array('onlineexam_id'=>$english_ca1,'title'=>'English','paper_type'=>'objective','delivery_mode'=>'cbt',
+    'instructions'=>'','starts_at'=>$future_start,'ends_at'=>$future_end,'duration_minutes'=>30,'raw_max_score'=>999,
+    'contribution_score'=>5,'display_order'=>0,'is_active'=>1);
+$first_paper = $legacy->saveWorkflowPaper($paper_data);
+review_assert($first_paper > 0, 'The first subject paper must be accepted.');
+review_assert((float)$db->where('id',$first_paper)->get('onlineexam_papers')->row()->raw_max_score === 20.0
+    && (float)$db->where('id',$first_paper)->get('onlineexam_papers')->row()->contribution_score === 100.0,
+    'The one paper must inherit the component maximum and contribute 100 percent.');
+review_assert($legacy->saveWorkflowPaper($paper_data) === false, 'A second paper for the same subject assessment must be rejected.');
+review_assert($legacy->getWorkflowPaperSaveError() === 'Only one paper is allowed for each subject assessment.', 'The second-paper rejection needs a useful message.');
+$draft_record['target_component'] = 'ca2';
+$draft_record['exam'] = 'English CA2';
+$english_ca2 = $legacy->saveWorkflow($draft_record,array(1));
+review_assert($english_ca2 > 0, 'A different CA component for the same subject and arm must remain valid.');
+review_assert($legacy->removeWorkflowDraft($english_ca1) && $legacy->removeWorkflowDraft($english_ca2), 'Draft cleanup must release both academic slots.');
+
 for ($id = 1; $id <= 4; $id++) {
     $db->insert('students', array('id'=>$id,'is_active'=>'yes'));
     $db->insert('student_session', array('id'=>$id,'student_id'=>$id,'session_id'=>1,'class_id'=>1,'section_id'=>$id === 4 ? 2 : 1));
@@ -189,7 +256,9 @@ $db->where('id',$attempt_id)->update('onlineexam_candidate_attempts',array('stat
 review_assert(!empty($workflow->finalizeAttempt($attempt_id,10)['success']), 'Initial two-paper calculation should finalize.');
 review_assert(!empty($sync->syncCompletedAttempt($attempt_id,10)['success']), 'The real result adapter should post the initial score.');
 review_assert((float)$db->get('score')->row()->ca1 === 10.0, 'One full paper plus one missed paper should initially post 10/20.');
-$criteria = array('session_id'=>1,'term'=>'1st','assessment_type'=>'term','class_id'=>1,'section_id'=>1);
+$criteria = array('session_id'=>1,'term'=>'1st','assessment_type'=>'term','class_id'=>1,'section_id'=>1,'component'=>'ca1');
+$component_rows = $review->components($criteria,$scope);
+review_assert(count($component_rows) === 1 && $component_rows[0]['value'] === 'ca1' && $component_rows[0]['label'] === 'CA1', 'Review components must be limited to the selected published academic context.');
 $matrix = $review->overview($criteria,$scope);
 review_assert(count($matrix['students']) === 3 && count($matrix['columns']) === 2, 'Review matrix should include every active enrolled student and both frozen papers.');
 review_assert($matrix['cells'][1]['1_2']['key'] === 'missed' && $matrix['cells'][2]['1_1']['key'] === 'unassigned', 'Review matrix must distinguish missed papers from unassigned students.');
@@ -263,6 +332,7 @@ review_assert($db->where('attempt_id',$late_id)->count_all_results('onlineexam_r
 $score_before_archive = $db->order_by('ID')->get('score')->result_array();
 $answers_before_archive = $db->count_all('onlineexam_attempt_answers');
 review_assert(!empty($review->archiveCompleted(1,10)['success']), 'After all assigned students complete and results post, assessment removal should succeed.');
+review_assert($db->where('onlineexam_id',1)->count_all_results('onlineexam_academic_slots') === 0, 'Archiving a completed assessment must release its academic slot.');
 review_assert($score_before_archive === $db->where('StudentID !=',5)->order_by('ID')->get('score')->result_array() && $answers_before_archive === $db->count_all('onlineexam_attempt_answers'), 'Removal must preserve posted results and answer history.');
 review_assert((float)$db->where('StudentID',5)->get('score')->row()->ca1 === 20.0, 'Removal must reconcile a completed result interrupted before first sync.');
 review_assert($review->overview($criteria,$scope)['columns'] === array(), 'Removed assessments must disappear from the working review matrix.');

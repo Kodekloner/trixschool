@@ -1,6 +1,9 @@
 <?php
 class Onlineexam_model extends MY_model
 {
+    private $workflow_save_error = '';
+    private $paper_save_error = '';
+
     public function __construct()
     {
         parent::__construct();
@@ -83,7 +86,7 @@ class Onlineexam_model extends MY_model
             ->from('onlineexam');
         if ($teacher_id !== null) {
             $teacher_id = (int) $teacher_id;
-            $condition = "(onlineexam.workflow_version < 2 OR ("
+            $condition = "(onlineexam.workflow_version = 2 AND "
                 . "EXISTS (SELECT 1 FROM teacher_subjects ts INNER JOIN class_sections cs ON cs.id = ts.class_section_id "
                 . "WHERE ts.teacher_id = " . $teacher_id . " AND ts.subject_id = onlineexam.subject_id "
                 . "AND ts.session_id = onlineexam.session_id AND cs.class_id = onlineexam.class_id) "
@@ -91,7 +94,7 @@ class Onlineexam_model extends MY_model
                 . "AND NOT EXISTS (SELECT 1 FROM teacher_subjects ts2 INNER JOIN class_sections cs2 ON cs2.id = ts2.class_section_id "
                 . "WHERE ts2.teacher_id = " . $teacher_id . " AND ts2.subject_id = onlineexam.subject_id "
                 . "AND ts2.session_id = onlineexam.session_id AND cs2.class_id = onlineexam.class_id "
-                . "AND cs2.section_id = ocs.section_id))))";
+                . "AND cs2.section_id = ocs.section_id)))";
             $this->datatables->where($condition, null, false, false);
         }
        return $this->datatables->generate('json');
@@ -508,6 +511,24 @@ class Onlineexam_model extends MY_model
             ->get()->result_array();
     }
 
+    /** Classes in which a teacher has at least one exact subject assignment. */
+    public function getWorkflowClassChoices($session_id, $teacher_id = null)
+    {
+        $query = $this->db->distinct()->select('classes.id, classes.class')
+            ->from('classes')
+            ->join('class_sections', 'class_sections.class_id = classes.id');
+        if ($teacher_id !== null) {
+            $query->join('teacher_subjects ts', 'ts.class_section_id = class_sections.id')
+                ->where('ts.teacher_id', (int) $teacher_id)
+                ->where('ts.session_id', (int) $session_id);
+        }
+        $rows = $query->order_by('classes.id')->get()->result_array();
+        foreach ($rows as $key => $row) {
+            $rows[$key]['id'] = (int) $row['id'];
+        }
+        return $rows;
+    }
+
     /** Curriculum assignments are session-wide: these tables have no term column. */
     public function getWorkflowAcademicChoices($class_id, $session_id, $term, $subject_id = 0, $teacher_id = null)
     {
@@ -812,16 +833,33 @@ class Onlineexam_model extends MY_model
 
     public function saveWorkflow($exam_data, $section_ids, array $holiday_mappings = array())
     {
+        $this->workflow_save_error = '';
         $this->load->library('onlineexam_setup');
         $duration = explode(':', isset($exam_data['duration']) ? $exam_data['duration'] : '');
         $minutes = count($duration) >= 2 ? (int) $duration[0] * 60 + (int) $duration[1] : 0;
         if ($this->onlineexam_setup->windowError($exam_data['exam_from'], $exam_data['exam_to'], $minutes)
             || $this->onlineexam_setup->paperMaximum($exam_data['target_max_score']) === null) {
+            $this->workflow_save_error = 'The assessment window or result-component maximum is invalid.';
             return false;
         }
-        $this->db->trans_begin();
         $id = isset($exam_data['id']) ? (int) $exam_data['id'] : 0;
         $selected_section_ids = array_values(array_unique(array_filter(array_map('intval', (array) $section_ids))));
+        if (empty($selected_section_ids)) {
+            $this->workflow_save_error = 'Select at least one class arm/section.';
+            return false;
+        }
+        if (!$this->db->table_exists('onlineexam_academic_slots')) {
+            $this->workflow_save_error = 'Install Online Examination migration 138 before saving an assessment.';
+            return false;
+        }
+
+        $slot = $this->workflowAcademicSlot($exam_data);
+        if ($slot === null) {
+            $this->workflow_save_error = 'The selected academic assessment type or result component is invalid.';
+            return false;
+        }
+
+        $this->db->trans_begin();
         if (isset($exam_data['result_adapter']) && $exam_data['result_adapter'] === 'holiday_assessment') {
             $mapped_section_ids = array_values(array_unique(array_map(function ($mapping) {
                 return isset($mapping['section_id']) ? (int) $mapping['section_id'] : 0;
@@ -832,6 +870,7 @@ class Onlineexam_model extends MY_model
             if (!$this->db->table_exists('onlineexam_holiday_mappings')
                 || empty($holiday_mappings)
                 || $mapped_section_ids !== $expected_section_ids) {
+                $this->workflow_save_error = 'The Holiday Assessment mapping does not match every selected class arm.';
                 $this->db->trans_rollback();
                 return false;
             }
@@ -841,12 +880,13 @@ class Onlineexam_model extends MY_model
             $existing = $this->db->query('SELECT * FROM onlineexam WHERE id = ? FOR UPDATE', array($id))->row_array();
             if (empty($existing) || $existing['lifecycle_status'] !== 'draft'
                 || $this->hasWorkflowAttemptsForRevision($id, $existing['revision'])) {
+                $this->workflow_save_error = 'This assessment is no longer an editable draft.';
                 $this->db->trans_rollback();
                 return false;
             }
             $this->db->where('id', $id);
             $this->db->where('workflow_version', 2);
-            $this->db->update('onlineexam', $exam_data);
+            $saved_exam = $this->db->update('onlineexam', $exam_data);
             // Only mutable draft papers follow a changed component maximum.
             $this->db->where('onlineexam_id', $id)->update('onlineexam_papers', array(
                 'raw_max_score' => $this->onlineexam_setup->paperMaximum($exam_data['target_max_score']),
@@ -854,8 +894,38 @@ class Onlineexam_model extends MY_model
             ));
         } else {
             unset($exam_data['id']);
-            $this->db->insert('onlineexam', $exam_data);
+            $saved_exam = $this->db->insert('onlineexam', $exam_data);
             $id = (int) $this->db->insert_id();
+        }
+        if (!$saved_exam || $id < 1 || $this->db->trans_status() === false) {
+            $this->workflow_save_error = 'The assessment could not be saved.';
+            $this->db->trans_rollback();
+            return false;
+        }
+
+        if ($this->workflowAcademicSlotConflict($slot, $selected_section_ids, $id)) {
+            $this->workflow_save_error = 'This subject already has an online examination for one or more selected class arms in the chosen session, term, assessment type and result component.';
+            $this->db->trans_rollback();
+            return false;
+        }
+
+        $this->db->where('onlineexam_id', $id)->delete('onlineexam_academic_slots');
+        $now = date('Y-m-d H:i:s');
+        foreach ($selected_section_ids as $section_id) {
+            $this->db->query(
+                'INSERT IGNORE INTO `onlineexam_academic_slots` '
+                . '(`onlineexam_id`,`session_id`,`term`,`class_id`,`section_id`,`assessment_type`,`component_key`,`subject_id`,`created_at`,`updated_at`) '
+                . 'VALUES (?,?,?,?,?,?,?,?,?,?)',
+                array($id, $slot['session_id'], $slot['term'], $slot['class_id'], $section_id,
+                    $slot['assessment_type'], $slot['component_key'], $slot['subject_id'], $now, $now)
+            );
+        }
+        $reserved_sections = (int) $this->db->where('onlineexam_id', $id)
+            ->count_all_results('onlineexam_academic_slots');
+        if ($reserved_sections !== count($selected_section_ids)) {
+            $this->workflow_save_error = 'This subject already has an online examination for one or more selected class arms in the chosen session, term, assessment type and result component.';
+            $this->db->trans_rollback();
+            return false;
         }
 
         $this->db->where('onlineexam_id', $id)->delete('onlineexam_class_sections');
@@ -876,6 +946,7 @@ class Onlineexam_model extends MY_model
                 foreach ($holiday_mappings as $mapping) {
                     if (empty($mapping['section_id']) || empty($mapping['setting_id'])
                         || empty($mapping['setting_subject_id']) || (float) $mapping['max_score'] <= 0) {
+                        $this->workflow_save_error = 'A Holiday Assessment result mapping is incomplete.';
                         $this->db->trans_rollback();
                         return false;
                     }
@@ -893,12 +964,69 @@ class Onlineexam_model extends MY_model
         }
 
         if ($this->db->trans_status() === false) {
+            $this->workflow_save_error = 'The assessment could not be saved because the database rejected one of its academic mappings.';
             $this->db->trans_rollback();
             return false;
         }
 
         $this->db->trans_commit();
         return $id;
+    }
+
+    public function getWorkflowSaveError()
+    {
+        return $this->workflow_save_error;
+    }
+
+    /** Canonical identity used by the unique subject/arm assessment slot. */
+    private function workflowAcademicSlot(array $exam_data)
+    {
+        $purpose = strtolower(trim(isset($exam_data['purpose']) ? (string) $exam_data['purpose'] : ''));
+        $adapter = strtolower(trim(isset($exam_data['result_adapter']) ? (string) $exam_data['result_adapter'] : ''));
+        $assessment_types = array('ca' => 'term', 'kindergarten' => 'term', 'midterm' => 'midterm', 'holiday' => 'holiday');
+        if (!isset($assessment_types[$purpose])) {
+            return null;
+        }
+        $component = $adapter === 'standard_component'
+            ? strtolower(trim(isset($exam_data['target_component']) ? (string) $exam_data['target_component'] : ''))
+            : $purpose;
+        $term = strtolower(trim(isset($exam_data['term']) ? (string) $exam_data['term'] : ''));
+        if ($component === '' || !in_array($term, array('1st', '2nd', '3rd'), true)) {
+            return null;
+        }
+        $slot = array(
+            'session_id' => isset($exam_data['session_id']) ? (int) $exam_data['session_id'] : 0,
+            'term' => $term,
+            'class_id' => isset($exam_data['class_id']) ? (int) $exam_data['class_id'] : 0,
+            'assessment_type' => $assessment_types[$purpose],
+            'component_key' => $component,
+            'subject_id' => isset($exam_data['subject_id']) ? (int) $exam_data['subject_id'] : 0,
+        );
+        return min($slot['session_id'], $slot['class_id'], $slot['subject_id']) > 0 ? $slot : null;
+    }
+
+    /** Protects migrated databases that already contained overlapping rows. */
+    private function workflowAcademicSlotConflict(array $slot, array $section_ids, $exclude_onlineexam_id)
+    {
+        $section_ids = array_values(array_unique(array_filter(array_map('intval', $section_ids))));
+        if (empty($section_ids)) {
+            return true;
+        }
+        $sql = "SELECT e.id FROM onlineexam e
+            INNER JOIN onlineexam_class_sections ecs ON ecs.onlineexam_id = e.id
+            WHERE e.id <> ? AND e.workflow_version = 2
+              AND e.session_id = ? AND e.term = ? AND e.class_id = ? AND e.subject_id = ?
+              AND (CASE WHEN e.purpose IN ('ca','kindergarten') THEN 'term'
+                        WHEN e.purpose = 'midterm' THEN 'midterm'
+                        WHEN e.purpose = 'holiday' THEN 'holiday' ELSE '' END) = ?
+              AND COALESCE(NULLIF(LOWER(e.target_component),''), LOWER(e.purpose)) = ?
+              AND ecs.section_id IN (" . implode(',', $section_ids) . ')';
+        if ($this->db->field_exists('deleted_at', 'onlineexam')) {
+            $sql .= ' AND e.deleted_at IS NULL';
+        }
+        $sql .= ' LIMIT 1 FOR UPDATE';
+        return $this->db->query($sql, array((int) $exclude_onlineexam_id, $slot['session_id'], $slot['term'],
+            $slot['class_id'], $slot['subject_id'], $slot['assessment_type'], $slot['component_key']))->num_rows() > 0;
     }
 
     public function getHolidayMappings($onlineexam_id)
@@ -942,17 +1070,21 @@ class Onlineexam_model extends MY_model
 
     public function saveWorkflowPaper($data)
     {
+        $this->paper_save_error = '';
         $this->load->library('onlineexam_setup');
         $this->db->trans_begin();
         $exam = $this->db->query('SELECT * FROM onlineexam WHERE id = ? FOR UPDATE', array((int) $data['onlineexam_id']))->row();
         if (!$exam || (int) $exam->workflow_version !== 2 || !empty($exam->deleted_at) || $exam->lifecycle_status !== 'draft'
             || $this->hasWorkflowAttemptsForRevision($exam->id, $exam->revision)
             || $this->onlineexam_setup->windowError($data['starts_at'], $data['ends_at'], $data['duration_minutes'], $exam->exam_from, $exam->exam_to)) {
+            $this->paper_save_error = 'This paper is no longer editable or its delivery window is invalid.';
             $this->db->trans_rollback();
             return false;
         }
         $data['raw_max_score'] = $this->onlineexam_setup->paperMaximum($exam->target_max_score);
+        $data['contribution_score'] = 100.0;
         if ($data['raw_max_score'] === null) {
+            $this->paper_save_error = 'The selected result component has no valid maximum score.';
             $this->db->trans_rollback();
             return false;
         }
@@ -960,12 +1092,20 @@ class Onlineexam_model extends MY_model
             $id = (int) $data['id'];
             $owned = $this->db->where('id', $id)->where('onlineexam_id', (int) $exam->id)->count_all_results('onlineexam_papers');
             if ($owned !== 1) {
+                $this->paper_save_error = 'The selected paper does not belong to this assessment.';
                 $this->db->trans_rollback();
                 return false;
             }
             $data['updated_at'] = date('Y-m-d H:i:s');
             $saved = $this->db->where('id', $id)->where('onlineexam_id', (int) $data['onlineexam_id'])->update('onlineexam_papers', $data);
         } else {
+            $paper_count = (int) $this->db->where('onlineexam_id', (int) $exam->id)
+                ->count_all_results('onlineexam_papers');
+            if ($paper_count > 0) {
+                $this->paper_save_error = 'Only one paper is allowed for each subject assessment.';
+                $this->db->trans_rollback();
+                return false;
+            }
             unset($data['id']);
             $data['created_at'] = date('Y-m-d H:i:s');
             $data['updated_at'] = date('Y-m-d H:i:s');
@@ -973,11 +1113,17 @@ class Onlineexam_model extends MY_model
             $id = (int) $this->db->insert_id();
         }
         if (!$saved || $this->db->trans_status() === false) {
+            $this->paper_save_error = 'The paper could not be saved.';
             $this->db->trans_rollback();
             return false;
         }
         $this->db->trans_commit();
         return $id;
+    }
+
+    public function getWorkflowPaperSaveError()
+    {
+        return $this->paper_save_error;
     }
 
     public function removeWorkflowPaper($paper_id, $onlineexam_id)
@@ -1328,6 +1474,9 @@ class Onlineexam_model extends MY_model
         $this->db->where('onlineexam_id', $onlineexam_id)->delete('onlineexam_result_profiles');
         $this->db->where('onlineexam_id', $onlineexam_id)->delete('onlineexam_questions');
         $this->db->where('onlineexam_id', $onlineexam_id)->delete('onlineexam_papers');
+        if ($this->db->table_exists('onlineexam_academic_slots')) {
+            $this->db->where('onlineexam_id', $onlineexam_id)->delete('onlineexam_academic_slots');
+        }
         $this->db->where('onlineexam_id', $onlineexam_id)->delete('onlineexam_class_sections');
         $this->db->where('onlineexam_id', $onlineexam_id)->delete('onlineexam_students');
         $this->db->where('id', $onlineexam_id)->where('workflow_version', 2)->where('lifecycle_status', 'draft')->delete('onlineexam');

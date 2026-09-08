@@ -157,7 +157,7 @@ foreach ((array) $authored_questions as $authored_question) {
         <?php } ?>
 
         <div class="row">
-            <?php if ($can_edit_assessment) { ?>
+            <?php if ($can_edit_assessment && empty($papers)) { ?>
             <div class="col-md-12">
                 <div class="box box-info">
                     <div class="box-header with-border"><h3 class="box-title">Add paper</h3></div>
@@ -172,7 +172,6 @@ foreach ((array) $authored_questions as $authored_question) {
                                     <div class="form-group"><label>Code</label><input type="text" name="paper_code" class="form-control" placeholder="P1"></div>
                                     <div class="form-group"><label>Paper type *</label><select name="paper_type" class="form-control"><?php foreach ($paper_types as $value => $label) { ?><option value="<?php echo $value; ?>"><?php echo $label; ?></option><?php } ?></select></div>
                                     <div class="form-group"><label>Minutes *</label><input type="number" name="duration_minutes" min="1" value="<?php $duration_parts = explode(':', $exam->duration); echo (int) $duration_parts[0] * 60 + (int) $duration_parts[1]; ?>" class="form-control" required></div>
-                                    <div class="form-group"><label>Contribution *</label><div class="input-group"><input type="number" name="contribution_score" min="0.01" max="100" step="0.01" value="100" class="form-control" required><span class="input-group-addon">%</span></div></div>
                                     <div class="form-group"><label>Display order</label><input type="number" name="display_order" min="0" value="0" class="form-control"></div>
                                 </div>
                             </div>
@@ -264,7 +263,6 @@ foreach ((array) $authored_questions as $authored_question) {
                                         <div class="form-group"><label>Code</label><input type="text" name="paper_code" class="form-control" value="<?php echo html_escape($paper['paper_code']); ?>"></div>
                                         <div class="form-group"><label>Type</label><select name="paper_type" class="form-control"><?php foreach ($paper_types as $value => $label) { ?><option value="<?php echo $value; ?>" <?php echo $paper['paper_type'] === $value ? 'selected' : ''; ?>><?php echo $label; ?></option><?php } ?></select></div>
                                         <div class="form-group"><label>Minutes</label><input type="number" name="duration_minutes" min="1" class="form-control" value="<?php echo (int) $paper['duration_minutes']; ?>"></div>
-                                        <div class="form-group"><label>Contribution</label><input type="number" name="contribution_score" min="0.01" max="100" step="0.01" class="form-control" value="<?php echo html_escape($paper['contribution_score']); ?>"></div>
                                         <div class="form-group"><label>Order</label><input type="number" name="display_order" min="0" class="form-control" value="<?php echo (int) $paper['display_order']; ?>"></div>
                                     </div>
                                 </div>
@@ -284,6 +282,9 @@ foreach ((array) $authored_questions as $authored_question) {
                         </div>
                         <?php } ?>
                     </div>
+                <?php } ?>
+                <?php if ($can_edit_assessment && count($papers) > 1) { ?>
+                    <div class="alert alert-danger">This older draft contains more than one paper. Delete the extra papers before publishing; one subject assessment can contain only one paper.</div>
                 <?php } ?>
             </div>
         </div>
