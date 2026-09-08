@@ -249,8 +249,8 @@ function findOption($questionOpt, $find)
                 <div class="modal-body add_question_import_body">
                        <div class="form-group">
                             <label><?php echo $this->lang->line('subject'); ?></label><small class="req"> *</small>
-                            <select autofocus="" id="subject_id" name="subject_id" class="form-control" >
-                                <option value=""><?php echo $this->lang->line('select'); ?></option>
+                            <select autofocus="" name="subject_id" class="form-control question-scope-subject" >
+                                <option value=""><?php echo $this->lang->line('select'); ?> class first</option>
                                 <?php
 foreach ($subjectlist as $subject) {
     $sub_code=($subject['code'] != "") ? " (".$subject['code'].")":"";
@@ -270,7 +270,7 @@ if (set_value('subject_id') == $subject['id']) {
                         </div>
                  <div class="form-group">
                             <label><?php echo $this->lang->line('class'); ?></label><small class="req"> *</small>
-                            <select autofocus="" id="class_id" name="class_id" class="form-control" >
+                            <select autofocus="" name="class_id" class="form-control question-scope-class" >
                                 <option value=""><?php echo $this->lang->line('select'); ?></option>
                                 <?php
 foreach ($classlist as $class) {
@@ -288,7 +288,7 @@ if (set_value('class_id') == $class['id']) {
                         </div>
                             <div class="form-group">
                                 <label for="exampleInputEmail1"><?php echo $this->lang->line('section'); ?></label><small class="req"> *</small>
-                                <select  id="section_id" name="section_id" class="form-control" >
+                                <select name="section_id" class="form-control question-scope-section" >
                                     <option value=""><?php echo $this->lang->line('select'); ?></option>
                                 </select>
                                 <span class="text-danger"><?php echo form_error('section_id'); ?></span>
@@ -624,46 +624,65 @@ $('#myimgModal').on('shown.bs.modal', function (event) {
       getImages(page, query);
     });
 
-$(document).on('change', '#class_id', function (e) {
-        $('#section_id').html("");
-        var class_id = $(this).val();
-        getSectionByClass(class_id, section_id);
+$(document).on('change', '.question-scope-class', function () {
+        loadQuestionAcademicChoices($(this).closest('form'), true);
     });
 
+$(document).on('change', '.question-scope-section', function () {
+        loadQuestionAcademicChoices($(this).closest('form'), false);
+    });
 
-    function getSectionByClass(class_id, section_id) {
-
-        if (class_id != "") {
-            $('#section_id').html("");
-            var base_url = '<?php echo base_url() ?>';
-            var div_data = '<option value=""><?php echo $this->lang->line('select'); ?></option>';
-
-
-            $.ajax({
-                type: "GET",
-                url: base_url + "sections/getByClass",
-                data: {'class_id': class_id},
-                dataType: "json",
-                beforeSend: function () {
-                    $('#section_id').addClass('dropdownloading');
-                },
-                success: function (data) {
-                    $.each(data, function (i, obj)
-                    {
-                        var sel = "";
-                        if (section_id == obj.section_id) {
-                            sel = "selected";
-                        }
-                        div_data += "<option value=" + obj.section_id + " " + sel + ">" + obj.section + "</option>";
-                    });
-                    $('#section_id').append(div_data);
-                },
-                complete: function () {
-                    $('#section_id').removeClass('dropdownloading');
-                }
-            });
-        }
+function loadQuestionAcademicChoices($form, resetSection) {
+    var $class = $form.find('.question-scope-class');
+    var $section = $form.find('.question-scope-section');
+    var $subject = $form.find('.question-scope-subject');
+    var classId = $class.val();
+    var sectionId = resetSection ? '' : $section.val();
+    var subjectId = resetSection ? '' : $subject.val();
+    var previousRequest = $form.data('question-scope-request');
+    if (previousRequest && previousRequest.abort) {
+        previousRequest.abort();
     }
+    $section.empty().append($('<option>', {value: '', text: '<?php echo $this->lang->line('select'); ?>'}));
+    $subject.empty().append($('<option>', {value: '', text: classId ? 'Loading subjects…' : 'Select class first'}));
+    if (!classId) {
+        return;
+    }
+    $section.add($subject).prop('disabled', true).addClass('dropdownloading');
+    var request = $.getJSON('<?php echo site_url('admin/question/academicchoices'); ?>', {
+        class_id: classId,
+        section_id: sectionId
+    }).done(function (response) {
+        if (!response.status) {
+            errorMsg(response.message || 'The teaching assignment could not be loaded.');
+            return;
+        }
+        $.each(response.sections || [], function (_, row) {
+            var value = row.section_id || row.id;
+            $section.append($('<option>', {value: value, text: row.section}));
+        });
+        $section.val(sectionId);
+        $subject.empty().append($('<option>', {value: '', text: '<?php echo $this->lang->line('select'); ?>'}));
+        $.each(response.subjects || [], function (_, row) {
+            var label = row.name + (row.code ? ' (' + row.code + ')' : '');
+            $subject.append($('<option>', {value: row.id, text: label}));
+        });
+        $subject.val(subjectId);
+        if (!(response.subjects || []).length) {
+            $subject.empty().append($('<option>', {value: '', text: 'No assigned subject'}));
+        }
+    }).fail(function (xhr, status) {
+        if (status !== 'abort') {
+            errorMsg('The assigned subjects could not be loaded. Change the class and try again.');
+        }
+    }).always(function () {
+        if ($form.data('question-scope-request') === request) {
+            $form.removeData('question-scope-request');
+            $section.add($subject).prop('disabled', false).removeClass('dropdownloading');
+        }
+    });
+    $form.data('question-scope-request', request);
+}
 
     $(document).on('change','#question_type',function(){
       if($(this).val() == "singlechoice"){

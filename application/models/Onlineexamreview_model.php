@@ -26,8 +26,7 @@ class Onlineexamreview_model extends CI_Model
 
     public function overview(array $criteria, array $scope)
     {
-        $purposes = array('term' => array('ca', 'kindergarten'), 'midterm' => array('midterm'), 'holiday' => array('holiday'));
-        if (!isset($purposes[$criteria['assessment_type']])) {
+        if (empty($criteria['component'])) {
             return array('students' => array(), 'columns' => array(), 'cells' => array());
         }
         $students = $this->db->select("ss.id AS student_session_id, ss.section_id, s.admission_no, CONCAT_WS(' ', s.firstname, s.middlename, s.lastname) AS student_name", false)
@@ -35,17 +34,7 @@ class Onlineexamreview_model extends CI_Model
             ->where('ss.session_id', (int) $criteria['session_id'])->where('ss.class_id', (int) $criteria['class_id'])
             ->where('ss.section_id', (int) $criteria['section_id'])->where('s.is_active', 'yes')
             ->order_by('s.firstname')->order_by('s.lastname')->get()->result_array();
-        $query = $this->db->distinct()->select('e.id')->from('onlineexam e')
-            ->join('onlineexam_class_sections ecs', 'ecs.onlineexam_id = e.id')
-            ->where('e.workflow_version', 2)->where('e.session_id', (int) $criteria['session_id'])
-            ->where('e.term', $criteria['term'])->where('e.class_id', (int) $criteria['class_id'])
-            ->where('ecs.section_id', (int) $criteria['section_id'])->where('e.is_active', 1)
-            ->where_in('e.purpose', $purposes[$criteria['assessment_type']])
-            ->where_in('e.lifecycle_status', array('scheduled', 'published', 'in_progress', 'marking', 'completed'));
-        if ($this->db->field_exists('deleted_at', 'onlineexam')) {
-            $query->where('e.deleted_at', null);
-        }
-        $exam_ids = $query->order_by('e.id')->get()->result_array();
+        $exam_ids = $this->matchingExamIds($criteria, $criteria['component']);
         $columns = $cells = array();
         foreach ($exam_ids as $exam_row) {
             $access = $this->onlineexamoperations_model->canManageExam($exam_row['id'], $scope);
@@ -69,6 +58,81 @@ class Onlineexamreview_model extends CI_Model
             }
         }
         return array('students' => $students, 'columns' => $columns, 'cells' => $cells);
+    }
+
+    /** Components that actually have a published assessment in this class arm. */
+    public function components(array $criteria, array $scope)
+    {
+        $components = array();
+        foreach ($this->matchingExamIds($criteria) as $exam_row) {
+            $access = $this->onlineexamoperations_model->canManageExam($exam_row['id'], $scope);
+            if (empty($access['success'])) {
+                continue;
+            }
+            $exam = $access['exam'];
+            $value = $exam['result_adapter'] === 'standard_component'
+                ? strtolower(trim((string) $exam['target_component']))
+                : strtolower(trim((string) $exam['purpose']));
+            if ($value === '') {
+                continue;
+            }
+            $components[$value] = array('value' => $value, 'label' => $this->componentLabel($value));
+        }
+        uasort($components, function ($left, $right) {
+            return $this->componentOrder($left['value']) - $this->componentOrder($right['value']);
+        });
+        return array_values($components);
+    }
+
+    private function matchingExamIds(array $criteria, $component = '')
+    {
+        $purposes = array('term' => array('ca', 'kindergarten'), 'midterm' => array('midterm'), 'holiday' => array('holiday'));
+        if (!isset($purposes[$criteria['assessment_type']])
+            || empty($criteria['session_id']) || empty($criteria['class_id']) || empty($criteria['section_id'])
+            || !in_array($criteria['term'], array('1st', '2nd', '3rd'), true)) {
+            return array();
+        }
+        $query = $this->db->distinct()->select('e.id, e.subject_id')->from('onlineexam e')
+            ->join('onlineexam_class_sections ecs', 'ecs.onlineexam_id = e.id')
+            ->where('e.workflow_version', 2)->where('e.session_id', (int) $criteria['session_id'])
+            ->where('e.term', $criteria['term'])->where('e.class_id', (int) $criteria['class_id'])
+            ->where('ecs.section_id', (int) $criteria['section_id'])->where('e.is_active', 1)
+            ->where_in('e.purpose', $purposes[$criteria['assessment_type']])
+            ->where_in('e.lifecycle_status', array('scheduled', 'published', 'in_progress', 'marking', 'completed'));
+        // Only the canonical owner is shown when a pre-migration database
+        // contained duplicate assessments for the same academic slot.
+        if ($this->db->table_exists('onlineexam_academic_slots')) {
+            $query->join('onlineexam_academic_slots eas', 'eas.onlineexam_id = e.id AND eas.section_id = ecs.section_id');
+        }
+        if ($this->db->field_exists('deleted_at', 'onlineexam')) {
+            $query->where('e.deleted_at', null);
+        }
+        $component = strtolower(trim((string) $component));
+        if ($component !== '') {
+            $query->where(
+                "COALESCE(NULLIF(LOWER(e.target_component), ''), LOWER(e.purpose)) = " . $this->db->escape($component),
+                null,
+                false
+            );
+        }
+        return $query->order_by('e.subject_id')->order_by('e.id')->get()->result_array();
+    }
+
+    private function componentLabel($component)
+    {
+        if (preg_match('/^ca([1-9]|10)$/', $component, $match)) {
+            return 'CA' . $match[1];
+        }
+        $labels = array('exam' => 'Exam', 'holiday' => 'Holiday', 'kindergarten' => 'Kindergarten');
+        return isset($labels[$component]) ? $labels[$component] : ucwords(str_replace('_', ' ', $component));
+    }
+
+    private function componentOrder($component)
+    {
+        if (preg_match('/^ca([1-9]|10)$/', $component, $match)) {
+            return (int) $match[1];
+        }
+        return $component === 'exam' ? 20 : ($component === 'kindergarten' ? 30 : ($component === 'holiday' ? 40 : 99));
     }
 
     public function cell($exam_id, $student_session_id, $paper_id, array $scope)
@@ -302,6 +366,9 @@ class Onlineexamreview_model extends CI_Model
         }
         $changes = array('deleted_at' => date('Y-m-d H:i:s'), 'deleted_by' => (int) $actor_id, 'is_active' => 0);
         $this->db->where('id', (int) $exam_id)->update('onlineexam', $changes);
+        if ($this->db->table_exists('onlineexam_academic_slots')) {
+            $this->db->where('onlineexam_id', (int) $exam_id)->delete('onlineexam_academic_slots');
+        }
         $this->onlineexam_model->auditWorkflow($exam_id, $actor_id, 'delete_completed_assessment', 'onlineexam', $exam_id, $exam, $changes);
         if ($this->db->trans_status() === false) {
             $this->db->trans_rollback();

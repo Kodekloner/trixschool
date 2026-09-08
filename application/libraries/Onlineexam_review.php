@@ -87,7 +87,7 @@ class Onlineexam_review
             if (isset($paper['manual_marking_status']) && $paper['manual_marking_status'] === 'pending') {
                 return array_merge($result, array('key' => 'marking', 'label' => 'Awaiting marking', 'style' => 'info', 'recoverable' => false));
             }
-            return array_merge($result, array('key' => 'completed', 'label' => number_format((float) $paper['raw_score'], 2) . ' / ' . number_format((float) $paper['raw_max_score'], 2), 'style' => 'success', 'recoverable' => false, 'complete' => true));
+            return array_merge($result, array('key' => 'completed', 'label' => $this->compactScore($paper['raw_score']) . ' / ' . $this->compactScore($paper['raw_max_score']), 'style' => 'success', 'recoverable' => false, 'complete' => true));
         }
         if ($status === 'in_progress' && $deadline && $now < $deadline + 15) {
             return array_merge($result, array('key' => 'in_progress', 'label' => 'In progress', 'style' => 'info', 'recoverable' => false));
@@ -104,5 +104,10 @@ class Onlineexam_review
             return array_merge($result, array('key' => 'upcoming', 'label' => 'Upcoming'));
         }
         return $result;
+    }
+
+    private function compactScore($score)
+    {
+        return rtrim(rtrim(number_format((float) $score, 2, '.', ''), '0'), '.');
     }
 }

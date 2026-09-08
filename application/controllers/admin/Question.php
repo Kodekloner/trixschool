@@ -46,12 +46,10 @@ class Question extends Admin_Controller
         $this->session->set_userdata('top_menu', 'Online_Examinations');
         $this->session->set_userdata('sub_menu', 'Online_Examinations/question');
         $data                   = array();
-        $class                  = $this->class_model->get();
-        $data['classlist']      = $class;
-        $subjectlist            = $this->subject_model->get();
-        $data['subjectlist']    = $subjectlist;
+        $academic_choices       = $this->question_model->getQuestionBankAcademicChoices();
+        $data['classlist']      = $academic_choices['classes'];
+        $data['subjectlist']    = $academic_choices['subjects'];
         $data['question_type']  = $this->config->item('question_type');
-        $questionList           = $this->question_model->get();
        
      
         $this->load->view('layout/header', $data);
@@ -143,9 +141,10 @@ class Question extends Admin_Controller
         } else {
             if (!$this->question_model->canAccessQuestionScope(
                 (int) $this->input->post('class_id'),
-                (int) $this->input->post('section_id')
+                (int) $this->input->post('section_id'),
+                (int) $this->input->post('subject_id')
             )) {
-                echo json_encode(array('status' => 0, 'error' => array(), 'message' => 'The selected class or section is outside your permitted Question Bank scope.'));
+                echo json_encode(array('status' => 0, 'error' => array(), 'message' => 'You are not assigned to teach this subject for the selected class arm.'));
                 return;
             }
             $this->load->helper('question_import');
@@ -271,9 +270,10 @@ class Question extends Admin_Controller
         } else {
             if (!$this->question_model->canAccessQuestionScope(
                 (int) $this->input->post('class_id'),
-                (int) $this->input->post('section_id')
+                (int) $this->input->post('section_id'),
+                (int) $this->input->post('subject_id')
             )) {
-                echo json_encode(array('status' => 0, 'error' => array(), 'message' => 'The selected class or section is outside your permitted Question Bank scope.'));
+                echo json_encode(array('status' => 0, 'error' => array(), 'message' => 'You are not assigned to teach this subject for the selected class arm.'));
                 return;
             }
 
@@ -361,9 +361,9 @@ class Question extends Admin_Controller
         }
 
         $data                        = array();
-        $data['classList']           = $this->class_model->get();
-        $subject_result              = $this->subject_model->get();
-        $data['subjectlist']         = $subject_result;
+        $academic_choices            = $this->question_model->getQuestionBankAcademicChoices();
+        $data['classList']           = $academic_choices['classes'];
+        $data['subjectlist']         = $academic_choices['subjects'];
         $data['question_true_false'] = $this->config->item('question_true_false');
         $data['question_type']       = $this->config->item('question_type');
         $questionOpt                 = $this->customlib->getQuesOption();
@@ -386,16 +386,44 @@ class Question extends Admin_Controller
         }
         $question_result             = $this->question_model->get($data['recordid']);
         $data['question_result']     = $question_result;
-        $data['classList']           = $this->class_model->get();
-        $data['sectionList']         = $this->section_model->getClassBySection($question_result->class_id);
-        $subject_result              = $this->subject_model->get();
-        $data['subjectlist']         = $subject_result;
+        $academic_choices            = $this->question_model->getQuestionBankAcademicChoices(
+            $question_result->class_id,
+            $question_result->section_id
+        );
+        $data['classList']           = $academic_choices['classes'];
+        $data['sectionList']         = $academic_choices['sections'];
+        $data['subjectlist']         = $academic_choices['subjects'];
         $data['question_true_false'] = $this->config->item('question_true_false');
         $data['question_type']       = $this->config->item('question_type');
         $questionOpt                 = $this->customlib->getQuesOption();
         $data['questionOpt']         = $questionOpt;
         $page                        = $this->load->view('admin/question/_editform', $data, true);
         echo json_encode(array('status' => 1, 'page' => $page));
+    }
+
+    /** Exact class-arm subjects for Question Bank authoring and imports. */
+    public function academicchoices()
+    {
+        if (!$this->rbac->hasPrivilege('question_bank', 'can_view')
+            && !$this->rbac->hasPrivilege('question_bank', 'can_add')
+            && !$this->rbac->hasPrivilege('question_bank', 'can_edit')
+            && !$this->rbac->hasPrivilege('import_question', 'can_view')) {
+            access_denied();
+        }
+        $class_id = (int) $this->input->get('class_id');
+        $section_id = (int) $this->input->get('section_id');
+        $choices = $this->question_model->getQuestionBankAcademicChoices($class_id, $section_id);
+        if ($class_id > 0 && !in_array($class_id, array_map('intval', array_column($choices['classes'], 'id')), true)) {
+            return $this->output->set_status_header(403)->set_content_type('application/json')->set_output(json_encode(array(
+                'status' => 0,
+                'message' => 'This class is outside your teaching assignment.',
+            )));
+        }
+        return $this->output->set_content_type('application/json')->set_output(json_encode(array(
+            'status' => 1,
+            'sections' => $choices['sections'],
+            'subjects' => $choices['subjects'],
+        )));
     }
 
     public function delete($id)
@@ -550,9 +578,6 @@ class Question extends Admin_Controller
         $question_dt = json_decode($question_dt);
         $dt_data = array();
 
-        $recordsTotal_flter="";
-        $userdata = $this->customlib->getUserData();
-        $role_id = $userdata["role_id"];
         if (!empty($question_dt->data)) {
             foreach ($question_dt->data as $key => $value) {
 
@@ -574,59 +599,9 @@ class Question extends Admin_Controller
                     $actions[] = '<a data-placement="left" href="' . base_url() . 'admin/question/delete/' . (int) $value->id . '" class="btn btn-default btn-xs" data-toggle="tooltip" title=' . $delete_title . ' onclick="return confirm(' . $delete . ')"><i class="fa fa-remove"></i></a>';
                 }
                 $row[] = '<span class="question-bank-row-actions">' . implode(' ', $actions) . '</span>';
-           
-
-                if($role_id==2){
-             $my_section=array();
-             if($this->sch_setting_detail->class_teacher=='yes' && $this->sch_setting_detail->my_question=='1'){
-                $my_class=$this->class_model->get();
-            foreach ($my_class as $class_key => $class_value) {
-              $section_id= $this->teacher_model->get_teacherrestricted_modesections($this->customlib->getStaffID(), $class_value['id']);
-              foreach ($section_id as $section_idkey => $section_idvalue) {
-                  $my_section[]=$section_idvalue['section_id'];
-              }
-             
-              if(in_array($value->section_id, $my_section, TRUE) && $class_value['id']==$value->class_id){
-                 $dt_data[] = $row;
-          
-              }elseif(($class_value['id']==$value->class_id) && $value->section_id=='0'){
-                   $dt_data[] = $row;
-                    
-              }
-            }
-
-        }elseif($this->sch_setting_detail->class_teacher=='yes' && $this->sch_setting_detail->my_question=='0'){
-            $my_class=$this->class_model->get();
-            foreach ($my_class as $class_key => $class_value) {
-              $section_id= $this->teacher_model->get_teacherrestricted_modesections($this->customlib->getStaffID(), $class_value['id']);
-              foreach ($section_id as $section_idkey => $section_idvalue) {
-                  $my_section[]=$section_idvalue['section_id'];
-              }
-             
-              if(in_array($value->section_id, $my_section, TRUE) && $class_value['id']==$value->class_id){
-                 $dt_data[] = $row;
-          
-              }elseif(($class_value['id']==$value->class_id) && $value->section_id=='0'){
-                   $dt_data[] = $row;
-                     
-              }
-            }
-            
-
-        }elseif($this->sch_setting_detail->class_teacher=='no' && $this->sch_setting_detail->my_question=='1'){
-            if($this->customlib->getStaffID()==$value->staff_id){
-               $dt_data[] = $row;
-              
-            }
-       }else{
-         $dt_data[] = $row;
-        
-       }
-
-           }else{
-            $dt_data[] = $row;
-          
-           }
+                // The model query already applies exact teacher/session/class-arm/subject
+                // scope, so pagination totals and visible rows stay consistent.
+                $dt_data[] = $row;
             } 
         }
 

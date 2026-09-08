@@ -29,16 +29,6 @@ class Onlineexam extends Admin_Controller
         $data=array();
         $this->session->set_userdata('top_menu', 'Online_Examinations');
         $this->session->set_userdata('sub_menu', 'Online_Examinations/Onlineexam');
-        $questionList           = $this->onlineexam_model->get();
-        $data['questionList']   = $questionList;
-        $subject_result         = $this->subject_model->get();
-        $data['subjectlist']    = $subject_result;
-        $questionOpt            = $this->customlib->getQuesOption();
-        $data['questionOpt']    = $questionOpt;
-        $data['question_type']  = $this->config->item('question_type');
-        $data['classList']      = $this->class_model->get();
-        $data['sessionList']    = $this->session_model->get();
-        $data['current_session_id'] = $this->setting_model->getCurrentSession();
         $this->load->view('layout/header', $data);
         $this->load->view('admin/onlineexam/index', $data);
         $this->load->view('layout/footer', $data);
@@ -54,16 +44,8 @@ class Onlineexam extends Admin_Controller
             ? (int) $this->customlib->getStaffID()
             : null;
         $questionList           = $this->onlineexam_model->getexamlist($teacher_id);
-        
-		$subject_result         = $this->subject_model->get();
-        $subjectlist   	= $subject_result;
-        $questionOpt            = $this->customlib->getQuesOption();
-        $questionOpt    = $questionOpt;
-        $question_type  = $this->config->item('question_type');
-        $classList      = $this->class_model->get();
         $m       = json_decode($questionList);
 
-        $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
         $dt_data = array();
         if (!empty($m->data)) {
             foreach ($m->data as $key => $subject_value) {
@@ -178,9 +160,15 @@ class Onlineexam extends Admin_Controller
             access_denied();
         }
 
+        $form_session_id = $exam
+            ? (int) $exam->session_id
+            : (int) $this->setting_model->getCurrentSession();
+        if ($this->input->server('REQUEST_METHOD') === 'POST' && (int) $this->input->post('session_id') > 0) {
+            $form_session_id = (int) $this->input->post('session_id');
+        }
         $data = array(
             'exam'               => $exam,
-            'classList'          => $this->class_model->get(),
+            'classList'          => $this->workflowClassChoices($form_session_id),
             'subjectList'        => array(),
             'sessionList'        => $this->session_model->get(),
             'current_session_id' => $this->setting_model->getCurrentSession(),
@@ -357,7 +345,8 @@ class Onlineexam extends Admin_Controller
                         redirect('admin/onlineexam/builder/' . $saved_id);
                         return;
                     }
-                    $extra_errors[] = 'The assessment could not be saved.';
+                    $extra_errors[] = $this->onlineexam_model->getWorkflowSaveError()
+                        ?: 'The assessment could not be saved.';
                 }
 
                 if (!empty($extra_errors)) {
@@ -375,7 +364,9 @@ class Onlineexam extends Admin_Controller
 
     public function academicconfiguration()
     {
-        if (!$this->rbac->hasPrivilege('online_examination', 'can_view')) {
+        if (!$this->rbac->hasPrivilege('online_examination', 'can_view')
+            && !$this->rbac->hasPrivilege('online_examination', 'can_add')
+            && !$this->rbac->hasPrivilege('online_examination', 'can_edit')) {
             access_denied();
         }
         $class_id = (int) $this->input->get('class_id');
@@ -457,6 +448,26 @@ class Onlineexam extends Admin_Controller
         ));
     }
 
+    public function academicclasses()
+    {
+        if (!$this->rbac->hasPrivilege('online_examination', 'can_view')
+            && !$this->rbac->hasPrivilege('online_examination', 'can_add')
+            && !$this->rbac->hasPrivilege('online_examination', 'can_edit')) {
+            access_denied();
+        }
+        $session_id = (int) $this->input->get('session_id');
+        if (!$this->workflowIdIsAllowed($session_id, $this->session_model->get())) {
+            return $this->output->set_status_header(422)->set_content_type('application/json')->set_output(json_encode(array(
+                'status' => 0,
+                'message' => 'Select a valid academic session.',
+            )));
+        }
+        return $this->output->set_content_type('application/json')->set_output(json_encode(array(
+            'status' => 1,
+            'classes' => $this->workflowClassChoices($session_id),
+        )));
+    }
+
     public function builder($id)
     {
         if (!$this->rbac->hasPrivilege('add_questions_in_exam', 'can_view')) {
@@ -514,6 +525,16 @@ class Onlineexam extends Admin_Controller
         return $this->onlineexam_model->getWorkflowAcademicChoices($class_id, $session_id, $term, $subject_id, $teacher_id);
     }
 
+    private function workflowClassChoices($session_id)
+    {
+        $userdata = $this->customlib->getUserData();
+        $teacher_id = !empty($userdata['role_id']) && (int) $userdata['role_id'] === 2
+            ? (int) $this->customlib->getStaffID() : null;
+        return $teacher_id === null
+            ? $this->class_model->get()
+            : $this->onlineexam_model->getWorkflowClassChoices((int) $session_id, $teacher_id);
+    }
+
     private function retainBuilderInput($form)
     {
         $values = (array) $this->input->post(null, false);
@@ -538,7 +559,6 @@ class Onlineexam extends Admin_Controller
         $this->form_validation->set_rules('delivery_mode', 'Delivery mode', 'trim|required|in_list[cbt]');
         $this->form_validation->set_rules('duration_minutes', 'Paper duration', 'trim|required|integer|greater_than[0]');
         $this->retainBuilderInput('paper');
-        $this->form_validation->set_rules('contribution_score', 'Contribution', 'trim|required|numeric|greater_than[0]|less_than_equal_to[100]');
         if ($this->form_validation->run() === false) {
             $this->session->set_flashdata('msg', '<div class="alert alert-danger">' . validation_errors() . '</div>');
             redirect('admin/onlineexam/builder/' . $onlineexam_id);
@@ -576,13 +596,17 @@ class Onlineexam extends Admin_Controller
             'ends_at'            => date('Y-m-d H:i:s', $ends_at),
             'duration_minutes'   => (int) $this->input->post('duration_minutes'),
             'raw_max_score'      => $paper_maximum,
-            'contribution_score' => (float) $this->input->post('contribution_score'),
+            // A subject assessment has exactly one paper, so it contributes
+            // the whole selected CA/Exam component.
+            'contribution_score' => 100.0,
             'display_order'      => max(0, (int) $this->input->post('display_order')),
             'is_active'          => $this->input->post('is_active') ? 1 : 0,
         );
         $saved_paper_id = $this->onlineexam_model->saveWorkflowPaper($record);
         if (!$saved_paper_id) {
-            $this->session->set_flashdata('msg', '<div class="alert alert-danger">The paper could not be saved. Your entries have been retained.</div>');
+            $message = $this->onlineexam_model->getWorkflowPaperSaveError()
+                ?: 'The paper could not be saved.';
+            $this->session->set_flashdata('msg', '<div class="alert alert-danger">' . html_escape($message) . ' Your entries have been retained.</div>');
             redirect('admin/onlineexam/builder/' . $onlineexam_id);
             return;
         }
@@ -709,7 +733,7 @@ class Onlineexam extends Admin_Controller
         $paper = $this->onlineexam_model->getWorkflowPaper($paper_id);
         $question = $this->question_model->get($question_id);
         if (!$exam || !$this->compactAssessmentIsExecutable($exam, true) || !$paper || !$question
-            || !$this->question_model->canAccessQuestion($question_id)
+            || !$this->question_model->canAccessQuestion($question_id, $exam->session_id)
             || !$this->workflowTeacherHasAssignment($exam->class_id, $exam->section_ids, $exam->subject_id, $exam->session_id)
             || (int) $paper['onlineexam_id'] !== $onlineexam_id || $exam->lifecycle_status !== 'draft'
             || $this->onlineexam_model->hasWorkflowAttemptsForRevision($onlineexam_id, $exam->revision)) {
@@ -1735,6 +1759,7 @@ class Onlineexam extends Admin_Controller
             'session_id' => (int) $exam['session_id'], 'term' => $exam['term'],
             'assessment_type' => in_array($exam['purpose'], array('midterm', 'holiday'), true) ? $exam['purpose'] : 'term',
             'class_id' => (int) $exam['class_id'], 'section_id' => (int) $section_id,
+            'component' => !empty($exam['target_component']) ? strtolower($exam['target_component']) : strtolower($exam['purpose']),
         ));
     }
 
@@ -1750,6 +1775,18 @@ class Onlineexam extends Admin_Controller
         return !empty($user['role_id']) && (int) $user['role_id'] === 2 ? (int) $this->customlib->getStaffID() : null;
     }
 
+    private function reviewScopeForSection($section_id, $teacher_id)
+    {
+        $scope = array('section_ids' => array((int) $section_id));
+        if ($teacher_id !== null) {
+            $scope['enforce_assignment'] = true;
+            $scope['staff_id'] = (int) $teacher_id;
+        } else {
+            $scope['bypass_assignment'] = true;
+        }
+        return $scope;
+    }
+
     public function review()
     {
         if (!$this->rbac->hasPrivilege('online_examination', 'can_view')) {
@@ -1758,21 +1795,19 @@ class Onlineexam extends Admin_Controller
         $this->load->model('onlineexamreview_model');
         $criteria = array('session_id' => (int) ($this->reviewInput('session_id') ?: $this->setting_model->getCurrentSession()),
             'term' => $this->reviewInput('term'), 'assessment_type' => $this->reviewInput('assessment_type'),
-            'class_id' => (int) $this->reviewInput('class_id'), 'section_id' => (int) $this->reviewInput('section_id'));
+            'class_id' => (int) $this->reviewInput('class_id'), 'section_id' => (int) $this->reviewInput('section_id'),
+            'component' => strtolower($this->reviewInput('component')));
         $teacher_id = $this->reviewTeacherId();
         $sections = $this->onlineexamreview_model->sections($criteria['session_id'], $criteria['class_id'], $teacher_id);
-        $ready = in_array($criteria['term'], array('1st', '2nd', '3rd'), true)
+        $criteria_valid = in_array($criteria['term'], array('1st', '2nd', '3rd'), true)
             && in_array($criteria['assessment_type'], array('term', 'midterm', 'holiday'), true)
             && in_array($criteria['section_id'], array_map('intval', array_column($sections, 'id')), true);
-        $scope = array('section_ids' => array($criteria['section_id']));
-        if ($teacher_id !== null) {
-            $scope['enforce_assignment'] = true;
-            $scope['staff_id'] = $teacher_id;
-        } else {
-            $scope['bypass_assignment'] = true;
-        }
+        $scope = $this->reviewScopeForSection($criteria['section_id'], $teacher_id);
+        $components = $criteria_valid ? $this->onlineexamreview_model->components($criteria, $scope) : array();
+        $ready = $criteria_valid && in_array($criteria['component'], array_column($components, 'value'), true);
         $data = array('criteria' => $criteria, 'ready' => $ready, 'sectionList' => $sections,
-            'sessionList' => $this->session_model->get(), 'classList' => $this->class_model->get(),
+            'componentList' => $components,
+            'sessionList' => $this->session_model->get(), 'classList' => $this->workflowClassChoices($criteria['session_id']),
             'review' => $ready ? $this->onlineexamreview_model->overview($criteria, $scope) : null,
             'review_input' => $this->session->flashdata('onlineexam_review_input'));
         $this->session->set_userdata('top_menu', 'Online_Examinations');
@@ -1789,6 +1824,31 @@ class Onlineexam extends Admin_Controller
         }
         $this->load->model('onlineexamreview_model');
         $rows = $this->onlineexamreview_model->sections((int) $this->reviewInput('session_id'), (int) $this->reviewInput('class_id'), $this->reviewTeacherId());
+        $this->output->set_content_type('application/json')->set_output(json_encode($rows));
+    }
+
+    public function reviewcomponents()
+    {
+        if (!$this->rbac->hasPrivilege('online_examination', 'can_view')) {
+            access_denied();
+        }
+        $this->load->model('onlineexamreview_model');
+        $criteria = array(
+            'session_id' => (int) $this->reviewInput('session_id'),
+            'term' => $this->reviewInput('term'),
+            'assessment_type' => $this->reviewInput('assessment_type'),
+            'class_id' => (int) $this->reviewInput('class_id'),
+            'section_id' => (int) $this->reviewInput('section_id'),
+        );
+        $teacher_id = $this->reviewTeacherId();
+        $allowed_sections = $this->onlineexamreview_model->sections($criteria['session_id'], $criteria['class_id'], $teacher_id);
+        if (!in_array($criteria['section_id'], array_map('intval', array_column($allowed_sections, 'id')), true)) {
+            return $this->output->set_content_type('application/json')->set_output('[]');
+        }
+        $rows = $this->onlineexamreview_model->components(
+            $criteria,
+            $this->reviewScopeForSection($criteria['section_id'], $teacher_id)
+        );
         $this->output->set_content_type('application/json')->set_output(json_encode($rows));
     }
 
@@ -2651,19 +2711,20 @@ class Onlineexam extends Admin_Controller
                 $data['workflow_editable'] = $workflow_exam->lifecycle_status === 'draft' && !$this->onlineexam_model->hasWorkflowAttemptsForRevision($workflow_exam->id, $workflow_exam->revision);
             }
             if ($role_id == 2) {
+                $teacher_allowed_sections = array_values(array_unique(array_merge(
+                    array(0),
+                    $this->workflowTeacherAssignedSectionIds(
+                        $workflow_exam->class_id,
+                        $workflow_exam->subject_id,
+                        $workflow_exam->session_id,
+                        $workflow_exam->section_ids
+                    )
+                )));
+                $where_search['allowed_section_ids'] = array_values(array_intersect(
+                    $where_search['allowed_section_ids'],
+                    $teacher_allowed_sections
+                ));
                 if ($this->sch_setting_detail->class_teacher === 'yes') {
-                    $teacher_sections = $this->teacher_model->get_teacherrestricted_modesections(
-                        $this->customlib->getStaffID(),
-                        (int) $workflow_exam->class_id
-                    );
-                    $teacher_allowed_sections = array_values(array_unique(array_merge(
-                        array(0),
-                        array_map('intval', array_column($teacher_sections, 'section_id'))
-                    )));
-                    $where_search['allowed_section_ids'] = array_values(array_intersect(
-                        $where_search['allowed_section_ids'],
-                        $teacher_allowed_sections
-                    ));
                     if ($this->sch_setting_detail->my_question === '0') {
                         $where_search['question_staff_id'] = (int) $this->customlib->getStaffID();
                     }
@@ -2676,7 +2737,7 @@ class Onlineexam extends Admin_Controller
 
             $dt_data = array();
             foreach ($questionList as $questionList_value) {
-                if ($role_id != 2 || $this->question_model->canAccessQuestion((int) $questionList_value->id)) {
+                if ($role_id != 2 || $this->question_model->canAccessQuestion((int) $questionList_value->id, $workflow_exam->session_id)) {
                     $dt_data[] = $questionList_value;
                 }
             }

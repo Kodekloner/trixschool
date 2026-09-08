@@ -48,7 +48,8 @@ compact_backend_assert(strpos($admin, 'in_list[objective,theory]') !== false, 'A
 compact_backend_assert(strpos($admin, 'in_list[cbt]') !== false, 'Admin paper saves must enforce CBT.');
 compact_backend_assert(strpos($admin, 'retiredOnlineexamAction') !== false, 'Legacy admin mutations must terminate explicitly.');
 compact_backend_assert(strpos($admin, 'compactAssessmentIsExecutable') !== false, 'Historical workflow-v2 variants must remain read-only on admin routes.');
-compact_backend_assert(strpos($admin, '$this->question_model->canAccessQuestion($question_id)') !== false, 'Question assignment must reject crafted Question Bank identifiers outside the user scope.');
+compact_backend_assert(strpos($admin, '$this->question_model->canAccessQuestion($question_id, $exam->session_id)') !== false, 'Question assignment must reject crafted Question Bank identifiers outside the exact assessment-session scope.');
+compact_backend_assert(strpos($admin, 'workflowTeacherAssignedSectionIds(') !== false, 'Teacher Question Bank searches must use exact subject/session/class-arm assignments.');
 compact_backend_assert(strpos($admin, 'This question belongs to a class arm that is not selected for the assessment.') !== false, 'Question assignment must reject crafted identifiers from an unselected class arm.');
 $list_start = strpos($admin, 'public function getexamlist()');
 $list_end = strpos($admin, 'public function workflow(', $list_start);
@@ -68,6 +69,8 @@ compact_backend_assert(
     strpos($model, 'onlineexam.exam,onlineexam.purpose,total_ques,onlineexam.exam_from,onlineexam.exam_to,onlineexam.duration,onlineexam.lifecycle_status,onlineexam.feedback_status," "') !== false,
     'Server-side list ordering must match the compact table\'s nine visible columns.'
 );
+compact_backend_assert(strpos($model, 'onlineexam.workflow_version = 2 AND') !== false && strpos($model, 'ts.subject_id = onlineexam.subject_id') !== false, 'Teacher assessment lists must hide legacy and other-subject assessments.');
+compact_backend_assert(strpos($model, 'public function getWorkflowClassChoices') !== false, 'Teacher assessment creation needs session-scoped class choices.');
 
 $question_picker = compact_backend_source('application/models/Onlineexamquestion_model.php');
 compact_backend_assert(strpos($question_picker, "['allowed_section_ids']") !== false, 'Assessment Question Bank searches must apply teacher section scope before pagination.');

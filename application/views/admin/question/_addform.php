@@ -3,8 +3,8 @@
                     <div class="form-group col-md-6">
                         <label for="subject_id"><?php echo $this->lang->line('subject') ?></label><small class="req"> *</small>
 
-                        <select class="form-control" name="subject_id">
-                            <option value=""><?php echo $this->lang->line('select'); ?></option>
+                        <select class="form-control question-scope-subject" name="subject_id">
+                            <option value=""><?php echo $this->lang->line('select'); ?> class first</option>
                             <?php
 foreach ($subjectlist as $subject_key => $subject_value) {
     ?>
@@ -36,7 +36,7 @@ foreach ($question_type as $question_type_key => $question_type_value) {
                           <div class="form-group col-md-6">
                         <label for="class_id"><?php echo $this->lang->line('class') ?></label><small class="req"> *</small>
 
-                        <select class="form-control" name="class_id" id="class_id">
+                        <select class="form-control question-scope-class" name="class_id">
                             <option value=""><?php echo $this->lang->line('select'); ?></option>
                             <?php
 foreach ($classList as $class_key => $class_value) {
@@ -51,7 +51,7 @@ foreach ($classList as $class_key => $class_value) {
 
                  <div class="form-group col-md-6">
                      <label for="section_id"><?php echo $this->lang->line('section'); ?></label>
-                     <select  id="section_id" name="section_id" class="form-control" >
+                     <select name="section_id" class="form-control question-scope-section" >
                          <option value=""><?php echo $this->lang->line('select'); ?></option>
                     </select>
                     <span class="text-danger"><?php echo form_error('section_id'); ?></span>

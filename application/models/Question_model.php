@@ -10,6 +10,7 @@ class Question_model extends MY_model
     {
         parent::__construct();
         $this->sch_setting_detail = $this->setting_model->getSetting();
+        $this->current_session = (int) $this->setting_model->getCurrentSession();
     }
     public function add($data)
     {
@@ -104,33 +105,21 @@ class Question_model extends MY_model
         $role_id  = $userdata["role_id"];
 
         if ($role_id == 2) {
-            $my_section = array();
-            if ($this->sch_setting_detail->class_teacher == 'yes' && $this->sch_setting_detail->my_question == '1') {
-                $my_class = $this->class_model->get();
+            $teacher_id = (int) $this->customlib->getStaffID();
+            $assignment_scope = "EXISTS (SELECT 1 FROM teacher_subjects qts "
+                . "INNER JOIN class_sections qcs ON qcs.id = qts.class_section_id "
+                . "WHERE qts.teacher_id = " . $teacher_id
+                . " AND qts.session_id = " . (int) $this->current_session
+                . " AND qts.subject_id = questions.subject_id"
+                . " AND qcs.class_id = questions.class_id"
+                . " AND (questions.section_id = 0 OR qcs.section_id = questions.section_id))";
+            $this->datatables->where($assignment_scope, null, false, false);
 
-                foreach ($my_class as $class_key => $class_value) {
-                    $my_class_id[] = $class_value['id'];
-                }
-                $this->datatables->where_in('questions.class_id', $my_class_id);
-
-            } elseif ($this->sch_setting_detail->class_teacher == 'yes' && $this->sch_setting_detail->my_question == '0') {
-
-                $my_class = $this->class_model->get();
-                foreach ($my_class as $class_key => $class_value) {
-
-                    $my_class_id[] = $class_value['id'];
-
-                }
-
-                $this->datatables->where_in('questions.class_id', $my_class_id);
+            if ($this->sch_setting_detail->class_teacher == 'yes' && $this->sch_setting_detail->my_question == '0') {
                 $this->datatables->where('questions.staff_id', $this->customlib->getStaffID());
-
             } elseif ($this->sch_setting_detail->class_teacher == 'no' && $this->sch_setting_detail->my_question == '1') {
-
                 $this->datatables->where('questions.staff_id', $this->customlib->getStaffID());
-
             }
-
         }
 
         $this->datatables->select('questions.*,subjects.name,classes.class as `class_name`,sections.section as `section_name`');
@@ -241,9 +230,9 @@ class Question_model extends MY_model
     }
 
     /** Match the teacher visibility rules used by the Question Bank table. */
-    public function canAccessQuestion($question_id)
+    public function canAccessQuestion($question_id, $session_id = null)
     {
-        $question = $this->db->select('id, class_id, section_id, staff_id')
+        $question = $this->db->select('id, class_id, section_id, subject_id, staff_id')
             ->where('id', (int) $question_id)
             ->limit(1)
             ->get('questions')
@@ -257,15 +246,24 @@ class Question_model extends MY_model
             return true;
         }
 
-        if ($this->sch_setting_detail->class_teacher === 'no') {
-            return $this->sch_setting_detail->my_question !== '1'
-                || (int) $question['staff_id'] === (int) $this->customlib->getStaffID();
+        if (!$this->canAccessQuestionScope(
+            (int) $question['class_id'],
+            (int) $question['section_id'],
+            (int) $question['subject_id'],
+            $session_id
+        )) {
+            return false;
         }
-        if ($this->sch_setting_detail->my_question === '0'
+
+        $own_questions_only = ($this->sch_setting_detail->class_teacher === 'yes'
+                && $this->sch_setting_detail->my_question === '0')
+            || ($this->sch_setting_detail->class_teacher === 'no'
+                && $this->sch_setting_detail->my_question === '1');
+        if ($own_questions_only
             && (int) $question['staff_id'] !== (int) $this->customlib->getStaffID()) {
             return false;
         }
-        return $this->canAccessQuestionScope((int) $question['class_id'], (int) $question['section_id']);
+        return true;
     }
 
     public function getInaccessibleQuestionIds(array $question_ids)
@@ -280,11 +278,12 @@ class Question_model extends MY_model
         return $inaccessible;
     }
 
-    /** Validate both the class/section relationship and a teacher's assigned arms. */
-    public function canAccessQuestionScope($class_id, $section_id = 0)
+    /** Validate the class/arm and require a teacher's exact subject assignment. */
+    public function canAccessQuestionScope($class_id, $section_id = 0, $subject_id = 0, $session_id = null)
     {
         $class_id = (int) $class_id;
         $section_id = (int) $section_id;
+        $subject_id = (int) $subject_id;
         if ($class_id < 1 || $this->db->where('id', $class_id)->count_all_results('classes') < 1) {
             return false;
         }
@@ -292,24 +291,82 @@ class Question_model extends MY_model
             && $this->db->where('class_id', $class_id)->where('section_id', $section_id)->count_all_results('class_sections') < 1) {
             return false;
         }
-
-        $userdata = $this->customlib->getUserData();
-        if (empty($userdata['role_id']) || (int) $userdata['role_id'] !== 2
-            || $this->sch_setting_detail->class_teacher !== 'yes') {
-            return true;
-        }
-        $class_ids = array_map('intval', array_column($this->class_model->get(), 'id'));
-        if (!in_array($class_id, $class_ids, true)) {
+        if ($subject_id < 1 || $this->db->where('id', $subject_id)->count_all_results('subjects') < 1) {
             return false;
         }
-        if ($section_id < 1) {
+
+        $userdata = $this->customlib->getUserData();
+        if (empty($userdata['role_id']) || (int) $userdata['role_id'] !== 2) {
             return true;
         }
-        $sections = $this->teacher_model->get_teacherrestricted_modesections(
-            $this->customlib->getStaffID(),
-            $class_id
-        );
-        return in_array($section_id, array_map('intval', array_column($sections, 'section_id')), true);
+        $session_id = $session_id === null ? (int) $this->current_session : (int) $session_id;
+        $query = $this->db->from('teacher_subjects')
+            ->join('class_sections', 'class_sections.id = teacher_subjects.class_section_id')
+            ->where('teacher_subjects.teacher_id', (int) $this->customlib->getStaffID())
+            ->where('teacher_subjects.subject_id', $subject_id)
+            ->where('teacher_subjects.session_id', $session_id)
+            ->where('class_sections.class_id', $class_id);
+        if ($section_id > 0) {
+            $query->where('class_sections.section_id', $section_id);
+        }
+        return $query->select('teacher_subjects.id')->limit(1)->get()->num_rows() > 0;
+    }
+
+    /** Classes and exact class-arm subjects available to a Question Bank user. */
+    public function getQuestionBankAcademicChoices($class_id = 0, $section_id = 0, $session_id = null)
+    {
+        $userdata = $this->customlib->getUserData();
+        if (empty($userdata['role_id']) || (int) $userdata['role_id'] !== 2) {
+            return array(
+                'classes' => $this->class_model->get(),
+                'sections' => $class_id > 0 ? $this->section_model->getClassBySection((int) $class_id) : array(),
+                'subjects' => $this->subject_model->get(),
+            );
+        }
+
+        $session_id = $session_id === null ? (int) $this->current_session : (int) $session_id;
+        $teacher_id = (int) $this->customlib->getStaffID();
+        $classes = $this->db->distinct()->select('classes.id, classes.class')
+            ->from('teacher_subjects')
+            ->join('class_sections', 'class_sections.id = teacher_subjects.class_section_id')
+            ->join('classes', 'classes.id = class_sections.class_id')
+            ->where('teacher_subjects.teacher_id', $teacher_id)
+            ->where('teacher_subjects.session_id', $session_id)
+            ->order_by('classes.id')
+            ->get()->result_array();
+
+        $sections = array();
+        $subjects = array();
+        if ((int) $class_id > 0) {
+            $rows = $this->db->distinct()
+                ->select('sections.id AS section_id, sections.section, subjects.id AS subject_id, subjects.name, subjects.code')
+                ->from('teacher_subjects')
+                ->join('class_sections', 'class_sections.id = teacher_subjects.class_section_id')
+                ->join('sections', 'sections.id = class_sections.section_id')
+                ->join('subjects', 'subjects.id = teacher_subjects.subject_id')
+                ->where('teacher_subjects.teacher_id', $teacher_id)
+                ->where('teacher_subjects.session_id', $session_id)
+                ->where('class_sections.class_id', (int) $class_id)
+                ->order_by('sections.section')
+                ->order_by('subjects.name')
+                ->get()->result_array();
+            foreach ($rows as $row) {
+                $sections[(int) $row['section_id']] = array(
+                    'id' => (int) $row['section_id'],
+                    'section_id' => (int) $row['section_id'],
+                    'section' => $row['section'],
+                );
+                if ((int) $section_id < 1 || (int) $row['section_id'] === (int) $section_id) {
+                    $subjects[(int) $row['subject_id']] = array(
+                        'id' => (int) $row['subject_id'],
+                        'name' => $row['name'],
+                        'code' => $row['code'],
+                    );
+                }
+            }
+        }
+
+        return array('classes' => $classes, 'sections' => array_values($sections), 'subjects' => array_values($subjects));
     }
 
     public function add_option($data)

@@ -38,7 +38,7 @@ review_state_assert(false, $review->describe($paper, true, $now)['complete'], 'P
 $paper['completion_source'] = 'manual';
 $paper['manual_marking_status'] = 'finalized';
 $paper['answered_count'] = 0;
-review_state_assert('12.00 / 20.00', $review->describe($paper, true, $now)['label'], 'Manual totals do not need online answers');
+review_state_assert('12 / 20', $review->describe($paper, true, $now)['label'], 'Manual totals use a compact score label and do not need online answers');
 $paper['completion_source'] = 'submitted';
 review_state_assert(false, $review->describe($paper, true, $now)['recoverable'], 'An intentional submitted paper cannot be replaced');
 $paper['completion_source'] = null;
