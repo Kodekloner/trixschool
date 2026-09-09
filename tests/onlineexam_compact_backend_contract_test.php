@@ -16,12 +16,15 @@ function compact_backend_source($relative_path)
 }
 
 $workflow = compact_backend_source('application/models/Onlineexamworkflow_model.php');
-compact_backend_assert(strpos($workflow, "protected \$purposes = array('ca', 'midterm', 'holiday', 'kindergarten');") !== false, 'Compact purposes must remain authoritative.');
+compact_backend_assert(strpos($workflow, "protected \$purposes = array('ca', 'midterm', 'exam', 'holiday', 'kindergarten');") !== false, 'Compact purposes, including terminal Exam, must remain authoritative.');
+compact_backend_assert(strpos($workflow, "if (\$purpose === 'exam')") !== false, 'Exam must resolve through its own result-destination branch.');
+compact_backend_assert(strpos($workflow, "'exam' => 'standard_component'") !== false, 'Exam must use the existing standard score component adapter.');
 compact_backend_assert(strpos($workflow, "protected \$paper_types = array('objective', 'theory');") !== false, 'Only Objective and Theory paper types may be published.');
 compact_backend_assert(strpos($workflow, "protected \$delivery_modes = array('cbt');") !== false, 'Only CBT delivery may be published.');
 compact_backend_assert(strpos($workflow, 'validateHolidayResultTarget') !== false, 'Holiday destinations must be revalidated before freezing.');
 
 $attempt = compact_backend_source('application/models/Onlineexamattempt_model.php');
+compact_backend_assert(strpos($attempt, "e.purpose IN ('ca','midterm','exam')") !== false, 'Completed Exam attempts must be included in automatic result reconciliation.');
 compact_backend_assert(strpos($attempt, "if (\$paper->delivery_mode !== 'cbt')") !== false, 'Candidate paper start must enforce CBT server-side.');
 compact_backend_assert(strpos($attempt, 'if ($attempt_count >= 1)') !== false, 'Only one non-voided official attempt may exist.');
 compact_backend_assert(strpos($attempt, 'Answer attachments are no longer supported') !== false, 'Model-level attachment creation must be retired.');
@@ -44,6 +47,8 @@ compact_backend_assert(strpos($sync, 'The previously synchronized British outcom
 compact_backend_assert(strpos($sync, 'The previously synchronized Kindergarten outcome was changed or moved outside this assessment.') !== false, 'Duplicate Kindergarten posting must detect an externally changed destination.');
 
 $admin = compact_backend_source('application/controllers/admin/Onlineexam.php');
+compact_backend_assert(strpos($admin, 'in_list[ca,midterm,exam,holiday,kindergarten]') !== false, 'Admin assessment saves must accept the Exam purpose.');
+compact_backend_assert(strpos($admin, "'exam'           => 'Terminal Examination (Exam)'") !== false, 'The assessment form must offer Terminal Examination as a purpose.');
 compact_backend_assert(strpos($admin, 'in_list[objective,theory]') !== false, 'Admin paper saves must enforce Objective/Theory.');
 compact_backend_assert(strpos($admin, 'in_list[cbt]') !== false, 'Admin paper saves must enforce CBT.');
 compact_backend_assert(strpos($admin, 'retiredOnlineexamAction') !== false, 'Legacy admin mutations must terminate explicitly.');
@@ -71,6 +76,8 @@ compact_backend_assert(
 );
 compact_backend_assert(strpos($model, 'onlineexam.workflow_version = 2 AND') !== false && strpos($model, 'ts.subject_id = onlineexam.subject_id') !== false, 'Teacher assessment lists must hide legacy and other-subject assessments.');
 compact_backend_assert(strpos($model, 'public function getWorkflowClassChoices') !== false, 'Teacher assessment creation needs session-scoped class choices.');
+compact_backend_assert(strpos($model, "'exam' => 'term'") !== false, 'Exam must reserve a term assessment slot.');
+compact_backend_assert(strpos($model, "onlineexam.purpose IN ('ca','midterm','exam')") !== false, 'Published Exam assessments must be visible to assigned students.');
 
 $question_picker = compact_backend_source('application/models/Onlineexamquestion_model.php');
 compact_backend_assert(strpos($question_picker, "['allowed_section_ids']") !== false, 'Assessment Question Bank searches must apply teacher section scope before pagination.');
@@ -86,8 +93,15 @@ foreach (array('onlineexam_holiday_mappings', 'score_origin', 'source_onlineexam
 }
 
 $review = compact_backend_source('application/models/Onlineexamreview_model.php');
+compact_backend_assert(strpos($review, "'term' => array('ca', 'exam', 'kindergarten')") !== false, 'Exam results must appear under Term in Online Examination Review.');
 compact_backend_assert(strpos($review, 'syncCompletedAttempt') !== false && strpos($review, "'deleted_at'") !== false, 'Completed removal must reconcile results before soft-archiving the assessment.');
 compact_backend_assert(strpos($review, "->where('s.is_active', 'yes')") !== false, 'Review rows must come from the authoritative active enrollment roster.');
 compact_backend_assert(strpos($admin, 'requireWorkflowCsrf') !== false && strpos($admin, 'allow_assign_candidate') !== false, 'Review writes must retain CSRF and explicit assignment permissions.');
+
+$slot_migration = compact_backend_source('application/migrations/138_onlineexam_single_subject_slots.php');
+compact_backend_assert(strpos($slot_migration, "e.purpose IN ('ca','exam','kindergarten')") !== false, 'Exam must backfill into the term academic-slot namespace.');
+
+$all_school_migration = compact_backend_source('docs/all_school_database_migrations.sql');
+compact_backend_assert(strpos($all_school_migration, "e.purpose IN (''ca'',''exam'',''kindergarten'')") !== false, 'The all-school migration must backfill Exam academic slots.');
 
 echo "onlineexam compact backend contract tests passed" . PHP_EOL;

@@ -86,7 +86,7 @@ class Onlineexamreview_model extends CI_Model
 
     private function matchingExamIds(array $criteria, $component = '')
     {
-        $purposes = array('term' => array('ca', 'kindergarten'), 'midterm' => array('midterm'), 'holiday' => array('holiday'));
+        $purposes = array('term' => array('ca', 'exam', 'kindergarten'), 'midterm' => array('midterm'), 'holiday' => array('holiday'));
         if (!isset($purposes[$criteria['assessment_type']])
             || empty($criteria['session_id']) || empty($criteria['class_id']) || empty($criteria['section_id'])
             || !in_array($criteria['term'], array('1st', '2nd', '3rd'), true)) {

@@ -49,8 +49,9 @@ class Onlineexam_scoring
 
     /**
      * CA and Midterm share the same score.caN columns, but the existing result
-     * setting designates which enabled slots belong to Midterm. Examination is
-     * deliberately never returned for either compact workflow purpose.
+     * setting designates which enabled slots belong to Midterm. The dedicated
+     * Exam purpose resolves its terminal destination separately, so Examination
+     * is deliberately never returned while filtering CA or Midterm slots.
      */
     public function filterStandardComponents(array $components, $purpose, $configured_slots, $number_of_ca)
     {

@@ -13,7 +13,7 @@ class Onlineexamworkflow_model extends CI_Model
 {
     const WORKFLOW_VERSION = 2;
 
-    protected $purposes = array('ca', 'midterm', 'holiday', 'kindergarten');
+    protected $purposes = array('ca', 'midterm', 'exam', 'holiday', 'kindergarten');
     protected $adapters = array('standard_component', 'british_outcome', 'kindergarten_concept', 'holiday_assessment');
     protected $terms = array('1st', '2nd', '3rd');
     protected $paper_types = array('objective', 'theory');
@@ -106,17 +106,18 @@ class Onlineexamworkflow_model extends CI_Model
         if ($ca_total < 0 || $ca_total > 100) {
             $errors[] = 'Enabled CA maximums must total between 0 and 100.';
         }
-        if (!in_array($purpose, array('ca', 'midterm'), true) && $exam_maximum <= 0) {
-            $errors[] = 'The CA settings leave no score available for the examination component.';
-        } elseif (!in_array($purpose, array('ca', 'midterm'), true)) {
-            $destinations[] = array(
-                'component' => 'exam',
-                'title' => 'Examination',
-                'maximum' => round($exam_maximum, 2),
-            );
-        }
-
-        if (in_array($purpose, array('ca', 'midterm'), true)) {
+        if ($purpose === 'exam') {
+            $destinations = array();
+            if ($exam_maximum <= 0) {
+                $errors[] = 'The CA settings leave no positive score available for the Examination component.';
+            } else {
+                $destinations[] = array(
+                    'component' => 'exam',
+                    'title' => 'Examination',
+                    'maximum' => round($exam_maximum, 2),
+                );
+            }
+        } elseif (in_array($purpose, array('ca', 'midterm'), true)) {
             $normalized = $this->onlineexam_scoring->normalizeMidtermSlots($row['MidTermCaToUse'], $number_of_ca);
             if (!empty($normalized['invalid'])) {
                 $errors[] = 'MidTermCaToUse contains an invalid CA slot.';
@@ -131,6 +132,18 @@ class Onlineexamworkflow_model extends CI_Model
                 $errors[] = $purpose === 'midterm'
                     ? 'No positive-score CA slot is configured for Midterm.'
                     : 'No positive-score Continuous Assessment slot remains after Midterm slots are reserved.';
+            }
+        } else {
+            // Compatibility callers without an explicit purpose may still
+            // inspect every standard destination.
+            if ($exam_maximum <= 0) {
+                $errors[] = 'The CA settings leave no positive score available for the Examination component.';
+            } else {
+                $destinations[] = array(
+                    'component' => 'exam',
+                    'title' => 'Examination',
+                    'maximum' => round($exam_maximum, 2),
+                );
             }
         }
 
@@ -174,6 +187,7 @@ class Onlineexamworkflow_model extends CI_Model
         $purpose_adapters = array(
             'ca' => 'standard_component',
             'midterm' => 'standard_component',
+            'exam' => 'standard_component',
             'holiday' => 'holiday_assessment',
             'kindergarten' => 'kindergarten_concept',
         );

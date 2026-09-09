@@ -304,7 +304,7 @@ class Onlineexam_model extends MY_model
               AND onlineexam.workflow_version >= 2
               AND onlineexam_students.candidate_status='assigned'
               AND (
-                    (onlineexam.purpose IN ('ca','midterm') AND onlineexam.result_adapter='standard_component')
+                    (onlineexam.purpose IN ('ca','midterm','exam') AND onlineexam.result_adapter='standard_component')
                     OR (onlineexam.purpose='holiday' AND onlineexam.result_adapter='holiday_assessment')
                     OR (onlineexam.purpose='kindergarten' AND onlineexam.result_adapter='kindergarten_concept')
               )
@@ -682,7 +682,7 @@ class Onlineexam_model extends MY_model
             $config['valid'] = $purpose === '';
             $config['message'] = $config['valid']
                 ? 'British results require a configured outcome profile and final teacher outcome.'
-                : 'British outcome classes are preserved, but the compact CA/Midterm workflow cannot safely write a numeric CA component for this class.';
+                : 'British outcome classes are preserved, but the compact CA/Midterm/Exam workflow cannot safely write a numeric component for this class.';
             return $config;
         }
 
@@ -719,7 +719,17 @@ class Onlineexam_model extends MY_model
             $errors[] = 'The configured CA maximums exceed 100.';
         }
 
-        if (in_array($purpose, array('ca', 'midterm'), true)) {
+        if ($purpose === 'exam') {
+            if ($exam_maximum <= 0) {
+                $errors[] = 'The CA settings leave no positive score available for the Examination component.';
+            } else {
+                $config['components'][] = array(
+                    'value'   => 'exam',
+                    'label'   => 'Examination',
+                    'maximum' => $exam_maximum,
+                );
+            }
+        } elseif (in_array($purpose, array('ca', 'midterm'), true)) {
             $this->load->library('onlineexam_scoring');
             $normalized = $this->onlineexam_scoring->normalizeMidtermSlots($row['MidTermCaToUse'], $number_of_ca);
             if (!empty($normalized['invalid'])) {
@@ -753,7 +763,11 @@ class Onlineexam_model extends MY_model
         $config['message'] = empty($errors)
             ? ($purpose === 'midterm'
                 ? 'Only CA slots reserved by the class Midterm setting are available.'
-                : ($purpose === 'ca' ? 'Midterm-reserved CA slots are excluded.' : 'Standard result components loaded.'))
+                : ($purpose === 'ca'
+                    ? 'Midterm-reserved CA slots are excluded.'
+                    : ($purpose === 'exam'
+                        ? 'The Examination maximum is 100 minus the enabled CA maximums.'
+                        : 'Standard result components loaded.')))
             : implode(' ', array_values(array_unique($errors)));
 
         return $config;
@@ -983,7 +997,7 @@ class Onlineexam_model extends MY_model
     {
         $purpose = strtolower(trim(isset($exam_data['purpose']) ? (string) $exam_data['purpose'] : ''));
         $adapter = strtolower(trim(isset($exam_data['result_adapter']) ? (string) $exam_data['result_adapter'] : ''));
-        $assessment_types = array('ca' => 'term', 'kindergarten' => 'term', 'midterm' => 'midterm', 'holiday' => 'holiday');
+        $assessment_types = array('ca' => 'term', 'exam' => 'term', 'kindergarten' => 'term', 'midterm' => 'midterm', 'holiday' => 'holiday');
         if (!isset($assessment_types[$purpose])) {
             return null;
         }
@@ -1016,7 +1030,7 @@ class Onlineexam_model extends MY_model
             INNER JOIN onlineexam_class_sections ecs ON ecs.onlineexam_id = e.id
             WHERE e.id <> ? AND e.workflow_version = 2
               AND e.session_id = ? AND e.term = ? AND e.class_id = ? AND e.subject_id = ?
-              AND (CASE WHEN e.purpose IN ('ca','kindergarten') THEN 'term'
+              AND (CASE WHEN e.purpose IN ('ca','exam','kindergarten') THEN 'term'
                         WHEN e.purpose = 'midterm' THEN 'midterm'
                         WHEN e.purpose = 'holiday' THEN 'holiday' ELSE '' END) = ?
               AND COALESCE(NULLIF(LOWER(e.target_component),''), LOWER(e.purpose)) = ?

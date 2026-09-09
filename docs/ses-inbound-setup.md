@@ -72,10 +72,9 @@ school authorizes them. Migration 134 does not subscribe any staff member
 automatically.
 
 For a phpMyAdmin deployment, import
-`docs/external_email_notifications_migration.sql` for migration 134 only, or
-import `docs/all_school_database_migrations.sql` to apply the consolidated
-126-through-134 tenant migrations. Both files are rerunnable and intentionally
-leave the CodeIgniter `migrations` ledger unchanged.
+`docs/all_school_database_migrations.sql` to apply the consolidated
+126-through-138 tenant migrations. The file is rerunnable and intentionally
+leaves the CodeIgniter `migrations` ledger unchanged.
 
 ## One-time AWS setup
 
@@ -249,8 +248,7 @@ code and migration remain tenant-safe for every other school.
 
 1. Confirm the CodeIgniter database group is exactly
    `apexstaracademy.com.ng` and points to the intended tenant database.
-2. Import `docs/external_email_notifications_migration.sql` into that database,
-   or run the consolidated 126-through-134 import.
+2. Import `docs/all_school_database_migrations.sql` into that database.
 3. Verify the SES domain identity and DKIM for `apexstaracademy.com.ng`.
 4. Confirm the domain MX record targets
    `inbound-smtp.us-east-2.amazonaws.com` and the active receipt rule matches
@@ -269,8 +267,7 @@ code and migration remain tenant-safe for every other school.
 
 1. Confirm the CodeIgniter database group is exactly
    `apexstaracademyaso.com.ng` and points to the intended tenant database.
-2. Import `docs/external_email_notifications_migration.sql` into that database,
-   or run the consolidated 126-through-134 import.
+2. Import `docs/all_school_database_migrations.sql` into that database.
 3. Verify the SES domain identity and DKIM for `apexstaracademyaso.com.ng`.
 4. Confirm the domain MX record targets
    `inbound-smtp.us-east-2.amazonaws.com` and the active receipt rule matches

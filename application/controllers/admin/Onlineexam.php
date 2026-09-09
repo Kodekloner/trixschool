@@ -176,6 +176,7 @@ class Onlineexam extends Admin_Controller
             'purposes'           => array(
                 'ca'             => 'Continuous Assessment (CA)',
                 'midterm'        => 'Midterm Assessment',
+                'exam'           => 'Terminal Examination (Exam)',
                 'holiday'        => 'Holiday Assessment',
                 'kindergarten'   => 'Kindergarten Assessment',
             ),
@@ -209,7 +210,7 @@ class Onlineexam extends Admin_Controller
                 $this->form_validation->set_rules('class_id', 'Class', 'trim|required|integer');
                 $this->form_validation->set_rules('section_ids[]', 'Class arm/section', 'required');
                 $this->form_validation->set_rules('subject_id', 'Subject', 'trim|required|integer');
-                $this->form_validation->set_rules('purpose', 'Assessment purpose', 'trim|required|in_list[ca,midterm,holiday,kindergarten]');
+                $this->form_validation->set_rules('purpose', 'Assessment purpose', 'trim|required|in_list[ca,midterm,exam,holiday,kindergarten]');
                 $this->form_validation->set_rules('exam_from', 'Opening date/time', 'trim|required');
                 $this->form_validation->set_rules('exam_to', 'Closing date/time', 'trim|required');
                 $this->form_validation->set_rules('duration_minutes', 'Duration', 'trim|required|integer|greater_than[0]|less_than_equal_to[1439]');
@@ -1478,6 +1479,7 @@ class Onlineexam extends Admin_Controller
         $purpose_adapters = array(
             'ca' => 'standard_component',
             'midterm' => 'standard_component',
+            'exam' => 'standard_component',
             'holiday' => 'holiday_assessment',
             'kindergarten' => 'kindergarten_concept',
         );

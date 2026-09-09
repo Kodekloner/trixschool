@@ -50,7 +50,6 @@ $composeView = external_email_contract_read($root . '/application/views/admin/ma
 $supportView = external_email_contract_read($root . '/application/views/admin/support/index.php');
 $supportDetailView = external_email_contract_read($root . '/application/views/admin/support/view.php');
 $migration = external_email_contract_read($root . '/application/migrations/134_add_external_email_notifications.php');
-$standaloneSql = external_email_contract_read($root . '/docs/external_email_notifications_migration.sql');
 $consolidatedSql = external_email_contract_read($root . '/docs/all_school_database_migrations.sql');
 $setupDocs = external_email_contract_read($root . '/docs/ses-inbound-setup.md');
 $migrationConfig = external_email_contract_read($root . '/application/config/migration.php');
@@ -438,7 +437,7 @@ foreach (array(
         'Migration 134 is missing: ' . $migrationContract
     );
 }
-foreach (array($standaloneSql, $consolidatedSql) as $sql) {
+foreach (array($consolidatedSql) as $sql) {
     foreach (array(
         'CREATE TABLE IF NOT EXISTS `support_email_notifications`',
         'CREATE TABLE IF NOT EXISTS `support_email_alert_deliveries`',
@@ -451,7 +450,7 @@ foreach (array($standaloneSql, $consolidatedSql) as $sql) {
     ) as $sqlContract) {
         external_email_contract_assert(
             strpos($sql, $sqlContract) !== false,
-            'The standalone and consolidated imports must include: ' . $sqlContract
+            'The consolidated import must include: ' . $sqlContract
         );
     }
 }
@@ -471,7 +470,7 @@ foreach (array(
     'support_email_alert_deliveries',
     'once per minute',
     '/cron/supportemailalerts/CRON_SECRET',
-    'external_email_notifications_migration.sql',
+    'all_school_database_migrations.sql',
 ) as $documentationContract) {
     external_email_contract_assert(
         stripos($setupDocs, $documentationContract) !== false,

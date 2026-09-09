@@ -20,7 +20,6 @@ preg_match('/\$config\[\'migration_version\'\]\s*=\s*(\d+)\s*;/', $config, $vers
 migration_135_assert(isset($version_match[1]) && (int) $version_match[1] >= 135, 'CodeIgniter must include migration 135.');
 
 $migration = migration_135_source('application/migrations/135_compact_online_examination.php');
-$standalone = migration_135_source('docs/online_examination_compact_cbt_migration.sql');
 $consolidated = migration_135_source('docs/all_school_database_migrations.sql');
 
 $required_schema_markers = array(
@@ -35,15 +34,13 @@ $required_schema_markers = array(
 );
 foreach ($required_schema_markers as $marker) {
     migration_135_assert(strpos($migration, $marker) !== false, 'Migration class is missing ' . $marker . '.');
-    migration_135_assert(strpos($standalone, $marker) !== false, 'Standalone school migration is missing ' . $marker . '.');
     migration_135_assert(strpos($consolidated, $marker) !== false, 'Consolidated school migration is missing ' . $marker . '.');
 }
 
-migration_135_assert(stripos($standalone, 'information_schema') !== false, 'The standalone SQL must inspect schema state before altering a school database.');
-migration_135_assert(strpos($standalone, 'PREPARE') !== false, 'The standalone SQL must use guarded, repeatable DDL.');
+migration_135_assert(stripos($consolidated, 'information_schema') !== false, 'The consolidated SQL must inspect schema state before altering a school database.');
+migration_135_assert(strpos($consolidated, 'PREPARE') !== false, 'The consolidated SQL must use guarded, repeatable DDL.');
 migration_135_assert(strpos($consolidated, 'Migration 135:') !== false, 'The consolidated school migration must include a clearly isolated migration-135 block.');
 migration_135_assert(strpos($migration, "'legacy_read_only'") !== false, 'Migration 135 must retire existing internal-only destinations without deleting history.');
-migration_135_assert(strpos($standalone, "SET `result_adapter` = 'legacy_read_only'") !== false, 'Standalone migration must retire existing internal-only destinations.');
 migration_135_assert(strpos($consolidated, "SET `result_adapter` = 'legacy_read_only'") !== false, 'Consolidated migration must retire existing internal-only destinations.');
 
 $migration_128 = strpos($consolidated, 'Migration 128');

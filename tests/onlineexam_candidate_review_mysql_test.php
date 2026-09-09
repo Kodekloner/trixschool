@@ -103,10 +103,14 @@ review_assert((float) $db->where('onlineexam_id',99)->get('onlineexam_papers')->
 review_assert((float) $db->where('onlineexam_id',98)->get('onlineexam_papers')->row()->raw_max_score === 50.0, 'Migration must not rewrite a published paper maximum.');
 $db->where_in('onlineexam_id', array(98, 99))->delete('onlineexam_papers');
 $db->where_in('id', array(98, 99))->delete('onlineexam');
-// Run standalone phpMyAdmin SQL twice as well as the framework migration.
+// Run the isolated phpMyAdmin bundle section twice as well as the framework migration.
+$all_school_sql = file_get_contents(__DIR__ . '/../docs/all_school_database_migrations.sql');
+$migration_137_start = strpos($all_school_sql, '-- SchoolLift Online Examination: candidate paper review (migration 137).');
+$migration_138_start = strpos($all_school_sql, '-- SchoolLift Online Examination: one subject-paper academic slot (migration 138).');
+review_assert($migration_137_start !== false && $migration_138_start > $migration_137_start, 'The all-school SQL must contain ordered migration 137 and 138 sections.');
+$migration_137_sql = substr($all_school_sql, $migration_137_start, $migration_138_start - $migration_137_start);
 foreach (array(1, 2) as $run) {
-    $sql = file_get_contents(__DIR__ . '/../docs/online_examination_candidate_review_migration.sql');
-    $db->conn_id->multi_query($sql);
+    $db->conn_id->multi_query($migration_137_sql);
     do { if ($result = $db->conn_id->store_result()) { $result->free(); } } while ($db->conn_id->more_results() && $db->conn_id->next_result());
 }
 require_once APPPATH . 'migrations/138_onlineexam_single_subject_slots.php';
@@ -114,9 +118,9 @@ $slot_upgrade = new Migration_Onlineexam_single_subject_slots();
 $slot_upgrade->up();
 $slot_upgrade->up();
 review_assert($db->table_exists('onlineexam_academic_slots'), 'Migration 138 must install the academic-slot table.');
+$migration_138_sql = substr($all_school_sql, $migration_138_start);
 foreach (array(1, 2) as $run) {
-    $sql = file_get_contents(__DIR__ . '/../docs/online_examination_single_subject_slot_migration.sql');
-    $db->conn_id->multi_query($sql);
+    $db->conn_id->multi_query($migration_138_sql);
     do { if ($result = $db->conn_id->store_result()) { $result->free(); } } while ($db->conn_id->more_results() && $db->conn_id->next_result());
 }
 $GLOBALS['review_services']['load']->model('onlineexamoperations_model');
@@ -209,7 +213,19 @@ $draft_record['target_component'] = 'ca2';
 $draft_record['exam'] = 'English CA2';
 $english_ca2 = $legacy->saveWorkflow($draft_record,array(1));
 review_assert($english_ca2 > 0, 'A different CA component for the same subject and arm must remain valid.');
-review_assert($legacy->removeWorkflowDraft($english_ca1) && $legacy->removeWorkflowDraft($english_ca2), 'Draft cleanup must release both academic slots.');
+$draft_record['purpose'] = 'exam';
+$draft_record['target_component'] = 'exam';
+$draft_record['target_max_score'] = 60;
+$draft_record['exam'] = 'English Terminal Examination';
+$english_exam = $legacy->saveWorkflow($draft_record,array(1));
+review_assert($english_exam > 0, 'A Terminal Examination must reserve its own Exam component slot under the Term assessment type.');
+review_assert($legacy->saveWorkflow($draft_record,array(1)) === false, 'A duplicate Terminal Examination for the same subject and arm must be rejected.');
+review_assert(
+    $legacy->removeWorkflowDraft($english_ca1)
+    && $legacy->removeWorkflowDraft($english_ca2)
+    && $legacy->removeWorkflowDraft($english_exam),
+    'Draft cleanup must release CA and Exam academic slots.'
+);
 
 for ($id = 1; $id <= 4; $id++) {
     $db->insert('students', array('id'=>$id,'is_active'=>'yes'));
