@@ -46,7 +46,6 @@ $migrationPath = $root . '/application/migrations/133_add_promotion_system.php';
 $modelPath = $root . '/application/models/Promotioncriteria_model.php';
 $controllerPath = $root . '/application/controllers/admin/Promotioncriteria.php';
 $helperPath = $root . '/helper/promotion_helper.php';
-$manualSqlPath = $root . '/docs/promotion_system_migration.sql';
 $consolidatedSqlPath = $root . '/docs/all_school_database_migrations.sql';
 $summaryPartialPath = $root . '/admin/partials/result-summary-panel.php';
 $resultPagePath = $root . '/admin/resultPage.php';
@@ -57,7 +56,6 @@ foreach (array(
     $modelPath,
     $controllerPath,
     $helperPath,
-    $manualSqlPath,
     $consolidatedSqlPath,
     $summaryPartialPath,
     $resultPagePath,
@@ -117,13 +115,8 @@ promotion_contract_assert(
     'The configured migration target must include promotion migration 133 or a later migration.'
 );
 
-$manualSql = file_get_contents($manualSqlPath);
 $consolidatedSql = file_get_contents($consolidatedSqlPath);
 foreach (array('promotion_criteria', 'promotion_criteria_classes', 'promotion_criteria_subjects', 'promotion_note_overrides') as $table) {
-    promotion_contract_assert(
-        strpos($manualSql, "CREATE TABLE IF NOT EXISTS `{$table}`") !== false,
-        'The per-school promotion SQL is missing ' . $table . '.'
-    );
     promotion_contract_assert(
         strpos($consolidatedSql, "CREATE TABLE IF NOT EXISTS `{$table}`") !== false,
         'The consolidated all-school SQL is missing ' . $table . '.'
@@ -142,7 +135,7 @@ foreach ($productionPhp as $path => $source) {
         'Promotion code must never mutate student_session: ' . $path
     );
 }
-foreach (array($manualSqlPath => $manualSql, $consolidatedSqlPath => $consolidatedSql) as $path => $source) {
+foreach (array($consolidatedSqlPath => $consolidatedSql) as $path => $source) {
     promotion_contract_assert(
         !promotion_contract_has_student_session_mutation($source, false),
         'Promotion deployment SQL must never mutate student_session: ' . $path

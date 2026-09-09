@@ -1,5 +1,5 @@
--- SchoolLift consolidated tenant-database migrations (126 through 137).
--- Updated for deployment to every school database on 2026-09-07.
+-- SchoolLift consolidated tenant-database migrations (126 through 138).
+-- Updated for deployment to every school database on 2026-09-09.
 --
 -- IMPORTANT:
 --   * Select exactly one school database before importing this file.
@@ -29,12 +29,13 @@
 --   135_compact_online_examination.php
 --   136_remove_question_level.php
 --   137_onlineexam_candidate_paper_review.php
+--   138_onlineexam_single_subject_slots.php
 --
 -- Supported targets: MySQL 5.7+/8.0 and compatible MariaDB releases.
 -- This is a schema/permission migration bundle, not a full database dump.
--- The separate roles-permission integrity and cumulative-result repair SQL
--- files are intentionally excluded because they are optional data maintenance,
--- not numbered application migrations.
+-- The separate role-permission integrity and migration-audit correction SQL
+-- files are intentionally excluded because they are optional/targeted data
+-- maintenance and ledger repair, not numbered application migrations.
 
 SELECT DATABASE() AS `selected_school_database`;
 
@@ -2861,7 +2862,7 @@ SET @onlineexam_138_sql := IF(
     'INSERT IGNORE INTO onlineexam_academic_slots
       (onlineexam_id,session_id,term,class_id,section_id,assessment_type,component_key,subject_id,created_at,updated_at)
      SELECT e.id,e.session_id,LOWER(e.term),e.class_id,ecs.section_id,
-       CASE WHEN e.purpose IN (''ca'',''kindergarten'') THEN ''term''
+       CASE WHEN e.purpose IN (''ca'',''exam'',''kindergarten'') THEN ''term''
             WHEN e.purpose = ''midterm'' THEN ''midterm''
             WHEN e.purpose = ''holiday'' THEN ''holiday'' END,
        COALESCE(NULLIF(LOWER(e.target_component),''''),LOWER(e.purpose)),
@@ -2872,7 +2873,7 @@ SET @onlineexam_138_sql := IF(
        AND e.session_id IS NOT NULL AND e.class_id IS NOT NULL
        AND e.subject_id IS NOT NULL
        AND LOWER(e.term) IN (''1st'',''2nd'',''3rd'')
-       AND e.purpose IN (''ca'',''midterm'',''holiday'',''kindergarten'')
+       AND e.purpose IN (''ca'',''midterm'',''exam'',''holiday'',''kindergarten'')
        AND COALESCE(NULLIF(LOWER(e.target_component),''''),LOWER(e.purpose))<>''''',
     @onlineexam_138_deleted_filter,
     ' ORDER BY e.id,ecs.section_id'

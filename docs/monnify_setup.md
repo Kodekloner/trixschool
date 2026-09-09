@@ -4,7 +4,7 @@ The integration uses Monnify hosted checkout for student fees and online admissi
 
 ## 1. Apply the database migration
 
-Run CodeIgniter migration `129_add_monnify_payments`, or execute `docs/monnify_payment_migration.sql` on each school database.
+Run CodeIgniter migration `129_add_monnify_payments`, or import `docs/all_school_database_migrations.sql` into each school database through phpMyAdmin.
 
 The migration creates the local payment ledger used to fulfill delayed bank transfers without relying on a student's browser session.
 

@@ -4,6 +4,7 @@ $purpose_labels = array(
     'continuous_assessment' => 'Continuous Assessment',
     'midterm'               => 'Midterm Assessment',
     'mid_term'              => 'Midterm Assessment',
+    'exam'                  => 'Terminal Examination',
     'holiday'               => 'Holiday Assessment',
     'kindergarten'          => 'Kindergarten Assessment',
 );

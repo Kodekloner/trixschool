@@ -56,6 +56,7 @@ compact_ui_assert(substr_count($question_assignment, 'question-required-cell') >
 compact_ui_assert(strpos($question_assignment, 'aria-label="Question assignment table"') !== false, 'The scrollable question table needs an accessible region label.');
 
 $admin_controller = compact_ui_source('application/controllers/admin/Onlineexam.php');
+compact_ui_assert(strpos($admin_controller, "'exam'           => 'Terminal Examination (Exam)'") !== false, 'Terminal Examination must be listed among the assessment purposes.');
 compact_ui_assert(
     strpos($admin_controller, "'native_question_types' => \$this->localizedQuestionTypes()") !== false,
     'Grouped passages must remain available in structured assessment authoring.'
@@ -98,11 +99,13 @@ $roster = compact_ui_source('application/views/admin/onlineexam/assign.php');
 compact_ui_assert(strpos($roster, '<thead>') !== false && strpos($roster, '$roster_column_count') !== false, 'The candidate roster needs a semantic header and a correct dynamic empty-state colspan.');
 
 $student_list = compact_ui_source('application/views/user/onlineexam/onlineexamlist.php');
+compact_ui_assert(strpos($student_list, "'exam'                  => 'Terminal Examination'") !== false, 'The student assessment list needs a clear Exam purpose label.');
 compact_ui_assert(strpos($student_list, 'assessment-table-wrap') !== false, 'The student assessment list needs a contained scroller.');
 compact_ui_assert(strpos($student_list, 'min-width:860px') !== false, 'The student assessment list needs a stable desktop table width before its phone-card override.');
 compact_ui_assert(strpos($student_list, 'content:attr(data-label)') !== false && strpos($student_list, 'min-width:0') !== false, 'The student assessment list must become labelled cards on phones.');
 
 $student_view = compact_ui_source('application/views/user/onlineexam/view_v2.php');
+compact_ui_assert(strpos($student_view, "'exam'                  => 'Terminal Examination'") !== false, 'The student assessment details need a clear Exam purpose label.');
 compact_ui_assert(strpos($student_view, 'assessment-parts-wrap') !== false, 'Student paper status needs a responsive table wrapper.');
 compact_ui_assert(strpos($student_view, 'queueSave') !== false && strpos($student_view, 'flushQueue') !== false, 'Weak-network answer retry must remain enabled.');
 compact_ui_assert(strpos($student_view, 'remaining_seconds') !== false, 'The student countdown must use server-provided remaining time.');
