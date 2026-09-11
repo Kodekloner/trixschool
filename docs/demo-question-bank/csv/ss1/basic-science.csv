@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,What is the SI unit of length?,Metre,Litre,Gram,Second,,opt_a
+singlechoice,Which expression gives density?,Mass divided by volume,Volume divided by mass,Mass times volume,Force divided by time,,opt_a
+singlechoice,In which organelle does photosynthesis mainly occur?,Chloroplast,Nucleus,Ribosome,Vacuole,,opt_a
+singlechoice,What does an acid do to blue litmus paper?,Turns it red,Turns it green,Turns it white,Does not affect any indicator,,opt_a
+singlechoice,What is the basic structural and functional unit of life?,Cell,Tissue,Organ,System,,opt_a
+singlechoice,What is the SI unit of force?,Newton,Joule,Watt,Pascal,,opt_a
+singlechoice,Which statement describes conservation of energy?,Energy changes form but is not created or destroyed,Energy is always lost completely,Energy can be created from nothing,Only heat is conserved,,opt_a
+true_false,An object's mass remains the same when its location changes.,,,,,,true
+true_false,Boiling water is a chemical change.,,,,,,false
+multichoice,Select the two renewable energy sources.,Solar energy,Wind energy,Coal,Natural gas,,"[""opt_a"",""opt_b""]"

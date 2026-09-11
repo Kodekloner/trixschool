@@ -179,6 +179,7 @@ class Onlineexam extends Admin_Controller
                 'exam'           => 'Terminal Examination (Exam)',
                 'holiday'        => 'Holiday Assessment',
                 'kindergarten'   => 'Kindergarten Assessment',
+                'british'        => 'British Assessment',
             ),
         );
 
@@ -210,7 +211,7 @@ class Onlineexam extends Admin_Controller
                 $this->form_validation->set_rules('class_id', 'Class', 'trim|required|integer');
                 $this->form_validation->set_rules('section_ids[]', 'Class arm/section', 'required');
                 $this->form_validation->set_rules('subject_id', 'Subject', 'trim|required|integer');
-                $this->form_validation->set_rules('purpose', 'Assessment purpose', 'trim|required|in_list[ca,midterm,exam,holiday,kindergarten]');
+                $this->form_validation->set_rules('purpose', 'Assessment purpose', 'trim|required|in_list[ca,midterm,exam,holiday,kindergarten,british]');
                 $this->form_validation->set_rules('exam_from', 'Opening date/time', 'trim|required');
                 $this->form_validation->set_rules('exam_to', 'Closing date/time', 'trim|required');
                 $this->form_validation->set_rules('duration_minutes', 'Duration', 'trim|required|integer|greater_than[0]|less_than_equal_to[1439]');
@@ -275,7 +276,7 @@ class Onlineexam extends Admin_Controller
                     if (!$configuration['valid'] || $target_max_score === null || $target_max_score <= 0) {
                         $extra_errors[] = 'Select a valid CA or Examination component with a positive maximum score.';
                     }
-                } elseif (in_array($adapter, array('kindergarten_concept', 'holiday_assessment'), true)) {
+                } elseif (in_array($adapter, array('british_outcome', 'kindergarten_concept', 'holiday_assessment'), true)) {
                     $target_max_score = isset($configuration['target_maximum'])
                         ? (float) $configuration['target_maximum']
                         : null;
@@ -341,6 +342,9 @@ class Onlineexam extends Admin_Controller
                         isset($configuration['holiday_mappings']) ? $configuration['holiday_mappings'] : array()
                     );
                     if ($saved_id) {
+                        if ($adapter === 'british_outcome') {
+                            $this->ensureDefaultBritishOutcomeProfile($saved_id);
+                        }
                         $this->onlineexam_model->auditWorkflow($saved_id, $this->customlib->getStaffID(), $exam ? 'update_assessment' : 'create_assessment', 'onlineexam', $saved_id, $exam, $record);
                         $this->session->set_flashdata('msg', '<div class="alert alert-success">Academic context saved. Build the papers and sections next.</div>');
                         redirect('admin/onlineexam/builder/' . $saved_id);
@@ -1138,10 +1142,13 @@ class Onlineexam extends Admin_Controller
             access_denied();
         }
         $this->requireWorkflowCsrf();
-        $this->retiredOnlineexamAction('Historical British outcome assessments are read-only.');
         $onlineexam_id = (int) $this->input->post('onlineexam_id');
         $exam = $this->onlineexam_model->getWorkflow($onlineexam_id);
-        if (!$exam || !$this->workflowTeacherHasAssignment($exam->class_id, $exam->section_ids, $exam->subject_id, $exam->session_id) || $exam->result_adapter !== 'british_outcome' || $exam->lifecycle_status !== 'draft') {
+        if (!$exam || !$this->compactAssessmentIsExecutable($exam, true)
+            || !$this->workflowTeacherHasAssignment($exam->class_id, $exam->section_ids, $exam->subject_id, $exam->session_id)
+            || $exam->result_adapter !== 'british_outcome' || $exam->purpose !== 'british'
+            || $exam->lifecycle_status !== 'draft'
+            || $this->onlineexam_model->hasWorkflowAttemptsForRevision($onlineexam_id, $exam->revision)) {
             show_error('This British outcome profile cannot be edited.', 409);
         }
         $mode = $this->input->post('profile_mode');
@@ -1482,6 +1489,7 @@ class Onlineexam extends Admin_Controller
             'exam' => 'standard_component',
             'holiday' => 'holiday_assessment',
             'kindergarten' => 'kindergarten_concept',
+            'british' => 'british_outcome',
         );
         $purpose = (string) $value('purpose', '');
         if (!isset($purpose_adapters[$purpose])
@@ -1559,6 +1567,57 @@ class Onlineexam extends Admin_Controller
         }
         $timestamp = $this->customlib->dateTimeformatTwentyfourhour($value, false);
         return $timestamp ? (int) $timestamp : false;
+    }
+
+    /** British marking defaults to the teacher-selected legacy behaviour. */
+    private function ensureDefaultBritishOutcomeProfile($onlineexam_id)
+    {
+        $onlineexam_id = (int) $onlineexam_id;
+        $existing = $this->onlineexam_model->getWorkflowResultProfile($onlineexam_id, 'british_outcome');
+        if (!empty($existing)) {
+            return (int) $existing['id'];
+        }
+        $profile = array('mode' => 'teacher_selection');
+        $profile_id = $this->onlineexam_model->saveWorkflowResultProfile(array(
+            'onlineexam_id'      => $onlineexam_id,
+            'adapter'            => 'british_outcome',
+            'name'               => 'British outcome selection',
+            'configuration_json' => json_encode($profile),
+            'is_active'          => 1,
+            'created_by'         => (int) $this->customlib->getStaffID(),
+        ));
+        if ($profile_id) {
+            $this->onlineexam_model->auditWorkflow(
+                $onlineexam_id,
+                $this->customlib->getStaffID(),
+                'create_default_result_profile',
+                'onlineexam_result_profiles',
+                $profile_id,
+                null,
+                $profile
+            );
+        }
+        return $profile_id;
+    }
+
+    /** Read the outcome profile frozen for the exact official revision. */
+    private function frozenBritishOutcomeProfile($onlineexam_id, $revision)
+    {
+        if (!$this->db->table_exists('onlineexam_revision_snapshots')) {
+            return null;
+        }
+        $snapshot = $this->db->select('configuration_json')
+            ->where('onlineexam_id', (int) $onlineexam_id)
+            ->where('revision', (int) $revision)
+            ->limit(1)
+            ->get('onlineexam_revision_snapshots')
+            ->row_array();
+        $configuration = empty($snapshot['configuration_json'])
+            ? array()
+            : json_decode($snapshot['configuration_json'], true);
+        return isset($configuration['result']['profile']) && is_array($configuration['result']['profile'])
+            ? $configuration['result']['profile']
+            : null;
     }
 
     private function requireWorkflowCsrf()
@@ -1954,24 +2013,16 @@ class Onlineexam extends Admin_Controller
             ->limit(1)
             ->get()
             ->row_array();
-        $british_profile_mode = null;
+        $british_profile = null;
         if ($exam->result_adapter === 'british_outcome') {
-            $snapshot = $this->db->select('configuration_json')
-                ->where('onlineexam_id', (int) $exam->id)
-                ->where('revision', (int) $detail['attempt']['revision'])
-                ->limit(1)
-                ->get('onlineexam_revision_snapshots')
-                ->row_array();
-            $configuration = empty($snapshot['configuration_json']) ? array() : json_decode($snapshot['configuration_json'], true);
-            $british_profile_mode = isset($configuration['result']['profile']['mode'])
-                ? $configuration['result']['profile']['mode']
-                : null;
+            $british_profile = $this->frozenBritishOutcomeProfile($exam->id, $detail['attempt']['revision']);
         }
         $data = array(
             'exam'          => $exam,
             'detail'        => $detail,
             'student'       => $student,
-            'british_profile_mode' => $british_profile_mode,
+            'british_profile' => $british_profile,
+            'british_profile_mode' => isset($british_profile['mode']) ? $british_profile['mode'] : null,
             'workflow_csrf' => $this->session->userdata('onlineexam_workflow_csrf'),
         );
         $this->session->set_userdata('top_menu', 'Online_Examinations');
@@ -2162,9 +2213,8 @@ class Onlineexam extends Admin_Controller
 
     public function operationBritishOutcome($id)
     {
-        $this->retiredOnlineexamAction('Historical British outcome assessments are read-only.');
         $exam = $this->workflowOperationPost($id);
-        if ($exam->result_adapter !== 'british_outcome') {
+        if ($exam->result_adapter !== 'british_outcome' || $exam->purpose !== 'british') {
             show_error('This assessment does not use a British outcome destination.', 409);
         }
         $attempt_id = (int) $this->input->post('attempt_id');
@@ -2178,9 +2228,14 @@ class Onlineexam extends Admin_Controller
             . $this->db->escape($attempt_id) . ' AND `onlineexam_id` = '
             . $this->db->escape((int) $exam->id) . ' FOR UPDATE'
         )->row_array();
-        if (empty($attempt) || $attempt['status'] === 'voided') {
+        if (empty($attempt) || !in_array($attempt['status'], array('submitted', 'timed_out', 'marking', 'completed'), true)) {
             $this->db->trans_rollback();
-            show_error('The attempt is not available for a British outcome.', 409);
+            show_error('The student must submit the assessment before a British outcome can be selected.', 409);
+        }
+        $profile = $this->frozenBritishOutcomeProfile($exam->id, $attempt['revision']);
+        if (empty($profile) || !isset($profile['mode']) || $profile['mode'] !== 'teacher_selection') {
+            $this->db->trans_rollback();
+            show_error('This assessment converts its British outcome automatically from configured thresholds.', 409);
         }
         $this->db->where('id', $attempt_id)->update('onlineexam_candidate_attempts', array(
             'outcome_value' => $outcome,
@@ -2206,7 +2261,7 @@ class Onlineexam extends Admin_Controller
             $this->load->model('onlineexamresultsync_model');
             $result = $this->onlineexamresultsync_model->syncCompletedAttempt($attempt_id, (int) $this->customlib->getStaffID());
         }
-        $this->workflowOperationFlash($result, 'British outcome finalized and synchronized when the attempt is complete.');
+        $this->workflowOperationFlash($result, 'British outcome saved. It is posted automatically when the attempt is complete; additional comments remain unchanged.');
         redirect('admin/onlineexam/attemptmarking/' . $exam->id . '/' . $attempt_id);
     }
 

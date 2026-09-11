@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,What is a constitution?,The fundamental body of rules governing a state,A list of market prices,A school timetable,A private letter,,opt_a
+singlechoice,What does the rule of law require?,Everyone is subject to the law,Leaders are above the law,Only citizens obey laws,Courts follow personal wishes,,opt_a
+singlechoice,Which is a recognised way of acquiring citizenship?,Naturalisation,Buying an election,Ignoring immigration law,Joining a club,,opt_a
+singlechoice,What is a major purpose of a pressure group?,To influence public policy,To conduct every election,To replace all courts,To command the armed forces,,opt_a
+singlechoice,Why is separation of powers important?,It limits concentration and abuse of power,It removes all laws,It gives one arm total control,It prevents public accountability,,opt_a
+singlechoice,Which body is responsible for organising public elections?,Electoral commission,A sports club,A trade shop,A private household,,opt_a
+singlechoice,Human trafficking is primarily a violation of what?,Human rights,Weather rules,Sporting rules,Road design,,opt_a
+true_false,Responsible civic participation can strengthen democracy.,,,,,,true
+true_false,Corruption improves the delivery of public services.,,,,,,false
+multichoice,Select the two democratic values.,Accountability,Tolerance,Intimidation,Vote buying,,"[""opt_a"",""opt_b""]"

@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,Which of these is a primary colour?,Red,Green,Brown,Purple,,opt_a
+singlechoice,Which tool is commonly used for drawing?,Pencil,Spoon,Comb,Cup,,opt_a
+singlechoice,Which material can be shaped by modelling?,Clay,Water,Smoke,Light,,opt_a
+singlechoice,What do we call the steady beat in music?,Rhythm,Silence,Picture,Colour,,opt_a
+singlechoice,What colour is made by mixing red and yellow?,Orange,Green,Purple,Black,,opt_a
+singlechoice,Folding paper to make an object is a form of what?,Craft,Football,Cooking,Swimming,,opt_a
+singlechoice,Which activity uses body movement to music?,Dance,Reading,Counting,Sleeping,,opt_a
+true_false,Scissors should be used carefully during art work.,,,,,,true
+true_false,Mixing blue and yellow makes red.,,,,,,false
+multichoice,Select the two primary colours.,Red,Blue,Green,Orange,,"[""opt_a"",""opt_b""]"

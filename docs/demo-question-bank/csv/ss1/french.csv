@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,Choose the correct passe compose form of aller for je.,Je suis alle(e),J'ai aller,Je vais alle,Je suis allerons,,opt_a
+singlechoice,Complete the sentence: Nous ___ un livre.,avons,avez,a,ai,,opt_a
+singlechoice,Which sentence is in the near future tense?,Je vais etudier,J'etudie hier,J'ai etudier demain,Je suis etude,,opt_a
+singlechoice,What is the opposite of tot?,Tard,Vite,Bien,Beaucoup,,opt_a
+singlechoice,What does au marche mean?,At the market,At school,At home,At the station,,opt_a
+singlechoice,Choose the correct feminine nationality adjective.,Francaise,Francais,France,Francaises for one girl,,opt_a
+singlechoice,What does Ou habites-tu? ask?,Where do you live?,What do you eat?,How old are you?,When do you travel?,,opt_a
+true_false,Il fait chaud describes hot weather.,,,,,,true
+true_false,Manger means to sleep.,,,,,,false
+multichoice,Select the two Francophone countries.,Senegal,Cote d'Ivoire,Brazil,Japan,,"[""opt_a"",""opt_b""]"

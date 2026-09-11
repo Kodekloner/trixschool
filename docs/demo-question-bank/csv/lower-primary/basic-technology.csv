@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,Which tool is used to drive a nail into wood?,Hammer,Ruler,Spoon,Brush,,opt_a
+singlechoice,Which tool is suitable for cutting paper?,Scissors,Cup,Pencil,Plate,,opt_a
+singlechoice,Which tool helps us to draw a straight line?,Ruler,Broom,Fork,Needle,,opt_a
+singlechoice,What should protect the head on a building site?,Safety helmet,Sandals,Handkerchief,Notebook,,opt_a
+singlechoice,Which material is usually transparent?,Clear glass,Wood,Brick,Cardboard,,opt_a
+singlechoice,Which device gives light when connected to electricity?,Electric bulb,Door handle,Ruler,Wheelbarrow,,opt_a
+singlechoice,Which shape is most like a wheel?,Circle,Triangle,Rectangle,Square,,opt_a
+true_false,Scissors should be handled carefully.,,,,,,true
+true_false,It is safe to touch a bare electric wire.,,,,,,false
+multichoice,Select the two tools.,Hammer,Screwdriver,Orange,Plate,,"[""opt_a"",""opt_b""]"

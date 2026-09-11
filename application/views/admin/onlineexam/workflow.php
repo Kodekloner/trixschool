@@ -114,7 +114,7 @@ $format_datetime = function ($value) {
             </div>
 
             <div class="box box-info">
-                <div class="box-header with-border"><h3 class="box-title">2. Assessment component</h3></div>
+                <div class="box-header with-border"><h3 class="box-title">2. Result destination</h3></div>
                 <div class="box-body">
                     <div id="result_configuration_message" class="alert alert-info" role="status" aria-live="polite" style="<?php echo !empty($academic_configuration['message']) ? '' : 'display:none'; ?>"><?php echo !empty($academic_configuration['message']) ? html_escape($academic_configuration['message']) : ''; ?></div>
                     <div class="row">
@@ -131,7 +131,7 @@ $format_datetime = function ($value) {
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <p class="help-block">Completed scores are sent automatically to the result area configured for the selected purpose and class. Official report-card publication remains separate.</p>
+                            <p class="help-block">Completed scores or qualitative outcomes are sent automatically to the result area configured for the selected purpose and class. Official report-card publication remains separate.</p>
                         </div>
                     </div>
                 </div>

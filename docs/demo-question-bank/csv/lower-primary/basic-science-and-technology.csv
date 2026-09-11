@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,Which of these is a living thing?,Plant,Stone,Cup,Chair,,opt_a
+singlechoice,Which object provides natural light?,Sun,Book,Desk,Shoe,,opt_a
+singlechoice,Which of these is an electronic device?,Computer,Broom,Plate,Basket,,opt_a
+singlechoice,Which computer part is used for typing?,Keyboard,Monitor,Speaker,Mouse pad,,opt_a
+singlechoice,Which tool is used to hit a nail?,Hammer,Ruler,Brush,Cup,,opt_a
+singlechoice,Which part holds a plant firmly in the soil?,Roots,Petals,Fruit,Bud,,opt_a
+singlechoice,Which computer device is used to point and click?,Mouse,Printer,Speaker,Flash drive,,opt_a
+true_false,Washing the hands helps to remove dirt and germs.,,,,,,true
+true_false,Children should play with electric sockets.,,,,,,false
+multichoice,Select the two living things.,Bird,Tree,Toy car,Bottle,,"[""opt_a"",""opt_b""]"

@@ -5,6 +5,9 @@ $can_recover = $can_edit && $cell['recoverable'] && !$cell['excluded'] && ($cell
 <h4><?php echo html_escape($student['student_name']); ?></h4>
 <p><?php echo html_escape($exam['exam'] . ' — ' . $paper['title']); ?></p>
 <p><span class="label label-<?php echo html_escape($cell['style']); ?>"><?php echo html_escape($cell['label']); ?></span></p>
+<?php if ($exam['result_adapter'] === 'british_outcome') { ?>
+    <p><strong>British outcome:</strong> <?php echo !empty($details['outcome_value']) ? html_escape($details['outcome_value']) : 'Not selected yet'; ?></p>
+<?php } ?>
 <p><?php echo (int) $paper['duration_minutes']; ?> minutes · Maximum <?php echo number_format((float) $paper['raw_max_score'], 2); ?></p>
 <p><strong>Opens:</strong> <?php echo html_escape($details['effective_starts_at']); ?><br><strong>Closes:</strong> <?php echo html_escape($details['effective_ends_at']); ?></p>
 <?php if ($cell['key'] === 'incomplete') { ?><p><?php echo (int) $details['completed_required_count']; ?> of <?php echo (int) $details['required_answer_count']; ?> required answers completed before time ended.</p><?php } ?>
@@ -20,7 +23,8 @@ $can_recover = $can_edit && $cell['recoverable'] && !$cell['excluded'] && ($cell
         <input type="hidden" name="attempt_id" value="<?php echo (int) $cell['attempt_id']; ?>"><button class="btn btn-warning btn-sm" type="submit">Retry result update</button>
     </form><?php } ?>
 <?php } ?>
-<?php if ($can_edit && !empty($posting_conflicts)) { foreach ($posting_conflicts as $posting_conflict) { ?>
+<?php if ($can_edit && !empty($posting_conflicts)) { foreach ($posting_conflicts as $posting_conflict) {
+    if (!in_array($posting_conflict['adapter'], array('standard_component', 'holiday_assessment'), true)) { continue; } ?>
     <form method="post" action="<?php echo site_url('admin/onlineexam/operationAuthorizeSyncReplacement/' . (int) $exam['id']); ?>" class="well well-sm">
         <?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="onlineexam_workflow_token" value="<?php echo html_escape($workflow_csrf); ?>">
         <input type="hidden" name="sync_id" value="<?php echo (int) $posting_conflict['id']; ?>">

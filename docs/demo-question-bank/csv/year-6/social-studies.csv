@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,Which arm of government makes laws?,Legislature,Executive,Judiciary,Civil service,,opt_a
+singlechoice,"In a democracy, citizens choose leaders mainly through what?",Elections,Inheritance,Lottery,Appointment for life,,opt_a
+singlechoice,How many states are in Nigeria?,36,30,37,40,,opt_a
+singlechoice,What word describes a people's total way of life?,Culture,Weather,Transport,Population,,opt_a
+singlechoice,Which is a peaceful way to resolve disagreement?,Dialogue,Violence,Insults,Vandalism,,opt_a
+singlechoice,Which organisation promotes cooperation among West African countries?,ECOWAS,FIFA,WHO only,OPEC only,,opt_a
+singlechoice,Which action protects public property?,Using it responsibly,Writing on it,Breaking it,Stealing it,,opt_a
+true_false,Respect for cultural differences can promote peace.,,,,,,true
+true_false,Vandalism is a way of protecting public property.,,,,,,false
+multichoice,Select the two civic responsibilities.,Obeying lawful rules,Protecting public property,Destroying road signs,Buying votes,,"[""opt_a"",""opt_b""]"

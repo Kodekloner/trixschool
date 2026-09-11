@@ -49,6 +49,7 @@ compact_ui_assert(strpos($builder, 'builder_question_status') !== false && strpo
 compact_ui_assert(strpos($builder, 'paper-section-item') !== false && strpos($builder, 'paper-section-actions') !== false, 'Paper-section labels and actions need a non-overlapping flex layout.');
 compact_ui_assert(strpos($builder, '$can_view_roster') !== false && strpos($builder, '$can_view_operations') !== false, 'Builder navigation must respect destination-page privileges.');
 compact_ui_assert(substr_count($builder, '!empty($compact_supported)') >= 2, 'Historical builder views must not link into retired roster or operations routes.');
+compact_ui_assert(strpos($builder, 'name="onlineexam_workflow_token"') !== false && strpos($builder, 'Teacher selects the outcome') !== false, 'British outcome setup must be protected and understandable in the builder.');
 
 $question_assignment = compact_ui_source('application/views/admin/onlineexam/_searchQuestionByExamID.php');
 compact_ui_assert(substr_count($question_assignment, 'question-type-cell') >= 2, 'The question type column needs an explicit width class on its header and cells.');
@@ -57,6 +58,7 @@ compact_ui_assert(strpos($question_assignment, 'aria-label="Question assignment 
 
 $admin_controller = compact_ui_source('application/controllers/admin/Onlineexam.php');
 compact_ui_assert(strpos($admin_controller, "'exam'           => 'Terminal Examination (Exam)'") !== false, 'Terminal Examination must be listed among the assessment purposes.');
+compact_ui_assert(strpos($admin_controller, "'british'        => 'British Assessment'") !== false, 'British Assessment must be listed among the assessment purposes.');
 compact_ui_assert(
     strpos($admin_controller, "'native_question_types' => \$this->localizedQuestionTypes()") !== false,
     'Grouped passages must remain available in structured assessment authoring.'
@@ -94,18 +96,21 @@ compact_ui_assert(strpos($review_cell, 'Reschedule this paper') !== false && str
 $marking = compact_ui_source('application/views/admin/onlineexam/marking_v2.php');
 compact_ui_assert(strpos($marking, 'class="theory-response"') !== false, 'Long Theory responses need protected wrapping and overflow.');
 compact_ui_assert(strpos($marking, '$can_edit_marking') !== false, 'Read-only reviewers must not receive marking mutation controls.');
+compact_ui_assert(strpos($marking, 'operationBritishOutcome') !== false && strpos($marking, 'name="outcome_value"') !== false, 'Teacher-selected British outcomes must be available from Answer and Outcome Review.');
 
 $roster = compact_ui_source('application/views/admin/onlineexam/assign.php');
 compact_ui_assert(strpos($roster, '<thead>') !== false && strpos($roster, '$roster_column_count') !== false, 'The candidate roster needs a semantic header and a correct dynamic empty-state colspan.');
 
 $student_list = compact_ui_source('application/views/user/onlineexam/onlineexamlist.php');
 compact_ui_assert(strpos($student_list, "'exam'                  => 'Terminal Examination'") !== false, 'The student assessment list needs a clear Exam purpose label.');
+compact_ui_assert(strpos($student_list, "'british'               => 'British Assessment'") !== false, 'The student assessment list needs a clear British purpose label.');
 compact_ui_assert(strpos($student_list, 'assessment-table-wrap') !== false, 'The student assessment list needs a contained scroller.');
 compact_ui_assert(strpos($student_list, 'min-width:860px') !== false, 'The student assessment list needs a stable desktop table width before its phone-card override.');
 compact_ui_assert(strpos($student_list, 'content:attr(data-label)') !== false && strpos($student_list, 'min-width:0') !== false, 'The student assessment list must become labelled cards on phones.');
 
 $student_view = compact_ui_source('application/views/user/onlineexam/view_v2.php');
 compact_ui_assert(strpos($student_view, "'exam'                  => 'Terminal Examination'") !== false, 'The student assessment details need a clear Exam purpose label.');
+compact_ui_assert(strpos($student_view, "'british'               => 'British Assessment'") !== false, 'The student assessment details need a clear British purpose label.');
 compact_ui_assert(strpos($student_view, 'assessment-parts-wrap') !== false, 'Student paper status needs a responsive table wrapper.');
 compact_ui_assert(strpos($student_view, 'queueSave') !== false && strpos($student_view, 'flushQueue') !== false, 'Weak-network answer retry must remain enabled.');
 compact_ui_assert(strpos($student_view, 'remaining_seconds') !== false, 'The student countdown must use server-provided remaining time.');

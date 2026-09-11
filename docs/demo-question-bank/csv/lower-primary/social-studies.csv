@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,Parents and their children form a what?,Family,Market,Hospital,Farm,,opt_a
+singlechoice,Who teaches pupils in school?,Teacher,Driver,Tailor,Farmer,,opt_a
+singlechoice,Where should a sick person receive medical care?,Hospital,Cinema,Garage,Stadium,,opt_a
+singlechoice,What should a road user do when the traffic light is red?,Stop,Run,Turn anywhere,Ignore it,,opt_a
+singlechoice,What are the colours of the Nigerian flag?,Green and white,Red and blue,Yellow and black,Purple and white,,opt_a
+singlechoice,Who helps to maintain law and order?,Police officer,Carpenter,Chef,Musician,,opt_a
+singlechoice,Which action shows good behaviour at home?,Helping with chores,Breaking plates,Shouting at everyone,Wasting food,,opt_a
+true_false,Children should share and help one another.,,,,,,true
+true_false,It is safe to cross a road without looking.,,,,,,false
+multichoice,Select the two community helpers.,Doctor,Teacher,Football,Table,,"[""opt_a"",""opt_b""]"

@@ -1,0 +1,65 @@
+class_id,class,section_id,section,class_section_id,subject_id,subject,configured_session_ids,available_in_current_session_21,import_file,question_count
+1,Primary 1,4,A,29,1,Basic science,19,no,csv/lower-primary/basic-science.csv,10
+1,Primary 1,4,A,29,2,Basic Technology,19,no,csv/lower-primary/basic-technology.csv,10
+1,Primary 1,4,A,29,3,French,19;21,yes,csv/lower-primary/french.csv,10
+1,Primary 1,4,A,29,4,English language,19;21,yes,csv/lower-primary/english-language.csv,10
+1,Primary 1,4,A,29,5,Mathematics,19;21,yes,csv/lower-primary/mathematics.csv,10
+1,Primary 1,4,A,29,6,Social Studies,19;21,yes,csv/lower-primary/social-studies.csv,10
+1,Primary 1,4,A,29,7,Cultural and Creative Art,19;21,yes,csv/lower-primary/cultural-and-creative-art.csv,10
+1,Primary 1,4,A,29,8,Basic Sci & Tech,19,no,csv/lower-primary/basic-science-and-technology.csv,10
+1,Primary 1,5,B,30,1,Basic science,19,no,csv/lower-primary/basic-science.csv,10
+1,Primary 1,5,B,30,2,Basic Technology,19,no,csv/lower-primary/basic-technology.csv,10
+1,Primary 1,5,B,30,3,French,19;21,yes,csv/lower-primary/french.csv,10
+1,Primary 1,5,B,30,4,English language,19;21,yes,csv/lower-primary/english-language.csv,10
+1,Primary 1,5,B,30,5,Mathematics,19;21,yes,csv/lower-primary/mathematics.csv,10
+1,Primary 1,5,B,30,6,Social Studies,19;21,yes,csv/lower-primary/social-studies.csv,10
+1,Primary 1,5,B,30,7,Cultural and Creative Art,19;21,yes,csv/lower-primary/cultural-and-creative-art.csv,10
+1,Primary 1,5,B,30,8,Basic Sci & Tech,19,no,csv/lower-primary/basic-science-and-technology.csv,10
+17,Grade 1,4,A,21,1,Basic science,18;19,no,csv/lower-primary/basic-science.csv,10
+17,Grade 1,4,A,21,2,Basic Technology,18;19,no,csv/lower-primary/basic-technology.csv,10
+17,Grade 1,4,A,21,3,French,18;19,no,csv/lower-primary/french.csv,10
+17,Grade 1,4,A,21,4,English language,18;19,no,csv/lower-primary/english-language.csv,10
+17,Grade 1,4,A,21,5,Mathematics,18;19,no,csv/lower-primary/mathematics.csv,10
+17,Grade 1,4,A,21,6,Social Studies,18;19,no,csv/lower-primary/social-studies.csv,10
+17,Grade 1,4,A,21,7,Cultural and Creative Art,19,no,csv/lower-primary/cultural-and-creative-art.csv,10
+17,Grade 1,4,A,21,8,Basic Sci & Tech,19,no,csv/lower-primary/basic-science-and-technology.csv,10
+17,Grade 1,5,B,25,1,Basic science,19,no,csv/lower-primary/basic-science.csv,10
+17,Grade 1,5,B,25,2,Basic Technology,19,no,csv/lower-primary/basic-technology.csv,10
+17,Grade 1,5,B,25,3,French,19,no,csv/lower-primary/french.csv,10
+17,Grade 1,5,B,25,4,English language,19,no,csv/lower-primary/english-language.csv,10
+17,Grade 1,5,B,25,5,Mathematics,19,no,csv/lower-primary/mathematics.csv,10
+17,Grade 1,5,B,25,6,Social Studies,19,no,csv/lower-primary/social-studies.csv,10
+17,Grade 1,5,B,25,7,Cultural and Creative Art,19,no,csv/lower-primary/cultural-and-creative-art.csv,10
+17,Grade 1,5,B,25,8,Basic Sci & Tech,19,no,csv/lower-primary/basic-science-and-technology.csv,10
+18,year 6,7,green,22,1,Basic science,19,no,csv/year-6/basic-science.csv,10
+18,year 6,7,green,22,2,Basic Technology,19,no,csv/year-6/basic-technology.csv,10
+18,year 6,7,green,22,3,French,19,no,csv/year-6/french.csv,10
+18,year 6,7,green,22,4,English language,19,no,csv/year-6/english-language.csv,10
+18,year 6,7,green,22,5,Mathematics,19,no,csv/year-6/mathematics.csv,10
+18,year 6,7,green,22,6,Social Studies,19,no,csv/year-6/social-studies.csv,10
+18,year 6,7,green,22,7,Cultural and Creative Art,19,no,csv/year-6/cultural-and-creative-art.csv,10
+18,year 6,7,green,22,8,Basic Sci & Tech,19,no,csv/year-6/basic-science-and-technology.csv,10
+19,ss1,8,AA,23,1,Basic science,18,no,csv/ss1/basic-science.csv,10
+19,ss1,8,AA,23,2,Basic Technology,18,no,csv/ss1/basic-technology.csv,10
+19,ss1,8,AA,23,3,French,18,no,csv/ss1/french.csv,10
+19,ss1,8,AA,23,4,English language,18,no,csv/ss1/english-language.csv,10
+19,ss1,8,AA,23,5,Mathematics,18,no,csv/ss1/mathematics.csv,10
+19,ss1,8,AA,23,6,Social Studies,18,no,csv/ss1/social-studies.csv,10
+22,primary B1,11,british A,32,1,Basic science,19,no,csv/lower-primary/basic-science.csv,10
+22,primary B1,11,british A,32,2,Basic Technology,19,no,csv/lower-primary/basic-technology.csv,10
+22,primary B1,11,british A,32,3,French,19,no,csv/lower-primary/french.csv,10
+22,primary B1,11,british A,32,4,English language,19,no,csv/lower-primary/english-language.csv,10
+22,primary B1,11,british A,32,5,Mathematics,19,no,csv/lower-primary/mathematics.csv,10
+22,primary B1,11,british A,32,6,Social Studies,19,no,csv/lower-primary/social-studies.csv,10
+22,primary B1,11,british A,32,7,Cultural and Creative Art,19,no,csv/lower-primary/cultural-and-creative-art.csv,10
+22,primary B1,11,british A,32,8,Basic Sci & Tech,19,no,csv/lower-primary/basic-science-and-technology.csv,10
+22,primary B1,11,british A,32,9,biology,19,no,csv/lower-primary/biology.csv,10
+22,primary B1,12,british B,33,1,Basic science,19,no,csv/lower-primary/basic-science.csv,10
+22,primary B1,12,british B,33,2,Basic Technology,19,no,csv/lower-primary/basic-technology.csv,10
+22,primary B1,12,british B,33,3,French,19,no,csv/lower-primary/french.csv,10
+22,primary B1,12,british B,33,4,English language,19,no,csv/lower-primary/english-language.csv,10
+22,primary B1,12,british B,33,5,Mathematics,19,no,csv/lower-primary/mathematics.csv,10
+22,primary B1,12,british B,33,6,Social Studies,19,no,csv/lower-primary/social-studies.csv,10
+22,primary B1,12,british B,33,7,Cultural and Creative Art,19,no,csv/lower-primary/cultural-and-creative-art.csv,10
+22,primary B1,12,british B,33,8,Basic Sci & Tech,19,no,csv/lower-primary/basic-science-and-technology.csv,10
+22,primary B1,12,british B,33,9,biology,19,no,csv/lower-primary/biology.csv,10

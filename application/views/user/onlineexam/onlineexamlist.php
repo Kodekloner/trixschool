@@ -7,6 +7,7 @@ $purpose_labels = array(
     'exam'                  => 'Terminal Examination',
     'holiday'               => 'Holiday Assessment',
     'kindergarten'          => 'Kindergarten Assessment',
+    'british'               => 'British Assessment',
 );
 
 $format_duration = function ($duration) {
@@ -80,7 +81,7 @@ $format_duration = function ($duration) {
                                         <td data-label="Result">
                                             <?php if ($result['visible']) { ?>
                                                 <strong><?php echo number_format($result['score'], 2); ?><?php echo $result['maximum'] !== null ? ' / ' . number_format($result['maximum'], 2) : ''; ?></strong>
-                                                <?php if ($result['outcome']) { ?><span class="label <?php echo $result['outcome'] === 'Pass' ? 'label-success' : 'label-danger'; ?> assessment-status"><?php echo html_escape($result['outcome']); ?></span><?php } ?>
+                                                <?php if ($result['outcome']) { ?><span class="label <?php echo html_escape($result['outcome_class']); ?> assessment-status"><?php echo html_escape($result['outcome']); ?></span><?php } ?>
                                             <?php } else { ?><span class="text-muted"><?php echo $status_label === 'Completed' ? 'Awaiting release' : '—'; ?></span><?php } ?>
                                         </td>
                                         <td data-label="Action" class="text-right assessment-action">

@@ -16,15 +16,19 @@ function compact_backend_source($relative_path)
 }
 
 $workflow = compact_backend_source('application/models/Onlineexamworkflow_model.php');
-compact_backend_assert(strpos($workflow, "protected \$purposes = array('ca', 'midterm', 'exam', 'holiday', 'kindergarten');") !== false, 'Compact purposes, including terminal Exam, must remain authoritative.');
+compact_backend_assert(strpos($workflow, "protected \$purposes = array('ca', 'midterm', 'exam', 'holiday', 'kindergarten', 'british');") !== false, 'Compact purposes, including Exam and British Assessment, must remain authoritative.');
 compact_backend_assert(strpos($workflow, "if (\$purpose === 'exam')") !== false, 'Exam must resolve through its own result-destination branch.');
 compact_backend_assert(strpos($workflow, "'exam' => 'standard_component'") !== false, 'Exam must use the existing standard score component adapter.');
+compact_backend_assert(strpos($workflow, "'british' => 'british_outcome'") !== false, 'British Assessment must use the existing qualitative result adapter.');
 compact_backend_assert(strpos($workflow, "protected \$paper_types = array('objective', 'theory');") !== false, 'Only Objective and Theory paper types may be published.');
 compact_backend_assert(strpos($workflow, "protected \$delivery_modes = array('cbt');") !== false, 'Only CBT delivery may be published.');
 compact_backend_assert(strpos($workflow, 'validateHolidayResultTarget') !== false, 'Holiday destinations must be revalidated before freezing.');
+compact_backend_assert(strpos($workflow, 'validateLegacyQuestionBankAnswer') !== false, 'Traditional Question Bank answer keys must be validated before publication.');
+compact_backend_assert(strpos($workflow, "array('[', '{', '\"')") !== false, 'Legacy True/False answer keys must remain strings when snapshots are created.');
 
 $attempt = compact_backend_source('application/models/Onlineexamattempt_model.php');
 compact_backend_assert(strpos($attempt, "e.purpose IN ('ca','midterm','exam')") !== false, 'Completed Exam attempts must be included in automatic result reconciliation.');
+compact_backend_assert(strpos($attempt, "e.purpose = 'british' AND e.result_adapter = 'british_outcome'") !== false, 'Completed British attempts must be included in automatic result reconciliation.');
 compact_backend_assert(strpos($attempt, "if (\$paper->delivery_mode !== 'cbt')") !== false, 'Candidate paper start must enforce CBT server-side.');
 compact_backend_assert(strpos($attempt, 'if ($attempt_count >= 1)') !== false, 'Only one non-voided official attempt may exist.');
 compact_backend_assert(strpos($attempt, 'Answer attachments are no longer supported') !== false, 'Model-level attachment creation must be retired.');
@@ -36,6 +40,10 @@ compact_backend_assert(strpos($attempt, '$request_received_at') !== false && str
 compact_backend_assert(strpos($attempt, "'SELECT id, candidate_status FROM `onlineexam_students`") !== false, 'Candidate start must lock and revalidate the roster row.');
 compact_backend_assert(strpos($attempt, 'isSupportedAssessmentContext') !== false && strpos($attempt, 'compactPaperQuestionsSupported') !== false, 'The whole frozen assessment must satisfy the compact CBT contract.');
 compact_backend_assert(strpos($attempt, 'attachment_path));') === false, 'Retired attachment metadata must not count as an answered CBT response.');
+$candidate_question_start = strpos($attempt, 'public function getPaperQuestions(');
+$candidate_question_end = strpos($attempt, 'public function saveAnswer(', $candidate_question_start);
+$candidate_question_source = substr($attempt, $candidate_question_start, $candidate_question_end - $candidate_question_start);
+compact_backend_assert(strpos($candidate_question_source, 'correct_answer_json') === false, 'The candidate question query must never expose the frozen answer key.');
 
 $sync = compact_backend_source('application/models/Onlineexamresultsync_model.php');
 compact_backend_assert(strpos($sync, 'syncHolidayAssessment') !== false, 'Holiday Assessment needs a transactional result adapter.');
@@ -44,11 +52,14 @@ compact_backend_assert(strpos($sync, 'previous_metadata_json') !== false, 'Holid
 compact_backend_assert(substr_count($sync, "if (\$ledger['idempotent'])") >= 4, 'Every active result adapter must handle duplicate synchronization explicitly.');
 compact_backend_assert(strpos($sync, 'The previously synchronized score was changed or moved outside this assessment.') !== false, 'Duplicate Standard posting must detect an externally changed destination.');
 compact_backend_assert(strpos($sync, 'The previously synchronized British outcome was changed or moved outside this assessment.') !== false, 'Duplicate British posting must detect an externally changed destination.');
+compact_backend_assert(strpos($sync, "'outcome_value' => \$outcome") !== false, 'Threshold-based British outcomes must be retained on the completed attempt for review and feedback.');
 compact_backend_assert(strpos($sync, 'The previously synchronized Kindergarten outcome was changed or moved outside this assessment.') !== false, 'Duplicate Kindergarten posting must detect an externally changed destination.');
 
 $admin = compact_backend_source('application/controllers/admin/Onlineexam.php');
-compact_backend_assert(strpos($admin, 'in_list[ca,midterm,exam,holiday,kindergarten]') !== false, 'Admin assessment saves must accept the Exam purpose.');
+compact_backend_assert(strpos($admin, 'in_list[ca,midterm,exam,holiday,kindergarten,british]') !== false, 'Admin assessment saves must accept Exam and British purposes.');
 compact_backend_assert(strpos($admin, "'exam'           => 'Terminal Examination (Exam)'") !== false, 'The assessment form must offer Terminal Examination as a purpose.');
+compact_backend_assert(strpos($admin, "'british'        => 'British Assessment'") !== false, 'The assessment form must offer British Assessment as a purpose.');
+compact_backend_assert(strpos($admin, 'ensureDefaultBritishOutcomeProfile') !== false, 'A new British assessment needs a safe teacher-selection default.');
 compact_backend_assert(strpos($admin, 'in_list[objective,theory]') !== false, 'Admin paper saves must enforce Objective/Theory.');
 compact_backend_assert(strpos($admin, 'in_list[cbt]') !== false, 'Admin paper saves must enforce CBT.');
 compact_backend_assert(strpos($admin, 'retiredOnlineexamAction') !== false, 'Legacy admin mutations must terminate explicitly.');
@@ -78,6 +89,7 @@ compact_backend_assert(strpos($model, 'onlineexam.workflow_version = 2 AND') !==
 compact_backend_assert(strpos($model, 'public function getWorkflowClassChoices') !== false, 'Teacher assessment creation needs session-scoped class choices.');
 compact_backend_assert(strpos($model, "'exam' => 'term'") !== false, 'Exam must reserve a term assessment slot.');
 compact_backend_assert(strpos($model, "onlineexam.purpose IN ('ca','midterm','exam')") !== false, 'Published Exam assessments must be visible to assigned students.');
+compact_backend_assert(strpos($model, "onlineexam.purpose='british' AND onlineexam.result_adapter='british_outcome'") !== false, 'Published British assessments must be visible to assigned students.');
 
 $question_picker = compact_backend_source('application/models/Onlineexamquestion_model.php');
 compact_backend_assert(strpos($question_picker, "['allowed_section_ids']") !== false, 'Assessment Question Bank searches must apply teacher section scope before pagination.');
@@ -93,15 +105,15 @@ foreach (array('onlineexam_holiday_mappings', 'score_origin', 'source_onlineexam
 }
 
 $review = compact_backend_source('application/models/Onlineexamreview_model.php');
-compact_backend_assert(strpos($review, "'term' => array('ca', 'exam', 'kindergarten')") !== false, 'Exam results must appear under Term in Online Examination Review.');
+compact_backend_assert(strpos($review, "'term' => array('ca', 'exam', 'kindergarten', 'british')") !== false, 'Exam and British results must appear under Term in Online Examination Review.');
 compact_backend_assert(strpos($review, 'syncCompletedAttempt') !== false && strpos($review, "'deleted_at'") !== false, 'Completed removal must reconcile results before soft-archiving the assessment.');
 compact_backend_assert(strpos($review, "->where('s.is_active', 'yes')") !== false, 'Review rows must come from the authoritative active enrollment roster.');
 compact_backend_assert(strpos($admin, 'requireWorkflowCsrf') !== false && strpos($admin, 'allow_assign_candidate') !== false, 'Review writes must retain CSRF and explicit assignment permissions.');
 
 $slot_migration = compact_backend_source('application/migrations/138_onlineexam_single_subject_slots.php');
-compact_backend_assert(strpos($slot_migration, "e.purpose IN ('ca','exam','kindergarten')") !== false, 'Exam must backfill into the term academic-slot namespace.');
+compact_backend_assert(strpos($slot_migration, "e.purpose IN ('ca','exam','kindergarten','british')") !== false, 'Exam and British assessments must backfill into the term academic-slot namespace.');
 
 $all_school_migration = compact_backend_source('docs/all_school_database_migrations.sql');
-compact_backend_assert(strpos($all_school_migration, "e.purpose IN (''ca'',''exam'',''kindergarten'')") !== false, 'The all-school migration must backfill Exam academic slots.');
+compact_backend_assert(strpos($all_school_migration, "e.purpose IN (''ca'',''exam'',''kindergarten'',''british'')") !== false, 'The all-school migration must backfill Exam and British academic slots.');
 
 echo "onlineexam compact backend contract tests passed" . PHP_EOL;

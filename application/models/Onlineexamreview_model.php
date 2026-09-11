@@ -50,7 +50,9 @@ class Onlineexamreview_model extends CI_Model
                 $key = (int) $exam['id'] . '_' . (int) $paper['id'];
                 $columns[$key] = array('exam_id' => (int) $exam['id'], 'paper_id' => (int) $paper['id'],
                     'subject' => isset($subject['name']) ? $subject['name'] : '', 'assessment' => $exam['exam'],
-                    'component' => strtoupper((string) $exam['target_component']), 'title' => $paper['title']);
+                    'component' => $this->componentLabel($exam['result_adapter'] === 'standard_component'
+                        ? strtolower((string) $exam['target_component']) : strtolower((string) $exam['purpose'])),
+                    'title' => $paper['title']);
                 foreach ($students as $student) {
                     $cell = $this->makeCell($exam, $paper, $student['student_session_id'], $records);
                     $cells[$student['student_session_id']][$key] = $cell;
@@ -86,7 +88,7 @@ class Onlineexamreview_model extends CI_Model
 
     private function matchingExamIds(array $criteria, $component = '')
     {
-        $purposes = array('term' => array('ca', 'exam', 'kindergarten'), 'midterm' => array('midterm'), 'holiday' => array('holiday'));
+        $purposes = array('term' => array('ca', 'exam', 'kindergarten', 'british'), 'midterm' => array('midterm'), 'holiday' => array('holiday'));
         if (!isset($purposes[$criteria['assessment_type']])
             || empty($criteria['session_id']) || empty($criteria['class_id']) || empty($criteria['section_id'])
             || !in_array($criteria['term'], array('1st', '2nd', '3rd'), true)) {
@@ -123,7 +125,7 @@ class Onlineexamreview_model extends CI_Model
         if (preg_match('/^ca([1-9]|10)$/', $component, $match)) {
             return 'CA' . $match[1];
         }
-        $labels = array('exam' => 'Exam', 'holiday' => 'Holiday', 'kindergarten' => 'Kindergarten');
+        $labels = array('exam' => 'Exam', 'holiday' => 'Holiday', 'kindergarten' => 'Kindergarten', 'british' => 'British Outcome');
         return isset($labels[$component]) ? $labels[$component] : ucwords(str_replace('_', ' ', $component));
     }
 
@@ -132,7 +134,7 @@ class Onlineexamreview_model extends CI_Model
         if (preg_match('/^ca([1-9]|10)$/', $component, $match)) {
             return (int) $match[1];
         }
-        return $component === 'exam' ? 20 : ($component === 'kindergarten' ? 30 : ($component === 'holiday' ? 40 : 99));
+        return $component === 'exam' ? 20 : ($component === 'british' ? 30 : ($component === 'kindergarten' ? 40 : ($component === 'holiday' ? 50 : 99)));
     }
 
     public function cell($exam_id, $student_session_id, $paper_id, array $scope)
@@ -162,7 +164,7 @@ class Onlineexamreview_model extends CI_Model
                     'cell' => $this->makeCell($exam, $paper, $student_session_id, $records),
                     'posting_conflicts' => array());
                 if ($attempt_id) {
-                    $detail['posting_conflicts'] = $this->db->select('id, conflict_reason')
+                    $detail['posting_conflicts'] = $this->db->select('id, adapter, conflict_reason')
                         ->where('attempt_id', (int) $attempt_id)->where('status', 'conflict')
                         ->order_by('id', 'ASC')->get('onlineexam_result_sync')->result_array();
                 }
@@ -284,6 +286,7 @@ class Onlineexamreview_model extends CI_Model
             'attempt_status' => isset($row['status']) ? $row['status'] : 'pending',
             'raw_score' => isset($row['raw_score']) ? $row['raw_score'] : 0,
             'raw_max_score' => $paper['raw_max_score'],
+            'outcome_value' => !empty($attempt['outcome_value']) ? $attempt['outcome_value'] : null,
             'answered_count' => isset($records['answers'][$attempt_id][$paper['id']]) ? $records['answers'][$attempt_id][$paper['id']] : 0,
             'question_count' => isset($records['questions'][$revision][$paper['id']]) ? $records['questions'][$revision][$paper['id']] : 0,
             'required_answer_count' => $progress['required'],
@@ -300,6 +303,10 @@ class Onlineexamreview_model extends CI_Model
         }
         $assigned = $candidate && $candidate['candidate_status'] === 'assigned';
         $state = $this->onlineexam_review->describe($details, $assigned);
+        if ($exam['result_adapter'] === 'british_outcome' && $state['key'] === 'completed'
+            && !empty($attempt['outcome_value'])) {
+            $state['label'] = $attempt['outcome_value'];
+        }
         return array_merge($state, array('details' => $details, 'attempt_id' => $attempt_id,
             'candidate_id' => $candidate ? (int) $candidate['id'] : 0, 'assigned' => (bool) $assigned,
             'excluded' => $candidate && !$assigned,

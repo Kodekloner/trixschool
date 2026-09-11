@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,Which sense organ helps us to see?,Eyes,Ears,Nose,Tongue,,opt_a
+singlechoice,Which of these is a living thing?,Stone,Chair,Bean plant,Spoon,,opt_c
+singlechoice,What is the main natural source of light during the day?,Sun,Torch,Candle,Bulb,,opt_a
+singlechoice,Which organ helps a person to breathe?,Lungs,Teeth,Bones,Fingernails,,opt_a
+singlechoice,What is a young frog called?,Tadpole,Kitten,Calf,Chick,,opt_a
+singlechoice,Which part of a plant absorbs water from the soil?,Roots,Flower,Fruit,Leaf,,opt_a
+singlechoice,Which liquid becomes ice when it is cooled enough?,Water,Palm oil,Kerosene,Juice,,opt_a
+true_false,Living things grow and change.,,,,,,true
+true_false,A stone needs food in order to grow.,,,,,,false
+multichoice,Select the two living things.,Goat,Mango tree,Football,Cup,,"[""opt_a"",""opt_b""]"

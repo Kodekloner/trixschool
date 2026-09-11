@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,Which letter is a vowel?,A,B,D,T,,opt_a
+singlechoice,What is the plural of cat?,Cats,Cates,Cat,Caties,,opt_a
+singlechoice,What is the opposite of hot?,Cold,Warm,Dry,Bright,,opt_a
+singlechoice,Which mark should end a question?,Question mark,Full stop,Comma,Apostrophe,,opt_a
+singlechoice,Which word is a naming word?,School,Run,Quickly,Blue,,opt_a
+singlechoice,Which word rhymes with sun?,Fun,Sit,Top,Bed,,opt_a
+singlechoice,Which word is correctly spelt?,House,Hous,Howse,Houce,,opt_a
+true_false,The word dog begins with the letter d.,,,,,,true
+true_false,The opposite of big is tall.,,,,,,false
+multichoice,Select the two vowels.,A,B,E,D,,"[""opt_a"",""opt_c""]"

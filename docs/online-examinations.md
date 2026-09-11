@@ -1,6 +1,6 @@
 # Online Examinations: Complete Workflow Guide
 
-Last reviewed against the current code: 9 September 2026 (Africa/Lagos)
+Last reviewed against the current code: 10 September 2026 (Africa/Lagos)
 
 This guide documents the current Nigerian-localised Online Examination workflow from setup to final result handling. It covers every page linked from the workflow, each supported assessment setup, the student experience, marking, missed examinations, rescheduling, manual recovery scores, automatic result posting, feedback, archiving, permissions, and the remaining legacy-only screens.
 
@@ -13,7 +13,7 @@ The working relationship is:
 ```text
 Existing academic/result settings
         ↓
-Session → Term → Class → Arm → Subject → CA/Exam/Holiday/Kindergarten destination
+Session → Term → Class → Arm → Subject → CA/Exam/British/Holiday/Kindergarten destination
         ↓
 One online assessment → one subject → one CBT paper
         ↓
@@ -21,7 +21,7 @@ Candidate roster → freeze and publish → student attempt
         ↓
 Automatic marking and/or teacher marking
         ↓
-Automatic score posting to the existing result record
+Automatic score/outcome posting to the existing result record
         ↓
 Existing result publication process releases the official result card
 ```
@@ -35,7 +35,7 @@ The module intentionally keeps these two releases separate:
 
 The current workflow has the following fixed rules:
 
-- One assessment belongs to one academic session, one term, one class, one subject, one result component, and one or more compatible class arms.
+- One assessment belongs to one academic session, one term, one class, one subject, one result destination, and one or more compatible class arms.
 - One assessment contains exactly one active CBT paper.
 - The same paper may serve several selected arms only when the subject is assigned to every arm and all arms use the same result destination and maximum.
 - To examine another subject, create another assessment.
@@ -63,7 +63,7 @@ The examples below omit the school's domain. Access also depends on the staff me
 | **Candidate roster** | `/admin/onlineexam/assign/{assessment_id}` | Assigns or excludes eligible students in each selected class arm. |
 | **Review shortcut** | `/admin/onlineexam/operations/{assessment_id}` | Old bookmarked link retained as a redirect to the same assessment preselected in the simplified Review page. It is not a separate operations dashboard. |
 | **Review one student/paper** | `/admin/onlineexam/reviewcell/{assessment_id}/{student_session_id}/{paper_id}` | Opens the Review modal for one matrix cell. It is normally reached by clicking a cell, not entered manually. |
-| **Theory Answer Review** | `/admin/onlineexam/attemptmarking/{assessment_id}/{attempt_id}` | Displays answered responses that require manual marking and permits Theory/Essay marking when authorized. It is not a full objective-script viewer. |
+| **Answer and Outcome Review** | `/admin/onlineexam/attemptmarking/{assessment_id}/{attempt_id}` | Displays responses that require manual marking and, for a teacher-selected British setup, records Emerging, Expected, or Exceeding. It is not a full objective-script viewer. |
 | **Assessment analysis** | `/admin/onlineexam/analysis/{assessment_id}` | Shows frozen paper and question statistics. This is a protected contextual route and is not currently a primary sidebar link. |
 | **View a Question Bank item** | `/admin/question/read/{question_id}` | Opens the full reusable source question. |
 
@@ -107,7 +107,7 @@ The page header also contains **Review students and scores** and, when authorize
 | **Assessment** | The academic record tying a session, term, class, arms, subject, purpose, result destination, schedule, and candidate roster together. |
 | **Paper** | The single Objective or Theory/Essay CBT delivered to the student. |
 | **Section** | An optional group of questions with its own instructions and answer rule. |
-| **Result component** | The existing CA slot or specialist result destination that receives the completed score. |
+| **Result destination** | The existing CA/Exam field or specialist British, Holiday, or Kindergarten record that receives the completed score/outcome. |
 | **Source question** | The editable Question Bank record used while building a draft. |
 | **Frozen snapshot** | The immutable copy of the academic mapping, paper, sections, questions, answers, marks, and instructions used by official attempts. |
 | **Candidate assignment** | The student's inclusion in the assessment roster. |
@@ -175,9 +175,27 @@ The completed percentage is converted to the configured result-label index and p
 
 An aggregate manual paper score is not offered when the Kindergarten mapping uses separate paper sections for different concept outcomes, because one whole-paper total cannot safely determine those section results. In that case reschedule the CBT or enter each outcome in the existing Kindergarten result screen. A whole-paper Kindergarten mapping can use the supervised recovery score because one percentage can still be converted through that mapping.
 
-### 5.6 Setups not offered for new assessments
+### 5.6 British Assessment
 
-- British outcome classes are preserved, but new compact CA/Midterm/Exam setup rejects them because a numeric score cannot safely replace `Expected`, `Emerging`, or `Exceeding`. Historical frozen British assessments remain read-only where applicable.
+Choose **British Assessment** only for a class whose Exam Setting assignment has `ResultType = british`. This mirrors the existing `/admin/britishMarkingSystem.php` workflow: one subject result is stored for the selected session, term, class, arm, and student as exactly one of:
+
+- `Emerging`;
+- `Expected`; or
+- `Exceeding`.
+
+The Online Examination uses a 100-point working scale to calculate the student's assessment percentage, but it does not write that number into a CA field. It posts the final qualitative value to `britishresult.Remark`. The existing `britishresult.AdditionalComments` value is deliberately left unchanged.
+
+The builder provides two outcome methods:
+
+- **Teacher selects the outcome** is the default and matches the existing British Computation page. After submission, an authorized teacher opens **Answer and Outcome Review**, completes any Theory marking, and selects Emerging, Expected, or Exceeding. Once the attempt is complete, the outcome posts automatically.
+- **Convert the score automatically** converts the completed assessment percentage through school-defined, gap-free ranges covering 0–100. The ranges displayed initially are editable examples, not a national grading rule; the school must confirm and save its own approved thresholds before publication.
+
+A British assessment has one academic slot per session, term, class arm, and subject. It appears in Online Examination Review under assessment type **Term** and component **British Outcome**.
+
+If a matching British result row is absent, synchronization creates it. If a blank placeholder exists, it can be filled. If `Remark` already contains a manual/unrelated outcome, the system records a conflict instead of silently replacing it. Staff should verify or clear that value in British Computation and then retry; the numeric replacement shortcut is deliberately not offered for a qualitative British outcome.
+
+### 5.7 Setups not offered for new assessments
+
 - Unlinked practice quizzes are not offered.
 - Paper, hybrid, practical, project, oral/aural, and uploaded-response assessments are retired from the current online flow.
 
@@ -190,7 +208,7 @@ Confirm the following existing school data first:
 3. Students are enrolled in the correct `student_session` records for that session, class, and arm.
 4. The subject is assigned to every intended arm through the school's subject/class assignment records.
 5. Standard classes have the correct result setting, CA names, CA maximums, and `MidTermCaToUse` values. For an Exam purpose, the enabled CA maximums must leave a positive balance below 100.
-6. Holiday or Kindergarten settings already exist when those purposes will be used.
+6. British classes have `ResultType = british`, and Holiday or Kindergarten settings already exist when those purposes will be used.
 7. Each subject teacher is assigned to the exact session, class arm, and subject in `teacher_subjects`.
 
 This preparation controls what appears in the form. A missing subject or arm is normally an academic-assignment issue, not an Online Examination display fault.
@@ -204,13 +222,13 @@ Open **Online Examinations → Online Exam → Add academic assessment**.
 | Field | Rule and effect |
 |---|---|
 | **Assessment title** | Candidate- and staff-facing name, for example `Primary 4 Mathematics CA1`. |
-| **Purpose** | Continuous Assessment, Midterm, Terminal Examination (Exam), Holiday, or Kindergarten. It decides which existing result configuration is valid. |
+| **Purpose** | Continuous Assessment, Midterm, Terminal Examination (Exam), British, Holiday, or Kindergarten. It decides which existing result configuration is valid. |
 | **Academic session** | Owns both the candidate roster and final result record. |
 | **Term** | `1st`, `2nd`, or `3rd`; it is part of the assessment's unique identity and result destination. |
 | **Class** | Filtered to classes available in the selected session and staff scope. |
 | **Subject** | Filtered by the selected session, term, and class. Teachers see only subjects assigned to them. |
 | **Class arms / sections** | Filtered after session, class, and subject selection. The subject must be valid in every checked arm. |
-| **Result component** | Loaded from the existing result setting for CA/Midterm/Exam. Exam offers only the derived Examination component. Holiday and Kindergarten destinations are inferred from their specialist settings. |
+| **Result destination** | Loaded from the existing result setting for CA/Midterm/Exam. Exam offers only the derived Examination component. British, Holiday, and Kindergarten destinations are inferred from their existing specialist settings. |
 | **Opens / Closes** | The outer period during which the assessment may run. |
 | **Duration (minutes)** | Default paper time, from 1 to 1,439 minutes. |
 | **Pass percentage** | Used for the online Pass/Fail label after feedback release; default 40. It does not alter official grading. |
@@ -230,7 +248,7 @@ Session
   → available classes
     → term + class subjects
       → subject-compatible arms
-        → valid result component or specialist mapping
+        → valid result component, outcome, or specialist mapping
 ```
 
 This prevents the common error where a subject is selected even though it is not assigned to every chosen arm. The server repeats every check, so a crafted or stale browser request cannot bypass the filters.
@@ -246,12 +264,12 @@ Non-teacher staff still require the relevant role privilege and valid curriculum
 The database reserves one live assessment slot for this exact identity:
 
 ```text
-session + term + class + arm + assessment type + result component + subject
+session + term + class + arm + assessment type + result component/outcome + subject
 ```
 
 For this rule:
 
-- CA, Exam, and Kindergarten belong to Review's **Term** type;
+- CA, Exam, British, and Kindergarten belong to Review's **Term** type;
 - Midterm belongs to **Midterm**;
 - Holiday belongs to **Holiday**; and
 - each selected arm reserves its own slot.
@@ -266,7 +284,7 @@ Saving successfully opens the builder.
 
 ## 8. Step 2 — build the paper
 
-The builder header shows the session/term, class/arms, subject, result component and maximum, lifecycle status, and revision number. Its toolbar links back to the assessment list, the candidate roster, Review after publication, and draft context editing.
+The builder header shows the session/term, class/arms, subject, result destination, lifecycle status, and revision number. Numeric destinations also show their maximum; a British destination shows its three qualitative outcomes. Its toolbar links back to the assessment list, the candidate roster, Review after publication, and draft context editing.
 
 ### Paper fields
 
@@ -358,6 +376,21 @@ The embedded Question Bank search is restricted on the server to the assessment'
 
 A question from another class, subject, or unselected arm is rejected even if its identifier is manually submitted.
 
+Yes, an objective Question Bank item includes its answer key. The reusable `questions` record stores the question type, question text, options `opt_a` to `opt_e`, and `correct` value:
+
+- Single Choice stores the correct option key, for example `opt_b`.
+- Multiple Choice stores the complete set of correct option keys as JSON, for example `["opt_a","opt_c"]`.
+- True/False stores `true` or `false`.
+- A legacy Descriptive item has no automatic answer key and is not accepted as a current Theory question; create a structured Long answer in the builder instead.
+
+Questions originally created through Path A also keep their richer reusable definition in `onlineexam_question_definitions`. Consequently, selecting those items later through Path B restores accepted short answers, numeric value/tolerance, matching pairs, ordering, grouped-passage data, or the Long-answer marking scheme as applicable.
+
+When Path B assigns the bank item, the draft still points to that reusable source. **Freeze and publish** then copies its question text, options, correct answer, type, marks, negative mark, section, and marking information into the immutable revision snapshot. Publication is blocked if a traditional objective bank item has missing choices or an invalid answer key. During an active attempt, the candidate question query returns only the answerable question/options and deliberately omits the correct-answer field. On submission, the server compares the saved response with the frozen answer key. Editing the Question Bank source later therefore cannot change the correct answer for an assessment already taken or published.
+
+The correct answer may be shown later only through the separate released-feedback view. Keeping feedback on **Held** hides both the result and expected-answer review; this does not affect the official report-card publication setting.
+
+Marks are not stored on the reusable Question Bank item. They belong to its assignment in the paper, which is why Path B asks for marks when the question is selected.
+
 ### Supported question types
 
 | Type | Author setup | Candidate action and marking |
@@ -384,7 +417,7 @@ Grouped passage is a presentation wrapper, not a separate marking method. Create
 
 A **marking scheme** is frozen teacher guidance explaining what earns the available marks. It is mandatory for long answers and optional for objective questions. Students cannot see it while taking the assessment.
 
-On the Theory Answer Review page the marker records:
+On the Answer and Outcome Review page the marker records:
 
 - a mark from 0 to the frozen question maximum;
 - **Draft** or **Finalized** status;
@@ -457,7 +490,7 @@ Publication is blocked until the server confirms all of the following:
 - valid section answer counts;
 - no long answer in an Objective paper;
 - a marking scheme for every long answer; and
-- complete Holiday or Kindergarten mapping where applicable.
+- a valid British outcome method, or complete Holiday/Kindergarten mapping, where applicable.
 
 Publishing creates an immutable revision snapshot containing:
 
@@ -552,11 +585,11 @@ Single choice, multiple choice, true/false, short answer, numeric, matching, and
 
 Unanswered questions score zero. If negative marking is disabled, a wrong answer scores zero. If it is enabled, only an attempted wrong objective answer receives that question's configured deduction. The final assessment score is never allowed below zero.
 
-### Theory/Essay marking
+### Theory/Essay marking and British outcome review
 
 In Review, click an **Awaiting marking** cell and then **Mark answers**.
 
-The Theory Answer Review page shows candidate details, attempt and revision, frozen question, candidate response, marking scheme, allowed maximum, current mark/status, remark, rubric JSON, and version history.
+The Answer and Outcome Review page shows candidate details, attempt and revision, frozen question, candidate response, marking scheme, allowed maximum, current mark/status, remark, rubric JSON, and version history.
 
 For each answered long question:
 
@@ -566,6 +599,8 @@ For each answered long question:
 4. After all required marks are final, use **Finalize review and synchronize result**.
 
 Saving the last finalized answer may also trigger finalization, but the explicit final button safely rechecks the whole attempt and result synchronization.
+
+For a British assessment using **Teacher selects the outcome**, the same page provides a required Emerging/Expected/Exceeding selector after the student submits. Save the outcome before finalizing Theory marking. For an objective-only attempt that has already completed, saving the outcome immediately retries automatic posting. If the British profile uses thresholds, the page shows the frozen ranges and calculated outcome instead; no manual selector is available.
 
 ### Formula
 
@@ -584,7 +619,7 @@ The online Pass/Fail label is based on:
 final score ÷ component maximum × 100
 ```
 
-It is compared with the assessment's pass percentage. A pass percentage of 0 produces no Pass/Fail label. This online display label does not replace the school's existing grade or remark calculation.
+It is compared with the assessment's pass percentage. A pass percentage of 0 produces no Pass/Fail label. Standard assessments use this only as an online display label. A British assessment displays its Emerging/Expected/Exceeding outcome instead; the numeric online score remains available only through the separate feedback release.
 
 ## 16. Automatic result posting
 
@@ -593,6 +628,7 @@ There is no routine **Approve and Post** step.
 - Objective-only results post after valid submission or timeout processing.
 - A mixed Theory/Essay paper waits until every answered long response is finalized.
 - A supervised manual recovery score posts when its attempt is finalized.
+- A threshold-based British result posts its converted outcome when the attempt completes. A teacher-selection British result waits only for the authorized outcome selection, then posts automatically.
 - The cron reconciliation retries a completed attempt if processing stopped between completion and posting.
 
 Posting is transactional and idempotent. Retrying the same completed result does not create another academic score.
@@ -613,6 +649,12 @@ The value is written to the exact frozen `holiday_assessment_scores` destination
 
 The paper or section percentage is converted through each frozen concept threshold and written as the corresponding result-label index in `kindergarten_result`. Multi-concept synchronization is all-or-nothing: if one unrelated concept value conflicts, none of that attempt's concept results is partially posted.
 
+### British destination
+
+The finalized assessment percentage is either retained as evidence for the teacher's selected outcome or converted through the frozen school thresholds. The resulting `Emerging`, `Expected`, or `Exceeding` value is written to `britishresult.Remark` for the exact student, session, term, class, arm, and subject. `AdditionalComments` is never overwritten.
+
+If no row exists, one is created. A single blank placeholder can be used. Multiple matching rows, or a nonblank outcome not owned by this online assessment, produce **Result needs attention**. Correct or clear the existing British outcome in the British Computation page and retry; an unrelated qualitative value is never silently replaced.
+
 ### Conflict and correction rules
 
 If the destination already contains an unrelated manual value, Review displays **Result needs attention**. The school can:
@@ -623,13 +665,13 @@ If the destination already contains an unrelated manual value, Review displays *
 
 The replacement is allowed only if the destination still equals the value observed when the conflict was recorded. If another person changes it again, the conflict must be reviewed again.
 
-Kindergarten conflicts cannot be overridden by one aggregate numeric action. Correct or clear the affected concept in the Kindergarten result screen, then retry.
+British and Kindergarten conflicts cannot be overridden by one aggregate numeric action. Correct or clear the affected outcome/concept in its existing result screen, then retry.
 
 If an online-owned value is later corrected by recalculating the same assessment, the adapter may update only the value it previously posted and only if nobody changed it externally. Old and new values remain in the synchronization/audit history.
 
 ## 17. Official result release versus online feedback
 
-Automatic score posting makes the value available to the existing result system. It does not make the report card visible.
+Automatic score/outcome posting makes the value available to the existing result system. It does not make the report card visible.
 
 Use the school's normal result workflow for:
 
@@ -641,7 +683,7 @@ Use the school's normal result workflow for:
 - teacher/principal comments; and
 - affective or psychomotor records.
 
-In the assessment builder, **Release online feedback** makes completed online information visible in the student portal. The current workflow-version-2 release includes the score and maximum, an applicable Pass/Fail label, and the available answer-review rows with candidate answer, expected answer or marking scheme, and question mark. The stored **Display marks during review** checkbox does not currently create a second, marks-hidden feedback mode. Treat Release/Hide as an all-or-nothing online-feedback control. **Hide online feedback** removes that online review again without changing the posted academic score or report-card publication.
+In the assessment builder, **Release online feedback** makes completed online information visible in the student portal. The current workflow-version-2 release includes the score and maximum, an applicable Pass/Fail label or British outcome, and the available answer-review rows with candidate answer, expected answer or marking scheme, and question mark. The stored **Display marks during review** checkbox does not currently create a second, marks-hidden feedback mode. Treat Release/Hide as an all-or-nothing online-feedback control. **Hide online feedback** removes that online review again without changing the posted academic score/outcome or report-card publication.
 
 A supervised whole-paper recovery contains no online question responses, so released feedback shows its overall score but omits the answer-review table.
 
@@ -662,9 +704,9 @@ Choose:
 3. Assessment type: Term, Midterm, or Holiday
 4. Class
 5. Section/arm
-6. CA / Exam component
+6. Result component / outcome
 
-**Term** includes CA, Exam, and Kindergarten assessments. Select **Term** and then **Exam** to review a Terminal Examination. The component list is built only from active Scheduled, Published, In progress, Marking, or Completed assessments matching the preceding criteria. It can contain CA1–CA10, Exam, Kindergarten, or Holiday according to the selected assessment type.
+**Term** includes CA, Exam, British, and Kindergarten assessments. Select **Term** and then **Exam** to review a Terminal Examination, or **British Outcome** for a British assessment. The component list is built only from active Scheduled, Published, In progress, Marking, or Completed assessments matching the preceding criteria. It can contain CA1–CA10, Exam, British Outcome, Kindergarten, or Holiday according to the selected assessment type.
 
 If no component is offered, there is no published current assessment matching that exact selection or the current user does not have access.
 
@@ -686,13 +728,13 @@ Teachers see only the arms and subject columns covered by their exact `teacher_s
 | **Missed** | Window ended with no answer satisfying any required work. | Reschedule the same paper or record a supervised paper score where allowed. |
 | **Incomplete** | Time ended with some answers, but the section requirements were not completed. | Reschedule while retaining saved answers, or record a supervised paper score where allowed. |
 | **Awaiting marking** | Submitted work contains answered long responses not fully finalized. | Open Mark answers and finalize the review. |
-| **Score / maximum** | Paper and attempt are completed. | View answers; resolve result attention if shown. It is not recoverable as a missed paper. |
+| **Score / maximum or British outcome** | Paper and attempt are completed. | View answers/outcome; resolve result attention if shown. It is not recoverable as a missed paper. |
 
 ### Cell modal actions
 
 Clicking a cell shows the student, assessment/paper, status, maximum, duration, effective open/close times, answer progress for an incomplete paper, and applicable actions.
 
-- **View answers / Mark answers** opens Theory Answer Review. It lists answered responses requiring manual marking; an objective-only attempt displays that there are no submitted Theory answers rather than presenting a full objective script.
+- **View answers / Mark answers** opens Answer and Outcome Review. It lists answered responses requiring manual marking; an objective-only attempt displays that there are no submitted Theory answers rather than presenting a full objective script. A British teacher-selection assessment also places its qualitative outcome control there.
 - **Manage assigned students** opens the roster.
 - **Assign student and schedule paper** handles an Unassigned student when the user can edit the roster.
 - **Reschedule this paper** creates a new individual window for an assigned recoverable student.
@@ -726,10 +768,13 @@ It is not a shortcut for altering a legitimately completed online score.
 | Student changed device or browser | Server-saved answers resume; unsent local-only queue remains on the original browser | Resume on the original device if possible. Staff may reschedule if the deadline passes incomplete. |
 | Student submitted Objective work | Completed and automatically posted, unless conflict/error | Check Review only if Result needs attention appears. |
 | Student submitted a long answer | Awaiting marking | Mark every answered long response and finalize. |
+| British assessment uses teacher selection | Completed or Awaiting marking, with British outcome not yet selected | Open Answer and Outcome Review, select Emerging/Expected/Exceeding, and finalize any Theory review. A completed Objective attempt posts as soon as the outcome is saved. |
+| British assessment uses thresholds | Completed percentage and frozen threshold profile | The system selects and posts Emerging/Expected/Exceeding automatically; inspect Result needs attention only if synchronization is held. |
 | Student completed an authorized paper sitting outside CBT | Recoverable Missed/Incomplete record | Use Record score from a supervised paper exam with a reason. |
 | Student has a Kindergarten paper with section-specific concept mappings but missed it | Missed, aggregate manual recovery unavailable | Reschedule, or enter each concept through Kindergarten results. |
 | Existing manual CA/Exam/Holiday value blocks posting | Completed attempt plus Result needs attention | Verify the existing score, then clear/correct and Retry or authorize the online numeric replacement with a reason. |
 | Existing Kindergarten concept blocks posting | Completed attempt plus Result needs attention | Correct/clear the concept in Kindergarten results, then Retry. |
+| Existing British `Remark` blocks posting | Completed attempt plus Result needs attention | Verify/correct or clear the outcome in British Computation, then Retry. `AdditionalComments` remains unchanged. |
 | Result sync failed because a setting/table was wrong | Completed attempt plus failed/error/pending status | Correct the underlying configuration/database issue and select Retry result update. |
 | Staff tries to exclude a student who started | Roster save is rejected | Resolve the official attempt. Exceptional voiding requires authorized audited administration; do not delete rows manually. |
 | Completed score is wrong because marking is unfinished | Awaiting marking, not completed | Correct/finalize the question marks. |
@@ -816,10 +861,10 @@ The following old capabilities are deliberately unavailable for the compact work
 - answer-file upload;
 - direct legacy answer-attachment download;
 - legacy paper raw-score marking;
-- old British profile/outcome editing for new work; and
+- unsupported historical British profile/outcome routes that are not attached to the current `british` purpose; and
 - the former complex Operations dashboard, incident-register form, and standalone posting-ledger screen.
 
-Do not train schools to use a hidden or bookmarked retired route. Use the assessment list, builder, roster, simplified Review matrix, Theory Answer Review, and existing result modules described above.
+Do not train schools to use a hidden or bookmarked retired route. Use the assessment list, builder, roster, simplified Review matrix, Answer and Outcome Review, and existing result modules described above.
 
 ## 25. Practical setup recipes
 
@@ -873,6 +918,14 @@ Keep the normal CBT setup. The student uses Start/Resume, autosave, and Save & l
 
 Configure Holiday Assessment for every intended arm and subject first. Then create the Online Examination with Holiday purpose. If arm maximums differ, separate them into different online assessments.
 
+### British assessment with teacher outcome
+
+Confirm that Exam Setting assigns `ResultType = british` to the class. Create one **British Assessment** for the session, term, class arm, and subject. The builder defaults to **Teacher selects the outcome**. Build the one CBT paper, assign candidates, and publish. After a student submits, open Review → British Outcome → the student's cell → View/Mark answers. Complete any Theory marking, select Emerging, Expected, or Exceeding, and finalize if needed. The outcome posts to `britishresult.Remark`; any existing additional comment remains unchanged.
+
+### British assessment with automatic outcome
+
+Follow the same setup, but change **How is the outcome decided?** to **Convert the score automatically**. Replace the displayed example ranges with the school's approved continuous ranges covering 0–100, save them, then publish. Completion converts and posts the outcome automatically. The frozen ranges used for that sitting remain auditable even if a later assessment uses different ranges.
+
 ### Kindergarten concepts
 
 Configure the Kindergarten assessment, subject, concepts, and labels first. Create the Kindergarten Online Examination, build the paper/sections, map each required whole-paper/section outcome to a concept, and define continuous 0–100 label thresholds before publication.
@@ -897,7 +950,7 @@ Back up each school database, test on a copy/staging database, select the intend
 
 ## 27. End-to-end verification checklist
 
-- Create CA, Midterm, Exam, Holiday, and Kindergarten assessments where the school configuration supports them.
+- Create CA, Midterm, Exam, British, Holiday, and Kindergarten assessments where the school configuration supports them.
 - Confirm session/class/subject/arm filtering and exact teacher ownership.
 - Confirm a duplicate subject/component slot in the same arm is rejected.
 - Confirm another subject or CA component remains allowed.
@@ -915,7 +968,8 @@ Back up each school database, test on a copy/staging database, select the intend
 - Verify rescheduling preserves the official attempt and saved answers.
 - Verify supervised recovery scoring and its audit reason.
 - Verify objective automatic posting and Theory posting only after final marking.
-- Verify CA/Midterm values post to their configured `ca1`–`ca10` fields, Exam posts to `score.exam`, and Holiday and Kindergarten use their specialist destinations.
+- Verify CA/Midterm values post to their configured `ca1`–`ca10` fields, Exam posts to `score.exam`, British posts Emerging/Expected/Exceeding to `britishresult.Remark` without changing `AdditionalComments`, and Holiday/Kindergarten use their specialist destinations.
+- Verify British teacher-selection waits for an authorized outcome and threshold mode converts automatically from the frozen school ranges.
 - Verify manual-score conflicts are never silently overwritten.
 - Verify Retry and the audited standard/Holiday replacement flow.
 - Verify feedback release does not publish an official result.

@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,Which colour is complementary to red on a traditional colour wheel?,Green,Orange,Purple,Yellow,,opt_a
+singlechoice,What does texture describe in visual art?,Surface quality,Only colour,Only size,Sound level,,opt_a
+singlechoice,How many lines make up a standard musical staff?,Five,Four,Six,Seven,,opt_a
+singlechoice,What is the written text of a drama called?,Script,Canvas,Chorus only,Gallery,,opt_a
+singlechoice,What are the main materials for papier-mache?,Paper and paste,Metal and oil,Glass and sand,Wood and nails,,opt_a
+singlechoice,Which technique creates the appearance of depth in a drawing?,Perspective,Repetition only,Tracing only,Stencilling only,,opt_a
+singlechoice,Tie-dye is an example of which process?,Resist dyeing,Carving,Casting metal,Weaving only,,opt_a
+true_false,Red and yellow are warm colours.,,,,,,true
+true_false,The audience members are the actors performing a play.,,,,,,false
+multichoice,Select the two performing arts.,Music,Drama,Painting,Pottery,,"[""opt_a"",""opt_b""]"

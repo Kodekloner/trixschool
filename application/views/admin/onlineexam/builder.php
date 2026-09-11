@@ -7,9 +7,11 @@ $can_edit_assessment = !empty($editable) && $this->rbac->hasPrivilege('online_ex
 $can_edit_questions = !empty($editable) && $this->rbac->hasPrivilege('add_questions_in_exam', 'can_edit');
 $can_view_roster = !empty($compact_supported) && $this->rbac->hasPrivilege('online_assign_view_student', 'can_view');
 $can_view_operations = !empty($compact_supported) && $exam->lifecycle_status !== 'draft' && $this->rbac->hasPrivilege('online_examination', 'can_view');
-$component_label = !empty($exam->target_component)
-    ? strtoupper($exam->target_component) . ' (max ' . number_format($exam->target_max_score, 2) . ')'
-    : ucwords(str_replace('_', ' ', $exam->purpose)) . (!empty($exam->target_max_score) ? ' (max ' . number_format($exam->target_max_score, 2) . ')' : '');
+$component_label = $exam->result_adapter === 'british_outcome'
+    ? 'British outcome (Emerging / Expected / Exceeding)'
+    : (!empty($exam->target_component)
+        ? strtoupper($exam->target_component) . ' (max ' . number_format($exam->target_max_score, 2) . ')'
+        : ucwords(str_replace('_', ' ', $exam->purpose)) . (!empty($exam->target_max_score) ? ' (max ' . number_format($exam->target_max_score, 2) . ')' : ''));
 $format_datetime = function ($value) {
     return $value ? $this->customlib->dateyyyymmddToDateTimeformat($value, false) : '';
 };
@@ -64,7 +66,7 @@ foreach ((array) $authored_questions as $authored_question) {
                             <td><strong>Session / Term</strong><br><?php echo html_escape($exam->session_name . ' / ' . strtoupper($exam->term) . ' Term'); ?></td>
                             <td><strong>Class / Arms</strong><br><?php echo html_escape($exam->class_name . ' (' . implode(', ', $exam->section_names) . ')'); ?></td>
                             <td><strong>Subject</strong><br><?php echo html_escape($exam->subject_name); ?></td>
-                            <td><strong>Result component</strong><br><?php echo html_escape($component_label); ?></td>
+                            <td><strong>Result destination</strong><br><?php echo html_escape($component_label); ?></td>
                         </tr></tbody>
                     </table>
                 </div>
@@ -102,22 +104,28 @@ foreach ((array) $authored_questions as $authored_question) {
 
         <?php if ($exam->result_adapter === 'british_outcome') {
             $british_profile = !empty($result_profile) ? json_decode($result_profile['configuration_json'], true) : array('mode' => 'teacher_selection');
+            if (!is_array($british_profile) || !in_array(isset($british_profile['mode']) ? $british_profile['mode'] : '', array('teacher_selection', 'thresholds'), true)) {
+                $british_profile = array('mode' => 'teacher_selection');
+            }
             $british_ranges = array('Emerging' => array(0, 39.99), 'Expected' => array(40, 69.99), 'Exceeding' => array(70, 100));
             foreach (isset($british_profile['outcomes']) ? $british_profile['outcomes'] : array() as $range) {
                 if (isset($british_ranges[$range['value']])) { $british_ranges[$range['value']] = array($range['min'], $range['max']); }
             }
         ?>
         <div class="box box-purple" style="border-top-color:#605ca8">
-            <div class="box-header with-border"><h3 class="box-title">British outcome profile</h3></div>
+            <div class="box-header with-border"><h3 class="box-title">British result outcome</h3></div>
             <form method="post" action="<?php echo site_url('admin/onlineexam/britishProfileSave'); ?>">
-                <?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>">
+                <?php echo $this->customlib->getCSRF(); ?>
+                <input type="hidden" name="onlineexam_workflow_token" value="<?php echo html_escape($workflow_csrf); ?>">
+                <input type="hidden" name="onlineexam_id" value="<?php echo (int) $exam->id; ?>">
                 <div class="box-body">
                     <div class="row">
-                        <div class="col-md-4"><div class="form-group"><label for="british_profile_mode">Conversion mode</label><select name="profile_mode" id="british_profile_mode" class="form-control" <?php echo $can_edit_assessment ? '' : 'disabled'; ?>><option value="teacher_selection" <?php echo $british_profile['mode'] === 'teacher_selection' ? 'selected' : ''; ?>>Teacher selects final outcome</option><option value="thresholds" <?php echo $british_profile['mode'] === 'thresholds' ? 'selected' : ''; ?>>Convert assessment percentage by thresholds</option></select></div></div>
-                        <div class="col-md-8"><p class="help-block">British academic results store Expected, Emerging, or Exceeding—not a numeric CA score. Threshold mode converts automatically; teacher-selection mode waits for a finalized outcome.</p></div>
+                        <div class="col-md-4"><div class="form-group"><label for="british_profile_mode">How is the outcome decided?</label><select name="profile_mode" id="british_profile_mode" class="form-control" <?php echo $can_edit_assessment ? '' : 'disabled'; ?>><option value="teacher_selection" <?php echo $british_profile['mode'] === 'teacher_selection' ? 'selected' : ''; ?>>Teacher selects the outcome</option><option value="thresholds" <?php echo $british_profile['mode'] === 'thresholds' ? 'selected' : ''; ?>>Convert the score automatically</option></select></div></div>
+                        <div class="col-md-8"><p class="help-block">This follows the existing British result screen: the official subject result is Emerging, Expected or Exceeding. Teacher selection is the default. Automatic conversion uses the school-defined percentage ranges below. Existing additional comments are never replaced.</p></div>
                     </div>
                     <div id="british_thresholds" class="row" style="<?php echo $british_profile['mode'] === 'thresholds' ? '' : 'display:none'; ?>">
                         <?php foreach ($british_ranges as $outcome => $range) { ?><div class="col-md-4"><div class="well well-sm"><strong><?php echo $outcome; ?></strong><div class="row"><div class="col-xs-6"><label>Minimum</label><input type="number" name="outcome_min[<?php echo $outcome; ?>]" min="0" max="100" step="0.01" class="form-control" value="<?php echo html_escape($range[0]); ?>"></div><div class="col-xs-6"><label>Maximum</label><input type="number" name="outcome_max[<?php echo $outcome; ?>]" min="0" max="100" step="0.01" class="form-control" value="<?php echo html_escape($range[1]); ?>"></div></div></div></div><?php } ?>
+                        <div class="col-md-12"><p class="help-block">The displayed ranges are editable examples, not a national rule. Confirm and save the ranges approved by the school before publishing.</p></div>
                     </div>
                 </div>
                 <?php if ($can_edit_assessment) { ?><div class="box-footer single-action-footer"><button class="btn btn-primary"><i class="fa fa-save"></i> Save outcome profile</button></div><?php } ?>

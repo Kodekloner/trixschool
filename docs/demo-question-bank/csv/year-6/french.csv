@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,What does Je m'appelle mean?,My name is,I am hungry,I am going,Good evening,,opt_a
+singlechoice,What does Comment allez-vous? mean?,How are you?,Where are you?,What is your name?,How old are you?,,opt_a
+singlechoice,Which French word means Wednesday?,Mercredi,Lundi,Samedi,Dimanche,,opt_a
+singlechoice,What does bibliothèque mean?,Library,Hospital,Market,Kitchen,,opt_a
+singlechoice,Choose the correct expression for a girl.,Une fille,Un fille,Le fille,Des garçon,,opt_a
+singlechoice,What does nous sommes mean?,We are,They have,I am,You go,,opt_a
+singlechoice,Which number is dix-sept?,17,7,10,27,,opt_a
+true_false,J'ai douze ans means I am twelve years old.,,,,,,true
+true_false,Rouge is the French word for black.,,,,,,false
+multichoice,Select the two French definite articles.,Le,La,Un,Une,,"[""opt_a"",""opt_b""]"
