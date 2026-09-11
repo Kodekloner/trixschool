@@ -396,7 +396,7 @@ class Onlineexamattempt_model extends CI_Model
             ->join('onlineexam e', 'e.id = a.onlineexam_id')
             ->where('a.status', self::STATUS_COMPLETED)
             ->where('e.workflow_version', 2)
-            ->where("((e.purpose IN ('ca','midterm','exam') AND e.result_adapter = 'standard_component') OR (e.purpose = 'holiday' AND e.result_adapter = 'holiday_assessment') OR (e.purpose = 'kindergarten' AND e.result_adapter = 'kindergarten_concept'))", null, false)
+            ->where("((e.purpose IN ('ca','midterm','exam') AND e.result_adapter = 'standard_component') OR (e.purpose = 'holiday' AND e.result_adapter = 'holiday_assessment') OR (e.purpose = 'kindergarten' AND e.result_adapter = 'kindergarten_concept') OR (e.purpose = 'british' AND e.result_adapter = 'british_outcome'))", null, false)
             ->where("NOT EXISTS (SELECT 1 FROM onlineexam_result_sync rs WHERE rs.attempt_id = a.id AND rs.status IN ('posted','conflict'))", null, false)
             ->order_by('a.updated_at', 'ASC')
             ->limit((int) $limit)
@@ -1265,6 +1265,7 @@ class Onlineexamattempt_model extends CI_Model
             'exam' => 'standard_component',
             'holiday' => 'holiday_assessment',
             'kindergarten' => 'kindergarten_concept',
+            'british' => 'british_outcome',
         );
         $purpose = isset($context->purpose) ? (string) $context->purpose : '';
         $adapter = isset($context->result_adapter) ? (string) $context->result_adapter : '';

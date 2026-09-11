@@ -58,6 +58,15 @@ $attempt->final_score = 9.99;
 student_state_assert(onlineexam_student_result($exam, $attempt)['outcome'] === 'Fail', 'Scores below the configured threshold show Fail.');
 $exam->passing_percentage = 0;
 student_state_assert(onlineexam_student_result($exam, $attempt)['outcome'] === null, 'No pass threshold is invented when none is configured.');
+$exam->result_adapter = 'british_outcome';
+$attempt->final_score = 62;
+$attempt->outcome_value = 'Expected';
+$british_result = onlineexam_student_result($exam, $attempt);
+student_state_assert($british_result['visible'] && $british_result['outcome'] === 'Expected'
+    && $british_result['outcome_class'] === 'label-info', 'Released British feedback displays the finalized qualitative outcome instead of Pass/Fail.');
+$attempt->outcome_value = null;
+student_state_assert(onlineexam_student_result($exam, $attempt)['outcome'] === null, 'British feedback does not invent an outcome before selection or conversion.');
+unset($exam->result_adapter, $attempt->outcome_value);
 $attempt->status = 'marking';
 student_state_assert(!onlineexam_student_result($exam, $attempt)['visible'], 'Partial marking results are not exposed even when feedback is released.');
 $paper->attempt_paper_status = 'completed';

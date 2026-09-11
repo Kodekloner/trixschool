@@ -86,7 +86,8 @@ function onlineexam_student_paper_state($exam, $paper, $attempt, $now = null)
 
 function onlineexam_student_result($exam, $attempt)
 {
-    $hidden = array('visible' => false, 'score' => null, 'maximum' => null, 'percentage' => null, 'outcome' => null);
+    $hidden = array('visible' => false, 'score' => null, 'maximum' => null, 'percentage' => null,
+        'outcome' => null, 'outcome_class' => 'label-default');
     if (!$attempt || $attempt->status !== 'completed' || !isset($exam->feedback_status) || $exam->feedback_status !== 'released'
         || !isset($attempt->final_score) || !is_numeric($attempt->final_score)) {
         return $hidden;
@@ -94,9 +95,19 @@ function onlineexam_student_result($exam, $attempt)
     $score = (float) $attempt->final_score;
     $maximum = isset($exam->target_max_score) && is_numeric($exam->target_max_score) ? (float) $exam->target_max_score : 0;
     $percentage = $maximum > 0 ? $score / $maximum * 100 : null;
+    if (isset($exam->result_adapter) && $exam->result_adapter === 'british_outcome') {
+        $outcome = isset($attempt->outcome_value) && in_array($attempt->outcome_value, array('Emerging', 'Expected', 'Exceeding'), true)
+            ? $attempt->outcome_value : null;
+        $classes = array('Emerging' => 'label-warning', 'Expected' => 'label-info', 'Exceeding' => 'label-success');
+        return array('visible' => true, 'score' => $score, 'maximum' => $maximum > 0 ? $maximum : null,
+            'percentage' => $percentage, 'outcome' => $outcome,
+            'outcome_class' => $outcome && isset($classes[$outcome]) ? $classes[$outcome] : 'label-default');
+    }
     $passing = isset($exam->passing_percentage) && is_numeric($exam->passing_percentage) ? (float) $exam->passing_percentage : 0;
+    $outcome = $percentage !== null && $passing > 0 && $passing <= 100 ? ($percentage >= $passing ? 'Pass' : 'Fail') : null;
     return array('visible' => true, 'score' => $score, 'maximum' => $maximum > 0 ? $maximum : null,
-        'percentage' => $percentage, 'outcome' => $percentage !== null && $passing > 0 && $passing <= 100 ? ($percentage >= $passing ? 'Pass' : 'Fail') : null);
+        'percentage' => $percentage, 'outcome' => $outcome,
+        'outcome_class' => $outcome === 'Pass' ? 'label-success' : ($outcome === 'Fail' ? 'label-danger' : 'label-default'));
 }
 
 function onlineexam_student_assessment_state($attempt, array $paper_states)

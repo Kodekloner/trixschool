@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,Which word is the adjective in the phrase the bright sun?,Bright,Sun,The,Phrase,,opt_a
+singlechoice,What is the past tense of go?,Went,Gone,Goes,Going,,opt_a
+singlechoice,Which word is closest in meaning to rapid?,Fast,Slow,Weak,Late,,opt_a
+singlechoice,What is the collective noun for a group of lions?,Pride,Herd,School,Pack,,opt_a
+singlechoice,Which prefix changes happy to its opposite?,un-,re-,pre-,mis-,,opt_a
+singlechoice,Which punctuation mark separates items in a simple list?,Comma,Question mark,Apostrophe,Hyphen,,opt_a
+singlechoice,Which pronoun can replace Amina and Tunde?,They,He,She,It,,opt_a
+true_false,A pronoun can replace a noun in a sentence.,,,,,,true
+true_false,Their is the contraction of they are.,,,,,,false
+multichoice,Select the two conjunctions.,And,Quickly,But,Table,,"[""opt_a"",""opt_c""]"

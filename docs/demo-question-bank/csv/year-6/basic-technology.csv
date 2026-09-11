@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,Which instrument is used to measure or construct angles?,Protractor,Compass only,T-square,Set square only,,opt_a
+singlechoice,Which hand tool is designed mainly for cutting wood?,Tenon saw,Spanner,Pliers,Screwdriver,,opt_a
+singlechoice,Which item protects the eyes during workshop work?,Safety goggles,Apron only,Sandals,Cap,,opt_a
+singlechoice,What is the first step in solving a design problem?,Identify the problem,Paint the product,Sell the product,Discard all ideas,,opt_a
+singlechoice,Which mechanism transmits rotary motion using toothed wheels?,Gear system,Lever,Wedge,Inclined plane,,opt_a
+singlechoice,Which material is a good electrical conductor?,Copper,Rubber,Dry wood,Plastic,,opt_a
+singlechoice,Which simple machine can help lift a load with a rope?,Pulley,Wedge,Screwdriver,Wheel only,,opt_a
+true_false,Measuring carefully before cutting helps to reduce waste.,,,,,,true
+true_false,Electrical equipment should be handled with wet hands.,,,,,,false
+multichoice,Select the two simple machines.,Lever,Pulley,Battery,Bulb,,"[""opt_a"",""opt_b""]"

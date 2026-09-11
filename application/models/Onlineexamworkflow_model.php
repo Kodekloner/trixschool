@@ -13,7 +13,7 @@ class Onlineexamworkflow_model extends CI_Model
 {
     const WORKFLOW_VERSION = 2;
 
-    protected $purposes = array('ca', 'midterm', 'exam', 'holiday', 'kindergarten');
+    protected $purposes = array('ca', 'midterm', 'exam', 'holiday', 'kindergarten', 'british');
     protected $adapters = array('standard_component', 'british_outcome', 'kindergarten_concept', 'holiday_assessment');
     protected $terms = array('1st', '2nd', '3rd');
     protected $paper_types = array('objective', 'theory');
@@ -190,6 +190,7 @@ class Onlineexamworkflow_model extends CI_Model
             'exam' => 'standard_component',
             'holiday' => 'holiday_assessment',
             'kindergarten' => 'kindergarten_concept',
+            'british' => 'british_outcome',
         );
         if (isset($purpose_adapters[$exam['purpose']])
             && $exam['result_adapter'] !== $purpose_adapters[$exam['purpose']]) {
@@ -710,6 +711,22 @@ class Onlineexamworkflow_model extends CI_Model
                 ));
             }
         } elseif ($exam['result_adapter'] === 'british_outcome') {
+            $british_assignment = $this->db->select('ResultType')->where('ClassID', (int) $exam['class_id'])
+                ->limit(1)->get('assigncatoclass')->row_array();
+            if (empty($british_assignment)
+                || strtolower(trim((string) $british_assignment['ResultType'])) !== 'british') {
+                $errors[] = 'This class is no longer configured for British outcomes in Exam Setting.';
+            }
+            if (!$this->db->table_exists('britishresult')) {
+                $errors[] = 'The British result table is not installed.';
+            } else {
+                foreach (array('StudentID', 'ClassID', 'SectionID', 'SubjectID', 'Session', 'Term', 'Remark', 'AdditionalComments') as $field) {
+                    if (!$this->db->field_exists($field, 'britishresult')) {
+                        $errors[] = 'The British result table is missing its ' . $field . ' field.';
+                        break;
+                    }
+                }
+            }
             $profile = $this->getResultProfile($exam['id'], 'british_outcome');
             if (empty($profile)) {
                 $errors[] = 'A British outcome profile is required.';
@@ -913,7 +930,10 @@ class Onlineexamworkflow_model extends CI_Model
             }
         }
 
-        $questions = $this->db->select('onlineexam_questions.*, questions.question_type AS source_question_type, questions.question AS source_question_text')
+        $questions = $this->db->select(
+                'onlineexam_questions.*, questions.question_type AS source_question_type, questions.question AS source_question_text, '
+                . 'questions.opt_a, questions.opt_b, questions.opt_c, questions.opt_d, questions.opt_e, questions.correct'
+            )
             ->from('onlineexam_questions')
             ->join('questions', 'questions.id = onlineexam_questions.question_id')
             ->where('onlineexam_questions.onlineexam_id', (int) $paper['onlineexam_id'])
@@ -967,6 +987,7 @@ class Onlineexamworkflow_model extends CI_Model
             $errors[] = 'A Theory question in ' . $paper['title'] . ' has no marking scheme.';
         }
         if (empty($question['authoring_json'])) {
+            $this->validateLegacyQuestionBankAnswer($question, $paper, $errors);
             return;
         }
         $definition = json_decode($question['authoring_json'], true);
@@ -1031,6 +1052,64 @@ class Onlineexamworkflow_model extends CI_Model
                 $errors[] = 'A grouped passage question in ' . $paper['title'] . ' has an invalid passage definition.';
             }
         }
+    }
+
+    /**
+     * Validate the answer key on a traditional Question Bank record. Newer
+     * structured bank items carry their complete definition in authoring_json
+     * and are validated directly by validateAuthoredQuestionDefinition().
+     */
+    protected function validateLegacyQuestionBankAnswer(array $question, array $paper, array &$errors)
+    {
+        $type = strtolower(trim((string) $question['source_question_type']));
+        if ($type === 'long_answer') {
+            return;
+        }
+
+        $option_keys = array();
+        foreach (array('a', 'b', 'c', 'd', 'e') as $letter) {
+            $field = 'opt_' . $letter;
+            if (isset($question[$field]) && trim((string) $question[$field]) !== '') {
+                $option_keys[] = $letter;
+            }
+        }
+        $stored = isset($question['correct']) ? trim((string) $question['correct']) : '';
+        $normalized_option = function ($value) {
+            return preg_replace('/^opt_/', '', strtolower(trim((string) $value)));
+        };
+
+        if ($type === 'singlechoice') {
+            $decoded = $stored !== '' && substr($stored, 0, 1) === '"' ? json_decode($stored, true) : $stored;
+            $correct = $normalized_option(json_last_error() === JSON_ERROR_NONE && is_string($decoded) ? $decoded : $stored);
+            if (count($option_keys) < 2 || !in_array($correct, $option_keys, true)) {
+                $errors[] = 'A Question Bank single-choice item in ' . $paper['title'] . ' has no valid saved correct answer.';
+            }
+            return;
+        }
+
+        if ($type === 'multichoice') {
+            $correct = json_decode($stored, true);
+            if (!is_array($correct) || empty($correct) || count($option_keys) < 2) {
+                $errors[] = 'A Question Bank multiple-choice item in ' . $paper['title'] . ' has no valid saved correct answers.';
+                return;
+            }
+            $correct = array_values(array_unique(array_map($normalized_option, $correct)));
+            if (array_diff($correct, $option_keys)) {
+                $errors[] = 'A Question Bank multiple-choice item in ' . $paper['title'] . ' refers to an answer option that does not exist.';
+            }
+            return;
+        }
+
+        if ($type === 'true_false') {
+            if (!in_array(strtolower($stored), array('true', 'false'), true)) {
+                $errors[] = 'A Question Bank true/false item in ' . $paper['title'] . ' has no valid saved correct answer.';
+            }
+            return;
+        }
+
+        // Short answer, numeric, matching and ordering items must retain the
+        // structured definition created by Path A when reused through Path B.
+        $errors[] = 'A Question Bank ' . str_replace('_', ' ', $type) . ' item in ' . $paper['title'] . ' is missing its structured answer definition.';
     }
 
     protected function calculateSelectablePaperMax(array $questions, array $sections)
@@ -1115,9 +1194,16 @@ class Onlineexamworkflow_model extends CI_Model
         }
         $stored = $question['correct'];
         if (is_string($stored)) {
-            $decoded = json_decode($stored, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                return $decoded;
+            $trimmed = trim($stored);
+            // Decode stored arrays/objects/quoted JSON strings, but retain the
+            // literal words true and false. Candidate True/False responses are
+            // strings, so turning the key into a PHP boolean would mark the
+            // otherwise correct response as wrong.
+            if ($trimmed !== '' && in_array(substr($trimmed, 0, 1), array('[', '{', '"'), true)) {
+                $decoded = json_decode($trimmed, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return $decoded;
+                }
             }
         }
         return $stored;

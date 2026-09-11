@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,Which figure of speech appears in Time is a thief?,Metaphor,Simile,Personification only,Hyperbole,,opt_a
+singlechoice,Which group of words can stand alone as a complete sentence?,Independent clause,Dependent clause,Prepositional phrase,Adjective phrase,,opt_a
+singlechoice,Choose the sentence with correct subject-verb agreement.,The list of items is on the desk.,The list of items are on the desk.,The boys plays football.,She walk to school.,,opt_a
+singlechoice,"Change Ada said, I am ready to reported speech.",Ada said that she was ready.,Ada said that I am ready.,Ada says she ready.,Ada said she is readiness.,,opt_a
+singlechoice,Which word is closest in meaning to diligent?,Hard-working,Careless,Noisy,Uncertain,,opt_a
+singlechoice,Which word is opposite in meaning to scarce?,Abundant,Rare,Limited,Small,,opt_a
+singlechoice,Which punctuation mark can link two closely related independent clauses?,Semicolon,Apostrophe,Question mark,Quotation mark,,opt_a
+true_false,A finite verb shows tense and agrees with a subject where agreement applies.,,,,,,true
+true_false,Information is normally used as a countable noun with an.,,,,,,false
+multichoice,Select the two subordinating conjunctions.,Although,And,Because,But,,"[""opt_a"",""opt_c""]"

@@ -1,3 +1,17 @@
+<?php
+$card_background_url = get_school_asset_url($idcardlist[0]->background, 'uploads/student_id_card/background');
+$card_logo_url = get_school_asset_url($idcardlist[0]->logo, 'uploads/student_id_card/logo');
+$card_signature_url = get_school_asset_url($idcardlist[0]->sign_image, 'uploads/student_id_card/signature');
+$student_fallback_url = get_school_asset_url(
+    strtolower(isset($resultlist[0]['gender']) ? (string) $resultlist[0]['gender'] : '') === 'female'
+        ? 'uploads/student_images/default_female.jpg'
+        : 'uploads/student_images/default_male.jpg'
+);
+$student_photo_url = get_school_asset_url(
+    !empty($resultlist[0]['image']) ? $resultlist[0]['image'] : $student_fallback_url,
+    'uploads/student_images'
+);
+?>
 <!doctype html>
 <html lang="en">
     <head>
@@ -74,12 +88,12 @@
                     <table cellpadding="0" cellspacing="0" width="100%" class="tc-container" style="background: #efefef;">
                         <tr>
                             <td valign="top">
-                                <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $idcardlist[0]->background; ?>" class="tcmybg" /></td>
+                                <?php if ($card_background_url !== '') { ?><img src="<?php echo htmlspecialchars($card_background_url, ENT_QUOTES, 'UTF-8'); ?>" class="tcmybg" /><?php } ?></td>
                         </tr>
                         <tr>
                             <td valign="top">
                                 <div class="studenttop">
-                                    <div class="sttext1"><img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $idcardlist[0]->logo; ?>" width="30" height="30" />
+                                    <div class="sttext1"><?php if ($card_logo_url !== '') { ?><img src="<?php echo htmlspecialchars($card_logo_url, ENT_QUOTES, 'UTF-8'); ?>" width="30" height="30" /><?php } ?>
                                         <?php echo $idcardlist[0]->school_name; ?></div>
                                 </div>
                             </td>
@@ -99,7 +113,7 @@
                                 <div class="staround">
                                     <div class="cardleft">
                                         <div class="stimg">
-                                            <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $resultlist[0]['image']; ?>" class="img-responsive" />
+                                            <img src="<?php echo htmlspecialchars($student_photo_url, ENT_QUOTES, 'UTF-8'); ?>" onerror="this.onerror=null;this.src=<?php echo htmlspecialchars(json_encode($student_fallback_url), ENT_QUOTES, 'UTF-8'); ?>;" class="img-responsive" />
                                         </div>
                                     </div><!--./cardleft-->
                                     <div class="cardright">
@@ -155,7 +169,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td valign="top" align="right" class="principal"><img src="https://schoollift.s3.us-east-2.amazonaws.com/uploads/student_id_card/signature.png" width="66" height="40" /></td>
+                            <td valign="top" align="right" class="principal"><?php if ($card_signature_url !== '') { ?><img src="<?php echo htmlspecialchars($card_signature_url, ENT_QUOTES, 'UTF-8'); ?>" width="66" height="40" /><?php } ?></td>
                         </tr>
                     </table>
                 </td>

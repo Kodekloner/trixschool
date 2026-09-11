@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,What is 3/4 + 1/4?,1,1/2,4/8,2,,opt_a
+singlechoice,What is 15% of 200?,30,15,20,35,,opt_a
+singlechoice,What is the area of a rectangle measuring 8 cm by 5 cm?,40 square centimetres,26 square centimetres,13 square centimetres,80 square centimetres,,opt_a
+singlechoice,Which fraction is equal to 0.75?,3/4,1/4,2/5,7/10,,opt_a
+singlechoice,What is the highest common factor of 12 and 18?,6,3,9,36,,opt_a
+singlechoice,"What is the mean of 4, 6 and 8?",6,5,7,18,,opt_a
+singlechoice,What is the perimeter of a square with side 7 cm?,28 cm,49 cm,14 cm,21 cm,,opt_a
+true_false,29 is a prime number.,,,,,,true
+true_false,2.5 multiplied by 4 equals 100.,,,,,,false
+multichoice,Select the two factors of 12.,3,5,4,7,,"[""opt_a"",""opt_c""]"

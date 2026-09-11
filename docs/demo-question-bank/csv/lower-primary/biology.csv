@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,What is the study of living things called?,Biology,Geography,History,Music,,opt_a
+singlechoice,Which part of a plant mainly makes food?,Leaf,Root,Flower pot,Stone,,opt_a
+singlechoice,How many eyes does a healthy human normally have?,Two,One,Three,Four,,opt_a
+singlechoice,Where does a fish normally live?,Water,Tree,Desert,Nest,,opt_a
+singlechoice,What is a young dog called?,Puppy,Kitten,Calf,Chick,,opt_a
+singlechoice,What do humans take in when they breathe?,Air,Sand,Wood,Soil,,opt_a
+singlechoice,Which plant part holds the plant in the soil?,Root,Fruit,Flower,Seed coat,,opt_a
+true_false,Plants need water to grow well.,,,,,,true
+true_false,A chair is a living thing.,,,,,,false
+multichoice,Select the two animals.,Cat,Goat,Table,Pencil,,"[""opt_a"",""opt_b""]"

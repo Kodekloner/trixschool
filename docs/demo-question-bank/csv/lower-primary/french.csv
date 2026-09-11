@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,What does Bonjour mean in English?,Hello,Goodbye,Please,Sorry,,opt_a
+singlechoice,What does Merci mean in English?,Thank you,Good night,Welcome,Excuse me,,opt_a
+singlechoice,Which French word means one?,Un,Deux,Trois,Quatre,,opt_a
+singlechoice,Which French word means two?,Deux,Cinq,Rouge,Chat,,opt_a
+singlechoice,Which French word means red?,Rouge,Bleu,Vert,Noir,,opt_a
+singlechoice,Which French word means blue?,Bleu,Jaune,Blanc,Rose,,opt_a
+singlechoice,What does chat mean in English?,Cat,Dog,Bird,Fish,,opt_a
+true_false,Au revoir means goodbye.,,,,,,true
+true_false,Trois is the French word for five.,,,,,,false
+multichoice,Select the two French number words.,Un,Deux,Rouge,Chat,,"[""opt_a"",""opt_b""]"

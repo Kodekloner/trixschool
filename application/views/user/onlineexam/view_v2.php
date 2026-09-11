@@ -7,6 +7,7 @@ $purpose_labels = array(
     'exam'                  => 'Terminal Examination',
     'holiday'               => 'Holiday Assessment',
     'kindergarten'          => 'Kindergarten Assessment',
+    'british'               => 'British Assessment',
 );
 $paper_type_labels = array(
     'objective' => 'Objective',

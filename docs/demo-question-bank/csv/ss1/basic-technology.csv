@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,"Which drawing method shows front, plan and side views separately?",Orthographic projection,Perspective sketch,Freehand lettering,Pictorial colouring,,opt_a
+singlechoice,What does a scale of 1:2 mean on a drawing?,The drawing is half the actual size,The drawing is twice the actual size,The drawing and object are equal,The object has no dimensions,,opt_a
+singlechoice,Which material is ferrous?,Mild steel,Aluminium,Copper,Brass,,opt_a
+singlechoice,Which equation states Ohm's law?,V = IR,P = MV,F = MA only,D = M + V,,opt_a
+singlechoice,Which instrument accurately measures internal and external diameters?,Vernier caliper,Try square,Protractor,Divider only,,opt_a
+singlechoice,Which machine tool is mainly used for turning cylindrical work?,Lathe,Drilling machine,Grinding wheel only,Furnace,,opt_a
+singlechoice,Which protective item should be worn when grinding?,Safety goggles,Loose scarf,Open sandals,Necklace,,opt_a
+true_false,Accurate dimensions are essential in a technical drawing.,,,,,,true
+true_false,A file is mainly used to drive nails into wood.,,,,,,false
+multichoice,Select the two permanent joining methods.,Riveting,Welding,Nut and bolt,Screw fastening,,"[""opt_a"",""opt_b""]"

@@ -220,11 +220,16 @@
             attempts++;
             var child = window.frames["frame1"];
             var hasStudioCards = !!child.ID_CARD_RUNTIME_CONFIG;
-            var ready = !hasStudioCards || child.IDCARD_STUDIO_RENDER_READY === true;
+            var imagesReady = Array.prototype.every.call(child.document.images, function (image) {
+                return image.complete;
+            });
+            var ready = hasStudioCards
+                ? child.IDCARD_STUDIO_RENDER_READY === true
+                : child.document.readyState === 'complete' && imagesReady;
             var failed = hasStudioCards && !!child.IDCARD_STUDIO_RENDER_ERROR;
-            if (failed || attempts > 100) {
+            if (failed || attempts > 300) {
                 clearInterval(printWhenReady);
-                alert(child.IDCARD_STUDIO_RENDER_ERROR || 'The ID cards took too long to render. Try a smaller batch.');
+                alert(child.IDCARD_STUDIO_RENDER_ERROR || 'The ID cards or their images took too long to load. Try a smaller batch.');
                 frame1.remove();
                 return;
             }

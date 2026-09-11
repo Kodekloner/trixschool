@@ -50,7 +50,7 @@
                         <option value="">Select</option>
                         <?php foreach ($sectionList as $section) { ?><option value="<?php echo (int) $section['id']; ?>" <?php echo (int) $criteria['section_id'] === (int) $section['id'] ? 'selected' : ''; ?>><?php echo html_escape($section['section']); ?></option><?php } ?>
                     </select></div>
-                    <div class="form-group"><label for="review-component">CA / Exam component</label><select class="form-control" id="review-component" name="component" required>
+                    <div class="form-group"><label for="review-component">Result component / outcome</label><select class="form-control" id="review-component" name="component" required>
                         <option value="">Select</option>
                         <?php foreach ($componentList as $component) { ?><option value="<?php echo html_escape($component['value']); ?>" <?php echo $criteria['component'] === $component['value'] ? 'selected' : ''; ?>><?php echo html_escape($component['label']); ?></option><?php } ?>
                     </select></div>

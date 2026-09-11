@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,What is the process by which green plants make food?,Photosynthesis,Respiration,Digestion,Germination,,opt_a
+singlechoice,Which force pulls objects towards the Earth?,Gravity,Friction,Magnetism,Upthrust,,opt_a
+singlechoice,Which organ pumps blood around the human body?,Heart,Lungs,Kidney,Stomach,,opt_a
+singlechoice,Which gas is needed for human respiration?,Oxygen,Carbon dioxide,Nitrogen only,Hydrogen,,opt_a
+singlechoice,What change occurs when liquid water becomes water vapour?,Evaporation,Freezing,Condensation,Melting,,opt_a
+singlechoice,The Earth travels around which star?,Sun,Moon,Mars,Venus,,opt_a
+singlechoice,A seesaw is an example of which simple machine?,Lever,Pulley,Screw,Wedge,,opt_a
+true_false,Sound normally needs a medium through which to travel.,,,,,,true
+true_false,A magnet attracts every kind of metal.,,,,,,false
+multichoice,Select the two renewable sources of energy.,Solar energy,Wind energy,Coal,Petrol,,"[""opt_a"",""opt_b""]"

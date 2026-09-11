@@ -307,6 +307,7 @@ class Onlineexam_model extends MY_model
                     (onlineexam.purpose IN ('ca','midterm','exam') AND onlineexam.result_adapter='standard_component')
                     OR (onlineexam.purpose='holiday' AND onlineexam.result_adapter='holiday_assessment')
                     OR (onlineexam.purpose='kindergarten' AND onlineexam.result_adapter='kindergarten_concept')
+                    OR (onlineexam.purpose='british' AND onlineexam.result_adapter='british_outcome')
               )
             " . $not_deleted . " ORDER BY onlineexam.exam_from DESC";
 
@@ -674,15 +675,19 @@ class Onlineexam_model extends MY_model
             return $config;
         }
 
-        if (strtolower($row['ResultType']) === 'british') {
+        if (strtolower(trim((string) $row['ResultType'])) === 'british') {
             $config['adapter']      = 'british_outcome';
             $config['result_type']  = 'termly';
             $config['target_maximum'] = 100.0;
-            $config['components'][] = array('value' => 'outcome', 'label' => 'British qualitative outcome', 'maximum' => 100);
-            $config['valid'] = $purpose === '';
+            $config['valid'] = in_array($purpose, array('', 'british'), true);
             $config['message'] = $config['valid']
-                ? 'British results require a configured outcome profile and final teacher outcome.'
-                : 'British outcome classes are preserved, but the compact CA/Midterm/Exam workflow cannot safely write a numeric component for this class.';
+                ? 'This class uses British outcomes. The completed assessment will post Emerging, Expected or Exceeding; existing additional comments are preserved.'
+                : 'This class uses British outcomes. Choose British Assessment as the purpose.';
+            return $config;
+        }
+
+        if ($purpose === 'british') {
+            $config['message'] = 'This class is not configured for British outcomes in Exam Setting.';
             return $config;
         }
 
@@ -997,7 +1002,7 @@ class Onlineexam_model extends MY_model
     {
         $purpose = strtolower(trim(isset($exam_data['purpose']) ? (string) $exam_data['purpose'] : ''));
         $adapter = strtolower(trim(isset($exam_data['result_adapter']) ? (string) $exam_data['result_adapter'] : ''));
-        $assessment_types = array('ca' => 'term', 'exam' => 'term', 'kindergarten' => 'term', 'midterm' => 'midterm', 'holiday' => 'holiday');
+        $assessment_types = array('ca' => 'term', 'exam' => 'term', 'kindergarten' => 'term', 'british' => 'term', 'midterm' => 'midterm', 'holiday' => 'holiday');
         if (!isset($assessment_types[$purpose])) {
             return null;
         }
@@ -1030,7 +1035,7 @@ class Onlineexam_model extends MY_model
             INNER JOIN onlineexam_class_sections ecs ON ecs.onlineexam_id = e.id
             WHERE e.id <> ? AND e.workflow_version = 2
               AND e.session_id = ? AND e.term = ? AND e.class_id = ? AND e.subject_id = ?
-              AND (CASE WHEN e.purpose IN ('ca','exam','kindergarten') THEN 'term'
+              AND (CASE WHEN e.purpose IN ('ca','exam','kindergarten','british') THEN 'term'
                         WHEN e.purpose = 'midterm' THEN 'midterm'
                         WHEN e.purpose = 'holiday' THEN 'holiday' ELSE '' END) = ?
               AND COALESCE(NULLIF(LOWER(e.target_component),''), LOWER(e.purpose)) = ?

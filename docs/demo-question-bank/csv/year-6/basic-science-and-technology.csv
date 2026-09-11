@@ -1,0 +1,11 @@
+question_type,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct
+singlechoice,What is a complete path through which electric current flows called?,Circuit,Lever,Network cable only,Magnet,,opt_a
+singlechoice,What process allows green plants to make food?,Photosynthesis,Condensation,Erosion,Fermentation,,opt_a
+singlechoice,Which computer component is often called the brain of the computer?,CPU,Keyboard,Monitor,Speaker,,opt_a
+singlechoice,Which is a renewable energy source?,Solar energy,Coal,Diesel,Kerosene,,opt_a
+singlechoice,Which force opposes motion between surfaces?,Friction,Gravity only,Upthrust,Magnetism only,,opt_a
+singlechoice,Which application is best suited to calculations in rows and columns?,Spreadsheet,Paint program,Music player,Web camera,,opt_a
+singlechoice,A ramp is an example of which simple machine?,Inclined plane,Pulley,Wheel and axle,Screw,,opt_a
+true_false,A strong password should be kept private.,,,,,,true
+true_false,An open electric circuit allows current to flow continuously.,,,,,,false
+multichoice,Select the two computer input devices.,Keyboard,Mouse,Monitor,Printer,,"[""opt_a"",""opt_b""]"

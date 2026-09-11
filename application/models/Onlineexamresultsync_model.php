@@ -425,6 +425,15 @@ class Onlineexamresultsync_model extends CI_Model
         }
         $percentage = $this->percentage($context);
         $outcome = $this->onlineexam_scoring->resolveBritishOutcome($percentage, $profile, $context['outcome_value']);
+        // Store the resolved qualitative value on the attempt as well as in
+        // britishresult. This lets Review and released online feedback display
+        // the same frozen outcome, including when threshold conversion is used.
+        if ((string) $context['outcome_value'] !== (string) $outcome) {
+            $this->db->where('id', (int) $context['attempt_id'])->update('onlineexam_candidate_attempts', array(
+                'outcome_value' => $outcome,
+            ));
+            $context['outcome_value'] = $outcome;
+        }
         $descriptor = 'britishresult:Remark';
         $this->lockResultTarget($context, $descriptor);
         $ledger = $this->startLedger($context, $descriptor, $context['final_score'], $percentage . ':' . $outcome);
