@@ -280,11 +280,26 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
         frameDoc.document.write('</body>');
         frameDoc.document.write('</html>');
         frameDoc.document.close();
-        setTimeout(function () {
-            window.frames["frame1"].focus();
-            window.frames["frame1"].print();
-            frame1.remove();
-        }, 500);
+        var attempts = 0;
+        var printWhenReady = setInterval(function () {
+            attempts++;
+            var child = window.frames["frame1"];
+            var imagesReady = Array.prototype.every.call(child.document.images, function (image) {
+                return image.complete;
+            });
+            if (attempts > 300) {
+                clearInterval(printWhenReady);
+                alert('The certificates or their images took too long to load. Try a smaller batch.');
+                frame1.remove();
+                return;
+            }
+            if (child.document.readyState === 'complete' && imagesReady) {
+                clearInterval(printWhenReady);
+                child.focus();
+                child.print();
+                setTimeout(function () { frame1.remove(); }, 1000);
+            }
+        }, 100);
 
 
         return true;

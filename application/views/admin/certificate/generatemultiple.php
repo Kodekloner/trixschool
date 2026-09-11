@@ -52,6 +52,9 @@
 <?php
 $school = $sch_setting[0];
 $i = 0;
+$card_background_url = get_school_asset_url($id_card[0]->background, 'uploads/student_id_card/background');
+$card_logo_url = get_school_asset_url($id_card[0]->logo, 'uploads/student_id_card/logo');
+$card_signature_url = get_school_asset_url($id_card[0]->sign_image, 'uploads/student_id_card/signature');
 
 ?>
 <?php
@@ -64,6 +67,15 @@ if($id_card[0]->enable_vertical_card)
         <?php
         foreach ($students as $student) {
             $i++;
+            $student_fallback_url = get_school_asset_url(
+                strtolower(isset($student->gender) ? (string) $student->gender : '') === 'female'
+                    ? 'uploads/student_images/default_female.jpg'
+                    : 'uploads/student_images/default_male.jpg'
+            );
+            $student_photo_url = get_school_asset_url(
+                !empty($student->image) ? $student->image : $student_fallback_url,
+                'uploads/student_images'
+            );
             ?>
             <td valign="top" class="width32">
              <table cellpadding="0" cellspacing="0" width="100%" style="background: <?php echo $id_card[0]->header_color; ?>;">
@@ -73,7 +85,7 @@ if($id_card[0]->enable_vertical_card)
                 <tr>
                    <td valign="top">
                         <div style="color: #fff;position: relative; z-index: 1; text-align: center;vertical-align: top">
-                            <div class="sttext1" style="font-size: 16px;line-height: 8px;"><img style="vertical-align: middle; width: 30px;" src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $id_card[0]->logo; ?>" width="30" height="24">  <?php echo $id_card[0]->school_name; ?>
+                            <div class="sttext1" style="font-size: 16px;line-height: 8px;"><?php if ($card_logo_url !== '') { ?><img style="vertical-align: middle; width: 30px;" src="<?php echo htmlspecialchars($card_logo_url, ENT_QUOTES, 'UTF-8'); ?>" width="30" height="24"><?php } ?>  <?php echo $id_card[0]->school_name; ?>
                            </div>
                         </div>
                     </td>
@@ -90,7 +102,7 @@ if($id_card[0]->enable_vertical_card)
                <tr>
                     <td valign="top">
                         <div class="stimg center-block">
-                            <img src="https://demo.smart-school.in/uploads/student_images/no_image.png" class="img-responsive img-circle block-center" style="border-radius: 8px; border:3px solid <?php echo $id_card[0]->header_color; ?>">
+                            <img src="<?php echo htmlspecialchars($student_photo_url, ENT_QUOTES, 'UTF-8'); ?>" onerror="this.onerror=null;this.src=<?php echo htmlspecialchars(json_encode($student_fallback_url), ENT_QUOTES, 'UTF-8'); ?>;" class="img-responsive img-circle block-center" style="border-radius: 8px; border:3px solid <?php echo $id_card[0]->header_color; ?>">
                         </div>
 
                     </td>
@@ -137,7 +149,7 @@ if($id_card[0]->enable_vertical_card)
 
                                         <?php if ($id_card[0]->enable_blood_group == 1) { ?><li class="stred"><?php echo $this->lang->line('blood_group'); ?><span><?php echo $student->blood_group; ?></span></li><?php } ?>
                         </ul>
-                        <div class="signature"><img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $id_card[0]->sign_image; ?>" width="150" height="24" style="width: 150px;" /></div>
+                        <div class="signature"><?php if ($card_signature_url !== '') { ?><img src="<?php echo htmlspecialchars($card_signature_url, ENT_QUOTES, 'UTF-8'); ?>" width="150" height="24" style="width: 150px;" /><?php } ?></div>
                     </td>
                 </tr>
             </table>
@@ -167,18 +179,27 @@ if($id_card[0]->enable_vertical_card)
         <?php
         foreach ($students as $student) {
             $i++;
+            $student_fallback_url = get_school_asset_url(
+                strtolower(isset($student->gender) ? (string) $student->gender : '') === 'female'
+                    ? 'uploads/student_images/default_female.jpg'
+                    : 'uploads/student_images/default_male.jpg'
+            );
+            $student_photo_url = get_school_asset_url(
+                !empty($student->image) ? $student->image : $student_fallback_url,
+                'uploads/student_images'
+            );
             ?>
             <td valign="top" class="width32">
                 <table cellpadding="0" cellspacing="0" width="100%" class="tc-container" style="background: #efefef;">
                     <tr>
                         <td valign="top">
-                            <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $id_card[0]->background; ?>" class="tcmybg" /></td>
+                            <?php if ($card_background_url !== '') { ?><img src="<?php echo htmlspecialchars($card_background_url, ENT_QUOTES, 'UTF-8'); ?>" class="tcmybg" /><?php } ?></td>
                     </tr>
                     <tr>
                         <td valign="top">
                             <div class="studenttop" style="background: <?php echo $id_card[0]->header_color ?>">
 
-                                <div class="sttext1"><img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $id_card[0]->logo; ?>" width="30" height="30" />
+                                <div class="sttext1"><?php if ($card_logo_url !== '') { ?><img src="<?php echo htmlspecialchars($card_logo_url, ENT_QUOTES, 'UTF-8'); ?>" width="30" height="30" /><?php } ?>
                                     <?php echo $id_card[0]->school_name ?></div>
                             </div>
                         </td>
@@ -200,7 +221,7 @@ if($id_card[0]->enable_vertical_card)
                                 <div class="cardleft">
 
                                     <div class="stimg">
-                                        <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $student->image; ?>" class="img-responsive" />
+                                        <img src="<?php echo htmlspecialchars($student_photo_url, ENT_QUOTES, 'UTF-8'); ?>" onerror="this.onerror=null;this.src=<?php echo htmlspecialchars(json_encode($student_fallback_url), ENT_QUOTES, 'UTF-8'); ?>;" class="img-responsive" />
                                     </div>
                                 </div><!--./cardleft-->
                                 <div class="cardright">
@@ -238,7 +259,7 @@ if($id_card[0]->enable_vertical_card)
                         </td>
                     </tr>
                     <tr>
-                        <td valign="top" align="right" class="principal"><img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $id_card[0]->sign_image; ?>" width="66" height="40" /></td>
+                        <td valign="top" align="right" class="principal"><?php if ($card_signature_url !== '') { ?><img src="<?php echo htmlspecialchars($card_signature_url, ENT_QUOTES, 'UTF-8'); ?>" width="66" height="40" /><?php } ?></td>
                     </tr>
                 </table>
             </td>

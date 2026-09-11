@@ -27,6 +27,7 @@
 </style>
 
 <?php
+$certificate_background_url = get_school_asset_url($certificate[0]->background_image, 'uploads/certificate');
 $certificate[0]->certificate_text = str_replace('[name]', '[name]', $certificate[0]->certificate_text);
 $certificate[0]->certificate_text = str_replace('[present_address]', '[current_address]', $certificate[0]->certificate_text);
 $certificate[0]->certificate_text = str_replace('[guardian]', '[guardian_name]', $certificate[0]->certificate_text);
@@ -36,6 +37,15 @@ $certificate[0]->certificate_text = str_replace('[phone]', '[mobileno]', $certif
 foreach ($students as $student) {
     $certificate_body = "";
     $certificate_body = $certificate[0]->certificate_text;
+    $student_fallback_url = get_school_asset_url(
+        strtolower(isset($student->gender) ? (string) $student->gender : '') === 'female'
+            ? 'uploads/student_images/default_female.jpg'
+            : 'uploads/student_images/default_male.jpg'
+    );
+    $student_photo_url = get_school_asset_url(
+        !empty($student->image) ? $student->image : $student_fallback_url,
+        'uploads/student_images'
+    );
 
     foreach ($student as $std_key => $std_value) {
 
@@ -63,15 +73,15 @@ foreach ($students as $student) {
 
 
     <div class="" style="position: relative; text-align: center; font-family: 'arial';">
-        <?php if (!empty($certificate[0]->background_image)) { ?>
-            <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $certificate[0]->background_image; ?>" style="width: 100%; height: 100vh" />
+        <?php if ($certificate_background_url !== '') { ?>
+            <img src="<?php echo htmlspecialchars($certificate_background_url, ENT_QUOTES, 'UTF-8'); ?>" style="width: 100%; height: 100vh" />
         <?php } ?>
 
         <table width="100%" cellspacing="0" cellpadding="0" style="position: absolute;top: 0; margin-left: auto;margin-right: auto;left: 0;right: 0;<?php echo "width:" . $certificate[0]->content_width . "px" ?>">
             <tr>
                 <td style="position: absolute;right:0;">
                     <?php if ($certificate[0]->enable_student_image == 1) { ?>
-                        <img style="position: relative; <?php echo "top:" . $certificate[0]->enable_image_height . "px" ?>;" src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $student->image; ?>" width="100" height="auto">
+                        <img style="position: relative; <?php echo "top:" . $certificate[0]->enable_image_height . "px" ?>;" src="<?php echo htmlspecialchars($student_photo_url, ENT_QUOTES, 'UTF-8'); ?>" onerror="this.onerror=null;this.src=<?php echo htmlspecialchars(json_encode($student_fallback_url), ENT_QUOTES, 'UTF-8'); ?>;" width="100" height="auto">
                     <?php } ?>
                 </td></tr>
             <tr>
