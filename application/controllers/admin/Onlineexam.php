@@ -547,6 +547,15 @@ class Onlineexam extends Admin_Controller
         $this->session->set_flashdata('onlineexam_builder_input', array('form' => $form, 'values' => $values));
     }
 
+    private function workflowPublishReadiness($onlineexam_id)
+    {
+        $validation = $this->onlineexamworkflow_model->validateAssessment((int) $onlineexam_id);
+        return array(
+            'valid' => !empty($validation['valid']),
+            'errors' => !empty($validation['valid']) ? array() : array_values(array_unique((array) $validation['errors'])),
+        );
+    }
+
     public function paperSave()
     {
         if (!$this->rbac->hasPrivilege('online_examination', 'can_edit')) {
@@ -796,7 +805,11 @@ class Onlineexam extends Admin_Controller
         if ($id) {
             $this->onlineexam_model->auditWorkflow($onlineexam_id, $this->customlib->getStaffID(), 'assign_question', 'onlineexam_questions', $id, null, array('question_id' => $question_id, 'paper_id' => $paper_id, 'paper_section_id' => $paper_section_id));
         }
-        echo json_encode(array('status' => $id ? 1 : 0, 'id' => $id, 'message' => $id ? 'Question assigned to paper.' : 'Question could not be assigned.'));
+        $response = array('status' => $id ? 1 : 0, 'id' => $id, 'message' => $id ? 'Question assigned to paper.' : 'Question could not be assigned.');
+        if ($id) {
+            $response['publish_readiness'] = $this->workflowPublishReadiness($onlineexam_id);
+        }
+        echo json_encode($response);
     }
 
     /** Create and assign a structured question without leaving the v2 builder. */
@@ -1133,7 +1146,11 @@ class Onlineexam extends Admin_Controller
         if ($deleted) {
             $this->onlineexam_model->auditWorkflow($onlineexam_id, $this->customlib->getStaffID(), 'remove_question', 'onlineexam_questions', $assignment_id);
         }
-        echo json_encode(array('status' => $deleted ? 1 : 0, 'message' => $deleted ? 'Question removed.' : 'Question could not be removed.'));
+        $response = array('status' => $deleted ? 1 : 0, 'message' => $deleted ? 'Question removed.' : 'Question could not be removed.');
+        if ($deleted) {
+            $response['publish_readiness'] = $this->workflowPublishReadiness($onlineexam_id);
+        }
+        echo json_encode($response);
     }
 
     public function britishProfileSave()

@@ -50,6 +50,9 @@ compact_ui_assert(strpos($builder, 'paper-section-item') !== false && strpos($bu
 compact_ui_assert(strpos($builder, '$can_view_roster') !== false && strpos($builder, '$can_view_operations') !== false, 'Builder navigation must respect destination-page privileges.');
 compact_ui_assert(substr_count($builder, '!empty($compact_supported)') >= 2, 'Historical builder views must not link into retired roster or operations routes.');
 compact_ui_assert(strpos($builder, 'name="onlineexam_workflow_token"') !== false && strpos($builder, 'Teacher selects the outcome') !== false, 'British outcome setup must be protected and understandable in the builder.');
+compact_ui_assert(substr_count($builder, 'onlineexam-datetime-anchor') === 4, 'Builder date pickers must be anchored directly to all Starts and Ends fields.');
+compact_ui_assert(strpos($builder, 'id="builder_publish_button"') !== false && strpos($builder, 'renderPublishReadiness') !== false, 'Freeze and publish must react immediately to authoritative question validation.');
+compact_ui_assert(substr_count($builder, 'response.publish_readiness') === 2, 'Question assignment and removal must both refresh publish readiness after AJAX changes.');
 
 $question_assignment = compact_ui_source('application/views/admin/onlineexam/_searchQuestionByExamID.php');
 compact_ui_assert(substr_count($question_assignment, 'question-type-cell') >= 2, 'The question type column needs an explicit width class on its header and cells.');
@@ -72,6 +75,7 @@ compact_ui_assert(strpos($admin_styles, '.question-assignment-table .question-ty
 compact_ui_assert(strpos($admin_styles, '.question-assignment-table .question-required-cell') !== false, 'Required controls need a protected table column width.');
 compact_ui_assert(strpos($admin_styles, 'table-layout: auto') !== false, 'The question table must let explicit column minimums determine its safe width.');
 compact_ui_assert(strpos($admin_styles, '@media (max-width: 1199px)') !== false, 'Paper and section forms need a responsive laptop/tablet breakpoint.');
+compact_ui_assert(strpos($admin_styles, '.onlineexam-ui.onlineexam-builder-page .paper-form-scroll') !== false && strpos($admin_styles, '.onlineexam-datetime-anchor') !== false, 'Builder date-picker popups must not be clipped by paper form scrollers.');
 compact_ui_assert(strpos($admin_styles, 'grid-template-columns: 1fr') !== false, 'Administration forms need a single-column phone layout.');
 compact_ui_assert(
     !preg_match('/assessment-meta-table[^}]*display\s*:\s*block|paper-summary-table[^}]*display\s*:\s*block/s', $admin_styles),

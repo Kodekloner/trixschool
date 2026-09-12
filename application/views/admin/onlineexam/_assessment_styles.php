@@ -111,6 +111,15 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
 }
+.onlineexam-ui.onlineexam-builder-page .paper-form-scroll {
+    overflow: visible;
+}
+.onlineexam-ui .onlineexam-datetime-anchor {
+    position: relative;
+}
+.onlineexam-ui .onlineexam-datetime-anchor .bootstrap-datetimepicker-widget {
+    z-index: 1060;
+}
 .onlineexam-ui .paper-form-grid {
     display: grid;
     grid-template-columns: minmax(220px, 2.3fr) minmax(90px, .8fr) minmax(145px, 1.2fr) minmax(92px, .8fr) minmax(120px, 1fr) minmax(82px, .7fr);

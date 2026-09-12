@@ -1,17 +1,61 @@
+html.idstudio-editor-active,
+body.idstudio-editor-active {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
+body.idstudio-editor-active .wrapper {
+    height: 100%;
+    min-height: 0 !important;
+    overflow: hidden;
+}
+
+body.idstudio-editor-active .content-wrapper.idstudio-page {
+    height: var(--idstudio-viewport-height, 100vh);
+    min-height: 0 !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+body.idstudio-editor-active .main-footer {
+    display: none;
+}
+
 .idstudio-page-header {
+    min-height: 48px;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    padding: 8px 15px;
+}
+
+.idstudio-page-header h1 {
+    margin: 0;
+    font-size: 21px;
 }
 
 .idstudio-content {
-    padding: 10px;
+    position: relative;
+    min-height: 0;
+    flex: 1 1 auto;
+    display: flex;
+    padding: 0 10px 10px;
+    overflow: hidden;
 }
 
 .idstudio-alert {
+    position: absolute;
+    top: 8px;
+    left: 18px;
+    right: 18px;
+    z-index: 80;
     display: none;
-    margin-bottom: 8px;
+    margin: 0;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .18);
 }
 
 .idstudio-alert.is-visible {
@@ -24,7 +68,12 @@
     --studio-muted: #64748b;
     --studio-ink: #172033;
     --studio-accent: #2563eb;
-    min-height: calc(100vh - 145px);
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
     border: 1px solid var(--studio-border);
     border-radius: 10px;
@@ -34,20 +83,36 @@
 }
 
 .idstudio-topbar {
+    position: relative;
+    z-index: 10;
+    min-width: 0;
     min-height: 58px;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     padding: 8px 10px;
     border-bottom: 1px solid var(--studio-border);
     background: #f8fafc;
 }
 
+.idstudio-design-settings {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .idstudio-title-group {
+    min-width: 180px;
+    max-width: 280px;
     display: flex;
     align-items: center;
     gap: 6px;
-    min-width: 230px;
+}
+
+.idstudio-title-group input {
+    min-width: 0;
 }
 
 .idstudio-title-group label,
@@ -75,6 +140,7 @@
 }
 
 .idstudio-save-group {
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 7px;
@@ -82,23 +148,40 @@
 }
 
 #idstudio-save-state {
-    max-width: 190px;
+    max-width: 150px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 12px;
 }
 
+.idstudio-settings-toggle,
+.idstudio-studio-back,
+.idstudio-mobile-panel-actions,
+.idstudio-view-toggle,
+.idstudio-panel-mobile-header,
+.idstudio-panel-backdrop {
+    display: none;
+}
+
 .idstudio-main {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    flex: 1 1 auto;
     display: grid;
     grid-template-columns: 230px minmax(420px, 1fr) 270px;
-    min-height: calc(100vh - 205px);
+    overflow: hidden;
 }
 
 .idstudio-left-panel,
 .idstudio-right-panel {
     min-width: 0;
+    min-height: 0;
+    overflow-x: hidden;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     background: var(--studio-panel);
 }
 
@@ -111,10 +194,10 @@
 }
 
 .idstudio-panel-heading {
+    min-height: 36px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 36px;
     padding: 8px 10px;
     border-top: 1px solid #e2e8f0;
     border-bottom: 1px solid #e2e8f0;
@@ -170,6 +253,7 @@
 .idstudio-assets {
     max-height: 245px;
     overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 8px;
 }
 
@@ -194,16 +278,21 @@
 
 .idstudio-workspace {
     min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .idstudio-workspace-toolbar {
+    min-width: 0;
     min-height: 44px;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     padding: 6px 10px;
+    overflow: visible;
     border-bottom: 1px solid var(--studio-border);
     background: #f8fafc;
 }
@@ -212,9 +301,17 @@
     margin: 0;
     font-size: 12px;
     font-weight: 400;
+    white-space: nowrap;
+}
+
+.idstudio-view-options {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .idstudio-zoom-controls {
+    min-width: max-content;
     display: flex;
     align-items: center;
     gap: 5px;
@@ -222,7 +319,7 @@
 }
 
 #idstudio-zoom {
-    width: 120px;
+    width: 110px;
 }
 
 #idstudio-zoom-label {
@@ -233,9 +330,14 @@
 
 .idstudio-scroll {
     position: relative;
+    min-width: 0;
+    min-height: 0;
     flex: 1 1 auto;
-    min-height: 480px;
     overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    touch-action: pan-x pan-y;
+    -webkit-overflow-scrolling: touch;
     padding: 56px;
     background-color: #d8dee8;
     background-image: linear-gradient(45deg, rgba(255,255,255,.28) 25%, transparent 25%), linear-gradient(-45deg, rgba(255,255,255,.28) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgba(255,255,255,.28) 75%), linear-gradient(-45deg, transparent 75%, rgba(255,255,255,.28) 75%);
@@ -254,6 +356,10 @@
 
 .idstudio-stage .canvas-container {
     background: #fff;
+}
+
+.idstudio-stage .upper-canvas {
+    touch-action: pan-x pan-y !important;
 }
 
 .idstudio-safe-area {
@@ -287,14 +393,16 @@
 .idstudio-bleed-area::before { content: '3 mm bleed'; color: #0369a1; }
 .idstudio-safe-area::before { content: 'safe area'; color: #b91c1c; }
 
-.idstudio-safe-area.is-hidden {
+.idstudio-safe-area.is-hidden,
+.idstudio-bleed-area.is-hidden {
     display: none;
 }
 
-.idstudio-bleed-area.is-hidden { display: none; }
-
 .idstudio-scroll.is-panning,
-.idstudio-scroll.is-panning * { cursor: grabbing !important; user-select: none; }
+.idstudio-scroll.is-panning * {
+    cursor: grabbing !important;
+    user-select: none;
+}
 
 .idstudio-ruler {
     position: sticky;
@@ -321,16 +429,25 @@
 }
 
 .idstudio-statusbar {
+    min-width: 0;
     min-height: 30px;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
     padding: 5px 10px;
+    overflow: hidden;
     border-top: 1px solid var(--studio-border);
     background: #f8fafc;
     color: var(--studio-muted);
     font-size: 11px;
+}
+
+.idstudio-statusbar span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .idstudio-empty,
@@ -371,15 +488,16 @@
     margin: 0;
     padding: 7px;
     overflow-y: auto;
+    overscroll-behavior: contain;
     list-style: none;
 }
 
 .idstudio-layers li {
+    min-height: 32px;
     display: grid;
     grid-template-columns: 22px minmax(0, 1fr) 24px 24px;
     align-items: center;
     gap: 3px;
-    min-height: 32px;
     margin-bottom: 3px;
     padding: 3px;
     border: 1px solid #e2e8f0;
@@ -430,113 +548,441 @@
     color: #64748b;
 }
 
-@media (max-width: 1199px) {
-    .idstudio-topbar {
-        flex-wrap: wrap;
-    }
-
-    .idstudio-save-group {
-        margin-left: 0;
-    }
-
+@media (max-width: 1399px) and (min-width: 1200px) {
     .idstudio-main {
-        grid-template-columns: 190px minmax(360px, 1fr) 235px;
+        grid-template-columns: 205px minmax(390px, 1fr) 245px;
+    }
+
+    .idstudio-title-group {
+        min-width: 160px;
+    }
+
+    .idstudio-workspace-toolbar {
+        gap: 8px;
+    }
+
+    #idstudio-zoom {
+        width: 82px;
     }
 }
 
-@media (max-width: 991px) {
+@media (max-width: 1199px) {
+    .idstudio-topbar {
+        min-height: 50px;
+        gap: 7px;
+        padding: 6px 8px;
+    }
+
+    .idstudio-settings-toggle,
+    .idstudio-mobile-panel-actions,
+    .idstudio-panel-mobile-header {
+        display: flex;
+    }
+
+    .idstudio-settings-toggle {
+        align-items: center;
+        gap: 5px;
+    }
+
+    #idstudio-save-state {
+        display: none;
+    }
+
     .idstudio-main {
-        grid-template-columns: 185px minmax(360px, 1fr);
+        display: block;
+    }
+
+    .idstudio-workspace {
+        width: 100%;
+        height: 100%;
+    }
+
+    .idstudio-panel-backdrop {
+        position: absolute;
+        inset: 0;
+        z-index: 25;
+        display: block;
+        padding: 0;
+        visibility: hidden;
+        opacity: 0;
+        border: 0;
+        background: rgba(15, 23, 42, .42);
+        transition: opacity .18s ease, visibility .18s ease;
+    }
+
+    .idstudio-app[data-open-panel] .idstudio-panel-backdrop {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    .idstudio-app[data-open-panel="design"] .idstudio-topbar {
+        z-index: 30;
+    }
+
+    .idstudio-app[data-open-panel="design"] .idstudio-topbar > :not(.idstudio-design-settings) {
+        pointer-events: none;
+    }
+
+    .idstudio-left-panel,
+    .idstudio-right-panel {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        z-index: 30;
+        width: min(330px, calc(100% - 44px));
+        visibility: hidden;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, .24);
+        transition: transform .2s ease, visibility .2s ease;
+    }
+
+    .idstudio-left-panel {
+        left: 0;
+        border-right: 1px solid var(--studio-border);
+        transform: translateX(-105%);
     }
 
     .idstudio-right-panel {
-        grid-column: 1 / -1;
-        max-height: none;
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        border-top: 1px solid var(--studio-border);
-        border-left: 0;
+        right: 0;
+        border-left: 1px solid var(--studio-border);
+        transform: translateX(105%);
     }
 
-    .idstudio-right-panel > * {
-        min-width: 0;
+    .idstudio-app[data-open-panel="tools"] .idstudio-left-panel,
+    .idstudio-app[data-open-panel="properties"] .idstudio-right-panel {
+        visibility: visible;
+        transform: translateX(0);
+    }
+
+    .idstudio-panel-mobile-header {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        min-height: 42px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 7px 10px;
+        border-bottom: 1px solid var(--studio-border);
+        background: #f8fafc;
+    }
+
+    .idstudio-design-settings {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 8px;
+        z-index: 35;
+        width: min(650px, calc(100% - 16px));
+        max-height: calc(var(--idstudio-viewport-height, 100vh) - 125px);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        overflow: auto;
+        visibility: hidden;
+        opacity: 0;
+        border: 1px solid var(--studio-border);
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 14px 38px rgba(15, 23, 42, .28);
+        transform: translateY(-8px);
+        transition: transform .18s ease, opacity .18s ease, visibility .18s ease;
+    }
+
+    .idstudio-app[data-open-panel="design"] .idstudio-design-settings {
+        visibility: visible;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .idstudio-design-settings .idstudio-panel-mobile-header {
+        width: 100%;
+        margin: -10px -10px 0;
+        flex-basis: calc(100% + 20px);
+    }
+
+    .idstudio-design-settings .idstudio-title-group {
+        min-width: 220px;
+        flex: 1 1 220px;
+    }
+
+    .idstudio-design-settings .idstudio-size-group {
+        flex: 1 1 auto;
+    }
+
+    .idstudio-mobile-panel-actions {
+        align-items: center;
+        gap: 4px;
+    }
+
+    .idstudio-view-options > .idstudio-panel-mobile-header {
+        display: none;
     }
 }
 
 @media (max-width: 767px) {
-    .idstudio-page-header,
-    .idstudio-topbar,
-    .idstudio-size-group,
+    body.idstudio-editor-active .content-wrapper.idstudio-page {
+        position: fixed;
+        inset: 0;
+        z-index: 1040;
+        width: 100%;
+        margin-left: 0 !important;
+        padding-top: 0 !important;
+        background: #ecf0f5;
+    }
+
+    .idstudio-page-header {
+        display: none;
+    }
+
+    .idstudio-content {
+        padding: 0;
+    }
+
+    .idstudio-app {
+        border: 0;
+        border-radius: 0;
+    }
+
+    .idstudio-topbar {
+        min-height: 46px;
+        gap: 5px;
+        padding: 5px 6px;
+    }
+
+    .idstudio-studio-back {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     .idstudio-save-group {
+        gap: 4px;
+    }
+
+    .idstudio-workspace-toolbar {
+        min-height: 76px;
+        flex-wrap: wrap;
+        align-content: center;
+        gap: 5px;
+        padding: 5px 6px;
+    }
+
+    .idstudio-view-options {
+        position: fixed;
+        right: 8px;
+        bottom: 8px;
+        left: 8px;
+        z-index: 1060;
+        min-height: 126px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        padding: 12px;
+        overflow: auto;
+        visibility: hidden;
+        border: 1px solid var(--studio-border);
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 16px 45px rgba(15, 23, 42, .32);
+        transform: translateY(calc(100% + 16px));
+        transition: transform .2s ease, visibility .2s ease;
+    }
+
+    .idstudio-view-toggle {
+        display: inline-block;
+    }
+
+    .idstudio-view-options .idstudio-panel-mobile-header {
+        position: static;
+        display: flex;
+        grid-column: 1 / -1;
+        margin: -12px -12px 0;
+    }
+
+    .idstudio-app[data-open-panel="view"] .idstudio-view-options {
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .idstudio-zoom-controls {
+        width: 100%;
+        justify-content: center;
+        margin-left: 0;
+    }
+
+    #idstudio-zoom {
+        width: min(125px, 34vw);
+    }
+
+    .idstudio-scroll {
+        padding: 38px 28px;
+    }
+
+    .idstudio-ruler-x {
+        top: -38px;
+    }
+
+    .idstudio-ruler-y {
+        left: -28px;
+    }
+
+    .idstudio-left-panel,
+    .idstudio-right-panel {
+        top: auto;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: auto;
+        height: min(76%, 560px);
+        border: 0;
+        border-top: 1px solid var(--studio-border);
+        border-radius: 16px 16px 0 0;
+        transform: translateY(105%);
+    }
+
+    .idstudio-app[data-open-panel="tools"] .idstudio-left-panel,
+    .idstudio-app[data-open-panel="properties"] .idstudio-right-panel {
+        transform: translateY(0);
+    }
+
+    .idstudio-design-settings {
+        position: fixed;
+        top: auto;
+        right: 8px;
+        bottom: 8px;
+        left: 8px;
+        z-index: 1060;
+        width: auto;
+        max-height: min(72vh, 430px);
         align-items: stretch;
-        flex-direction: column;
+        padding: 12px;
+        border-radius: 16px;
+        transform: translateY(calc(100% + 16px));
     }
 
-    .idstudio-title-group {
-        min-width: 0;
+    .idstudio-app[data-open-panel="design"] .idstudio-design-settings {
+        transform: translateY(0);
     }
 
-    .idstudio-size-group {
+    .idstudio-design-settings .idstudio-panel-mobile-header {
+        margin: -12px -12px 0;
+        flex-basis: calc(100% + 24px);
+    }
+
+    .idstudio-design-settings .idstudio-title-group,
+    .idstudio-design-settings .idstudio-size-group {
+        min-width: 100%;
+        width: 100%;
+    }
+
+    .idstudio-design-settings .idstudio-title-group {
+        max-width: none;
+    }
+
+    .idstudio-design-settings .idstudio-size-group {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         padding-left: 0;
         border-left: 0;
     }
 
-    .idstudio-size-group input {
-        width: 100%;
-    }
-
-    .idstudio-main {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .idstudio-left-panel,
-    .idstudio-right-panel {
-        border: 0;
-        border-bottom: 1px solid var(--studio-border);
-    }
-
-    .idstudio-left-panel {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        max-height: 310px;
-    }
-
-    .idstudio-left-panel .idstudio-panel-heading {
-        grid-column: 1 / -1;
-    }
-
-    .idstudio-binding-list,
-    .idstudio-assets {
-        max-height: 165px;
-    }
-
-    .idstudio-workspace-toolbar {
-        flex-wrap: wrap;
-    }
-
-    .idstudio-zoom-controls {
-        width: 100%;
-        margin-left: 0;
-    }
-
-    .idstudio-scroll {
-        min-height: 410px;
-        padding: 38px 24px;
-        -webkit-overflow-scrolling: touch;
+    .idstudio-design-settings .idstudio-size-group input {
+        width: calc(100% - 18px);
     }
 
     .idstudio-property-actions,
-    .idstudio-export-grid { flex-wrap: wrap; }
+    .idstudio-export-grid {
+        flex-wrap: wrap;
+    }
 
-    .idstudio-right-panel {
-        display: block;
+    .idstudio-statusbar {
+        min-height: 26px;
+        padding: 4px 7px;
+    }
+
+    #idstudio-selection-status {
+        display: none;
+    }
+}
+
+@media (max-width: 520px) {
+    .idstudio-action-label {
+        display: none;
+    }
+
+    .idstudio-topbar .btn {
+        min-width: 31px;
+        padding-right: 7px;
+        padding-left: 7px;
+    }
+
+    .idstudio-save-group {
+        margin-left: auto;
+    }
+
+    .idstudio-mobile-panel-actions .btn,
+    .idstudio-workspace-toolbar > .btn-group .btn,
+    .idstudio-view-toggle {
+        padding-right: 6px;
+        padding-left: 6px;
+        font-size: 11px;
+    }
+
+    .idstudio-fit-button {
+        padding-right: 5px;
+        padding-left: 5px;
+    }
+}
+
+@media (max-width: 360px) {
+    .idstudio-mobile-panel-actions .btn,
+    .idstudio-view-toggle {
+        width: 31px;
+        overflow: hidden;
+        font-size: 0;
+        white-space: nowrap;
+    }
+
+    .idstudio-mobile-panel-actions .btn i,
+    .idstudio-view-toggle i {
+        font-size: 12px;
+    }
+}
+
+@media (max-height: 560px) and (max-width: 767px) {
+    .idstudio-left-panel,
+    .idstudio-right-panel,
+    .idstudio-design-settings {
+        max-height: calc(100vh - 112px);
+        height: calc(100vh - 112px);
+    }
+
+    .idstudio-workspace-toolbar {
+        min-height: 70px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .idstudio-panel-backdrop,
+    .idstudio-left-panel,
+    .idstudio-right-panel,
+    .idstudio-design-settings,
+    .idstudio-view-options {
+        transition: none;
     }
 }
 
 @media print {
+    html,
+    body.idstudio-editor-active,
+    body.idstudio-editor-active .wrapper,
+    body.idstudio-editor-active .content-wrapper.idstudio-page {
+        position: static !important;
+        inset: auto !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
     .main-header,
     .main-sidebar,
     .content-header,
@@ -544,7 +990,8 @@
     .idstudio-left-panel,
     .idstudio-right-panel,
     .idstudio-workspace-toolbar,
-    .idstudio-statusbar {
+    .idstudio-statusbar,
+    .idstudio-panel-backdrop {
         display: none !important;
     }
 
