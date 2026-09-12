@@ -185,8 +185,8 @@ foreach ((array) $authored_questions as $authored_question) {
                             </div>
                             <div class="paper-form-scroll">
                                 <div class="paper-form-grid paper-form-grid-secondary">
-                                    <div class="form-group"><label>Starts</label><input type="text" name="starts_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($exam->exam_from)); ?>"></div>
-                                    <div class="form-group"><label>Ends</label><input type="text" name="ends_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($exam->exam_to)); ?>"></div>
+                                    <div class="form-group"><label>Starts</label><div class="onlineexam-datetime-anchor"><input type="text" name="starts_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($exam->exam_from)); ?>"></div></div>
+                                    <div class="form-group"><label>Ends</label><div class="onlineexam-datetime-anchor"><input type="text" name="ends_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($exam->exam_to)); ?>"></div></div>
                                     <div class="form-group"><label>Instructions</label><textarea name="instructions" rows="2" class="form-control" placeholder="Instructions candidates see before starting"></textarea></div>
                                     <div class="form-group"><label>&nbsp;</label><div><label><input type="checkbox" name="is_active" value="1" checked> Active</label></div></div>
                                     <div class="form-group"><label>&nbsp;</label><button class="btn btn-info btn-block" type="submit"><i class="fa fa-plus"></i> Add</button></div>
@@ -276,8 +276,8 @@ foreach ((array) $authored_questions as $authored_question) {
                                 </div>
                                 <div class="paper-form-scroll">
                                     <div class="paper-form-grid paper-form-grid-secondary">
-                                        <div class="form-group"><label>Starts</label><input type="text" name="starts_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($paper['starts_at'])); ?>"></div>
-                                        <div class="form-group"><label>Ends</label><input type="text" name="ends_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($paper['ends_at'])); ?>"></div>
+                                        <div class="form-group"><label>Starts</label><div class="onlineexam-datetime-anchor"><input type="text" name="starts_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($paper['starts_at'])); ?>"></div></div>
+                                        <div class="form-group"><label>Ends</label><div class="onlineexam-datetime-anchor"><input type="text" name="ends_at" class="form-control datetime_twelve_hour" value="<?php echo html_escape($format_datetime($paper['ends_at'])); ?>"></div></div>
                                         <div class="form-group"><label>Instructions</label><textarea name="instructions" rows="2" class="form-control" placeholder="Instructions candidates see before starting"><?php echo html_escape(strip_tags($paper['instructions'])); ?></textarea></div>
                                         <div class="form-group"><label>&nbsp;</label><div><label><input type="checkbox" name="is_active" value="1" <?php echo $paper['is_active'] ? 'checked' : ''; ?>> Active</label></div></div>
                                         <div class="form-group"><label>&nbsp;</label><button class="btn btn-primary btn-block">Save</button></div>
@@ -379,15 +379,17 @@ foreach ((array) $authored_questions as $authored_question) {
             <div class="box-header with-border"><h3 class="box-title">Freeze and publish assessment</h3></div>
             <div class="box-body">
                 <p>Publishing freezes an immutable copy of the questions, marks, paper rules, and result component. It does <strong>not</strong> publish the official report card.</p>
-                <?php if (!empty($publish_errors) && in_array($exam->lifecycle_status, array('draft', 'scheduled'), true)) { ?>
-                    <ul class="text-danger"><?php foreach ($publish_errors as $error) { ?><li><?php echo html_escape($error); ?></li><?php } ?></ul>
-                <?php } ?>
+                <div id="builder_publish_errors" role="status" aria-live="polite" <?php echo empty($publish_errors) || !in_array($exam->lifecycle_status, array('draft', 'scheduled'), true) ? 'style="display:none"' : ''; ?>>
+                    <?php if (!empty($publish_errors) && in_array($exam->lifecycle_status, array('draft', 'scheduled'), true)) { ?>
+                        <ul class="text-danger"><?php foreach ($publish_errors as $error) { ?><li><?php echo html_escape($error); ?></li><?php } ?></ul>
+                    <?php } ?>
+                </div>
             </div>
             <div class="box-footer single-action-footer">
                 <?php if ($exam->lifecycle_status === 'draft') { ?>
                     <?php if ($can_edit_assessment) { ?>
                     <form method="post" action="<?php echo site_url('admin/onlineexam/lifecycle/' . $exam->id); ?>" onsubmit="return confirm('Freeze this revision and release the assessment to candidates?');">
-                        <?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="workflow_action" value="publish"><button class="btn btn-warning" <?php echo empty($publish_errors) ? '' : 'disabled'; ?>><i class="fa fa-lock"></i> Freeze and publish</button>
+                        <?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="workflow_action" value="publish"><button id="builder_publish_button" class="btn btn-warning" aria-disabled="<?php echo empty($publish_errors) ? 'false' : 'true'; ?>" <?php echo empty($publish_errors) ? '' : 'disabled'; ?>><i class="fa fa-lock"></i> Freeze and publish</button>
                     </form>
                     <?php } ?>
                 <?php } elseif (in_array($exam->lifecycle_status, array('scheduled', 'published', 'in_progress', 'marking', 'completed'), true)) { ?>
@@ -438,6 +440,44 @@ foreach ((array) $authored_questions as $authored_question) {
         var paperId = parseInt($('#builder_paper_id').val(), 10);
         var allowNegative = canEditQuestions && negativeMarkingEnabled && paperTypes[paperId] === 'objective';
         $('.question-neg-marks').prop('disabled', !allowNegative);
+    }
+
+    function renderPublishReadiness(readiness) {
+        if (!readiness || typeof readiness.valid === 'undefined') { return; }
+        var errors = $.isArray(readiness.errors) ? readiness.errors : [];
+        var publishButton = $('#builder_publish_button');
+        var errorContainer = $('#builder_publish_errors').empty();
+
+        publishButton.prop('disabled', !readiness.valid)
+            .attr('aria-disabled', readiness.valid ? 'false' : 'true');
+        if (!errors.length) {
+            errorContainer.hide();
+            return;
+        }
+
+        var list = $('<ul>', {'class': 'text-danger'});
+        $.each(errors, function (_, error) {
+            list.append($('<li>').text(error));
+        });
+        errorContainer.append(list).show();
+    }
+
+    function beginQuestionMutation() {
+        var publishButton = $('#builder_publish_button');
+        var wasDisabled = publishButton.prop('disabled');
+        publishButton.prop('disabled', true).attr('aria-disabled', 'true');
+        $('.workflow-question-save, .workflow-question-remove').prop('disabled', true);
+        return wasDisabled;
+    }
+
+    function finishQuestionMutation(readiness, restoreDisabledState) {
+        if (readiness) {
+            renderPublishReadiness(readiness);
+        } else if (restoreDisabledState !== null) {
+            $('#builder_publish_button').prop('disabled', restoreDisabledState)
+                .attr('aria-disabled', restoreDisabledState ? 'true' : 'false');
+        }
+        $('.workflow-question-save, .workflow-question-remove').prop('disabled', false);
     }
 
     function updateAuthorSections() {
@@ -603,6 +643,9 @@ foreach ((array) $authored_questions as $authored_question) {
         var paperId = $('#builder_paper_id').val();
         if (!paperId) { errorMsg('Select a paper first.'); return; }
         button.button('loading');
+        var previousPublishDisabled = beginQuestionMutation();
+        var publishReadiness = null;
+        var restorePublishState = false;
         $.post('<?php echo site_url('admin/onlineexam/workflowQuestionSave'); ?>', {
             onlineexam_id: examId,
             paper_id: paperId,
@@ -615,15 +658,41 @@ foreach ((array) $authored_questions as $authored_question) {
             marking_scheme: row.find('.question-scheme').val()
             ,onlineexam_workflow_token: workflowToken
         }, null, 'json').done(function (response) {
-            if (response.status) { successMsg(response.message); loadQuestions(1); } else { errorMsg(response.message); }
-        }).fail(function () { errorMsg('Question assignment failed.'); }).always(function () { button.button('reset'); });
+            publishReadiness = response.publish_readiness || null;
+            if (response.status) {
+                successMsg(response.message);
+                loadQuestions(1);
+            } else {
+                restorePublishState = true;
+                errorMsg(response.message);
+            }
+        }).fail(function () {
+            errorMsg('Question assignment failed. Refresh the page before publishing to confirm the saved question total.');
+        }).always(function () {
+            button.button('reset');
+            finishQuestionMutation(publishReadiness, restorePublishState ? previousPublishDisabled : null);
+        });
     });
 
     $(document).on('click', '.workflow-question-remove', function () {
         if (!confirm('Remove this question from the draft assessment?')) { return; }
         var button = $(this);
+        var previousPublishDisabled = beginQuestionMutation();
+        var publishReadiness = null;
+        var restorePublishState = false;
         $.post('<?php echo site_url('admin/onlineexam/workflowQuestionDelete'); ?>', {onlineexam_id: examId, onlineexam_question_id: button.data('assignment-id'), onlineexam_workflow_token: workflowToken}, null, 'json').done(function (response) {
-            if (response.status) { successMsg(response.message); loadQuestions(1); } else { errorMsg(response.message); }
+            publishReadiness = response.publish_readiness || null;
+            if (response.status) {
+                successMsg(response.message);
+                loadQuestions(1);
+            } else {
+                restorePublishState = true;
+                errorMsg(response.message);
+            }
+        }).fail(function () {
+            errorMsg('Question removal failed. Refresh the page before publishing to confirm the saved question total.');
+        }).always(function () {
+            finishQuestionMutation(publishReadiness, restorePublishState ? previousPublishDisabled : null);
         });
     });
 

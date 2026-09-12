@@ -67,6 +67,7 @@ compact_backend_assert(strpos($admin, 'compactAssessmentIsExecutable') !== false
 compact_backend_assert(strpos($admin, '$this->question_model->canAccessQuestion($question_id, $exam->session_id)') !== false, 'Question assignment must reject crafted Question Bank identifiers outside the exact assessment-session scope.');
 compact_backend_assert(strpos($admin, 'workflowTeacherAssignedSectionIds(') !== false, 'Teacher Question Bank searches must use exact subject/session/class-arm assignments.');
 compact_backend_assert(strpos($admin, 'This question belongs to a class arm that is not selected for the assessment.') !== false, 'Question assignment must reject crafted identifiers from an unselected class arm.');
+compact_backend_assert(strpos($admin, 'private function workflowPublishReadiness(') !== false && substr_count($admin, "['publish_readiness'] = \$this->workflowPublishReadiness") === 2, 'Question assignment and removal must return authoritative live publish readiness.');
 $list_start = strpos($admin, 'public function getexamlist()');
 $list_end = strpos($admin, 'public function workflow(', $list_start);
 $list_source = substr($admin, $list_start, $list_end - $list_start);
