@@ -34,6 +34,10 @@ $studio_config = array(
 );
 ?>
 <link rel="stylesheet" href="<?php echo base_url('backend/idcard-studio/idcard-studio.css'); ?>">
+<script>
+    document.documentElement.classList.add('idstudio-editor-active');
+    document.body.classList.add('idstudio-editor-active');
+</script>
 
 <div class="content-wrapper idstudio-page">
     <section class="content-header idstudio-page-header">
@@ -45,18 +49,46 @@ $studio_config = array(
         <div id="idstudio-alert" class="alert idstudio-alert" role="alert" aria-live="polite"></div>
 
         <div id="idstudio-app" class="idstudio-app" data-studio-ready="0">
-            <div class="idstudio-topbar">
-                <div class="idstudio-title-group">
-                    <label for="idstudio-title">Design name</label>
-                    <input id="idstudio-title" class="form-control input-sm" maxlength="191" value="<?php echo html_escape($design->title); ?>">
-                </div>
+            <button type="button" class="idstudio-panel-backdrop" data-panel-dismiss aria-label="Close open panel"></button>
 
-                <div class="idstudio-size-group" aria-label="Card dimensions">
-                    <button type="button" class="btn btn-default btn-sm" data-action="preset-landscape">CR80 Landscape</button>
-                    <button type="button" class="btn btn-default btn-sm" data-action="preset-portrait">CR80 Portrait</button>
-                    <label>W <input id="idstudio-width" type="number" min="40" max="220" step="0.01" value="<?php echo html_escape($design->width_mm); ?>"></label>
-                    <label>H <input id="idstudio-height" type="number" min="40" max="220" step="0.01" value="<?php echo html_escape($design->height_mm); ?>"></label>
-                    <span>mm</span>
+            <div class="idstudio-topbar">
+                <a class="btn btn-default btn-sm idstudio-studio-back"
+                   href="<?php echo site_url('admin/idcardstudio/index/' . $subject_type); ?>"
+                   aria-label="Back to all templates"
+                   title="All templates">
+                    <i class="fa fa-arrow-left"></i>
+                </a>
+
+                <button type="button"
+                        class="btn btn-default btn-sm idstudio-settings-toggle"
+                        data-panel-toggle="design"
+                        aria-controls="idstudio-design-settings"
+                        aria-expanded="false"
+                        title="Design setup">
+                    <i class="fa fa-sliders"></i>
+                    <span class="idstudio-action-label">Design</span>
+                </button>
+
+                <div id="idstudio-design-settings" class="idstudio-design-settings" data-studio-panel="design">
+                    <div class="idstudio-panel-mobile-header">
+                        <strong>Design setup</strong>
+                        <button type="button" class="btn btn-default btn-xs" data-panel-dismiss aria-label="Close design setup">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div class="idstudio-title-group">
+                        <label for="idstudio-title">Design name</label>
+                        <input id="idstudio-title" class="form-control input-sm" maxlength="191" value="<?php echo html_escape($design->title); ?>">
+                    </div>
+
+                    <div class="idstudio-size-group" aria-label="Card dimensions">
+                        <button type="button" class="btn btn-default btn-sm" data-action="preset-landscape">CR80 Landscape</button>
+                        <button type="button" class="btn btn-default btn-sm" data-action="preset-portrait">CR80 Portrait</button>
+                        <label>W <input id="idstudio-width" type="number" min="40" max="220" step="0.01" value="<?php echo html_escape($design->width_mm); ?>"></label>
+                        <label>H <input id="idstudio-height" type="number" min="40" max="220" step="0.01" value="<?php echo html_escape($design->height_mm); ?>"></label>
+                        <span>mm</span>
+                    </div>
                 </div>
 
                 <div class="btn-group" role="group" aria-label="History controls">
@@ -66,16 +98,23 @@ $studio_config = array(
 
                 <div class="idstudio-save-group">
                     <span id="idstudio-save-state" class="text-muted">Draft loaded</span>
-                    <button type="button" class="btn btn-default btn-sm" data-action="save"><i class="fa fa-save"></i> Save draft</button>
-                    <button type="button" class="btn btn-success btn-sm" data-action="publish"><i class="fa fa-check-circle"></i> Publish</button>
+                    <button type="button" class="btn btn-default btn-sm" data-action="save"><i class="fa fa-save"></i> <span class="idstudio-action-label">Save draft</span></button>
+                    <button type="button" class="btn btn-success btn-sm" data-action="publish"><i class="fa fa-check-circle"></i> <span class="idstudio-action-label">Publish</span></button>
                     <?php if (!empty($design->published_version_id)) { ?>
-                        <button type="button" class="btn btn-warning btn-sm" data-action="use-legacy"><i class="fa fa-history"></i> Use legacy</button>
+                        <button type="button" class="btn btn-warning btn-sm" data-action="use-legacy"><i class="fa fa-history"></i> <span class="idstudio-action-label">Use legacy</span></button>
                     <?php } ?>
                 </div>
             </div>
 
             <div class="idstudio-main">
-                <aside class="idstudio-left-panel">
+                <aside id="idstudio-tools-panel" class="idstudio-left-panel" data-studio-panel="tools" aria-label="Design tools">
+                    <div class="idstudio-panel-mobile-header">
+                        <strong>Design tools</strong>
+                        <button type="button" class="btn btn-default btn-xs" data-panel-dismiss aria-label="Close design tools">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+
                     <div class="idstudio-panel-heading">Add objects</div>
                     <div class="idstudio-tool-grid">
                         <button type="button" data-add="text"><i class="fa fa-font"></i><span>Text</span></button>
@@ -112,19 +151,52 @@ $studio_config = array(
 
                 <main class="idstudio-workspace">
                     <div class="idstudio-workspace-toolbar">
+                        <div class="idstudio-mobile-panel-actions">
+                            <button type="button"
+                                    class="btn btn-default btn-xs"
+                                    data-panel-toggle="tools"
+                                    aria-controls="idstudio-tools-panel"
+                                    aria-expanded="false">
+                                <i class="fa fa-plus-square"></i> Tools
+                            </button>
+                            <button type="button"
+                                    class="btn btn-default btn-xs"
+                                    data-panel-toggle="properties"
+                                    aria-controls="idstudio-properties-panel"
+                                    aria-expanded="false">
+                                <i class="fa fa-sliders"></i> Properties
+                            </button>
+                        </div>
+
                         <div class="btn-group" role="group" aria-label="Card side">
                             <button type="button" class="btn btn-primary btn-sm active" data-side="front">Front</button>
                             <button type="button" class="btn btn-default btn-sm" data-side="back">Back</button>
                         </div>
-                        <label><input id="idstudio-grid-toggle" type="checkbox" checked> Grid</label>
-                        <label><input id="idstudio-snap-toggle" type="checkbox" checked> Snap</label>
-                        <label><input id="idstudio-guides-toggle" type="checkbox" checked> Safe area</label>
-                        <label><input id="idstudio-bleed-toggle" type="checkbox" checked> Bleed</label>
+                        <button type="button"
+                                class="btn btn-default btn-xs idstudio-view-toggle"
+                                data-panel-toggle="view"
+                                aria-controls="idstudio-view-options"
+                                aria-expanded="false">
+                            <i class="fa fa-eye"></i> View
+                        </button>
+                        <div id="idstudio-view-options" class="idstudio-view-options" data-studio-panel="view">
+                            <div class="idstudio-panel-mobile-header">
+                                <strong>Canvas view</strong>
+                                <button type="button" class="btn btn-default btn-xs" data-panel-dismiss aria-label="Close canvas view settings">
+                                    <i class="fa fa-times"></i>
+                                </button>
+                            </div>
+                            <label><input id="idstudio-grid-toggle" type="checkbox" checked> Grid</label>
+                            <label><input id="idstudio-snap-toggle" type="checkbox" checked> Snap</label>
+                            <label><input id="idstudio-guides-toggle" type="checkbox" checked> Safe area</label>
+                            <label><input id="idstudio-bleed-toggle" type="checkbox" checked> Bleed</label>
+                        </div>
                         <div class="idstudio-zoom-controls">
-                            <button type="button" class="btn btn-default btn-xs" data-action="zoom-out">−</button>
-                            <input id="idstudio-zoom" type="range" min="50" max="250" value="125" step="5">
-                            <button type="button" class="btn btn-default btn-xs" data-action="zoom-in">+</button>
+                            <button type="button" class="btn btn-default btn-xs" data-action="zoom-out" aria-label="Zoom out" title="Zoom out">−</button>
+                            <input id="idstudio-zoom" type="range" min="25" max="250" value="125" step="5" aria-label="Canvas zoom">
+                            <button type="button" class="btn btn-default btn-xs" data-action="zoom-in" aria-label="Zoom in" title="Zoom in">+</button>
                             <span id="idstudio-zoom-label">125%</span>
+                            <button type="button" class="btn btn-default btn-xs idstudio-fit-button" data-action="zoom-fit" title="Fit design in workspace">Fit</button>
                         </div>
                     </div>
 
@@ -145,7 +217,14 @@ $studio_config = array(
                     </div>
                 </main>
 
-                <aside class="idstudio-right-panel">
+                <aside id="idstudio-properties-panel" class="idstudio-right-panel" data-studio-panel="properties" aria-label="Properties and layers">
+                    <div class="idstudio-panel-mobile-header">
+                        <strong>Properties &amp; layers</strong>
+                        <button type="button" class="btn btn-default btn-xs" data-panel-dismiss aria-label="Close properties and layers">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+
                     <div class="idstudio-panel-heading">Selection</div>
                     <div id="idstudio-no-selection" class="text-muted idstudio-empty">Select an object to edit its properties.</div>
                     <div id="idstudio-properties" class="idstudio-properties" hidden>
