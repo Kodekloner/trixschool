@@ -1,12 +1,45 @@
 <?php
-require  '/var/www/trixschool/vendor/autoload.php'; // Adjust the path as needed
+$schoolliftComposerAutoload = '/var/www/trixschool/vendor/autoload.php';
+if (is_file($schoolliftComposerAutoload)) {
+    require_once $schoolliftComposerAutoload;
+}
 
 use Aws\S3\S3Client;
 use Aws\Exception\S3Exception;
 use Dotenv\Dotenv;
 
-$dotenv = Dotenv::createImmutable('/var/www/trixschool');
-$dotenv->load();
+if (class_exists(Dotenv::class) && is_file('/var/www/trixschool/.env')) {
+    $dotenv = Dotenv::createImmutable('/var/www/trixschool');
+    $dotenv->load();
+}
+
+if (!function_exists('school_upload_content_type')) {
+    /** Determine upload metadata from the file bytes, not only its user-supplied extension. */
+    function school_upload_content_type($file_path, $extension = '')
+    {
+        if (is_file($file_path) && function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $detected = $finfo ? finfo_file($finfo, $file_path) : false;
+            if ($finfo) {
+                finfo_close($finfo);
+            }
+            if (is_string($detected) && preg_match('#^[a-z0-9.+-]+/[a-z0-9.+-]+$#i', $detected)) {
+                return $detected;
+            }
+        }
+
+        $mimeTypes = array(
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'pdf' => 'application/pdf',
+        );
+        $extension = strtolower(ltrim((string) $extension, '.'));
+        return isset($mimeTypes[$extension]) ? $mimeTypes[$extension] : 'application/octet-stream';
+    }
+}
 
 if (!function_exists('upload_to_s3')) {
     /**
@@ -15,12 +48,10 @@ if (!function_exists('upload_to_s3')) {
      * @param string $file_path Path to the file on the local server (e.g. $_FILES["file"]["tmp_name"])
      * @param string $file_name The name of the file (e.g. $_FILES["file"]["name"])
      * @param string $s3_folder The folder path in the S3 bucket where the file should be uploaded.
-     * @return array
+    * @return array
      */
     function upload_to_s3($file_path, $fileInfo, $img_name, $s3_folder = 'uploads/') {
-        $domain = $_SERVER['HTTP_HOST'];
-        $full_domain = preg_replace('/^www\./i', '', $domain); // Remove "www." if it exists
-        $domain = preg_replace('/\.(com\.ng|com|ng|org\.ng|org)$/i', '', $full_domain); // Remove common extensions
+        $domain = school_asset_tenant_prefix();
 
         // Extract file info
         $img_name = $domain . '.' . $img_name;
@@ -28,16 +59,8 @@ if (!function_exists('upload_to_s3')) {
         $fileExtension = strtolower($fileInfo['extension']);
 
 
-        // Define MIME types
-        $mimeTypes = [
-            'jpg' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'png' => 'image/png',
-            // Add more mappings if necessary
-        ];
-
-        // Determine content type
-        $contentType = isset($mimeTypes[$fileExtension]) ? $mimeTypes[$fileExtension] : 'application/octet-stream';
+        // Use the actual file bytes so a mislabeled extension cannot create incorrect S3 metadata.
+        $contentType = school_upload_content_type($file_path, $fileExtension);
 
         // S3 Bucket and key setup
         $bucket = 'schoollift';
@@ -83,11 +106,34 @@ if (!function_exists('upload_to_s3')) {
     }
 }
 
+if (!function_exists('school_asset_tenant_prefix')) {
+    /**
+     * Match the tenant prefix added by upload_to_s3 (for example, hameedacademy.10.jpg).
+     */
+    function school_asset_tenant_prefix()
+    {
+        $host = isset($_SERVER['HTTP_HOST']) ? strtolower((string) $_SERVER['HTTP_HOST']) : '';
+        $host = preg_replace('/:\d+$/', '', $host);
+        $host = preg_replace('/^www\./i', '', $host);
+        return preg_replace('/\.(com\.ng|com|ng|org\.ng|org)$/i', '', $host);
+    }
+}
+
+if (!function_exists('is_school_s3_filename')) {
+    function is_school_s3_filename($filename)
+    {
+        $prefix = school_asset_tenant_prefix();
+        return $prefix !== '' && stripos(basename((string) $filename), $prefix . '.') === 0;
+    }
+}
+
 if (!function_exists('get_school_asset_url')) {
     /**
      * Resolve a stored asset value to a browser-safe URL.
      *
-     * Supports full URLs, S3 keys like uploads/..., and legacy filename-only values.
+     * Supports full URLs, S3 keys like uploads/..., and filename-only values.
+     * Filename-only values carrying the tenant prefix resolve to S3 because upload_to_s3 stores only
+     * that basename in legacy rows. Older unprefixed filenames remain on the tenant origin.
      */
     function get_school_asset_url($path, $local_directory = '')
     {
@@ -100,14 +146,19 @@ if (!function_exists('get_school_asset_url')) {
             return $path;
         }
 
-        $normalized_path = ltrim($path, '/');
+        $normalized_path = ltrim(str_replace('\\', '/', $path), '/');
 
         if (strpos($normalized_path, 'uploads/') === 0) {
             return 'https://schoollift.s3.us-east-2.amazonaws.com/' . $normalized_path;
         }
 
         if ($local_directory !== '') {
-            return base_url(trim($local_directory, '/') . '/' . basename($normalized_path));
+            $normalized_directory = trim(str_replace('\\', '/', $local_directory), '/');
+            $resolved_path = $normalized_directory . '/' . basename($normalized_path);
+            if (strpos($resolved_path, 'uploads/') === 0 && is_school_s3_filename($normalized_path)) {
+                return 'https://schoollift.s3.us-east-2.amazonaws.com/' . $resolved_path;
+            }
+            return base_url($resolved_path);
         }
 
         return base_url($normalized_path);

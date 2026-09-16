@@ -219,28 +219,24 @@ $result = $this->customlib->getUserData();
 $image = $result["image"];
 $role  = $result["user_type"];
 $id    = $result["id"];
-if (!empty($image)) {
-
-    $file = "uploads/staff_images/" . $image;
-} else {
-    if($result['gender']=='Female'){
-                $file= "uploads/staff_images/default_female.jpg";
-    }else{
-                $file ="uploads/staff_images/default_male.jpg";
-     }
-
-    
-}
+$user_default_image = strtolower((string) $result['gender']) === 'female'
+    ? 'default_female.jpg'
+    : 'default_male.jpg';
+$user_fallback_url = get_school_asset_url('uploads/staff_images/' . $user_default_image);
+$user_photo_url = get_school_asset_url(
+    !empty($image) ? $image : $user_fallback_url,
+    'uploads/staff_images'
+);
 ?>
                                     <li class="dropdown user-menu">
                                         <a class="dropdown-toggle" style="padding: 15px 13px;" data-toggle="dropdown" href="#" aria-expanded="false">
-                                            <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $file; ?>" class="topuser-image" alt="User Image">
+                                            <img src="<?php echo htmlspecialchars($user_photo_url, ENT_QUOTES, 'UTF-8'); ?>" onerror="this.onerror=null;this.src=<?php echo htmlspecialchars(json_encode($user_fallback_url), ENT_QUOTES, 'UTF-8'); ?>;" class="topuser-image" alt="User Image">
 			                </a>
                                         <ul class="dropdown-menu dropdown-user menuboxshadow">
                                             <li>
                                                 <div class="sstopuser">
                                                     <div class="ssuserleft">
-                                            		 <a href="<?php echo base_url() . "admin/staff/profile/" . $id ?>"><img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $file; ?>" alt="User Image"></a>
+                                                <a href="<?php echo base_url() . "admin/staff/profile/" . $id ?>"><img src="<?php echo htmlspecialchars($user_photo_url, ENT_QUOTES, 'UTF-8'); ?>" onerror="this.onerror=null;this.src=<?php echo htmlspecialchars(json_encode($user_fallback_url), ENT_QUOTES, 'UTF-8'); ?>;" alt="User Image"></a>
                                                     
 					            </div>
 

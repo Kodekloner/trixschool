@@ -54,21 +54,18 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                    
                                     if ($rolet_value['id'] == $svalue["role_id"]) {
 
-                                        if (!empty($svalue["image"])) {
-
-                                            $image = $svalue['image'];
-                                        } else {
-                                            if($svalue['gender']=='Male'){
-												$image="default_male.jpg";
-                                                }else{
-												$image="default_female.jpg";
-                                                }
-                                           
-                                        }
+                                        $staff_list_default_image = strtolower((string) $svalue['gender']) === 'female'
+                                            ? 'default_female.jpg'
+                                            : 'default_male.jpg';
+                                        $staff_list_fallback_url = get_school_asset_url('uploads/staff_images/' . $staff_list_default_image);
+                                        $staff_list_photo_url = get_school_asset_url(
+                                            !empty($svalue["image"]) ? $svalue['image'] : $staff_list_fallback_url,
+                                            'uploads/staff_images'
+                                        );
                                         ?>
                                         <div class="studentname">
                                             <a  href="<?php echo base_url() . "admin/staff/profile/" . $svalue["id"] ?>">
-                                                <div class="icon"><img src="https://schoollift.s3.us-east-2.amazonaws.com/uploads/staff_images/<?php echo $image; ?>" alt="User Image"></div>
+                                                <div class="icon"><img src="<?php echo htmlspecialchars($staff_list_photo_url, ENT_QUOTES, 'UTF-8'); ?>" onerror="this.onerror=null;this.src=<?php echo htmlspecialchars(json_encode($staff_list_fallback_url), ENT_QUOTES, 'UTF-8'); ?>;" alt="User Image"></div>
                                                 <div class="student-tittle"><?php echo $svalue['name'] . " " . $svalue['surname']; ?></div></a>
                                         </div>
                                         <?php
@@ -92,21 +89,16 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                     <div class="box-body box-profile">
                         <?php
 						
-                        $image = $staff['image'];
-                        if (!empty($image)) {
-
-                            $file = $staff['image'];
-                        } else {
-							if($staff['gender']=='Male'){
-								$file = "default_male.jpg";
-							}else{
-								$file = "default_female.jpg";
-							}
-
-                            
-                        }
+                        $staff_profile_default_image = strtolower((string) $staff['gender']) === 'female'
+                            ? 'default_female.jpg'
+                            : 'default_male.jpg';
+                        $staff_profile_fallback_url = get_school_asset_url('uploads/staff_images/' . $staff_profile_default_image);
+                        $staff_profile_photo_url = get_school_asset_url(
+                            !empty($staff['image']) ? $staff['image'] : $staff_profile_fallback_url,
+                            'uploads/staff_images'
+                        );
                         ?>
-                        <img class="profile-user-img img-responsive img-circle" src="https://schoollift.s3.us-east-2.amazonaws.com/uploads/staff_images/<?php echo $file ?>" alt="User profile picture">
+                        <img class="profile-user-img img-responsive img-circle" src="<?php echo htmlspecialchars($staff_profile_photo_url, ENT_QUOTES, 'UTF-8'); ?>" onerror="this.onerror=null;this.src=<?php echo htmlspecialchars(json_encode($staff_profile_fallback_url), ENT_QUOTES, 'UTF-8'); ?>;" alt="User profile picture">
                         <h3 class="profile-username text-center"><?php echo $staff['name'] . " " . $staff['surname']; ?></h3>
 <?php if($staff['user_type']=='Teacher'){ ?>
                         

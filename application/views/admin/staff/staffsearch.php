@@ -213,18 +213,16 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                                     <div class="staffinfo-box">
                                                         <div class="staffleft-box">
                                                             <?php
-                                                            if (!empty($staff["image"])) {
-                                                                $image = $staff["image"];
-                                                            } else {
-																if($staff['gender']=='Male'){
-																	$image = "default_male.jpg";
-																}else{
-																	$image = "default_female.jpg";
-																}
-                                                                
-                                                            }
+                                                            $staff_default_image = strtolower((string) $staff['gender']) === 'female'
+                                                                ? 'default_female.jpg'
+                                                                : 'default_male.jpg';
+                                                            $staff_fallback_url = get_school_asset_url('uploads/staff_images/' . $staff_default_image);
+                                                            $staff_photo_url = get_school_asset_url(
+                                                                !empty($staff["image"]) ? $staff["image"] : $staff_fallback_url,
+                                                                'uploads/staff_images'
+                                                            );
                                                             ?>
-                                                            <img  src="https://schoollift.s3.us-east-2.amazonaws.com/uploads/staff_images/<?php echo $image ?>" />
+                                                            <img src="<?php echo htmlspecialchars($staff_photo_url, ENT_QUOTES, 'UTF-8'); ?>" onerror="this.onerror=null;this.src=<?php echo htmlspecialchars(json_encode($staff_fallback_url), ENT_QUOTES, 'UTF-8'); ?>;" alt="<?php echo htmlspecialchars($staff["name"] . " " . $staff["surname"], ENT_QUOTES, 'UTF-8'); ?>">
                                                         </div>
                                                         <div class="staffleft-content">
                                                             <h5><span data-toggle="tooltip" title="<?php echo $this->lang->line('name'); ?>" data-loading-text="<i class='fa fa-circle-o-notch fa-spin'></i> Processing"><?php echo $staff["name"] . " " . $staff["surname"]; ?></span></h5>
