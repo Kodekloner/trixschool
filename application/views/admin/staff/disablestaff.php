@@ -160,8 +160,10 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                                             } else {
                                                                 $image = "no_image.png";
                                                             }
+                                                            $staff_fallback_url = get_school_asset_url('uploads/staff_images/no_image.png');
+                                                            $staff_photo_url = get_school_asset_url($image, 'uploads/staff_images');
                                                             ?>
-                                                            <img src="https://schoollift.s3.us-east-2.amazonaws.com/uploads/staff_images/" . <?php echo $image ?>" />
+                                                            <img src="<?php echo htmlspecialchars($staff_photo_url, ENT_QUOTES, 'UTF-8'); ?>" onerror="this.onerror=null;this.src=<?php echo htmlspecialchars(json_encode($staff_fallback_url), ENT_QUOTES, 'UTF-8'); ?>;" alt="<?php echo htmlspecialchars($staff["name"] . " " . $staff["surname"], ENT_QUOTES, 'UTF-8'); ?>">
                                                         </div>
                                                         <div class="staffleft-content">
                                                             <h5><span   data-loading-text="<i class='fa fa-circle-o-notch fa-spin'></i> Processing"><?php echo $staff["name"] . " " . $staff["surname"]; ?></span></h5>
