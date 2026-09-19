@@ -1,6 +1,8 @@
 <?php
 $details = $cell['details'];
-$can_recover = $can_edit && $cell['recoverable'] && !$cell['excluded'] && ($cell['assigned'] || $can_assign);
+$can_reschedule = isset($can_reschedule) ? (bool) $can_reschedule : (bool) $can_edit;
+$can_recover = ($can_reschedule || $can_record_manual) && $cell['recoverable']
+    && !$cell['excluded'] && ($cell['assigned'] || $can_assign);
 ?>
 <h4><?php echo html_escape($student['student_name']); ?></h4>
 <p><?php echo html_escape($exam['exam'] . ' — ' . $paper['title']); ?></p>
@@ -14,7 +16,7 @@ $can_recover = $can_edit && $cell['recoverable'] && !$cell['excluded'] && ($cell
 <?php if ($cell['key'] === 'in_progress') { ?><p>The student is still taking this paper. It cannot be rescheduled while their time is running.</p><?php } ?>
 <div class="review-actions">
     <?php if ($cell['attempt_id']) { ?><a class="btn btn-default btn-sm" href="<?php echo site_url('admin/onlineexam/attemptmarking/' . (int) $exam['id'] . '/' . (int) $cell['attempt_id']); ?>"><?php echo $cell['key'] === 'marking' && $can_edit ? 'Mark answers' : 'View answers'; ?></a><?php } ?>
-    <?php if ($this->rbac->hasPrivilege('online_assign_view_student', 'can_view')) { ?><a class="btn btn-default btn-sm" href="<?php echo site_url('admin/onlineexam/assign/' . (int) $exam['id']); ?>">Manage assigned students</a><?php } ?>
+    <?php if ($can_assign && $this->rbac->hasPrivilege('online_assign_view_student', 'can_view')) { ?><a class="btn btn-default btn-sm" href="<?php echo site_url('admin/onlineexam/assign/' . (int) $exam['id']); ?>">Manage assigned students</a><?php } ?>
 </div>
 <?php if (in_array($cell['posting_status'], array('conflict', 'failed', 'error', 'pending'), true)) { ?>
     <div class="alert alert-warning">This student's result needs attention. Check the existing result-entry screen before retrying; unrelated manual scores are not overwritten.</div>
@@ -42,10 +44,11 @@ $can_recover = $can_edit && $cell['recoverable'] && !$cell['excluded'] && ($cell
         <input type="hidden" name="student_session_id" value="<?php echo (int) $student['id']; ?>">
         <input type="hidden" name="paper_id" value="<?php echo (int) $paper['id']; ?>">
         <div class="form-group"><label for="review-action">Action</label><select class="form-control" id="review-action" name="review_action">
-            <option value="reschedule"><?php echo $cell['assigned'] ? 'Reschedule this paper' : 'Assign student and schedule paper'; ?></option>
+            <?php if ($can_reschedule) { ?><option value="reschedule"><?php echo $cell['assigned'] ? 'Reschedule this paper' : 'Assign student and schedule paper'; ?></option><?php } ?>
             <?php if ($can_record_manual) { ?><option value="manual_score">Record score from a supervised paper exam</option><?php } ?>
         </select></div>
-        <?php if (!$can_record_manual) { ?><p class="help-block">This Kindergarten paper covers separate concepts, so use rescheduling or record each concept in Kindergarten results.</p><?php } ?>
+        <?php if (!$can_record_manual && $exam['result_adapter'] === 'kindergarten_concept') { ?><p class="help-block">This Kindergarten paper covers separate concepts, so use rescheduling or record each concept in Kindergarten results.</p><?php } ?>
+        <?php if (!$can_record_manual && $exam['result_adapter'] !== 'kindergarten_concept') { ?><p class="help-block">Your access allows attendance and rescheduling. A teacher assigned to this subject must enter or finalize marks.</p><?php } ?>
         <div data-review-fields="reschedule"><div class="row">
             <div class="form-group col-sm-6"><label for="review-starts">New start</label><input class="form-control" type="datetime-local" id="review-starts" name="starts_at" required></div>
             <div class="form-group col-sm-6"><label for="review-ends">New end</label><input class="form-control" type="datetime-local" id="review-ends" name="ends_at" required></div>

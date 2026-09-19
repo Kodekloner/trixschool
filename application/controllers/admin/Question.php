@@ -6,10 +6,10 @@ if (!defined('BASEPATH')) {
 
 class Question extends Admin_Controller
 {
-     public function __construct()
+    public function __construct()
     {
         parent::__construct();
-    
+        $this->load->model('academicaccess_model');
         $this->sch_setting_detail = $this->setting_model->getSetting();
 
     }
@@ -46,10 +46,16 @@ class Question extends Admin_Controller
         $this->session->set_userdata('top_menu', 'Online_Examinations');
         $this->session->set_userdata('sub_menu', 'Online_Examinations/question');
         $data                   = array();
-        $academic_choices       = $this->question_model->getQuestionBankAcademicChoices();
+        $academic_choices       = $this->question_model->getQuestionBankAcademicChoices(0, 0, null, 'view');
         $data['classlist']      = $academic_choices['classes'];
         $data['subjectlist']    = $academic_choices['subjects'];
+        $write_choices          = $this->question_model->getQuestionBankAcademicChoices(0, 0, null, 'content');
+        $data['write_classlist'] = $write_choices['classes'];
         $data['question_type']  = $this->config->item('question_type');
+        $data['current_session_id'] = (int) $this->setting_model->getCurrentSession();
+        $data['current_session_name'] = $this->setting_model->getCurrentSessionName();
+        $data['current_term'] = $this->currentTerm();
+        $data['sessionlist'] = $this->session_model->get();
        
      
         $this->load->view('layout/header', $data);
@@ -97,7 +103,7 @@ class Question extends Admin_Controller
             echo json_encode(array('status' => 0, 'message' => $this->lang->line('no_record_selected')));
             return;
         }
-        if (!empty($this->question_model->getInaccessibleQuestionIds($question_array))) {
+        if (!empty($this->question_model->getInaccessibleQuestionIds($question_array, 'content'))) {
             echo json_encode(array('status' => 0, 'message' => 'One or more selected questions are outside your permitted Question Bank scope.'));
             return;
         }
@@ -127,13 +133,15 @@ class Question extends Admin_Controller
 
         $this->form_validation->set_rules('file', $this->lang->line('image'), 'callback_handle_upload');
         $this->form_validation->set_rules('class_id', $this->lang->line('class'), 'trim|required|xss_clean');
-        $this->form_validation->set_rules('section_id', $this->lang->line('section'), 'trim|required|xss_clean');
+        $this->form_validation->set_rules('section_id', $this->lang->line('section'), 'trim|required|integer|greater_than[0]');
         $this->form_validation->set_rules('subject_id', $this->lang->line('subject'), 'trim|required|xss_clean');
+        $this->form_validation->set_rules('term', 'Term', 'trim|required|in_list[1st,2nd,3rd]');
         if ($this->form_validation->run() == false) {
             $data = array(
                 'subject_id'   => form_error('subject_id'),
                 'class_id'   => form_error('class_id'),
                 'section_id' => form_error('section_id'),
+                'term'       => form_error('term'),
                 'file'       => form_error('file'),
             );
             $array = array('status' => 0, 'error' => $data);
@@ -165,6 +173,8 @@ class Question extends Admin_Controller
             foreach ($questions as $question) {
                 $insert_array[] = array_merge($question, array(
                     'staff_id'   => $this->customlib->getStaffID(),
+                    'session_id' => (int) $this->setting_model->getCurrentSession(),
+                    'term'       => strtolower(trim((string) $this->input->post('term'))),
                     'subject_id' => $this->input->post('subject_id'),
                     'class_id'   => $this->input->post('class_id'),
                     'section_id' => $this->input->post('section_id'),
@@ -221,17 +231,29 @@ class Question extends Admin_Controller
     public function add()
     {
         $record_id = (int) $this->input->post('recordid');
+        $existing_question = null;
         $required_action = $record_id > 0 ? 'can_edit' : 'can_add';
         if (!$this->rbac->hasPrivilege('question_bank', $required_action)) {
             access_denied();
         }
-        if ($record_id > 0 && !$this->question_model->canAccessQuestion($record_id)) {
+        if ($record_id > 0 && !$this->question_model->canAccessQuestion($record_id, null, 'content')) {
             access_denied();
+        }
+        if ($record_id > 0) {
+            $existing_question = $this->question_model->get($record_id);
+            if (!$existing_question) {
+                show_404();
+            }
         }
         $this->form_validation->set_rules('subject_id', $this->lang->line('subject'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('question', $this->lang->line('question'), 'trim|required');
         $this->form_validation->set_rules('question_type', $this->lang->line('question_type'), 'trim|required|xss_clean');
         $this->form_validation->set_rules('class_id', $this->lang->line('class'), 'trim|required|xss_clean');
+        $section_rules = $existing_question && (int) $existing_question->section_id === 0
+            ? 'trim|required|integer|greater_than_equal_to[0]'
+            : 'trim|required|integer|greater_than[0]';
+        $this->form_validation->set_rules('section_id', $this->lang->line('section'), $section_rules);
+        $this->form_validation->set_rules('term', 'Term', 'trim|required|in_list[1st,2nd,3rd]');
         if ($this->input->post('question_type') == "singlechoice") {
             $this->form_validation->set_rules('opt_a', $this->lang->line('option_A'), 'trim|required');
             $this->form_validation->set_rules('opt_b', $this->lang->line('option_B'), 'trim|required');
@@ -251,6 +273,8 @@ class Question extends Admin_Controller
                 'question'       => form_error('question'),
                 'question_type'  => form_error('question_type'),
                 'class_id'       => form_error('class_id'),
+                'section_id'     => form_error('section_id'),
+                'term'           => form_error('term'),
 
             );
             if ($this->input->post('question_type') == "singlechoice") {
@@ -268,10 +292,14 @@ class Question extends Admin_Controller
             $array = array('status' => 0, 'error' => $msg, 'message' => '');
 
         } else {
+            $session_id = (int) $this->setting_model->getCurrentSession();
+            $term = strtolower(trim((string) $this->input->post('term')));
             if (!$this->question_model->canAccessQuestionScope(
                 (int) $this->input->post('class_id'),
                 (int) $this->input->post('section_id'),
-                (int) $this->input->post('subject_id')
+                (int) $this->input->post('subject_id'),
+                $session_id,
+                'content'
             )) {
                 echo json_encode(array('status' => 0, 'error' => array(), 'message' => 'You are not assigned to teach this subject for the selected class arm.'));
                 return;
@@ -279,15 +307,23 @@ class Question extends Admin_Controller
 
             $insert_data = array(
                 'subject_id'    => $this->input->post('subject_id'),
+                'session_id'    => $session_id,
+                'term'          => $term,
                 'question'      => $this->input->post('question'),
                 'question_type' => $this->input->post('question_type'),
                 'class_id'      => $this->input->post('class_id'),
                 'staff_id'      => $this->customlib->getStaffID(),
 
             );
-            $section_id = $this->input->post('section_id');
-            if (isset($section_id) && $section_id != "") {
-                $insert_data['section_id'] = $this->input->post('section_id');
+            $insert_data['section_id'] = (int) $this->input->post('section_id');
+
+            if ($record_id > 0 && $this->question_model->isAssignedToOnlineExam($record_id)) {
+                foreach (array('session_id', 'term', 'class_id', 'section_id', 'subject_id') as $context_field) {
+                    if ((string) $existing_question->$context_field !== (string) $insert_data[$context_field]) {
+                        echo json_encode(array('status' => 0, 'error' => array(), 'message' => 'An assigned question cannot be moved to another academic context. Copy it instead.'));
+                        return;
+                    }
+                }
             }
 
             if ($this->input->post('question_type') == "singlechoice") {
@@ -361,7 +397,7 @@ class Question extends Admin_Controller
         }
 
         $data                        = array();
-        $academic_choices            = $this->question_model->getQuestionBankAcademicChoices();
+        $academic_choices            = $this->question_model->getQuestionBankAcademicChoices(0, 0, null, 'content');
         $data['classList']           = $academic_choices['classes'];
         $data['subjectlist']         = $academic_choices['subjects'];
         $data['question_true_false'] = $this->config->item('question_true_false');
@@ -369,6 +405,7 @@ class Question extends Admin_Controller
         $questionOpt                 = $this->customlib->getQuesOption();
         $data['questionOpt']         = $questionOpt;
         $data['recordid']            = $this->input->post('recordid');
+        $data['current_term']        = $this->currentTerm();
         $page                        = $this->load->view('admin/question/_addform', $data, true);
         echo json_encode(array('status' => 1, 'page' => $page));
     }
@@ -381,14 +418,16 @@ class Question extends Admin_Controller
 
         $data                        = array();
         $data['recordid']            = (int) $this->input->post('recordid');
-        if (!$this->question_model->canAccessQuestion($data['recordid'])) {
+        if (!$this->question_model->canAccessQuestion($data['recordid'], null, 'content')) {
             access_denied();
         }
         $question_result             = $this->question_model->get($data['recordid']);
         $data['question_result']     = $question_result;
         $academic_choices            = $this->question_model->getQuestionBankAcademicChoices(
             $question_result->class_id,
-            $question_result->section_id
+            $question_result->section_id,
+            $question_result->session_id,
+            'content'
         );
         $data['classList']           = $academic_choices['classes'];
         $data['sectionList']         = $academic_choices['sections'];
@@ -410,9 +449,10 @@ class Question extends Admin_Controller
             && !$this->rbac->hasPrivilege('import_question', 'can_view')) {
             access_denied();
         }
+        $mode = strtolower(trim((string) $this->input->get('mode'))) === 'content' ? 'content' : 'view';
         $class_id = (int) $this->input->get('class_id');
         $section_id = (int) $this->input->get('section_id');
-        $choices = $this->question_model->getQuestionBankAcademicChoices($class_id, $section_id);
+        $choices = $this->question_model->getQuestionBankAcademicChoices($class_id, $section_id, null, $mode);
         if ($class_id > 0 && !in_array($class_id, array_map('intval', array_column($choices['classes'], 'id')), true)) {
             return $this->output->set_status_header(403)->set_content_type('application/json')->set_output(json_encode(array(
                 'status' => 0,
@@ -426,13 +466,100 @@ class Question extends Admin_Controller
         )));
     }
 
+    /** Academic dropdowns used by the explicit previous-session copy dialog. */
+    public function copychoices()
+    {
+        if (!$this->rbac->hasPrivilege('question_bank', 'can_view')
+            || !$this->rbac->hasPrivilege('question_bank', 'can_add')) {
+            access_denied();
+        }
+        $session_id = (int) $this->input->get('session_id');
+        if (!$this->sessionExists($session_id)) {
+            return $this->output->set_status_header(422)->set_content_type('application/json')
+                ->set_output(json_encode(array('status' => 0, 'message' => 'Select a valid source session.')));
+        }
+        $choices = $this->question_model->getQuestionBankAcademicChoices(
+            (int) $this->input->get('class_id'),
+            (int) $this->input->get('section_id'),
+            $session_id,
+            'view'
+        );
+        return $this->output->set_content_type('application/json')->set_output(json_encode(array(
+            'status' => 1,
+            'classes' => $choices['classes'],
+            'sections' => $choices['sections'],
+            'subjects' => $choices['subjects'],
+        )));
+    }
+
+    public function copysearch()
+    {
+        if (!$this->rbac->hasPrivilege('question_bank', 'can_view')
+            || !$this->rbac->hasPrivilege('question_bank', 'can_add')) {
+            access_denied();
+        }
+        $session_id = (int) $this->input->get('session_id');
+        if (!$this->sessionExists($session_id)) {
+            return $this->output->set_status_header(422)->set_content_type('application/json')
+                ->set_output(json_encode(array('status' => 0, 'message' => 'Select a valid source session.')));
+        }
+        $rows = $this->question_model->getCopyCandidates($session_id, array(
+            'term' => $this->validTermOrEmpty($this->input->get('term')),
+            'class_id' => (int) $this->input->get('class_id'),
+            'section_id' => (int) $this->input->get('section_id'),
+            'subject_id' => (int) $this->input->get('subject_id'),
+            'question_type' => trim((string) $this->input->get('question_type')),
+            'keyword' => trim((string) $this->input->get('keyword')),
+        ));
+        $types = $this->config->item('question_type');
+        foreach ($rows as &$row) {
+            $row['question_label'] = trim(preg_replace('/\s+/', ' ', strip_tags((string) $row['question'])));
+            $row['type_label'] = isset($types[$row['question_type']]) ? $types[$row['question_type']] : $row['question_type'];
+            $row['section_name'] = (int) $row['section_id'] === 0 ? 'All arms (legacy)' : $row['section_name'];
+            unset($row['question']);
+        }
+        unset($row);
+        return $this->output->set_content_type('application/json')->set_output(json_encode(array(
+            'status' => 1, 'rows' => $rows,
+        )));
+    }
+
+    public function copyquestions()
+    {
+        if (!$this->rbac->hasPrivilege('question_bank', 'can_add')) {
+            access_denied();
+        }
+        $this->form_validation->set_rules('question_ids[]', 'Questions', 'required');
+        $this->form_validation->set_rules('target_term', 'Target term', 'trim|required|in_list[1st,2nd,3rd]');
+        $this->form_validation->set_rules('target_class_id', 'Target class', 'trim|required|integer|greater_than[0]');
+        $this->form_validation->set_rules('target_section_id', 'Target arm', 'trim|required|integer|greater_than[0]');
+        $this->form_validation->set_rules('target_subject_id', 'Target subject', 'trim|required|integer|greater_than[0]');
+        if ($this->form_validation->run() === false) {
+            return $this->output->set_status_header(422)->set_content_type('application/json')
+                ->set_output(json_encode(array('status' => 0, 'message' => strip_tags(validation_errors(' ', ' ')))));
+        }
+        $result = $this->question_model->copyToContext((array) $this->input->post('question_ids'), array(
+            'session_id' => (int) $this->setting_model->getCurrentSession(),
+            'term' => $this->input->post('target_term'),
+            'class_id' => (int) $this->input->post('target_class_id'),
+            'section_id' => (int) $this->input->post('target_section_id'),
+            'subject_id' => (int) $this->input->post('target_subject_id'),
+        ));
+        return $this->output->set_status_header($result['success'] ? 200 : 403)
+            ->set_content_type('application/json')->set_output(json_encode(array(
+                'status' => $result['success'] ? 1 : 0,
+                'message' => $result['message'],
+                'copied' => $result['copied'],
+            )));
+    }
+
     public function delete($id)
     {
         if (!$this->rbac->hasPrivilege('question_bank', 'can_delete')) {
             access_denied();
         }
         $id = (int) $id;
-        if (!$this->question_model->canAccessQuestion($id)) {
+        if (!$this->question_model->canAccessQuestion($id, null, 'content')) {
             access_denied();
         }
         $deletion = $this->question_model->deleteUnassigned(array($id));
@@ -573,7 +700,15 @@ class Question extends Admin_Controller
             access_denied();
         }
         $question_type      = $this->config->item('question_type');
-        $question_dt = $this->question_model->getAllRecord();
+        $filters = array(
+            'term' => $this->validTermOrEmpty($this->input->post('term')),
+            'class_id' => (int) $this->input->post('class_id') ?: null,
+            'section_id' => (int) $this->input->post('section_id') ?: null,
+            'subject_id' => (int) $this->input->post('subject_id') ?: null,
+            'question_type' => trim((string) $this->input->post('question_type')),
+            'keyword' => trim((string) $this->input->post('keyword')),
+        );
+        $question_dt = $this->question_model->getAllRecord($filters);
 
         $question_dt = json_decode($question_dt);
         $dt_data = array();
@@ -585,17 +720,26 @@ class Question extends Admin_Controller
                 $delete_title="'".$this->lang->line("delete")."'";
                 $row = array();
           
-                $row[] = "<input type='checkbox' name='question_".$value->id."' data-question-id='".$value->id."' value='".$value->id."'>";
+                $can_modify = $this->question_model->canAccessQuestion((int) $value->id, null, 'content');
+                $row[] = $can_modify && $this->rbac->hasPrivilege('question_bank', 'can_delete')
+                    ? "<input type='checkbox' name='question_".$value->id."' data-question-id='".$value->id."' value='".$value->id."'>"
+                    : '';
                 $row[] = $value->id;
-                $row[] = $value->name;
-                $row[] = ($value->question_type != "") ? $question_type[$value->question_type]:"";
+                $row[] = html_escape(strtoupper($value->term)) . ' Term';
+                $row[] = html_escape($value->class_name);
+                $row[] = (int) $value->section_id === 0
+                    ? '<span class="label label-default">All arms (legacy)</span>'
+                    : html_escape($value->section_name);
+                $row[] = html_escape($value->name);
+                $row[] = ($value->question_type !== '' && isset($question_type[$value->question_type]))
+                    ? html_escape($question_type[$value->question_type]) : html_escape($value->question_type);
                 $row[] = readmorelink($value->question,site_url('admin/question/read/'.$value->id));
                 $actions = array();
                 $actions[] = '<a target="_blank" href="' . site_url('admin/question/read/' . $value->id) . '" class="btn btn-default btn-xs" data-toggle="tooltip" title="' . html_escape($this->lang->line('view')) . '"><i class="fa fa-eye"></i></a>';
-                if ($this->rbac->hasPrivilege('question_bank', 'can_edit')) {
+                if ($can_modify && $this->rbac->hasPrivilege('question_bank', 'can_edit')) {
                     $actions[] = '<button type="button" data-placement="left" class="btn btn-default btn-xs question-btn-edit" data-toggle="tooltip" data-recordid="' . (int) $value->id . '" title="' . html_escape($this->lang->line('edit')) . '"><i class="fa fa-pencil"></i></button>';
                 }
-                if ($this->rbac->hasPrivilege('question_bank', 'can_delete')) {
+                if ($can_modify && $this->rbac->hasPrivilege('question_bank', 'can_delete')) {
                     $actions[] = '<a data-placement="left" href="' . base_url() . 'admin/question/delete/' . (int) $value->id . '" class="btn btn-default btn-xs" data-toggle="tooltip" title=' . $delete_title . ' onclick="return confirm(' . $delete . ')"><i class="fa fa-remove"></i></a>';
                 }
                 $row[] = '<span class="question-bank-row-actions">' . implode(' ', $actions) . '</span>';
@@ -612,6 +756,24 @@ class Question extends Admin_Controller
             "data" => $dt_data,
         );
         echo json_encode($json_data);
+    }
+
+    private function currentTerm()
+    {
+        $term = strtolower(trim((string) $this->setting_model->getCurrentTerm()));
+        return in_array($term, array('1st', '2nd', '3rd'), true) ? $term : '1st';
+    }
+
+    private function validTermOrEmpty($term)
+    {
+        $term = strtolower(trim((string) $term));
+        return in_array($term, array('1st', '2nd', '3rd'), true) ? $term : '';
+    }
+
+    private function sessionExists($session_id)
+    {
+        return (int) $session_id > 0
+            && $this->db->where('id', (int) $session_id)->count_all_results('sessions') === 1;
     }
 
   

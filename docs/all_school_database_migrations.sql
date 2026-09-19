@@ -1,5 +1,5 @@
--- SchoolLift consolidated tenant-database migrations (126 through 138).
--- Updated for deployment to every school database on 2026-09-09.
+-- SchoolLift consolidated tenant-database migrations (126 through 139).
+-- Updated for deployment to every school database on 2026-09-16.
 --
 -- IMPORTANT:
 --   * Select exactly one school database before importing this file.
@@ -30,6 +30,7 @@
 --   136_remove_question_level.php
 --   137_onlineexam_candidate_paper_review.php
 --   138_onlineexam_single_subject_slots.php
+--   139_session_scope_question_bank.php
 --
 -- Supported targets: MySQL 5.7+/8.0 and compatible MariaDB releases.
 -- This is a schema/permission migration bundle, not a full database dump.
@@ -2943,3 +2944,375 @@ SELECT
   ) THEN 'OK: migration 138 academic slots are installed.'
     ELSE 'FAILED: migration 138 academic slots were not installed.'
   END AS migration_status;
+
+-- SchoolLift Question Bank: session/term scope and assignment authorization
+-- (migration 139).
+-- Apply after migration 138. Rerunnable and non-destructive: source questions,
+-- frozen snapshots, attempts, answers, posted scores and report cards remain.
+-- When one legacy source question was used in several session/term contexts,
+-- this section creates one source copy per context and repoints only the live
+-- onlineexam_questions assignment. Immutable snapshots are deliberately left
+-- on their original source IDs.
+SELECT DATABASE() AS selected_school_database;
+
+SET @question_139_ready := DATABASE() IS NOT NULL
+  AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='questions')
+  AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='question_options')
+  AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='question_answers')
+  AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='onlineexam')
+  AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='onlineexam_questions')
+  AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='class_sections')
+  AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sch_settings')
+  AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sessions');
+SET @question_139_sql := IF(
+  @question_139_ready,
+  'SELECT 1 AS question_bank_139_prerequisites_ready',
+  'SELECT * FROM SCHOOLLIFT_139_INSTALL_EXISTING_MIGRATIONS_FIRST'
+);
+PREPARE question_139_stmt FROM @question_139_sql;
+EXECUTE question_139_stmt;
+DEALLOCATE PREPARE question_139_stmt;
+
+SET @question_139_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='questions' AND COLUMN_NAME='session_id'
+), 'SELECT 1 AS question_session_already_present',
+  'ALTER TABLE questions ADD COLUMN session_id INT NULL AFTER staff_id');
+PREPARE question_139_stmt FROM @question_139_sql;
+EXECUTE question_139_stmt;
+DEALLOCATE PREPARE question_139_stmt;
+
+SET @question_139_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='questions' AND COLUMN_NAME='term'
+), 'SELECT 1 AS question_term_already_present',
+  'ALTER TABLE questions ADD COLUMN term VARCHAR(10) NULL AFTER session_id');
+PREPARE question_139_stmt FROM @question_139_sql;
+EXECUTE question_139_stmt;
+DEALLOCATE PREPARE question_139_stmt;
+
+SET @question_139_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='questions' AND COLUMN_NAME='context_root_id'
+), 'SELECT 1 AS question_context_root_already_present',
+  'ALTER TABLE questions ADD COLUMN context_root_id INT NULL AFTER term');
+PREPARE question_139_stmt FROM @question_139_sql;
+EXECUTE question_139_stmt;
+DEALLOCATE PREPARE question_139_stmt;
+
+SET @question_139_fallback_session := COALESCE(
+  (SELECT NULLIF(session_id,0) FROM sch_settings ORDER BY id LIMIT 1),
+  (SELECT MAX(id) FROM sessions),
+  1
+);
+SET @question_139_fallback_term := COALESCE(
+  (SELECT CASE WHEN LOWER(term) IN ('1st','2nd','3rd') THEN LOWER(term) END
+   FROM sch_settings ORDER BY id LIMIT 1),
+  '1st'
+);
+
+UPDATE questions
+SET context_root_id=id
+WHERE context_root_id IS NULL OR context_root_id=0;
+
+-- Limit copy/backfill work to unscoped roots or an interrupted earlier run
+-- that still lacks a source row for one of its linked examination contexts.
+DROP TEMPORARY TABLE IF EXISTS question_139_pending_roots;
+CREATE TEMPORARY TABLE question_139_pending_roots (
+  root_question_id INT NOT NULL PRIMARY KEY
+) ENGINE=InnoDB;
+INSERT IGNORE INTO question_139_pending_roots (root_question_id)
+SELECT root.id
+FROM questions root
+WHERE root.id=root.context_root_id
+  AND (
+    root.session_id IS NULL OR root.session_id<=0
+    OR root.term IS NULL OR LOWER(root.term) NOT IN ('1st','2nd','3rd')
+    OR EXISTS (
+      SELECT 1
+      FROM questions assigned_source
+      INNER JOIN onlineexam_questions oq ON oq.question_id=assigned_source.id
+      INNER JOIN onlineexam e ON e.id=oq.onlineexam_id
+      WHERE assigned_source.context_root_id=root.id
+        AND e.session_id>0 AND LOWER(e.term) IN ('1st','2nd','3rd')
+        AND NOT EXISTS (
+          SELECT 1 FROM questions contextual_source
+          WHERE contextual_source.context_root_id=root.id
+            AND contextual_source.session_id=e.session_id
+            AND LOWER(contextual_source.term)=LOWER(e.term)
+        )
+    )
+  );
+
+DROP TEMPORARY TABLE IF EXISTS question_139_contexts;
+CREATE TEMPORARY TABLE question_139_contexts (
+  root_question_id INT NOT NULL,
+  session_id INT NOT NULL,
+  term VARCHAR(10) NOT NULL,
+  first_exam_id INT NOT NULL,
+  PRIMARY KEY (root_question_id,session_id,term),
+  KEY question_139_context_order (root_question_id,first_exam_id)
+) ENGINE=InnoDB;
+
+INSERT INTO question_139_contexts (root_question_id,session_id,term,first_exam_id)
+SELECT q.context_root_id,e.session_id,LOWER(e.term),MIN(e.id)
+FROM questions q
+INNER JOIN question_139_pending_roots pending
+  ON pending.root_question_id=q.context_root_id
+INNER JOIN onlineexam_questions oq ON oq.question_id=q.id
+INNER JOIN onlineexam e ON e.id=oq.onlineexam_id
+WHERE e.session_id>0 AND LOWER(e.term) IN ('1st','2nd','3rd')
+GROUP BY q.context_root_id,e.session_id,LOWER(e.term)
+ON DUPLICATE KEY UPDATE first_exam_id=LEAST(first_exam_id,VALUES(first_exam_id));
+
+-- Legacy bank questions never assigned to an examination belong to the
+-- school's currently configured session and term.
+INSERT IGNORE INTO question_139_contexts (root_question_id,session_id,term,first_exam_id)
+SELECT q.id,@question_139_fallback_session,@question_139_fallback_term,2147483647
+FROM questions q
+INNER JOIN question_139_pending_roots pending ON pending.root_question_id=q.id
+WHERE q.id=q.context_root_id
+  AND NOT EXISTS (
+    SELECT 1
+    FROM questions assigned_source
+    INNER JOIN onlineexam_questions oq ON oq.question_id=assigned_source.id
+    INNER JOIN onlineexam e ON e.id=oq.onlineexam_id
+    WHERE assigned_source.context_root_id=q.id
+      AND e.session_id>0 AND LOWER(e.term) IN ('1st','2nd','3rd')
+  );
+
+DROP TEMPORARY TABLE IF EXISTS question_139_primary_context;
+DROP TEMPORARY TABLE IF EXISTS question_139_first_context;
+CREATE TEMPORARY TABLE question_139_first_context AS
+SELECT root_question_id,MIN(first_exam_id) AS first_exam_id
+FROM question_139_contexts
+GROUP BY root_question_id;
+ALTER TABLE question_139_first_context ADD PRIMARY KEY (root_question_id);
+
+CREATE TEMPORARY TABLE question_139_primary_context AS
+SELECT c.root_question_id,c.session_id,c.term
+FROM question_139_contexts c
+INNER JOIN question_139_first_context first_context
+  ON first_context.root_question_id=c.root_question_id
+ AND first_context.first_exam_id=c.first_exam_id;
+ALTER TABLE question_139_primary_context ADD PRIMARY KEY (root_question_id);
+
+UPDATE questions q
+INNER JOIN question_139_primary_context primary_context
+  ON primary_context.root_question_id=q.id
+SET q.session_id=primary_context.session_id,
+    q.term=primary_context.term,
+    q.context_root_id=q.id
+WHERE q.id=q.context_root_id
+  AND (q.session_id IS NULL OR q.session_id<=0
+    OR q.term IS NULL OR LOWER(q.term) NOT IN ('1st','2nd','3rd'));
+
+-- Create any missing source copies. The column list intentionally matches the
+-- post-migration-136 questions table, where the retired level field is gone.
+INSERT INTO questions
+  (staff_id,session_id,term,context_root_id,subject_id,question_type,class_id,
+   section_id,class_section_id,question,opt_a,opt_b,opt_c,opt_d,opt_e,correct,
+   created_at,updated_at)
+SELECT root.staff_id,c.session_id,c.term,root.id,root.subject_id,
+       root.question_type,root.class_id,root.section_id,root.class_section_id,
+       root.question,root.opt_a,root.opt_b,root.opt_c,root.opt_d,root.opt_e,
+       root.correct,root.created_at,root.updated_at
+FROM questions root
+INNER JOIN question_139_contexts c ON c.root_question_id=root.id
+LEFT JOIN questions existing
+  ON existing.context_root_id=root.id
+ AND existing.session_id=c.session_id
+ AND LOWER(existing.term)=c.term
+WHERE root.id=root.context_root_id AND existing.id IS NULL;
+
+DROP TEMPORARY TABLE IF EXISTS question_139_child_targets;
+CREATE TEMPORARY TABLE question_139_child_targets (
+  copy_question_id INT NOT NULL PRIMARY KEY,
+  root_question_id INT NOT NULL,
+  KEY question_139_child_root (root_question_id)
+) ENGINE=InnoDB;
+INSERT IGNORE INTO question_139_child_targets (copy_question_id,root_question_id)
+SELECT copy.id,root.id
+FROM questions copy
+INNER JOIN questions root ON root.id=copy.context_root_id AND root.id<>copy.id
+INNER JOIN question_139_contexts c
+  ON c.root_question_id=root.id
+ AND c.session_id=copy.session_id
+ AND c.term=LOWER(copy.term);
+
+-- Clone structured definitions without touching frozen question snapshots.
+SET @question_139_has_definitions := EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='onlineexam_question_definitions'
+);
+SET @question_139_sql := IF(@question_139_has_definitions,
+  'INSERT IGNORE INTO onlineexam_question_definitions
+     (question_id,definition_version,definition_json,created_by,created_at,updated_at)
+   SELECT targets.copy_question_id,d.definition_version,d.definition_json,
+          d.created_by,d.created_at,d.updated_at
+   FROM question_139_child_targets targets
+   INNER JOIN onlineexam_question_definitions d
+     ON d.question_id=targets.root_question_id',
+  'SELECT 1 AS structured_question_copy_not_applicable');
+PREPARE question_139_stmt FROM @question_139_sql;
+EXECUTE question_139_stmt;
+DEALLOCATE PREPARE question_139_stmt;
+
+-- Clone dynamic options once. Correct answers are subsequently remapped by
+-- option position so no copied answer points at an option on the old question.
+INSERT INTO question_options (question_id,`option`,created_at)
+SELECT targets.copy_question_id,source_option.`option`,source_option.created_at
+FROM question_139_child_targets targets
+INNER JOIN question_options source_option
+  ON source_option.question_id=targets.root_question_id
+WHERE NOT EXISTS (
+  SELECT 1 FROM question_options existing_option
+  WHERE existing_option.question_id=targets.copy_question_id
+)
+ORDER BY targets.copy_question_id,source_option.id;
+
+DROP TEMPORARY TABLE IF EXISTS question_139_old_option_positions;
+CREATE TEMPORARY TABLE question_139_old_option_positions AS
+SELECT targets.copy_question_id,source_option.id AS old_option_id,
+       (SELECT COUNT(*) FROM question_options source_before
+        WHERE source_before.question_id=source_option.question_id
+          AND source_before.id<=source_option.id) AS option_position
+FROM question_139_child_targets targets
+INNER JOIN question_options source_option
+  ON source_option.question_id=targets.root_question_id;
+ALTER TABLE question_139_old_option_positions
+  ADD PRIMARY KEY (copy_question_id,old_option_id),
+  ADD KEY question_139_old_option_position (copy_question_id,option_position);
+
+DROP TEMPORARY TABLE IF EXISTS question_139_new_option_positions;
+CREATE TEMPORARY TABLE question_139_new_option_positions AS
+SELECT targets.copy_question_id,new_option.id AS new_option_id,
+       (SELECT COUNT(*) FROM question_options new_before
+        WHERE new_before.question_id=new_option.question_id
+          AND new_before.id<=new_option.id) AS option_position
+FROM question_139_child_targets targets
+INNER JOIN question_options new_option
+  ON new_option.question_id=targets.copy_question_id;
+ALTER TABLE question_139_new_option_positions
+  ADD PRIMARY KEY (copy_question_id,new_option_id),
+  ADD KEY question_139_new_option_position (copy_question_id,option_position);
+
+INSERT INTO question_answers (question_id,option_id,created_at)
+SELECT old_position.copy_question_id,new_position.new_option_id,source_answer.created_at
+FROM question_answers source_answer
+INNER JOIN question_139_old_option_positions old_position
+  ON old_position.old_option_id=source_answer.option_id
+INNER JOIN question_139_new_option_positions new_position
+  ON new_position.copy_question_id=old_position.copy_question_id
+ AND new_position.option_position=old_position.option_position
+WHERE NOT EXISTS (
+  SELECT 1 FROM question_answers existing_answer
+  WHERE existing_answer.question_id=old_position.copy_question_id
+    AND existing_answer.option_id=new_position.new_option_id
+);
+
+-- Only mutable source assignments are repointed. Snapshots and candidate work
+-- intentionally continue referencing their original immutable history.
+UPDATE onlineexam_questions oq
+INNER JOIN onlineexam e ON e.id=oq.onlineexam_id
+INNER JOIN questions current_source ON current_source.id=oq.question_id
+INNER JOIN questions contextual_source
+  ON contextual_source.context_root_id=current_source.context_root_id
+ AND contextual_source.session_id=e.session_id
+ AND LOWER(contextual_source.term)=LOWER(e.term)
+SET oq.question_id=contextual_source.id
+WHERE e.session_id>0 AND LOWER(e.term) IN ('1st','2nd','3rd')
+  AND oq.question_id<>contextual_source.id;
+
+UPDATE questions
+SET session_id=@question_139_fallback_session
+WHERE session_id IS NULL OR session_id<=0;
+UPDATE questions
+SET term=@question_139_fallback_term
+WHERE term IS NULL OR LOWER(term) NOT IN ('1st','2nd','3rd');
+UPDATE questions q
+INNER JOIN class_sections cs
+  ON cs.class_id=q.class_id AND cs.section_id=q.section_id
+SET q.class_section_id=cs.id
+WHERE q.section_id>0
+  AND (q.class_section_id IS NULL OR q.class_section_id<>cs.id);
+
+ALTER TABLE questions
+  MODIFY session_id INT NOT NULL,
+  MODIFY term VARCHAR(10) NOT NULL;
+
+SET @question_139_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='questions' AND INDEX_NAME='question_academic_scope_idx'
+), 'SELECT 1 AS question_academic_scope_index_present',
+  'ALTER TABLE questions ADD KEY question_academic_scope_idx
+     (session_id,term,class_id,section_id,subject_id)');
+PREPARE question_139_stmt FROM @question_139_sql;
+EXECUTE question_139_stmt;
+DEALLOCATE PREPARE question_139_stmt;
+
+SET @question_139_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='questions' AND INDEX_NAME='question_context_root_idx'
+), 'SELECT 1 AS question_context_root_index_present',
+  'ALTER TABLE questions ADD KEY question_context_root_idx
+     (context_root_id,session_id,term)');
+PREPARE question_139_stmt FROM @question_139_sql;
+EXECUTE question_139_stmt;
+DEALLOCATE PREPARE question_139_stmt;
+
+-- RBAC opens the menus/actions; application row-level policy still requires
+-- the staff member's exact class_teacher/teacher_subjects assignment.
+INSERT INTO roles_permissions
+  (role_id,perm_cat_id,can_view,can_add,can_edit,can_delete,created_at)
+SELECT r.id,p.id,
+       1,
+       CASE WHEN p.short_code IN ('question_bank','online_examination','add_questions_in_exam') THEN 1 ELSE 0 END,
+       CASE WHEN p.short_code IN ('question_bank','online_examination','add_questions_in_exam','online_assign_view_student') THEN 1 ELSE 0 END,
+       CASE WHEN p.short_code IN ('question_bank','online_examination','add_questions_in_exam') THEN 1 ELSE 0 END,
+       NOW()
+FROM roles r
+INNER JOIN permission_category p
+  ON p.short_code IN ('question_bank','import_question','online_examination',
+                      'add_questions_in_exam','online_assign_view_student')
+LEFT JOIN roles_permissions rp ON rp.role_id=r.id AND rp.perm_cat_id=p.id
+WHERE LOWER(r.name) IN ('admin','head teacher','teacher') AND rp.id IS NULL;
+
+UPDATE roles_permissions rp
+INNER JOIN roles r ON r.id=rp.role_id
+INNER JOIN permission_category p ON p.id=rp.perm_cat_id
+SET rp.can_view=1,
+    rp.can_add=CASE WHEN p.short_code IN ('question_bank','online_examination','add_questions_in_exam') THEN 1 ELSE 0 END,
+    rp.can_edit=CASE WHEN p.short_code IN ('question_bank','online_examination','add_questions_in_exam','online_assign_view_student') THEN 1 ELSE 0 END,
+    rp.can_delete=CASE WHEN p.short_code IN ('question_bank','online_examination','add_questions_in_exam') THEN 1 ELSE 0 END
+WHERE LOWER(r.name) IN ('admin','head teacher','teacher')
+  AND p.short_code IN ('question_bank','import_question','online_examination',
+                       'add_questions_in_exam','online_assign_view_student');
+
+SELECT
+  CASE
+    WHEN NOT EXISTS (
+      SELECT 1 FROM questions
+      WHERE session_id IS NULL OR session_id<=0
+         OR term IS NULL OR LOWER(term) NOT IN ('1st','2nd','3rd')
+    )
+    AND EXISTS (
+      SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
+        AND TABLE_NAME='questions' AND INDEX_NAME='question_academic_scope_idx'
+    )
+    THEN 'OK: migration 139 Question Bank scope is installed.'
+    ELSE 'FAILED: migration 139 needs review.'
+  END AS migration_status;
+
+SELECT session_id,LOWER(term) AS term,COUNT(*) AS question_count
+FROM questions
+GROUP BY session_id,LOWER(term)
+ORDER BY session_id,LOWER(term);
+
+DROP TEMPORARY TABLE IF EXISTS question_139_new_option_positions;
+DROP TEMPORARY TABLE IF EXISTS question_139_old_option_positions;
+DROP TEMPORARY TABLE IF EXISTS question_139_child_targets;
+DROP TEMPORARY TABLE IF EXISTS question_139_primary_context;
+DROP TEMPORARY TABLE IF EXISTS question_139_first_context;
+DROP TEMPORARY TABLE IF EXISTS question_139_contexts;
+DROP TEMPORARY TABLE IF EXISTS question_139_pending_roots;

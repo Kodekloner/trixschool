@@ -79,22 +79,23 @@ class Onlineexam_model extends MY_model
         }
        
          $this->datatables
-            ->select('onlineexam.*,(select count(*) from onlineexam_questions where onlineexam_questions.onlineexam_id=onlineexam.id ) as `total_ques`, (select count(*) from onlineexam_questions INNER JOIN questions on questions.id=onlineexam_questions.question_id where onlineexam_questions.onlineexam_id=onlineexam.id and questions.question_type="descriptive" ) as `total_descriptive_ques`, (select classes.class from classes where classes.id=onlineexam.class_id) as class_name, (select subjects.name from subjects where subjects.id=onlineexam.subject_id) as subject_name, (select sessions.session from sessions where sessions.id=onlineexam.session_id) as session_name, (select GROUP_CONCAT(sections.section ORDER BY sections.section SEPARATOR ", ") from onlineexam_class_sections INNER JOIN sections on sections.id=onlineexam_class_sections.section_id where onlineexam_class_sections.onlineexam_id=onlineexam.id) as section_names, (select count(*) from onlineexam_papers where onlineexam_papers.onlineexam_id=onlineexam.id and onlineexam_papers.is_active=1) as total_papers')
+            ->select('onlineexam.*,(select count(*) from onlineexam_questions where onlineexam_questions.onlineexam_id=onlineexam.id ) as `total_ques`, (select count(*) from onlineexam_questions INNER JOIN questions on questions.id=onlineexam_questions.question_id where onlineexam_questions.onlineexam_id=onlineexam.id and questions.question_type="descriptive" ) as `total_descriptive_ques`, (select classes.class from classes where classes.id=onlineexam.class_id) as class_name, (select subjects.name from subjects where subjects.id=onlineexam.subject_id) as subject_name, (select sessions.session from sessions where sessions.id=onlineexam.session_id) as session_name, (select GROUP_CONCAT(sections.section ORDER BY sections.section SEPARATOR ", ") from onlineexam_class_sections INNER JOIN sections on sections.id=onlineexam_class_sections.section_id where onlineexam_class_sections.onlineexam_id=onlineexam.id) as section_names, (select GROUP_CONCAT(onlineexam_class_sections.section_id ORDER BY onlineexam_class_sections.section_id) from onlineexam_class_sections where onlineexam_class_sections.onlineexam_id=onlineexam.id) as section_ids_csv, (select count(*) from onlineexam_papers where onlineexam_papers.onlineexam_id=onlineexam.id and onlineexam_papers.is_active=1) as total_papers')
             ->searchable('onlineexam.exam,onlineexam.purpose,onlineexam.exam_from,onlineexam.exam_to,onlineexam.duration,onlineexam.lifecycle_status,onlineexam.feedback_status')
              ->orderable('onlineexam.exam,onlineexam.purpose,total_ques,onlineexam.exam_from,onlineexam.exam_to,onlineexam.duration,onlineexam.lifecycle_status,onlineexam.feedback_status," "')
             ->sort('onlineexam.exam_from','desc')
             ->from('onlineexam');
         if ($teacher_id !== null) {
             $teacher_id = (int) $teacher_id;
-            $condition = "(onlineexam.workflow_version = 2 AND "
-                . "EXISTS (SELECT 1 FROM teacher_subjects ts INNER JOIN class_sections cs ON cs.id = ts.class_section_id "
-                . "WHERE ts.teacher_id = " . $teacher_id . " AND ts.subject_id = onlineexam.subject_id "
-                . "AND ts.session_id = onlineexam.session_id AND cs.class_id = onlineexam.class_id) "
-                . "AND NOT EXISTS (SELECT 1 FROM onlineexam_class_sections ocs WHERE ocs.onlineexam_id = onlineexam.id "
-                . "AND NOT EXISTS (SELECT 1 FROM teacher_subjects ts2 INNER JOIN class_sections cs2 ON cs2.id = ts2.class_section_id "
-                . "WHERE ts2.teacher_id = " . $teacher_id . " AND ts2.subject_id = onlineexam.subject_id "
-                . "AND ts2.session_id = onlineexam.session_id AND cs2.class_id = onlineexam.class_id "
-                . "AND cs2.section_id = ocs.section_id)))";
+            $condition = "(onlineexam.workflow_version = 2 AND EXISTS ("
+                . "SELECT 1 FROM onlineexam_class_sections access_ocs "
+                . "WHERE access_ocs.onlineexam_id=onlineexam.id AND ("
+                . "EXISTS (SELECT 1 FROM class_teacher access_ct WHERE access_ct.staff_id=" . $teacher_id
+                . " AND access_ct.session_id=onlineexam.session_id AND access_ct.class_id=onlineexam.class_id"
+                . " AND access_ct.section_id=access_ocs.section_id) OR "
+                . "EXISTS (SELECT 1 FROM teacher_subjects access_ts INNER JOIN class_sections access_cs"
+                . " ON access_cs.id=access_ts.class_section_id WHERE access_ts.teacher_id=" . $teacher_id
+                . " AND access_ts.subject_id=onlineexam.subject_id AND access_ts.session_id=onlineexam.session_id"
+                . " AND access_cs.class_id=onlineexam.class_id AND access_cs.section_id=access_ocs.section_id))))";
             $this->datatables->where($condition, null, false, false);
         }
        return $this->datatables->generate('json');
@@ -1277,6 +1278,9 @@ class Onlineexam_model extends MY_model
             $this->db->trans_rollback();
             return false;
         }
+        if ($this->db->field_exists('context_root_id', 'questions')) {
+            $this->db->where('id', $question_id)->update('questions', array('context_root_id' => $question_id));
+        }
 
         $assignment['question_id'] = $question_id;
         if (!empty($assignment['authoring_json'])) {
@@ -1399,6 +1403,9 @@ class Onlineexam_model extends MY_model
             if ($question_id <= 0) {
                 $this->db->trans_rollback();
                 return false;
+            }
+            if ($this->db->field_exists('context_root_id', 'questions')) {
+                $this->db->where('id', $question_id)->update('questions', array('context_root_id' => $question_id));
             }
             $this->db->insert('onlineexam_question_definitions', array(
                 'question_id' => $question_id,

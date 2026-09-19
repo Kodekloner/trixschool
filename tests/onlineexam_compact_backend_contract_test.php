@@ -67,6 +67,11 @@ compact_backend_assert(strpos($admin, 'compactAssessmentIsExecutable') !== false
 compact_backend_assert(strpos($admin, '$this->question_model->canAccessQuestion($question_id, $exam->session_id)') !== false, 'Question assignment must reject crafted Question Bank identifiers outside the exact assessment-session scope.');
 compact_backend_assert(strpos($admin, 'workflowTeacherAssignedSectionIds(') !== false, 'Teacher Question Bank searches must use exact subject/session/class-arm assignments.');
 compact_backend_assert(strpos($admin, 'This question belongs to a class arm that is not selected for the assessment.') !== false, 'Question assignment must reject crafted identifiers from an unselected class arm.');
+compact_backend_assert(strpos($admin, "\$mark_scope = \$this->workflowOperationScope(\$exam, 'mark');") !== false
+    && substr_count($admin, "->where_in('ss.section_id', \$mark_scope['section_ids'])") >= 2,
+    'British/result-conflict actions must enforce the current marker\'s exact class-arm scope.');
+compact_backend_assert(strpos($admin, "\$this->academicaccess_model->canMark(") !== false,
+    'British teacher-selected outcomes must recheck the candidate arm before mutation.');
 compact_backend_assert(strpos($admin, 'private function workflowPublishReadiness(') !== false && substr_count($admin, "['publish_readiness'] = \$this->workflowPublishReadiness") === 2, 'Question assignment and removal must return authoritative live publish readiness.');
 $list_start = strpos($admin, 'public function getexamlist()');
 $list_end = strpos($admin, 'public function workflow(', $list_start);
@@ -86,7 +91,10 @@ compact_backend_assert(
     strpos($model, 'onlineexam.exam,onlineexam.purpose,total_ques,onlineexam.exam_from,onlineexam.exam_to,onlineexam.duration,onlineexam.lifecycle_status,onlineexam.feedback_status," "') !== false,
     'Server-side list ordering must match the compact table\'s nine visible columns.'
 );
-compact_backend_assert(strpos($model, 'onlineexam.workflow_version = 2 AND') !== false && strpos($model, 'ts.subject_id = onlineexam.subject_id') !== false, 'Teacher assessment lists must hide legacy and other-subject assessments.');
+compact_backend_assert(strpos($model, 'onlineexam.workflow_version = 2 AND') !== false
+    && strpos($model, 'class_teacher access_ct') !== false
+    && strpos($model, 'access_ts.subject_id=onlineexam.subject_id') !== false,
+    'Assessment lists must use the class-teacher/subject-teacher scope union and hide legacy records.');
 compact_backend_assert(strpos($model, 'public function getWorkflowClassChoices') !== false, 'Teacher assessment creation needs session-scoped class choices.');
 compact_backend_assert(strpos($model, "'exam' => 'term'") !== false, 'Exam must reserve a term assessment slot.');
 compact_backend_assert(strpos($model, "onlineexam.purpose IN ('ca','midterm','exam')") !== false, 'Published Exam assessments must be visible to assigned students.');
@@ -94,7 +102,14 @@ compact_backend_assert(strpos($model, "onlineexam.purpose='british' AND onlineex
 
 $question_picker = compact_backend_source('application/models/Onlineexamquestion_model.php');
 compact_backend_assert(strpos($question_picker, "['allowed_section_ids']") !== false, 'Assessment Question Bank searches must apply teacher section scope before pagination.');
-compact_backend_assert(strpos($question_picker, "['question_staff_id']") !== false, 'Assessment Question Bank searches must apply the configured teacher ownership filter before pagination.');
+compact_backend_assert(strpos($question_picker, "['question_session_id']") !== false
+    && strpos($question_picker, "['question_term']") !== false,
+    'Assessment Question Bank searches must enforce the assessment session and term before pagination.');
+
+$operations = compact_backend_source('application/models/Onlineexamoperations_model.php');
+compact_backend_assert(strpos($operations, "!empty(\$scope['access_mode'])") !== false
+    && strpos($operations, "->sectionIdsFor(") !== false,
+    'Operational model reads and writes must independently enforce the shared academic capability scope.');
 
 foreach (array($attempt, $sync, $admin, $student, $model, $workflow, $question_picker) as $active_backend) {
     compact_backend_assert(strpos($active_backend, "case 'unlinked_practice'") === false, 'The removed internal-only result adapter must not remain executable.');
@@ -116,5 +131,8 @@ compact_backend_assert(strpos($slot_migration, "e.purpose IN ('ca','exam','kinde
 
 $all_school_migration = compact_backend_source('docs/all_school_database_migrations.sql');
 compact_backend_assert(strpos($all_school_migration, "e.purpose IN (''ca'',''exam'',''kindergarten'',''british'')") !== false, 'The all-school migration must backfill Exam and British academic slots.');
+compact_backend_assert(strpos($all_school_migration, 'question_139_contexts') !== false
+    && strpos($all_school_migration, 'question_academic_scope_idx') !== false,
+    'The all-school migration must include session-scoped Question Bank migration 139.');
 
 echo "onlineexam compact backend contract tests passed" . PHP_EOL;

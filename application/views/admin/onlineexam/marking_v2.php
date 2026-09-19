@@ -1,7 +1,9 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 $attempt = $detail['attempt'];
-$can_edit_marking = $this->rbac->hasPrivilege('online_examination', 'can_edit');
+$can_edit_marking = isset($can_edit_marking)
+    ? (bool) $can_edit_marking
+    : $this->rbac->hasPrivilege('online_examination', 'can_edit');
 $british_profile = isset($british_profile) && is_array($british_profile) ? $british_profile : array();
 $british_profile_mode = isset($british_profile['mode']) ? $british_profile['mode'] : null;
 $british_outcomes = array('Emerging', 'Expected', 'Exceeding');

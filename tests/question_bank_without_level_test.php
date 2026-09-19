@@ -11,6 +11,7 @@ class CI_Model
     public $db;
     public $customlib;
     public $datatables;
+    public $academicaccess_model;
 }
 class MY_model extends CI_Model {}
 class Admin_Controller
@@ -22,6 +23,7 @@ class Admin_Controller
     public $customlib;
     public $lang;
     public $config;
+    public $setting_model;
 }
 
 function level_free_assert($condition, $message)
@@ -69,6 +71,8 @@ class LevelFreeQuestionStore
     public $accessChecks = array();
     public function canAccessQuestion($id) { $this->accessChecks[] = $id; return true; }
     public function canAccessQuestionScope($class, $section) { return $class === 4 && $section === 2; }
+    public function get($id) { return (object) array('id'=>$id,'session_id'=>3,'term'=>'1st','class_id'=>4,'section_id'=>2,'subject_id'=>6); }
+    public function isAssignedToOnlineExam($id) { return false; }
     public function add($data)
     {
         level_free_assert(!array_key_exists('question_level', $data), 'Question writes must not use the removed database column.');
@@ -126,8 +130,9 @@ $controller->config = new class {
     }
 };
 $controller->customlib = $customlib;
+$controller->setting_model = new class { public function getCurrentSession() { return 3; } };
 $controller->question_model = new LevelFreeQuestionStore();
-$base = array('subject_id' => 6, 'class_id' => 4, 'section_id' => 2, 'question_type' => 'singlechoice', 'question' => 'What is 2 + 2?', 'opt_a' => '4', 'opt_b' => '5', 'correct' => 'opt_a');
+$base = array('subject_id' => 6, 'class_id' => 4, 'section_id' => 2, 'term' => '1st', 'question_type' => 'singlechoice', 'question' => 'What is 2 + 2?', 'opt_a' => '4', 'opt_b' => '5', 'correct' => 'opt_a');
 
 foreach (array(0, 17) as $id) {
     $controller->input = new LevelFreeInput(array_merge($base, array('recordid' => $id)));
@@ -160,24 +165,34 @@ ob_start();
 $controller->add();
 level_free_assert(json_decode(ob_get_clean(), true)['status'] === 0 && count($controller->question_model->writes) === $before, 'Missing question text must remain rejected.');
 
-$row = (object) array('id' => 17, 'name' => 'Mathematics', 'question_type' => 'singlechoice', 'question' => 'What is 2 + 2?');
+$row = (object) array('id' => 17, 'session_id' => 3, 'term' => '1st', 'class_id' => 4,
+    'section_id' => 2, 'subject_id' => 6, 'class_name' => 'Primary 4', 'section_name' => 'A',
+    'name' => 'Mathematics', 'question_type' => 'singlechoice', 'question' => 'What is 2 + 2?');
 $controller->question_model->row = $row;
 ob_start();
 $controller->getDatatable();
 $table = json_decode(ob_get_clean(), true);
 level_free_assert($table['draw'] === 3 && $table['recordsTotal'] === 1 && count($table['data']) === 1, 'DataTables response must preserve pagination metadata.');
 $cells = $table['data'][0];
-level_free_assert(count($cells) === 6, 'Question Bank rows must contain exactly six cells after level removal.');
-level_free_assert(strpos($cells[0], 'data-question-id=\'17\'') !== false && $cells[1] === 17 && $cells[2] === 'Mathematics' && $cells[3] === 'Single Choice' && strpos($cells[4], $row->question) !== false && strpos($cells[5], 'question-bank-row-actions') !== false, 'Checkbox, ID, subject, type, question and actions must align with their headers.');
+level_free_assert(count($cells) === 9, 'Question Bank rows must contain the nine session-scoped table cells without Level.');
+level_free_assert(strpos($cells[0], 'data-question-id=\'17\'') !== false && $cells[1] === 17
+    && $cells[2] === '1ST Term' && $cells[3] === 'Primary 4' && $cells[4] === 'A'
+    && $cells[5] === 'Mathematics' && $cells[6] === 'Single Choice'
+    && strpos($cells[7], $row->question) !== false && strpos($cells[8], 'question-bank-row-actions') !== false,
+    'Term, class, arm, subject, type, question and actions must align with their headers.');
 
 $questionModel = (new ReflectionClass('Question_model'))->newInstanceWithoutConstructor();
 $questionModel->customlib = $customlib;
 $questionModel->datatables = new LevelFreeQuery(array($row));
+$questionModel->current_session = 3;
+$questionModel->academicaccess_model = new class {
+    public function questionVisibilitySql($alias, $session) { return '1=1'; }
+};
 $questionModel->getAllRecord();
 $orderable = $questionModel->datatables->argumentsFor('orderable');
 level_free_assert(count($orderable) === 1, 'Question Bank must provide one DataTables sorting map.');
 $columns = explode(',', $orderable[0][0]);
-level_free_assert($columns === array('questions.id', 'questions.id', 'subjects.name', 'questions.question_type', 'questions.question', 'questions.id'), 'Sorting indexes must align with the six visible columns, particularly question text at index four.');
+level_free_assert($columns === array('questions.id', 'questions.id', 'questions.term', 'classes.class', 'sections.section', 'subjects.name', 'questions.question_type', 'questions.question', 'questions.id'), 'Sorting indexes must align with the nine visible columns, particularly question text at index seven.');
 $searchable = $questionModel->datatables->argumentsFor('searchable');
 level_free_assert(strpos($searchable[0][0], 'questions.question') !== false, 'Question text must remain searchable.');
 

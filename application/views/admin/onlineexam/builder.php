@@ -3,10 +3,11 @@ $paper_types = array('objective' => 'Objective', 'theory' => 'Theory / Essay');
 $allowed_question_types = array('singlechoice', 'multichoice', 'true_false', 'short_answer', 'numeric', 'matching', 'ordering', 'grouped_passage', 'long_answer');
 $native_question_types = array_intersect_key((array) $native_question_types, array_flip($allowed_question_types));
 $question_type = array_intersect_key((array) $question_type, array_flip($allowed_question_types));
-$can_edit_assessment = !empty($editable) && $this->rbac->hasPrivilege('online_examination', 'can_edit');
+$can_manage_assessment = !empty($capabilities['can_manage_content']) && $this->rbac->hasPrivilege('online_examination', 'can_edit');
+$can_edit_assessment = !empty($editable) && $can_manage_assessment;
 $can_edit_questions = !empty($editable) && $this->rbac->hasPrivilege('add_questions_in_exam', 'can_edit');
-$can_view_roster = !empty($compact_supported) && $this->rbac->hasPrivilege('online_assign_view_student', 'can_view');
-$can_view_operations = !empty($compact_supported) && $exam->lifecycle_status !== 'draft' && $this->rbac->hasPrivilege('online_examination', 'can_view');
+$can_view_roster = !empty($compact_supported) && !empty($capabilities['can_manage_candidates']) && $this->rbac->hasPrivilege('online_assign_view_student', 'can_view');
+$can_view_operations = !empty($compact_supported) && !empty($capabilities['can_view']) && $exam->lifecycle_status !== 'draft' && $this->rbac->hasPrivilege('online_examination', 'can_view');
 $component_label = $exam->result_adapter === 'british_outcome'
     ? 'British outcome (Emerging / Expected / Exceeding)'
     : (!empty($exam->target_component)
@@ -84,7 +85,7 @@ foreach ((array) $authored_questions as $authored_question) {
             <div class="box-header with-border"><h3 class="box-title">Candidate feedback</h3></div>
             <div class="box-body">
                 <p>Current online feedback: <strong><?php echo html_escape(ucwords($exam->feedback_status)); ?></strong>. This control never publishes the official report card.</p>
-                <?php if ($this->rbac->hasPrivilege('online_examination', 'can_edit')) { ?>
+                <?php if ($can_manage_assessment) { ?>
                 <form method="post" action="<?php echo site_url('admin/onlineexam/feedback/' . $exam->id); ?>" class="single-action-footer">
                     <?php echo $this->customlib->getCSRF(); ?>
                     <input type="hidden" name="onlineexam_workflow_token" value="<?php echo html_escape($workflow_csrf); ?>">
@@ -393,7 +394,7 @@ foreach ((array) $authored_questions as $authored_question) {
                     </form>
                     <?php } ?>
                 <?php } elseif (in_array($exam->lifecycle_status, array('scheduled', 'published', 'in_progress', 'marking', 'completed'), true)) { ?>
-                    <?php if ($this->rbac->hasPrivilege('online_examination', 'can_edit')) { ?>
+                    <?php if ($can_manage_assessment) { ?>
                     <form method="post" action="<?php echo site_url('admin/onlineexam/lifecycle/' . $exam->id); ?>" onsubmit="return confirm('Open a new editable revision? The frozen revision and all earlier attempts will remain unchanged.');">
                         <?php echo $this->customlib->getCSRF(); ?><input type="hidden" name="workflow_action" value="new_revision"><button class="btn btn-default"><i class="fa fa-code-fork"></i> Create new revision</button>
                     </form>
