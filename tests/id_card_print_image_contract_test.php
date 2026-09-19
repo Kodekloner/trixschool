@@ -89,4 +89,19 @@ foreach (array(
     );
 }
 
+id_card_print_image_assert(
+    strpos($studentGenerator, 'class="btn btn-default btn-xs generateSingle"') !== false
+        && strpos($studentGenerator, 'requestStudentCards(') !== false
+        && substr_count($studentGenerator, 'requestStudentCards(') === 3
+        && strpos($studentGenerator, "site_url('admin/generateidcard/generate/") === false,
+    'Individual student generation must send one student through the same renderer as Generate selected.'
+);
+id_card_print_image_assert(
+    strpos($staffGenerator, 'class="btn btn-default btn-xs generateSingle"') !== false
+        && strpos($staffGenerator, 'requestStaffCards(') !== false
+        && substr_count($staffGenerator, 'requestStaffCards(') === 3
+        && strpos($staffGenerator, "site_url('admin/generatestaffidcard/generate/") === false,
+    'Individual staff generation must send one staff member through the same renderer as Generate selected.'
+);
+
 echo 'ID card and certificate print image contract tests passed (' . $assertions . ' assertions)' . PHP_EOL;

@@ -147,7 +147,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                                     if ($sch_setting->mobile_no) { ?>
                                                         <td><?php echo $student['mobileno']; ?></td>
                                                     <?php } ?>
-                                                    <td class="text-right"><a class="btn btn-default btn-xs" target="_blank" rel="noopener" href="<?php echo site_url('admin/generateidcard/generate/' . (int) $student['id'] . '/' . (int) $student['class_id'] . '/' . (int) $idcardResult[0]->id); ?>"><i class="fa fa-id-card-o"></i> Generate</a></td>
+                                                    <td class="text-right"><button class="btn btn-default btn-xs generateSingle" type="button" data-student-id="<?php echo (int) $student['id']; ?>" data-class-id="<?php echo (int) $student['class_id']; ?>" data-id-card="<?php echo (int) $idcardResult[0]->id; ?>"><i class="fa fa-id-card-o"></i> Generate</button></td>
                                                         </tr>
                                                 <?php
                                                         $count++;
@@ -248,35 +248,46 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
 </script>
 <script type="text/javascript">
     $(document).ready(function() {
+        function requestStudentCards(arrayToPrint, classId, idCard) {
+            return $.ajax({
+                url: '<?php echo site_url("admin/generateidcard/generatemultiple") ?>',
+                type: 'post',
+                dataType: 'JSON',
+                data: {
+                    'data': JSON.stringify(arrayToPrint),
+                    'class_id': classId,
+                    'id_card': idCard,
+                    'idcard_generation_csrf': <?php echo json_encode($idcard_generation_csrf); ?>,
+                },
+                success: function(response) {
+                    Popup(response.page);
+                }
+            });
+        }
+
         $(document).on('click', '.printSelected', function() {
             var array_to_print = [];
             var classId = $("#class_id").val();
             var idCard = $("#id_card_id").val();
             $.each($("input[name='check']:checked"), function() {
                 var studentId = $(this).data('student_id');
-                item = {}
+                var item = {};
                 item["student_id"] = studentId;
                 array_to_print.push(item);
             });
             if (array_to_print.length == 0) {
                 alert("<?php echo $this->lang->line('no_record_selected'); ?>");
             } else {
-                $.ajax({
-                    url: '<?php echo site_url("admin/generateidcard/generatemultiple") ?>',
-                    type: 'post',
-                    dataType: 'JSON',
-                    data: {
-                        'data': JSON.stringify(array_to_print),
-                        'class_id': classId,
-                        'id_card': idCard,
-                        'idcard_generation_csrf': <?php echo json_encode($idcard_generation_csrf); ?>,
-                    },
-                    success: function(response) {
-
-                        Popup(response.page);
-                    },
-                });
+                requestStudentCards(array_to_print, classId, idCard);
             }
+        });
+
+        $(document).on('click', '.generateSingle', function() {
+            requestStudentCards(
+                [{student_id: parseInt($(this).attr('data-student-id'), 10)}],
+                parseInt($(this).attr('data-class-id'), 10),
+                parseInt($(this).attr('data-id-card'), 10)
+            );
         });
     });
 </script>
