@@ -25,8 +25,11 @@
     -webkit-overflow-scrolling: touch;
 }
 .question-bank-page .question-bank-table-scroll > table {
-    min-width: 820px;
+    min-width: 1180px;
 }
+.question-bank-page .question-bank-context { margin-bottom: 15px; }
+.question-bank-page .question-bank-filters .form-group { margin-bottom: 10px; }
+.question-bank-page .copy-question-results { max-height: 320px; overflow: auto; }
 .question-bank-page .question-bank-table-scroll th,
 .question-bank-page .question-bank-table-scroll td {
     vertical-align: middle;
@@ -121,6 +124,7 @@
   <?php }
 if ($this->rbac->hasPrivilege('question_bank', 'can_add')) {
    ?>
+ <button class="btn btn-default btn-sm copy-question-btn" data-toggle="modal" data-target="#copyQuestionModal"><i class="fa fa-copy"></i> Copy Questions</button>
  <button class="btn btn-primary btn-sm question-btn" data-recordid="0" data-loading-text="<i class='fa fa-spinner fa-spin '></i> Please wait..."><i class="fa fa-plus"></i> <?php echo $this->lang->line('add') . " " . $this->lang->line('question'); ?></button>
 <?php } ?>
 </div>
@@ -128,6 +132,52 @@ if ($this->rbac->hasPrivilege('question_bank', 'can_add')) {
 
                     </div>
                     <div class="box-body">
+                        <div class="alert alert-info question-bank-context">
+                            <strong>Academic session:</strong> <?php echo html_escape($current_session_name); ?>.
+                            Only questions belonging to the globally selected session are shown.
+                        </div>
+                        <form id="question-bank-filter" class="question-bank-filters" autocomplete="off">
+                            <div class="row">
+                                <div class="form-group col-sm-2">
+                                    <label for="bank-filter-term">Term</label>
+                                    <select id="bank-filter-term" name="term" class="form-control">
+                                        <option value="">All terms</option>
+                                        <?php foreach (array('1st', '2nd', '3rd') as $term) { ?>
+                                            <option value="<?php echo $term; ?>" <?php echo $current_term === $term ? 'selected' : ''; ?>><?php echo $term; ?> Term</option>
+                                        <?php } ?>
+                                    </select>
+                                </div>
+                                <div class="form-group col-sm-2">
+                                    <label for="bank-filter-class">Class</label>
+                                    <select id="bank-filter-class" name="class_id" class="form-control bank-filter-class">
+                                        <option value="">All classes</option>
+                                        <?php foreach ($classlist as $class) { ?><option value="<?php echo (int) $class['id']; ?>"><?php echo html_escape($class['class']); ?></option><?php } ?>
+                                    </select>
+                                </div>
+                                <div class="form-group col-sm-2">
+                                    <label for="bank-filter-section">Arm</label>
+                                    <select id="bank-filter-section" name="section_id" class="form-control bank-filter-section"><option value="">All arms</option></select>
+                                </div>
+                                <div class="form-group col-sm-2">
+                                    <label for="bank-filter-subject">Subject</label>
+                                    <select id="bank-filter-subject" name="subject_id" class="form-control bank-filter-subject"><option value="">All subjects</option></select>
+                                </div>
+                                <div class="form-group col-sm-2">
+                                    <label for="bank-filter-type">Question type</label>
+                                    <select id="bank-filter-type" name="question_type" class="form-control">
+                                        <option value="">All types</option>
+                                        <?php foreach ($question_type as $key => $label) { ?><option value="<?php echo html_escape($key); ?>"><?php echo html_escape($label); ?></option><?php } ?>
+                                    </select>
+                                </div>
+                                <div class="form-group col-sm-2">
+                                    <label for="bank-filter-keyword">Keyword</label>
+                                    <input id="bank-filter-keyword" name="keyword" class="form-control" maxlength="100">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-filter"></i> Filter</button>
+                            <button type="button" class="btn btn-default btn-sm bank-filter-clear">Clear</button>
+                        </form>
+                        <hr>
                         <div class="mailbox-controls">
                             <div class="pull-right">
                             </div>
@@ -141,6 +191,9 @@ if ($this->rbac->hasPrivilege('question_bank', 'can_add')) {
                                     <tr>
                                         <th><input type="checkbox" id="masterCheck" value="checkUncheckAll"></th>
                                         <th><?php echo $this->lang->line('q_id'); ?></th>
+                                        <th>Term</th>
+                                        <th><?php echo $this->lang->line('class'); ?></th>
+                                        <th><?php echo $this->lang->line('section'); ?></th>
                                         <th><?php echo $this->lang->line('subject') ?></th>
                                         <th><?php echo $this->lang->line('question_type')?></th>
                                         <th><?php echo $this->lang->line('question') ?></th>
@@ -248,6 +301,12 @@ function findOption($questionOpt, $find)
             <form action="<?php echo site_url('admin/question/uploadfile'); ?>" method="POST" id="formimportquestion">
                 <div class="modal-body add_question_import_body">
                        <div class="form-group">
+                           <label>Term</label><small class="req"> *</small>
+                           <select name="term" class="form-control">
+                               <?php foreach (array('1st', '2nd', '3rd') as $term) { ?><option value="<?php echo $term; ?>" <?php echo $current_term === $term ? 'selected' : ''; ?>><?php echo $term; ?> Term</option><?php } ?>
+                           </select>
+                       </div>
+                       <div class="form-group">
                             <label><?php echo $this->lang->line('subject'); ?></label><small class="req"> *</small>
                             <select autofocus="" name="subject_id" class="form-control question-scope-subject" >
                                 <option value=""><?php echo $this->lang->line('select'); ?> class first</option>
@@ -273,7 +332,7 @@ if (set_value('subject_id') == $subject['id']) {
                             <select autofocus="" name="class_id" class="form-control question-scope-class" >
                                 <option value=""><?php echo $this->lang->line('select'); ?></option>
                                 <?php
-foreach ($classlist as $class) {
+foreach ($write_classlist as $class) {
     ?>
                                     <option value="<?php echo $class['id'] ?>" <?php
 if (set_value('class_id') == $class['id']) {
@@ -306,14 +365,170 @@ if (set_value('class_id') == $class['id']) {
         </form>
     </div>
 </div>
-  
+
+<div id="copyQuestionModal" class="modal fade" role="dialog">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Copy questions into <?php echo html_escape($current_session_name); ?></h4>
+            </div>
+            <form id="copy-question-form" action="<?php echo site_url('admin/question/copyquestions'); ?>" method="post">
+                <?php echo $this->customlib->getCSRF(); ?>
+                <div class="modal-body">
+                    <h4>1. Find source questions</h4>
+                    <div class="row copy-source-filters">
+                        <div class="form-group col-sm-3"><label>Source session</label><select name="source_session_id" class="form-control copy-source-session"><option value="">Select</option><?php foreach ($sessionlist as $session) { ?><option value="<?php echo (int) $session['id']; ?>"><?php echo html_escape($session['session']); ?></option><?php } ?></select></div>
+                        <div class="form-group col-sm-2"><label>Term</label><select name="source_term" class="form-control"><option value="">All</option><?php foreach (array('1st', '2nd', '3rd') as $term) { ?><option value="<?php echo $term; ?>"><?php echo $term; ?></option><?php } ?></select></div>
+                        <div class="form-group col-sm-2"><label>Class</label><select name="source_class_id" class="form-control copy-source-class"><option value="">All</option></select></div>
+                        <div class="form-group col-sm-2"><label>Arm</label><select name="source_section_id" class="form-control copy-source-section"><option value="">All</option></select></div>
+                        <div class="form-group col-sm-3"><label>Subject</label><select name="source_subject_id" class="form-control copy-source-subject"><option value="">All</option></select></div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-sm-9"><label>Keyword</label><input name="source_keyword" class="form-control" maxlength="100"></div>
+                        <div class="form-group col-sm-3"><label>&nbsp;</label><button type="button" class="btn btn-default btn-block copy-question-search"><i class="fa fa-search"></i> Load questions</button></div>
+                    </div>
+                    <div class="table-responsive copy-question-results">
+                        <table class="table table-bordered table-condensed"><thead><tr><th><input type="checkbox" class="copy-select-all"></th><th>Term</th><th>Class / Arm</th><th>Subject</th><th>Type</th><th>Question</th></tr></thead><tbody><tr><td colspan="6" class="text-muted">Choose a source session and load questions.</td></tr></tbody></table>
+                    </div>
+                    <hr>
+                    <h4>2. Select the destination in the current session</h4>
+                    <div class="row copy-target-fields">
+                        <div class="form-group col-sm-3"><label>Target term</label><select name="target_term" class="form-control" required><?php foreach (array('1st', '2nd', '3rd') as $term) { ?><option value="<?php echo $term; ?>" <?php echo $current_term === $term ? 'selected' : ''; ?>><?php echo $term; ?> Term</option><?php } ?></select></div>
+                        <div class="form-group col-sm-3"><label>Target class</label><select name="target_class_id" class="form-control copy-target-class" required><option value="">Select</option><?php foreach ($write_classlist as $class) { ?><option value="<?php echo (int) $class['id']; ?>"><?php echo html_escape($class['class']); ?></option><?php } ?></select></div>
+                        <div class="form-group col-sm-3"><label>Target arm</label><select name="target_section_id" class="form-control copy-target-section" required><option value="">Select</option></select></div>
+                        <div class="form-group col-sm-3"><label>Target subject</label><select name="target_subject_id" class="form-control copy-target-subject" required><option value="">Select</option></select></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary"><i class="fa fa-copy"></i> Copy selected questions</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script type="text/javascript">
     (function ($) {
         'use strict';
+        window.loadQuestionBankTable = function () {
+            var params = {};
+            $.each($('#question-bank-filter').serializeArray(), function (_, item) { params[item.name] = item.value; });
+            initDatatable('all-list', 'admin/question/getDatatable', params,[], 20,[{ "bSortable": false, "aTargets": [ 0 ]},{ "bSortable": false, "aTargets": [ -1 ] ,'sClass': 'dt-body-right'}]);
+        };
         $(document).ready(function () {
-            initDatatable('all-list', 'admin/question/getDatatable', [],[], 20,[{ "bSortable": false, "aTargets": [ 0 ]},{ "bSortable": false, "aTargets": [ -1 ] ,'sClass': 'dt-body-right'}]);
+            window.loadQuestionBankTable();
         });
     }(jQuery))
+</script>
+
+<script type="text/javascript">
+    (function ($) {
+        'use strict';
+
+        function fillSelect($select, rows, placeholder, labelKey) {
+            $select.empty().append($('<option>', {value: '', text: placeholder}));
+            $.each(rows || [], function (_, row) {
+                var value = row.section_id || row.id;
+                var label = row[labelKey] || row.name || row.class;
+                $select.append($('<option>', {value: value, text: label}));
+            });
+        }
+
+        function loadCopySourceChoices(resetClass, resetSection) {
+            var sessionId = $('.copy-source-session').val();
+            var classId = resetClass ? '' : $('.copy-source-class').val();
+            var sectionId = resetSection ? '' : $('.copy-source-section').val();
+            if (!sessionId) {
+                fillSelect($('.copy-source-class'), [], 'All', 'class');
+                fillSelect($('.copy-source-section'), [], 'All', 'section');
+                fillSelect($('.copy-source-subject'), [], 'All', 'name');
+                return;
+            }
+            $.getJSON('<?php echo site_url('admin/question/copychoices'); ?>', {
+                session_id: sessionId, class_id: classId, section_id: sectionId
+            }).done(function (response) {
+                if (!response.status) { errorMsg(response.message || 'Source choices could not be loaded.'); return; }
+                if (resetClass) { fillSelect($('.copy-source-class'), response.classes, 'All', 'class'); }
+                if (resetClass || resetSection) { fillSelect($('.copy-source-section'), response.sections, 'All', 'section'); }
+                fillSelect($('.copy-source-subject'), response.subjects, 'All', 'name');
+            });
+        }
+
+        function loadCopyTargetChoices(resetSection) {
+            var classId = $('.copy-target-class').val();
+            var sectionId = resetSection ? '' : $('.copy-target-section').val();
+            if (!classId) {
+                fillSelect($('.copy-target-section'), [], 'Select', 'section');
+                fillSelect($('.copy-target-subject'), [], 'Select', 'name');
+                return;
+            }
+            $.getJSON('<?php echo site_url('admin/question/academicchoices'); ?>', {
+                class_id: classId, section_id: sectionId, mode: 'content'
+            }).done(function (response) {
+                if (!response.status) { errorMsg(response.message || 'Destination choices could not be loaded.'); return; }
+                if (resetSection) { fillSelect($('.copy-target-section'), response.sections, 'Select', 'section'); }
+                fillSelect($('.copy-target-subject'), response.subjects, 'Select', 'name');
+            });
+        }
+
+        $(document).on('change', '.copy-source-session', function () { loadCopySourceChoices(true, true); });
+        $(document).on('change', '.copy-source-class', function () { loadCopySourceChoices(false, true); });
+        $(document).on('change', '.copy-source-section', function () { loadCopySourceChoices(false, false); });
+        $(document).on('change', '.copy-target-class', function () { loadCopyTargetChoices(true); });
+        $(document).on('change', '.copy-target-section', function () { loadCopyTargetChoices(false); });
+
+        $(document).on('click', '.copy-question-search', function () {
+            var sessionId = $('.copy-source-session').val();
+            if (!sessionId) { errorMsg('Select a source session.'); return; }
+            var params = {
+                session_id: sessionId,
+                term: $('[name="source_term"]').val(),
+                class_id: $('.copy-source-class').val(),
+                section_id: $('.copy-source-section').val(),
+                subject_id: $('.copy-source-subject').val(),
+                keyword: $('[name="source_keyword"]').val()
+            };
+            $.getJSON('<?php echo site_url('admin/question/copysearch'); ?>', params).done(function (response) {
+                if (!response.status) { errorMsg(response.message || 'Questions could not be loaded.'); return; }
+                var $body = $('.copy-question-results tbody').empty();
+                if (!(response.rows || []).length) {
+                    $body.append('<tr><td colspan="6" class="text-muted">No authorized questions match these filters.</td></tr>');
+                    return;
+                }
+                $.each(response.rows, function (_, row) {
+                    var $tr = $('<tr>');
+                    $tr.append($('<td>').append($('<input>', {type: 'checkbox', name: 'question_ids[]', value: row.id})));
+                    $tr.append($('<td>').text(String(row.term).toUpperCase()));
+                    $tr.append($('<td>').text((row.class_name || '') + ' / ' + (row.section_name || '')));
+                    $tr.append($('<td>').text(row.subject_name || ''));
+                    $tr.append($('<td>').text(row.type_label || ''));
+                    $tr.append($('<td>').text(row.question_label || ''));
+                    $body.append($tr);
+                });
+            });
+        });
+
+        $(document).on('change', '.copy-select-all', function () {
+            $('.copy-question-results input[name="question_ids[]"]').prop('checked', this.checked);
+        });
+
+        $('#copy-question-form').on('submit', function (event) {
+            event.preventDefault();
+            var $form = $(this);
+            if (!$form.find('input[name="question_ids[]"]:checked').length) {
+                errorMsg('Select at least one source question.'); return;
+            }
+            $.ajax({url: $form.attr('action'), type: 'POST', dataType: 'json', data: $form.serialize()})
+                .done(function (response) {
+                    if (!response.status) { errorMsg(response.message || 'The questions could not be copied.'); return; }
+                    successMsg(response.message);
+                    $('#copyQuestionModal').modal('hide');
+                    window.loadQuestionBankTable();
+                }).fail(function (xhr) {
+                    var response = xhr.responseJSON || {};
+                    errorMsg(response.message || 'The questions could not be copied.');
+                });
+        });
+    }(jQuery));
 </script>
 
 <script type="text/javascript">
@@ -417,7 +632,7 @@ console.log(data);
 
     $("form#formimportquestion").submit(function (e) {    
      //stop submit the form, we will post it manually.
-            event.preventDefault();
+            e.preventDefault();
             var form = $(this);
             var url = form.attr('action');
             var submit_button = form.find(':submit');
@@ -624,6 +839,44 @@ $('#myimgModal').on('shown.bs.modal', function (event) {
       getImages(page, query);
     });
 
+$('#question-bank-filter').on('submit', function (event) {
+    event.preventDefault();
+    window.loadQuestionBankTable();
+});
+
+$(document).on('click', '.bank-filter-clear', function () {
+    $('#question-bank-filter')[0].reset();
+    $('#bank-filter-term').val('');
+    $('.bank-filter-section').html('<option value="">All arms</option>');
+    $('.bank-filter-subject').html('<option value="">All subjects</option>');
+    window.loadQuestionBankTable();
+});
+
+$(document).on('change', '.bank-filter-class,.bank-filter-section', function () {
+    var $form = $('#question-bank-filter');
+    var resetSection = $(this).hasClass('bank-filter-class');
+    var classId = $('.bank-filter-class').val();
+    var sectionId = resetSection ? '' : $('.bank-filter-section').val();
+    if (resetSection) {
+        $('.bank-filter-section').html('<option value="">All arms</option>');
+    }
+    $('.bank-filter-subject').html('<option value="">All subjects</option>');
+    if (!classId) { return; }
+    $.getJSON('<?php echo site_url('admin/question/academicchoices'); ?>', {
+        class_id: classId, section_id: sectionId, mode: 'view'
+    }).done(function (response) {
+        if (!response.status) { errorMsg(response.message || 'The filters could not be loaded.'); return; }
+        if (resetSection) {
+            $.each(response.sections || [], function (_, row) {
+                $('.bank-filter-section').append($('<option>', {value: row.section_id || row.id, text: row.section}));
+            });
+        }
+        $.each(response.subjects || [], function (_, row) {
+            $('.bank-filter-subject').append($('<option>', {value: row.id, text: row.name}));
+        });
+    });
+});
+
 $(document).on('change', '.question-scope-class', function () {
         loadQuestionAcademicChoices($(this).closest('form'), true);
     });
@@ -651,7 +904,8 @@ function loadQuestionAcademicChoices($form, resetSection) {
     $section.add($subject).prop('disabled', true).addClass('dropdownloading');
     var request = $.getJSON('<?php echo site_url('admin/question/academicchoices'); ?>', {
         class_id: classId,
-        section_id: sectionId
+        section_id: sectionId,
+        mode: 'content'
     }).done(function (response) {
         if (!response.status) {
             errorMsg(response.message || 'The teaching assignment could not be loaded.');

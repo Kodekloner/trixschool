@@ -6,11 +6,12 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * Operational/admin services for workflow-v2 online assessments.
  *
  * Controllers remain responsible for route permissions and CSRF checks.  The
- * optional $scope argument adds a second, model-level boundary for teachers:
+ * optional $scope argument adds a second, model-level academic boundary:
  *
  *   array(
  *       'allowed_onlineexam_ids' => array(1, 2), // optional hard allow-list
- *       'enforce_assignment'     => true,        // require teacher_subjects
+ *       'access_mode'            => 'view',      // view/content/candidate/mark
+ *       'enforce_assignment'     => true,        // legacy teacher_subjects mode
  *       'staff_id'               => 12,
  *       'section_ids'            => array(3),    // optional narrower scope
  *       'attempt_ids'            => array(45),   // optional narrower scope
@@ -1736,6 +1737,24 @@ class Onlineexamoperations_model extends CI_Model
             'section_id'
         ));
         $section_ids = $exam_sections;
+
+        if (!empty($scope['access_mode']) && empty($scope['bypass_assignment'])) {
+            if (empty($scope['staff_id'])) {
+                return $this->failure('staff_scope_required', 'A staff identity is required for academic access scope.');
+            }
+            $this->load->model('academicaccess_model');
+            $authorized = $this->academicaccess_model->sectionIdsFor(
+                $scope['access_mode'],
+                (int) $exam['session_id'],
+                (int) $exam['class_id'],
+                (int) $exam['subject_id'],
+                $exam_sections
+            );
+            if (empty($authorized)) {
+                return $this->failure('academic_scope_required', 'This assessment is outside the staff member\'s academic assignment.');
+            }
+            $section_ids = $authorized;
+        }
 
         if (!empty($scope['enforce_assignment']) && empty($scope['bypass_assignment'])) {
             if (empty($scope['staff_id'])) {

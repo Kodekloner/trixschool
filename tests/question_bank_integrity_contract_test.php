@@ -19,6 +19,10 @@ $controller = question_bank_source('application/controllers/admin/Question.php')
 $model = question_bank_source('application/models/Question_model.php');
 $exam_model = question_bank_source('application/models/Onlineexam_model.php');
 $view = question_bank_source('application/views/admin/question/question.php');
+$academic_access = question_bank_source('application/models/Academicaccess_model.php');
+$migration = question_bank_source('application/migrations/139_session_scope_question_bank.php');
+$migration_config = question_bank_source('application/config/migration.php');
+$all_school_sql = question_bank_source('docs/all_school_database_migrations.sql');
 
 foreach (array('can_view', 'can_add', 'can_edit', 'can_delete') as $permission) {
     question_bank_assert(strpos($controller, "'" . $permission . "'") !== false, 'Question Bank is missing the ' . $permission . ' authorization gate.');
@@ -27,9 +31,15 @@ question_bank_assert(strpos($controller, 'canAccessQuestionScope') !== false, 'Q
 question_bank_assert(substr_count($controller, "(int) \$this->input->post('subject_id')") >= 2, 'Question writes and CSV imports must include the selected subject in their server-side scope check.');
 question_bank_assert(strpos($controller, 'public function academicchoices()') !== false, 'Question Bank forms need an assignment-filtered academic choices endpoint.');
 question_bank_assert(strpos($controller, 'getInaccessibleQuestionIds') !== false, 'Bulk deletion must reject crafted out-of-scope identifiers.');
-question_bank_assert(strpos($model, 'qts.subject_id = questions.subject_id') !== false, 'Teacher Question Bank rows must be filtered by exact subject assignment.');
-question_bank_assert(strpos($model, "->where('teacher_subjects.subject_id', \$subject_id)") !== false, 'Question read/write access must require the exact assigned subject.');
-question_bank_assert(strpos($model, "->where('teacher_subjects.session_id', \$session_id)") !== false, 'Question access must not reuse a teaching assignment from another session.');
+question_bank_assert(strpos($model, 'questionVisibilitySql') !== false, 'Question Bank rows must use the shared academic visibility policy.');
+question_bank_assert(strpos($academic_access, 'subjectTeacherSectionIds') !== false
+    && strpos($academic_access, "->where('teacher_subjects.subject_id', (int) \$subject_id)") !== false,
+    'Question read/write access must require the exact assigned subject.');
+question_bank_assert(strpos($academic_access, "->where('teacher_subjects.session_id', (int) \$session_id)") !== false,
+    'Question access must not reuse a teaching assignment from another session.');
+question_bank_assert(strpos($academic_access, 'classTeacherSectionIds') !== false
+    && strpos($academic_access, "array('content', 'mark')") !== false,
+    'Class-teacher viewing/candidate scope must remain separate from content/marking scope.');
 question_bank_assert(strpos($model, 'public function deleteUnassigned') !== false, 'Question deletion must use one protected model operation.');
 question_bank_assert(strpos($model, 'ORDER BY `id` FOR UPDATE') !== false, 'Question source rows must be locked before assignment checks and deletion.');
 question_bank_assert(strpos($model, 'onlineexam_question_definitions') !== false, 'Question definitions must be cleaned transactionally with an unassigned source.');
@@ -37,5 +47,18 @@ question_bank_assert(strpos($exam_model, "SELECT `id` FROM `questions` WHERE `id
 question_bank_assert(strpos($view, 'question-bank-table-scroll') !== false, 'Question Bank must remain horizontally scrollable on narrow screens.');
 question_bank_assert(strpos($view, 'question-scope-subject') !== false && strpos($view, 'admin/question/academicchoices') !== false, 'Question Bank subject selectors must load the teacher\'s exact class-arm subjects.');
 question_bank_assert(strpos($view, "hasPrivilege('question_bank', 'can_delete')") !== false, 'Bulk delete controls must be hidden without delete privilege.');
+question_bank_assert(strpos($controller, 'public function copyquestions()') !== false
+    && strpos($model, 'public function copyToContext') !== false,
+    'Question Bank needs an explicit authorized copy workflow.');
+question_bank_assert(strpos($model, 'questions.session_id') !== false && strpos($model, 'questions.term') !== false,
+    'Question Bank reads must be session/term aware.');
+question_bank_assert(strpos($migration, 'context_root_id') !== false
+    && strpos($migration, 'remapSourceAssignments') !== false,
+    'Migration 139 must preserve multi-context legacy source assignments.');
+question_bank_assert(strpos($migration_config, "\$config['migration_version'] = 139;") !== false,
+    'The application migration target must include migration 139.');
+question_bank_assert(strpos($all_school_sql, 'SchoolLift Question Bank: session/term scope and assignment authorization') !== false
+    && strpos($all_school_sql, 'question_academic_scope_idx') !== false,
+    'The all-school SQL must include the idempotent migration 139 Question Bank changes.');
 
 echo "question bank integrity contract tests passed" . PHP_EOL;

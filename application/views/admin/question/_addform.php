@@ -1,4 +1,15 @@
-  <input type="hidden" name="recordid" value="<?php echo $recordid; ?>">
+ <input type="hidden" name="recordid" value="<?php echo $recordid; ?>">
+ <div class="row">
+     <div class="form-group col-md-6">
+         <label for="question-term">Term</label><small class="req"> *</small>
+         <select id="question-term" class="form-control" name="term">
+             <?php foreach (array('1st', '2nd', '3rd') as $term) { ?>
+                 <option value="<?php echo $term; ?>" <?php echo $current_term === $term ? 'selected' : ''; ?>><?php echo $term; ?> Term</option>
+             <?php } ?>
+         </select>
+         <span class="text text-danger term_error"></span>
+     </div>
+ </div>
  <div class="row">
                     <div class="form-group col-md-6">
                         <label for="subject_id"><?php echo $this->lang->line('subject') ?></label><small class="req"> *</small>
@@ -50,11 +61,11 @@ foreach ($classList as $class_key => $class_value) {
                     </div>
 
                  <div class="form-group col-md-6">
-                     <label for="section_id"><?php echo $this->lang->line('section'); ?></label>
+                     <label for="section_id"><?php echo $this->lang->line('section'); ?></label><small class="req"> *</small>
                      <select name="section_id" class="form-control question-scope-section" >
                          <option value=""><?php echo $this->lang->line('select'); ?></option>
                     </select>
-                    <span class="text-danger"><?php echo form_error('section_id'); ?></span>
+                    <span class="text text-danger section_id_error"></span>
                 </div>
                    </div>
 

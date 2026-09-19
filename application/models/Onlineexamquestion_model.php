@@ -25,6 +25,12 @@ class Onlineexamquestion_model extends CI_Model
             if (isset($where_search['subject']) && $where_search['subject'] != "") {
                 $this->db->where('subjects.id', $where_search['subject']);
             }
+            if (!empty($where_search['question_session_id'])) {
+                $this->db->where('questions.session_id', (int) $where_search['question_session_id']);
+            }
+            if (!empty($where_search['question_term'])) {
+                $this->db->where('questions.term', $where_search['question_term']);
+            }
             if (isset($where_search['keyword']) && $where_search['keyword'] != "") {
                 $this->db->like('question', $where_search['keyword']);
             }
@@ -116,6 +122,12 @@ class Onlineexamquestion_model extends CI_Model
         if (!empty($where_search)) {
             if (isset($where_search['subject']) && $where_search['subject'] != "") {
                 $this->db->where('subjects.id', $where_search['subject']);
+            }
+            if (!empty($where_search['question_session_id'])) {
+                $this->db->where('questions.session_id', (int) $where_search['question_session_id']);
+            }
+            if (!empty($where_search['question_term'])) {
+                $this->db->where('questions.term', $where_search['question_term']);
             }
             if (isset($where_search['keyword']) && $where_search['keyword'] != "") {
                 $this->db->like('question', $where_search['keyword']);

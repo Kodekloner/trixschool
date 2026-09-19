@@ -1,6 +1,6 @@
 # Online Examinations: Complete Workflow Guide
 
-Last reviewed against the current code: 10 September 2026 (Africa/Lagos)
+Last reviewed against the current code: 16 September 2026 (Africa/Lagos)
 
 This guide documents the current Nigerian-localised Online Examination workflow from setup to final result handling. It covers every page linked from the workflow, each supported assessment setup, the student experience, marking, missed examinations, rescheduling, manual recovery scores, automatic result posting, feedback, archiving, permissions, and the remaining legacy-only screens.
 
@@ -56,7 +56,7 @@ The examples below omit the school's domain. Access also depends on the staff me
 |---|---|---|
 | **Online Exam** | `/admin/onlineexam` | Lists current assessments and opens their roster, builder, edit, review, or delete/archive action. |
 | **Online Examination Review** | `/admin/onlineexam/review` | Class-arm matrix for attendance, scores, marking, missed papers, rescheduling, manual recovery scores, and result-posting conflicts. |
-| **Question Bank** | `/admin/question` | Creates, imports, views, edits, and deletes reusable source questions. |
+| **Question Bank** | `/admin/question` | Session-based source questions: filter, create, import, view, edit, delete, or explicitly copy authorized questions from another session/term. |
 | **Add academic assessment** | `/admin/onlineexam/workflow` | Creates the academic context and result destination. |
 | **Edit context** | `/admin/onlineexam/workflow/{assessment_id}` | Edits a draft assessment before it is frozen. |
 | **Paper and section builder** | `/admin/onlineexam/builder/{assessment_id}` | Creates the one paper, optional sections, questions, mappings, publication snapshot, and online-feedback setting. |
@@ -253,11 +253,22 @@ Session
 
 This prevents the common error where a subject is selected even though it is not assigned to every chosen arm. The server repeats every check, so a crafted or stale browser request cannot bypass the filters.
 
-### Teacher scope
+### Staff academic scope
 
-A user whose role is Teacher can create, view, or manage only a subject explicitly assigned to that teacher for the selected session and class arm. When several arms are selected, the teacher must hold the exact subject assignment in every selected arm. Being a teacher of another subject in the same class does not grant access.
+Academic ownership comes from the staff member's real `class_teacher` and
+`teacher_subjects` assignments, not from a hard-coded Teacher role number.
+Super Admin, Admin, and Head Teacher are the academic administrators. Other
+roles—including Principal—do not receive an automatic academic bypass merely
+because of their role name.
 
-Non-teacher staff still require the relevant role privilege and valid curriculum mapping.
+A subject teacher can create or manage an assessment only for the exact
+session, class arm, and subject recorded in `teacher_subjects`. When several
+arms are selected, that assignment must exist in every selected arm. A class
+teacher can view assessments and manage candidate attendance/recovery for the
+class arm they lead, but cannot change another teacher's paper/questions or
+marks. A staff member who is both class teacher and subject teacher receives
+the union of those rights. RBAC privileges are still required before any of
+these row-level rights take effect.
 
 ### One academic slot rule
 
@@ -372,7 +383,7 @@ The same panel lists assessment-authored questions and allows draft editing. If 
 
 ### Path B: select an existing Question Bank item
 
-The embedded Question Bank search is restricted on the server to the assessment's class, subject, and selected arms. Filter by keyword or question type, choose the paper and optional section, then enter marks, allowed negative mark, display order, marking scheme, and Compulsory status before assigning or updating it.
+The embedded Question Bank search is restricted on the server to the assessment's exact session, term, class, subject, and selected arms. Filter by keyword or question type, choose the paper and optional section, then enter marks, allowed negative mark, display order, marking scheme, and Compulsory status before assigning or updating it.
 
 A question from another class, subject, or unselected arm is rejected even if its identifier is manually submitted.
 
@@ -428,26 +439,81 @@ The rubric JSON is a structured note for audit and explanation; it does not calc
 
 Unanswered long-answer questions receive zero and do not require a manual mark. Automatically marked answers cannot be changed through the Theory marking form.
 
-## 11. The standalone Question Bank page
+## 11. The standalone, session-based Question Bank
 
 Open **Online Examinations → Question Bank** at `/admin/question`.
 
-The table contains Question ID, Subject, Question Type, Question, and Action. Level/difficulty is not present.
+### Academic context and table
 
-Available actions, subject to privileges, are:
+The global **Quick Session Change** is authoritative. The page never accepts a
+request parameter that silently changes that session. It shows only questions
+owned by that selected academic session and defaults the Term filter to the
+school's current term. **All terms** means all three terms inside the active
+session, never every historical session.
 
-- **Add Question** for a reusable bank question;
-- **Import** to download/use the CSV format and import questions;
+Each row shows Checkbox, Question ID, Term, Class, Arm, Subject, Question Type,
+Question, and Actions. The page provides server-side filters for Term, Class,
+Arm, Subject, Question Type, and Keyword. Level/difficulty is not present in
+the interface or database.
+
+New questions and CSV imports require one valid term and one exact arm. They
+are stamped with the global session on the server; a crafted client-supplied
+session is ignored. Class, arm, and subject choices cascade within the user's
+current academic assignment. The normal Question Bank keeps its simpler
+legacy authoring types. Use the builder's structured form for numeric
+tolerance, matching, ordering, grouped passages, and the current Long-answer
+definition.
+
+### Actions and protection
+
+Available actions, when both RBAC and academic scope permit them, are:
+
+- **Add Question** for a reusable source question;
+- **Import** to download/use the CSV format and import into the selected term,
+  class, exact arm, and subject;
+- **Copy Questions** for intentional reuse from an authorized earlier session
+  or term;
 - the eye icon to view the full question;
 - the pencil icon to edit;
 - the remove icon to delete; and
 - **Bulk Delete** for selected eligible records.
 
-The question form uses class, optional section/arm, and subject. Teachers see only their current-session assignments, and the school's “my question” configuration may further restrict them to their own questions.
+An assigned source question cannot be moved to another session, term, class,
+arm, or subject. Copy it into the desired context instead. Questions referenced
+by an online assessment cannot be deleted singly or in bulk. Frozen attempts
+always use immutable snapshots even when an unassigned source is later edited.
 
-Questions already referenced by an online assessment cannot be deleted singly or in bulk. A frozen attempt always uses its immutable snapshot even if the source Question Bank record is edited later.
+Legacy `section_id = 0` rows appear as **All arms (legacy)**. New records cannot
+use that value. Only an academic administrator, or a subject teacher assigned
+to every arm affected by the legacy source, may change it.
 
-The normal Question Bank retains its simpler legacy authoring types. Use the builder's structured-question form for numeric tolerance, matching, ordering, grouped passages, and the current long-answer definition. A legacy “Descriptive” bank item is not a supported compact CBT response; create a structured Long answer in a Theory/Essay paper instead.
+### Copy Questions workflow
+
+1. Choose an authorized source session and term.
+2. Optionally filter the source by class, arm, subject, type, or keyword.
+3. Tick one or more questions.
+4. Choose the target term, class, exact arm, and subject in the current global
+   session.
+5. Select **Copy selected questions**.
+
+The copy receives new question and option identifiers. Text, traditional
+answer key, dynamic options/answers, media references, and any structured
+definition are copied. Examination assignments, paper marks, attempts,
+student answers, and results are never copied. Source-view permission and
+target-create permission are both checked again on the server.
+
+### Question Bank role matrix
+
+| Staff scope | What can be seen | What can be created, edited, copied into, or deleted |
+|---|---|---|
+| Super Admin, Admin, Head Teacher | All questions in the global session | All permitted Question Bank content |
+| Class teacher only | Every curriculum or preserved legacy-question subject in their assigned class arm | Nothing unless the same staff member also has that subject in `teacher_subjects` |
+| Subject teacher | Their assigned subject/session/class arms | Full content management inside those exact assignments |
+| Class + subject teacher | All questions in the class-teacher arm, plus subject-teacher scope | Only the subjects/arms personally assigned in `teacher_subjects` |
+| Other role, including Principal | No automatic row access | Requires relevant RBAC and an applicable academic assignment |
+
+A legacy “Descriptive” item is not accepted as a current Theory response;
+create a structured Long answer in a Theory/Essay paper instead.
 
 ## 12. Step 4 — prepare the candidate roster
 
@@ -846,7 +912,17 @@ Because it is not currently a main sidebar or Review button, it should be treate
 | `question_bank` view/add/edit/delete | Manage reusable source questions. |
 | `import_question` view | Access Question Bank CSV import. |
 
-Privileges never bypass academic ownership. Teacher access is additionally restricted to exact session, class-arm, and subject assignments on list, setup, builder, roster, Review, marking, and analysis paths.
+Privileges never bypass academic ownership except for the explicit academic-administrator roles Super Admin, Admin, and Head Teacher. Assignment capabilities are applied consistently:
+
+| Staff scope | View papers/review | Change questions or papers | Candidate attendance/recovery | Marks/outcomes/conflicts |
+|---|---|---|---|---|
+| Super Admin, Admin, Head Teacher | All | Full | Full | Full |
+| Class teacher only | Every subject in their assigned arm/session | No, unless also assigned that subject | Assign/exclude, accommodations, attendance notes, and eligible rescheduling in their arm | No |
+| Subject teacher | Exact assigned subject/session/class arms | Full inside the assignment | Full for that subject assessment | Full inside the assignment |
+| Class + subject teacher | Union of both viewing scopes | Assigned subjects only | Entire assigned class arm | Assigned subjects only |
+| Other role, including Principal | No automatic access | Requires RBAC plus an applicable assignment | Same | Same |
+
+The server returns and enforces separate view, content-management, candidate-management, and marking capabilities. Hiding a button is not the security boundary: direct URLs, AJAX actions, bulk operations, and crafted identifiers repeat the same checks in controllers and domain models.
 
 State-changing actions use normal CSRF protection plus the Online Examination workflow token. Submitted identifiers are checked against their parent assessment and teacher scope. Question content and answers are sanitized, timing is enforced by the server, and lifecycle, marking, result synchronization, recovery, and archive actions are audited.
 
@@ -932,13 +1008,14 @@ Configure the Kindergarten assessment, subject, concepts, and labels first. Crea
 
 ## 26. Database deployment
 
-The current application migration version is **138**. The Online Examination workflow is delivered across:
+The current application migration version is **139**. The Online Examination workflow is delivered across:
 
 - migration 128 — Nigerian-localised assessment records, snapshots, attempts, marking, adapters, audit, and synchronization foundation;
 - migration 135 — compact CBT and Holiday posting alignment;
 - migration 136 — permanent removal of Question Bank Level/difficulty;
 - migration 137 — candidate-paper Review, rescheduling, supervised recovery score, and completed-assessment archive support; and
-- migration 138 — one paper alignment and unique subject/component academic slots per class arm.
+- migration 138 — one paper alignment and unique subject/component academic slots per class arm; and
+- migration 139 — Question Bank session/term ownership, legacy multi-context copies, exact-arm indexing, and baseline RBAC grants protected by assignment scope.
 
 The phpMyAdmin-compatible all-school bundle includes these migrations:
 

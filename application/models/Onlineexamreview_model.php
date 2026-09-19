@@ -1,7 +1,7 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-/** Class-arm review. Every read is enrollment-bound and teacher-subject scoped. */
+/** Class-arm review. Reads are enrollment-bound and use shared academic scope. */
 class Onlineexamreview_model extends CI_Model
 {
     public function __construct()
@@ -18,8 +18,16 @@ class Onlineexamreview_model extends CI_Model
             ->join('student_session ss', 'ss.section_id = s.id AND ss.class_id = cs.class_id')
             ->where('cs.class_id', (int) $class_id)->where('ss.session_id', (int) $session_id);
         if ($teacher_id !== null) {
-            $query->join('teacher_subjects ts', 'ts.class_section_id = cs.id')
-                ->where('ts.session_id', (int) $session_id)->where('ts.teacher_id', (int) $teacher_id);
+            $staff_id = (int) $teacher_id;
+            $session_id = (int) $session_id;
+            $query->where('(EXISTS (SELECT 1 FROM class_teacher review_ct'
+                . ' WHERE review_ct.staff_id=' . $staff_id
+                . ' AND review_ct.session_id=' . $session_id
+                . ' AND review_ct.class_id=cs.class_id AND review_ct.section_id=cs.section_id)'
+                . ' OR EXISTS (SELECT 1 FROM teacher_subjects review_ts'
+                . ' WHERE review_ts.teacher_id=' . $staff_id
+                . ' AND review_ts.session_id=' . $session_id
+                . ' AND review_ts.class_section_id=cs.id))', null, false);
         }
         return $query->order_by('s.section')->get()->result_array();
     }

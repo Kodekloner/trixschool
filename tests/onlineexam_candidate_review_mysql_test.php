@@ -33,6 +33,11 @@ class ReviewTestCustomlib {
     public function getUserData() { return array('role_id'=>2); }
     public function getStaffID() { return 10; }
 }
+class ReviewTestSession {
+    public function userdata($key) {
+        return $key === 'admin' ? array('roles'=>array('Teacher'=>2)) : null;
+    }
+}
 class ReviewTestInput { public function ip_address() { return '127.0.0.1'; } }
 class ReviewTestLoader {
     public function library($name) {
@@ -54,7 +59,7 @@ $db = DB(array('hostname' => $socket, 'username' => 'root', 'password' => '', 'd
     'dbdriver' => 'mysqli', 'db_debug' => true, 'char_set' => 'utf8mb4', 'dbcollat' => 'utf8mb4_unicode_ci'), true);
 review_assert($db->query('SHOW TABLES')->num_rows() === 0, 'The test database must be empty; existing tables will not be changed.');
 $GLOBALS['review_services'] = array('db' => $db, 'load' => new ReviewTestLoader(), 'setting_model' => new ReviewTestSettings(),
-    'customlib' => new ReviewTestCustomlib(), 'input' => new ReviewTestInput());
+    'customlib' => new ReviewTestCustomlib(), 'input' => new ReviewTestInput(), 'session' => new ReviewTestSession());
 require_once BASEPATH . 'database/DB_forge.php';
 require_once BASEPATH . 'database/drivers/mysqli/mysqli_forge.php';
 $GLOBALS['review_services']['dbforge'] = new CI_DB_mysqli_forge($db);
@@ -78,9 +83,25 @@ $db->query("CREATE TABLE subjects (id INT PRIMARY KEY, name VARCHAR(100), code V
 $db->query("CREATE TABLE classes (id INT PRIMARY KEY, class VARCHAR(100))");
 $db->query("CREATE TABLE sections (id INT PRIMARY KEY, section VARCHAR(30))");
 $db->query("CREATE TABLE class_sections (id INT PRIMARY KEY, class_id INT, section_id INT)");
+$db->query("CREATE TABLE class_teacher (id INT AUTO_INCREMENT PRIMARY KEY, class_id INT, staff_id INT, section_id INT, session_id INT)");
 $db->query("CREATE TABLE teacher_subjects (id INT AUTO_INCREMENT PRIMARY KEY, teacher_id INT, subject_id INT, session_id INT, class_section_id INT)");
 $db->query("CREATE TABLE subject_group_class_sections (id INT AUTO_INCREMENT PRIMARY KEY, subject_group_id INT, class_section_id INT, session_id INT)");
 $db->query("CREATE TABLE subject_group_subjects (id INT AUTO_INCREMENT PRIMARY KEY, subject_group_id INT, subject_id INT, session_id INT)");
+$db->query("CREATE TABLE sessions (id INT PRIMARY KEY, session VARCHAR(30))");
+$db->query("CREATE TABLE sch_settings (id INT PRIMARY KEY, session_id INT, term VARCHAR(10))");
+$db->query("CREATE TABLE roles (id INT PRIMARY KEY, name VARCHAR(100))");
+$db->query("CREATE TABLE permission_category (id INT PRIMARY KEY, short_code VARCHAR(100))");
+$db->query("CREATE TABLE roles_permissions (id INT AUTO_INCREMENT PRIMARY KEY, role_id INT, perm_cat_id INT, can_view INT, can_add INT, can_edit INT, can_delete INT, created_at DATETIME)");
+$db->query("CREATE TABLE questions (id INT AUTO_INCREMENT PRIMARY KEY, staff_id INT NULL, subject_id INT NULL,
+    question_type VARCHAR(100) NOT NULL, class_id INT NOT NULL, section_id INT NOT NULL, class_section_id INT NULL,
+    question TEXT NULL, opt_a TEXT NULL, opt_b TEXT NULL, opt_c TEXT NULL, opt_d TEXT NULL, opt_e TEXT NULL,
+    correct TEXT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATE NULL)");
+$db->query("CREATE TABLE question_options (id INT AUTO_INCREMENT PRIMARY KEY, question_id INT NOT NULL, `option` TEXT NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)");
+$db->query("CREATE TABLE question_answers (id INT AUTO_INCREMENT PRIMARY KEY, question_id INT NOT NULL, option_id INT NOT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)");
+$db->query("INSERT INTO sessions VALUES (1,'2025/2026'),(2,'2024/2025')");
+$db->query("INSERT INTO sch_settings VALUES (1,1,'1st')");
+$db->query("INSERT INTO roles VALUES (1,'Admin'),(2,'Teacher'),(8,'Head Teacher'),(9,'Principal')");
+$db->query("INSERT INTO permission_category VALUES (1,'question_bank'),(2,'import_question'),(3,'online_examination'),(4,'add_questions_in_exam'),(5,'online_assign_view_student')");
 $db->query("INSERT INTO onlineexam_questions (id,is_compulsory) VALUES (1,0)");
 $fixture_time = date('Y-m-d H:i:s');
 $db->insert('onlineexam', array('id'=>98,'workflow_version'=>2,'revision'=>1,'target_max_score'=>20,
@@ -107,7 +128,8 @@ $db->where_in('id', array(98, 99))->delete('onlineexam');
 $all_school_sql = file_get_contents(__DIR__ . '/../docs/all_school_database_migrations.sql');
 $migration_137_start = strpos($all_school_sql, '-- SchoolLift Online Examination: candidate paper review (migration 137).');
 $migration_138_start = strpos($all_school_sql, '-- SchoolLift Online Examination: one subject-paper academic slot (migration 138).');
-review_assert($migration_137_start !== false && $migration_138_start > $migration_137_start, 'The all-school SQL must contain ordered migration 137 and 138 sections.');
+$migration_139_start = strpos($all_school_sql, '-- SchoolLift Question Bank: session/term scope and assignment authorization');
+review_assert($migration_137_start !== false && $migration_138_start > $migration_137_start && $migration_139_start > $migration_138_start, 'The all-school SQL must contain ordered migration 137, 138 and 139 sections.');
 $migration_137_sql = substr($all_school_sql, $migration_137_start, $migration_138_start - $migration_137_start);
 foreach (array(1, 2) as $run) {
     $db->conn_id->multi_query($migration_137_sql);
@@ -118,7 +140,7 @@ $slot_upgrade = new Migration_Onlineexam_single_subject_slots();
 $slot_upgrade->up();
 $slot_upgrade->up();
 review_assert($db->table_exists('onlineexam_academic_slots'), 'Migration 138 must install the academic-slot table.');
-$migration_138_sql = substr($all_school_sql, $migration_138_start);
+$migration_138_sql = substr($all_school_sql, $migration_138_start, $migration_139_start - $migration_138_start);
 foreach (array(1, 2) as $run) {
     $db->conn_id->multi_query($migration_138_sql);
     do { if ($result = $db->conn_id->store_result()) { $result->free(); } } while ($db->conn_id->more_results() && $db->conn_id->next_result());
@@ -172,20 +194,71 @@ review_assert(array_column($choices['subjects'],'id') === array(1), 'Teacher ass
 review_assert(array_column($legacy->getWorkflowClassChoices(1,10),'id') === array(1), 'Teachers must see only classes with an assignment in the selected session.');
 review_assert($legacy->getWorkflowAcademicChoices(1,1,'4th',1)['subjects'] === array(), 'Invalid terms must be rejected.');
 
-// The shared Question Bank must apply the same exact session/class-arm/subject
-// boundary; a class assignment alone must never expose its other subjects.
-$db->query("CREATE TABLE questions (id INT PRIMARY KEY, staff_id INT, subject_id INT, class_id INT, section_id INT)");
-$db->query("INSERT INTO questions VALUES (1,10,1,1,1),(2,10,2,1,2),(3,10,1,1,2),(4,11,1,1,0)");
+// Migration 139 derives legacy contexts, clones dynamic answers correctly and
+// remains rerunnable through both deployment paths.
+$db->query("INSERT INTO questions (id,staff_id,subject_id,question_type,class_id,section_id,class_section_id,question,correct)
+    VALUES (1,10,1,'singlechoice',1,1,1,'Science one','opt_a'),
+           (2,10,2,'singlechoice',1,2,2,'English previous','opt_a'),
+           (3,10,1,'singlechoice',1,2,2,'Science class-teacher view','opt_a'),
+           (4,11,1,'singlechoice',1,0,NULL,'Legacy all arms','opt_a'),
+           (5,10,1,'multichoice',1,1,1,'Shared across sessions','')");
+$db->query("INSERT INTO question_options (id,question_id,`option`) VALUES (51,5,'Alpha'),(52,5,'Beta')");
+$db->query("INSERT INTO question_answers (question_id,option_id) VALUES (5,52)");
+$db->insert('onlineexam_question_definitions', array('question_id'=>5,'definition_version'=>1,
+    'definition_json'=>'{"question_type":"multichoice"}','created_by'=>10,'created_at'=>$now,'updated_at'=>$now));
+foreach (array(
+    array('id'=>95,'session_id'=>2,'term'=>'2nd','subject_id'=>2),
+    array('id'=>96,'session_id'=>1,'term'=>'1st','subject_id'=>1),
+    array('id'=>97,'session_id'=>2,'term'=>'2nd','subject_id'=>1),
+) as $legacy_exam) {
+    $db->insert('onlineexam', array_merge($legacy_exam, array('workflow_version'=>2,'revision'=>1,'class_id'=>1,
+        'purpose'=>'ca','result_adapter'=>'standard_component','target_component'=>'ca1','target_max_score'=>20,
+        'lifecycle_status'=>'draft','is_active'=>0)));
+}
+$db->query("INSERT INTO onlineexam_questions (id,onlineexam_id,question_id) VALUES (9,95,2),(10,96,5),(11,97,5)");
+require_once APPPATH . 'migrations/139_session_scope_question_bank.php';
+$question_upgrade = new Migration_Session_scope_question_bank();
+$question_upgrade->up();
+$question_upgrade->up();
+review_assert($db->where('context_root_id',5)->count_all_results('questions') === 2, 'A multi-session legacy question must have one source per session/term context.');
+$shared_sources = $db->where('context_root_id',5)->order_by('session_id')->get('questions')->result_array();
+foreach ($shared_sources as $shared_source) {
+    $options = $db->where('question_id',(int)$shared_source['id'])->order_by('id')->get('question_options')->result_array();
+    $answer = $db->where('question_id',(int)$shared_source['id'])->get('question_answers')->row_array();
+    review_assert(count($options) === 2 && (int)$answer['option_id'] === (int)$options[1]['id'], 'Copied dynamic answers must reference the copied option IDs.');
+}
+$migration_139_sql = substr($all_school_sql, $migration_139_start);
+foreach (array(1, 2) as $run) {
+    review_assert($db->conn_id->multi_query($migration_139_sql), 'The all-school migration 139 SQL must start successfully.');
+    do { if ($result = $db->conn_id->store_result()) { $result->free(); } } while ($db->conn_id->more_results() && $db->conn_id->next_result());
+    review_assert(!$db->conn_id->errno, 'The all-school migration 139 SQL must be rerunnable: ' . $db->conn_id->error);
+}
+review_assert($db->where('context_root_id',5)->count_all_results('questions') === 2, 'Rerunning migration 139 must not duplicate contextual source rows.');
+review_assert($db->where('role_id',2)->count_all_results('roles_permissions') === 5, 'Migration 139 must seed the Teacher RBAC gates exactly once.');
+$db->where_in('id', array(9,10,11))->delete('onlineexam_questions');
+$db->where_in('id', array(95,96,97))->delete('onlineexam');
+
+// The shared policy gives class teachers view/candidate scope across their arm,
+// while content and marks still require an exact teacher_subjects assignment.
+$db->query("INSERT INTO class_teacher(class_id,staff_id,section_id,session_id) VALUES (1,10,2,1)");
 require_once APPPATH . 'models/Question_model.php';
 $question_bank = new Question_model();
 review_assert($question_bank->canAccessQuestionScope(1,1,1), 'A teacher must access their assigned subject and arm.');
 review_assert(!$question_bank->canAccessQuestionScope(1,2,1), 'An assignment in another arm must not grant access here.');
 review_assert(!$question_bank->canAccessQuestionScope(1,2,2), 'Another teacher\'s subject in the same class must remain inaccessible.');
-review_assert($question_bank->canAccessQuestion(1) && !$question_bank->canAccessQuestion(2) && !$question_bank->canAccessQuestion(3), 'Question reads must enforce exact subject and arm ownership.');
+review_assert($question_bank->canAccessQuestion(1) && !$question_bank->canAccessQuestion(2) && $question_bank->canAccessQuestion(3), 'Question reads must combine subject-teacher scope with class-teacher arm viewing.');
+review_assert(!$question_bank->canAccessQuestion(3,null,'content'), 'Class-teacher visibility must not grant question editing without the subject assignment.');
 review_assert($question_bank->canAccessQuestion(2,2), 'Assessment authoring must evaluate the teaching assignment in that assessment\'s session.');
 review_assert($question_bank->canAccessQuestion(4), 'A class-wide question remains reusable only when the teacher has that subject in the class.');
 $question_choices = $question_bank->getQuestionBankAcademicChoices(1,1);
-review_assert(array_column($question_choices['subjects'],'id') === array(1) && array_column($question_choices['sections'],'id') === array(1), 'Question Bank dropdowns must contain only the teacher\'s assigned class-arm subjects.');
+review_assert(array_map('intval', array_column($question_choices['subjects'],'id')) === array(1)
+    && array_map('intval', array_column($question_choices['sections'],'id')) === array(1,2),
+    'Question Bank viewing choices must include both subject-teacher and class-teacher arms: '
+        . json_encode($question_choices));
+$question_write_choices = $question_bank->getQuestionBankAcademicChoices(1,1,null,'content');
+review_assert(array_map('intval', array_column($question_write_choices['subjects'],'id')) === array(1)
+    && array_map('intval', array_column($question_write_choices['sections'],'id')) === array(1),
+    'Question Bank authoring choices must remain limited to exact subject assignments.');
 
 $future_start = date('Y-m-d H:i:s', time()+3600);
 $future_end = date('Y-m-d H:i:s', time()+7200);
