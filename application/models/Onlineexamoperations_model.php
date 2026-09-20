@@ -11,7 +11,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  *   array(
  *       'allowed_onlineexam_ids' => array(1, 2), // optional hard allow-list
  *       'access_mode'            => 'view',      // view/content/candidate/mark
- *       'enforce_assignment'     => true,        // legacy teacher_subjects mode
+ *       'enforce_assignment'     => true,        // legacy assignment-scope mode
  *       'staff_id'               => 12,
  *       'section_ids'            => array(3),    // optional narrower scope
  *       'attempt_ids'            => array(45),   // optional narrower scope
@@ -1760,18 +1760,20 @@ class Onlineexamoperations_model extends CI_Model
             if (empty($scope['staff_id'])) {
                 return $this->failure('staff_scope_required', 'A staff identity is required to enforce teacher assignment scope.');
             }
-            $teacher_query = $this->db->select('class_sections.section_id')
-                ->distinct()
-                ->from('teacher_subjects')
-                ->join('class_sections', 'class_sections.id = teacher_subjects.class_section_id')
-                ->where('teacher_subjects.teacher_id', (int) $scope['staff_id'])
-                ->where('teacher_subjects.subject_id', (int) $exam['subject_id'])
-                ->where('teacher_subjects.session_id', (int) $exam['session_id'])
-                ->where('class_sections.class_id', (int) $exam['class_id']);
+            $this->load->model('academicaccess_model');
+            $teacher_sections = array_map('intval', array_column(
+                $this->academicaccess_model->subjectTeacherAssignments(
+                    (int) $exam['session_id'],
+                    (int) $exam['class_id'],
+                    (int) $exam['subject_id'],
+                    0,
+                    (int) $scope['staff_id']
+                ),
+                'section_id'
+            ));
             if (!empty($exam_sections)) {
-                $teacher_query->where_in('class_sections.section_id', $exam_sections);
+                $teacher_sections = array_values(array_intersect($teacher_sections, $exam_sections));
             }
-            $teacher_sections = array_map('intval', array_column($teacher_query->get()->result_array(), 'section_id'));
             if (empty($teacher_sections)) {
                 return $this->failure('teacher_assignment_required', 'The staff member is not assigned to this assessment subject and class arm.');
             }

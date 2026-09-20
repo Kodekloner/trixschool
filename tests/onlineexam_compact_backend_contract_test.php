@@ -65,7 +65,9 @@ compact_backend_assert(strpos($admin, 'in_list[cbt]') !== false, 'Admin paper sa
 compact_backend_assert(strpos($admin, 'retiredOnlineexamAction') !== false, 'Legacy admin mutations must terminate explicitly.');
 compact_backend_assert(strpos($admin, 'compactAssessmentIsExecutable') !== false, 'Historical workflow-v2 variants must remain read-only on admin routes.');
 compact_backend_assert(strpos($admin, '$this->question_model->canAccessQuestion($question_id, $exam->session_id)') !== false, 'Question assignment must reject crafted Question Bank identifiers outside the exact assessment-session scope.');
-compact_backend_assert(strpos($admin, 'workflowTeacherAssignedSectionIds(') !== false, 'Teacher Question Bank searches must use exact subject/session/class-arm assignments.');
+compact_backend_assert(strpos($admin, 'workflowTeacherHasAssignment(') !== false
+    && strpos($admin, 'canManageAllSections') !== false,
+    'Teacher Question Bank searches and assessment changes must use exact subject/session/class-arm assignments.');
 compact_backend_assert(strpos($admin, 'This question belongs to a class arm that is not selected for the assessment.') !== false, 'Question assignment must reject crafted identifiers from an unselected class arm.');
 compact_backend_assert(strpos($admin, "\$mark_scope = \$this->workflowOperationScope(\$exam, 'mark');") !== false
     && substr_count($admin, "->where_in('ss.section_id', \$mark_scope['section_ids'])") >= 2,
@@ -84,6 +86,7 @@ compact_backend_assert(strpos($student, "show_error('Legacy Online Examination p
 compact_backend_assert(strpos($student, 'final_answers') !== false && strpos($student, 'requestReceivedAt') !== false, 'Student submission must pass the bounded atomic answer packet and trusted arrival time.');
 
 $model = compact_backend_source('application/models/Onlineexam_model.php');
+$academic_access = compact_backend_source('application/models/Academicaccess_model.php');
 compact_backend_assert(strpos($model, '$copied = $reference_count > 1;') !== false, 'Authored question edits need copy-on-write only for shared sources.');
 compact_backend_assert(strpos($model, 'LIMIT 1 FOR UPDATE') !== false, 'Question assignment and candidate synchronization need transactional row locks.');
 compact_backend_assert(strpos($model, "SELECT * FROM `onlineexam` WHERE `id` =") !== false && strpos($model, '!empty($locked_exam->deleted_at)') !== false, 'Roster saves must lock the assessment and reject a concurrently archived roster.');
@@ -93,7 +96,10 @@ compact_backend_assert(
 );
 compact_backend_assert(strpos($model, 'onlineexam.workflow_version = 2 AND') !== false
     && strpos($model, 'class_teacher access_ct') !== false
-    && strpos($model, 'access_ts.subject_id=onlineexam.subject_id') !== false,
+    && strpos($model, 'subjectAssignmentExistsSql') !== false
+    && strpos($academic_access, 'access_ts.subject_id=') !== false
+    && strpos($academic_access, 'subjecttables') !== false
+    && strpos($academic_access, 'subject_timetable') !== false,
     'Assessment lists must use the class-teacher/subject-teacher scope union and hide legacy records.');
 compact_backend_assert(strpos($model, 'public function getWorkflowClassChoices') !== false, 'Teacher assessment creation needs session-scoped class choices.');
 compact_backend_assert(strpos($model, "'exam' => 'term'") !== false, 'Exam must reserve a term assessment slot.');

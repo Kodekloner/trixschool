@@ -414,20 +414,8 @@ class Onlineexam extends Admin_Controller
                     ? 'No subjects are assigned to this class in the selected session.' : 'Select a subject to load its class arms.'),
             )));
         }
-        $userdata = $this->customlib->getUserData();
-        if (!empty($userdata['role_id']) && (int) $userdata['role_id'] === 2) {
-            $allowed = $this->workflowTeacherAssignedSectionIds($class_id, $subject_id, $session_id);
-            $sections = array_values(array_filter($sections, function ($section) use ($allowed) {
-                $id = is_array($section) ? $section['id'] : $section->id;
-                return in_array((int) $id, $allowed, true);
-            }));
-            if (empty($sections)) {
-                return $this->output->set_status_header(403)->set_content_type('application/json')->set_output(json_encode(array(
-                    'status' => 0,
-                    'message' => 'This class and subject are outside your teaching assignment.',
-                )));
-            }
-        }
+        // setupAcademicChoices already applies the shared academic policy to
+        // every non-administrator role. Do not special-case role ID 2 here.
         $available_section_ids = array_map('intval', array_column($sections, 'id'));
         // Parent changes can invalidate previously checked arms. Saves still reject crafted IDs.
         $selected_section_ids = array_values(array_intersect($selected_section_ids, $available_section_ids));
@@ -1735,14 +1723,6 @@ class Onlineexam extends Admin_Controller
         $section_ids = array_values(array_unique(array_filter(array_map('intval', (array) $section_ids))));
         return $this->academicaccess_model->canManageAllSections(
             'content', $session_id, $class_id, $section_ids, $subject_id
-        );
-    }
-
-    private function workflowTeacherAssignedSectionIds($class_id, $subject_id, $session_id, $section_ids = array())
-    {
-        $section_ids = array_values(array_unique(array_filter(array_map('intval', (array) $section_ids))));
-        return $this->academicaccess_model->sectionIdsFor(
-            'content', $session_id, $class_id, $subject_id, $section_ids
         );
     }
 

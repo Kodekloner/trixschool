@@ -7,6 +7,7 @@ class Onlineexam_model extends MY_model
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('academicaccess_model');
         $this->current_session = $this->setting_model->getCurrentSession();
     }
     public function add($data)
@@ -86,16 +87,20 @@ class Onlineexam_model extends MY_model
             ->from('onlineexam');
         if ($teacher_id !== null) {
             $teacher_id = (int) $teacher_id;
+            $subject_assignment = $this->academicaccess_model->subjectAssignmentExistsSql(
+                'onlineexam.class_id',
+                'access_ocs.section_id',
+                'onlineexam.session_id',
+                'onlineexam.subject_id',
+                $teacher_id
+            );
             $condition = "(onlineexam.workflow_version = 2 AND EXISTS ("
                 . "SELECT 1 FROM onlineexam_class_sections access_ocs "
                 . "WHERE access_ocs.onlineexam_id=onlineexam.id AND ("
                 . "EXISTS (SELECT 1 FROM class_teacher access_ct WHERE access_ct.staff_id=" . $teacher_id
                 . " AND access_ct.session_id=onlineexam.session_id AND access_ct.class_id=onlineexam.class_id"
                 . " AND access_ct.section_id=access_ocs.section_id) OR "
-                . "EXISTS (SELECT 1 FROM teacher_subjects access_ts INNER JOIN class_sections access_cs"
-                . " ON access_cs.id=access_ts.class_section_id WHERE access_ts.teacher_id=" . $teacher_id
-                . " AND access_ts.subject_id=onlineexam.subject_id AND access_ts.session_id=onlineexam.session_id"
-                . " AND access_cs.class_id=onlineexam.class_id AND access_cs.section_id=access_ocs.section_id))))";
+                . $subject_assignment . ")))";
             $this->datatables->where($condition, null, false, false);
         }
        return $this->datatables->generate('json');
@@ -516,13 +521,26 @@ class Onlineexam_model extends MY_model
     /** Classes in which a teacher has at least one exact subject assignment. */
     public function getWorkflowClassChoices($session_id, $teacher_id = null)
     {
-        $query = $this->db->distinct()->select('classes.id, classes.class')
-            ->from('classes')
-            ->join('class_sections', 'class_sections.class_id = classes.id');
         if ($teacher_id !== null) {
-            $query->join('teacher_subjects ts', 'ts.class_section_id = class_sections.id')
-                ->where('ts.teacher_id', (int) $teacher_id)
-                ->where('ts.session_id', (int) $session_id);
+            $class_ids = array_values(array_unique(array_map('intval', array_column(
+                $this->academicaccess_model->subjectTeacherAssignments(
+                    (int) $session_id,
+                    0,
+                    0,
+                    0,
+                    (int) $teacher_id
+                ),
+                'class_id'
+            ))));
+            if (empty($class_ids)) {
+                return array();
+            }
+            $query = $this->db->select('classes.id, classes.class')
+                ->from('classes')->where_in('classes.id', $class_ids);
+        } else {
+            $query = $this->db->distinct()->select('classes.id, classes.class')
+                ->from('classes')
+                ->join('class_sections', 'class_sections.class_id = classes.id');
         }
         $rows = $query->order_by('classes.id')->get()->result_array();
         foreach ($rows as $key => $row) {
@@ -547,8 +565,13 @@ class Onlineexam_model extends MY_model
             ->where('sgcs.session_id', (int) $session_id)
             ->where('sgs.session_id', (int) $session_id);
         if ($teacher_id !== null) {
-            $this->db->join('teacher_subjects ts', 'ts.class_section_id=class_sections.id AND ts.subject_id=subjects.id')
-                ->where('ts.teacher_id', (int) $teacher_id)->where('ts.session_id', (int) $session_id);
+            $this->db->where($this->academicaccess_model->subjectAssignmentExistsSql(
+                'class_sections.class_id',
+                'class_sections.section_id',
+                (string) (int) $session_id,
+                'subjects.id',
+                (int) $teacher_id
+            ), null, false);
         }
         $rows = $this->db->order_by('subjects.name')->order_by('sections.section')->get()->result_array();
         $subjects = array();

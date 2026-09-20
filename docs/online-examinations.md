@@ -209,7 +209,7 @@ Confirm the following existing school data first:
 4. The subject is assigned to every intended arm through the school's subject/class assignment records.
 5. Standard classes have the correct result setting, CA names, CA maximums, and `MidTermCaToUse` values. For an Exam purpose, the enabled CA maximums must leave a positive balance below 100.
 6. British classes have `ResultType = british`, and Holiday or Kindergarten settings already exist when those purposes will be used.
-7. Each subject teacher is assigned to the exact session, class arm, and subject in `teacher_subjects`.
+7. Each subject teacher is assigned to the exact session, class arm, and subject. The workflow recognizes both the **Assign Subject** records in `teacher_subjects` and the two timetable formats used by this codebase, `subject_timetable` and `subjecttables`.
 
 This preparation controls what appears in the form. A missing subject or arm is normally an academic-assignment issue, not an Online Examination display fault.
 
@@ -255,15 +255,20 @@ This prevents the common error where a subject is selected even though it is not
 
 ### Staff academic scope
 
-Academic ownership comes from the staff member's real `class_teacher` and
-`teacher_subjects` assignments, not from a hard-coded Teacher role number.
+Academic ownership comes from the staff member's real `class_teacher` record
+and recognized subject assignments, not from a hard-coded Teacher role number.
+Subject ownership may come from **Assign Subject** (`teacher_subjects`) or from
+either supported subject-timetable table (`subject_timetable` or
+`subjecttables`). Whichever source grants access must identify the exact
+academic session, class, arm, and subject.
 Super Admin, Admin, and Head Teacher are the academic administrators. Other
 roles—including Principal—do not receive an automatic academic bypass merely
 because of their role name.
 
-A subject teacher can create or manage an assessment only for the exact
-session, class arm, and subject recorded in `teacher_subjects`. When several
-arms are selected, that assignment must exist in every selected arm. A class
+A subject teacher can create or manage an assessment only for an exact
+session, class arm, and subject found in one of those recognized assignment
+sources. When several arms are selected, that assignment must exist in every
+selected arm. A class
 teacher can view assessments and manage candidate attendance/recovery for the
 class arm they lead, but cannot change another teacher's paper/questions or
 marks. A staff member who is both class teacher and subject teacher receives
@@ -507,9 +512,9 @@ target-create permission are both checked again on the server.
 | Staff scope | What can be seen | What can be created, edited, copied into, or deleted |
 |---|---|---|
 | Super Admin, Admin, Head Teacher | All questions in the global session | All permitted Question Bank content |
-| Class teacher only | Every curriculum or preserved legacy-question subject in their assigned class arm | Nothing unless the same staff member also has that subject in `teacher_subjects` |
+| Class teacher only | Every curriculum or preserved legacy-question subject in their assigned class arm | Nothing unless the same staff member also has an exact recognized subject assignment |
 | Subject teacher | Their assigned subject/session/class arms | Full content management inside those exact assignments |
-| Class + subject teacher | All questions in the class-teacher arm, plus subject-teacher scope | Only the subjects/arms personally assigned in `teacher_subjects` |
+| Class + subject teacher | All questions in the class-teacher arm, plus subject-teacher scope | Only the subjects/arms personally assigned through Assign Subject or the subject timetable |
 | Other role, including Principal | No automatic row access | Requires relevant RBAC and an applicable academic assignment |
 
 A legacy “Descriptive” item is not accepted as a current Theory response;
@@ -780,7 +785,7 @@ If no component is offered, there is no published current assessment matching th
 
 Rows contain every active student enrolled in the selected session/class/arm. Columns contain subject names only. Each cell is a compact button showing the status or score. This makes unassigned students visible even though they do not see the assessment in their portal.
 
-Teachers see only the arms and subject columns covered by their exact `teacher_subjects` assignment.
+Teachers see only the arms and subject columns covered by their exact recognized subject assignment. This includes Assign Subject and either supported timetable format; an assignment from another session or arm does not grant access.
 
 ### Cell statuses
 
