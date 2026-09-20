@@ -168,6 +168,15 @@ class Idcardstudio_model extends CI_Model
             return array('status' => 'invalid_state');
         }
         if ($expectedChecksum === '' || !hash_equals((string) $draft->checksum, (string) $expectedChecksum)) {
+            if ($expectedChecksum !== '' && $this->draftMatchesPayload($design, $draft, $payload)) {
+                $this->db->trans_rollback();
+                return array(
+                    'status' => 'saved',
+                    'checksum' => $draft->checksum,
+                    'updated_at' => $draft->updated_at,
+                    'recovered_retry' => true,
+                );
+            }
             $this->db->trans_rollback();
             return array('status' => 'conflict', 'checksum' => $draft->checksum);
         }
@@ -199,7 +208,7 @@ class Idcardstudio_model extends CI_Model
         return array('status' => 'saved', 'checksum' => $payload['checksum'], 'updated_at' => $now);
     }
 
-    public function publish($designId, $expectedChecksum, $staffId)
+    public function publish($designId, $expectedChecksum, $expectedPublishedVersionId, $staffId)
     {
         $this->db->trans_begin();
         $design = $this->lockedDesign($designId);
@@ -211,6 +220,26 @@ class Idcardstudio_model extends CI_Model
         if (!$draft || $draft->state !== 'draft') {
             $this->db->trans_rollback();
             return array('status' => 'invalid_state');
+        }
+        if ((int) $design->published_version_id !== (int) $expectedPublishedVersionId) {
+            $published = $design->published_version_id
+                ? $this->lockedVersion($design->published_version_id)
+                : null;
+            if ($published
+                && $expectedChecksum !== ''
+                && hash_equals((string) $draft->checksum, (string) $expectedChecksum)
+                && hash_equals((string) $published->checksum, (string) $expectedChecksum)) {
+                $this->db->trans_rollback();
+                return array(
+                    'status' => 'published',
+                    'published_version_id' => (int) $published->id,
+                    'draft_version_id' => (int) $draft->id,
+                    'draft_checksum' => $draft->checksum,
+                    'recovered_retry' => true,
+                );
+            }
+            $this->db->trans_rollback();
+            return array('status' => 'conflict', 'checksum' => $draft->checksum);
         }
         if ($expectedChecksum === '' || !hash_equals((string) $draft->checksum, (string) $expectedChecksum)) {
             $this->db->trans_rollback();
@@ -265,6 +294,16 @@ class Idcardstudio_model extends CI_Model
             'draft_version_id' => $newDraftId,
             'draft_checksum' => $draft->checksum,
         );
+    }
+
+    private function draftMatchesPayload($design, $draft, array $payload)
+    {
+        return isset($payload['checksum'], $payload['title'], $payload['width_mm'], $payload['height_mm'], $payload['orientation'])
+            && hash_equals((string) $draft->checksum, (string) $payload['checksum'])
+            && (string) $design->title === (string) $payload['title']
+            && abs((float) $design->width_mm - (float) $payload['width_mm']) < .0005
+            && abs((float) $design->height_mm - (float) $payload['height_mm']) < .0005
+            && (string) $design->orientation === (string) $payload['orientation'];
     }
 
     public function useLegacyRenderer($designId, $expectedPublishedVersionId, $staffId)

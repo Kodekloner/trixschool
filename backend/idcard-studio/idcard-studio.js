@@ -1916,17 +1916,30 @@
 
     function saveDraft(automatic) {
         clearTimeout(state.autosaveTimer);
-        if (state.loading || state.gesture || state.drawNodes.length) {
+        if (state.drawNodes.length) {
             if (automatic) {
                 state.autosaveTimer = window.setTimeout(function () {
                     saveDraft(true).catch(function () {});
                 }, 500);
                 return Promise.resolve(false);
             }
-            if (state.drawNodes.length) {
-                var error = new Error('Finish or cancel the current path before saving.');
-                showMessage(error.message, 'info');
-                return Promise.reject(error);
+            if (state.drawNodes.length >= 2) {
+                return finishPath().then(function () {
+                    return saveDraft(false);
+                });
+            }
+            setTool('select');
+            showMessage(
+                'The incomplete one-point path was discarded and the draft will be saved.',
+                'info'
+            );
+        }
+        if (state.loading || state.gesture) {
+            if (automatic) {
+                state.autosaveTimer = window.setTimeout(function () {
+                    saveDraft(true).catch(function () {});
+                }, 500);
+                return Promise.resolve(false);
             }
             return new Promise(function (resolve) {
                 window.setTimeout(resolve, 100);
@@ -1944,21 +1957,32 @@
         }
         captureCurrent(false);
         collectPrintSettings();
-        setSaveState(automatic ? 'Autosaving…' : 'Saving…');
+        var repairCount = repairDocumentsForSave(false);
+        setSaveState(repairCount ? 'Repairing and saving…' : automatic ? 'Autosaving…' : 'Saving…');
         var sentRevision = state.revision;
 
-        var form = new FormData();
-        form.append('studio_csrf', config.csrf);
-        form.append('expected_published_version_id', config.publishedVersionId || '');
-        form.append('expected_checksum', state.checksum);
-        form.append('title', elements.title.value);
-        form.append('width_mm', state.widthMm);
-        form.append('height_mm', state.heightMm);
-        form.append('front_json', JSON.stringify(state.documents.front));
-        form.append('back_json', JSON.stringify(state.documents.back));
-        form.append('print_settings_json', JSON.stringify(state.print));
+        function submit(retried, transientAttempt) {
+            return request(config.endpoints.save, buildSaveForm()).catch(function (error) {
+                if (error.status === 422 && !retried) {
+                    var extraRepairs = repairDocumentsForSave(true);
+                    repairCount += extraRepairs;
+                    sentRevision = state.revision;
+                    setSaveState('Correcting a validation error and saving again…');
+                    return submit(true, transientAttempt);
+                }
+                if ((!error.status || error.status >= 500) && transientAttempt < 2) {
+                    setSaveState('Server error; retrying save…');
+                    return new Promise(function (resolve) {
+                        window.setTimeout(resolve, 300 * (transientAttempt + 1));
+                    }).then(function () {
+                        return submit(retried, transientAttempt + 1);
+                    });
+                }
+                throw error;
+            });
+        }
 
-        state.savePromise = request(config.endpoints.save, form)
+        state.savePromise = submit(false, 0)
             .then(function (response) {
                 if (response.status !== 'saved') {
                     throw new Error(response.message || 'The draft was not saved.');
@@ -1968,8 +1992,18 @@
                 setSaveState(
                     state.dirty
                         ? 'Saving newer changes…'
-                        : 'Saved ' + new Date().toLocaleTimeString()
+                        : 'Saved ' +
+                              new Date().toLocaleTimeString() +
+                              (repairCount ? ' · corrected ' + repairCount + ' item(s)' : '')
                 );
+                if (repairCount) {
+                    showMessage(
+                        'The Studio corrected ' +
+                            repairCount +
+                            ' recoverable design issue(s) and saved the draft.',
+                        'warning'
+                    );
+                }
                 return true;
             })
             .catch(function (error) {
@@ -1985,6 +2019,501 @@
         });
     }
 
+    function buildSaveForm() {
+        var form = new FormData();
+        form.append('studio_csrf', config.csrf);
+        form.append('expected_published_version_id', config.publishedVersionId || '');
+        form.append('expected_checksum', state.checksum);
+        form.append('title', elements.title.value);
+        form.append('width_mm', state.widthMm);
+        form.append('height_mm', state.heightMm);
+        form.append('front_json', JSON.stringify(state.documents.front));
+        form.append('back_json', JSON.stringify(state.documents.back));
+        form.append('print_settings_json', JSON.stringify(state.print));
+        return form;
+    }
+
+    function repairDocumentsForSave(aggressive) {
+        var repaired = 0;
+        var title = String(elements.title.value || '')
+            .replace(/<[^>]*>/g, '')
+            .trim();
+        title = truncateUtf8(title, 191);
+        if (!title) {
+            title = (config.subjectType === 'staff' ? 'Staff' : 'Student') + ' ID Card';
+        }
+        if (title !== elements.title.value) {
+            elements.title.value = title;
+            repaired += 1;
+        }
+        ['front', 'back'].forEach(function (side) {
+            var documentData = state.documents[side];
+            if (!documentData || typeof documentData !== 'object' || Array.isArray(documentData)) {
+                documentData = {};
+                repaired += 1;
+            }
+            if (documentData.schemaVersion !== 2) {
+                repaired += 1;
+            }
+            documentData.schemaVersion = 2;
+            if (documentData.side !== side) {
+                repaired += 1;
+            }
+            documentData.side = side;
+            if (
+                !documentData.background ||
+                !['color', 'asset', 'binding'].includes(documentData.background.type)
+            ) {
+                documentData.background = {type: 'color', value: '#ffffff'};
+                repaired += 1;
+            } else if (documentData.background.type === 'color') {
+                var backgroundColor = safeSaveColor(documentData.background.value, '#ffffff');
+                if (documentData.background.value !== backgroundColor) {
+                    documentData.background.value = backgroundColor;
+                    repaired += 1;
+                }
+                repaired += retainFields(documentData.background, ['type', 'value']);
+            } else if (
+                (documentData.background.type === 'asset' &&
+                    number(documentData.background.assetId, 0) < 1) ||
+                (documentData.background.type === 'binding' &&
+                    documentData.background.binding !== 'school.background')
+            ) {
+                documentData.background = {type: 'color', value: '#ffffff'};
+                repaired += 1;
+            } else if (documentData.background.type === 'asset') {
+                repaired += repairNumber(
+                    documentData.background,
+                    'assetId',
+                    1,
+                    1,
+                    2147483647,
+                    true
+                );
+                documentData.background.fit = 'cover';
+                repaired += retainFields(documentData.background, ['type', 'assetId', 'fit']);
+            } else {
+                documentData.background.fit = 'cover';
+                repaired += retainFields(documentData.background, ['type', 'binding', 'fit']);
+            }
+            if (!Array.isArray(documentData.objects)) {
+                documentData.objects = [];
+                repaired += 1;
+            }
+            documentData.objects = documentData.objects.map(function (object, index) {
+                if (object && typeof object === 'object' && !Array.isArray(object)) {
+                    return object;
+                }
+                repaired += 1;
+                return {
+                    id: 'recovered-' + (index + 1),
+                    type: 'rect',
+                    x: state.widthMm / 2,
+                    y: state.heightMm / 2,
+                    width: Math.min(20, state.widthMm),
+                    height: Math.min(10, state.heightMm)
+                };
+            });
+            if (documentData.objects.length > 150) {
+                documentData.objects = documentData.objects.slice(0, 150);
+                repaired += 1;
+            }
+            var used = {};
+            documentData.objects.forEach(function (object, index) {
+                repaired += repairObjectForSave(object, index, used, aggressive);
+            });
+            logicalUnits(documentData.objects).forEach(function (unit) {
+                var before = JSON.stringify(unit);
+                geometry.fit(unit, state.widthMm, state.heightMm);
+                if (
+                    unit.some(function (object) {
+                        return (
+                            object.width < minimumSize(object) ||
+                            object.height < minimumSize(object)
+                        );
+                    })
+                ) {
+                    unit.forEach(function (object) {
+                        object.group = '';
+                        object.width = Math.max(minimumSize(object), object.width);
+                        object.height = Math.max(minimumSize(object), object.height);
+                        geometry.fit([object], state.widthMm, state.heightMm);
+                    });
+                }
+                if (before !== JSON.stringify(unit)) {
+                    repaired += 1;
+                }
+            });
+            repaired += retainFields(documentData, [
+                'schemaVersion',
+                'side',
+                'background',
+                'objects'
+            ]);
+            while (byteLength(documentData) > 250000) {
+                var path = documentData.objects
+                    .filter(function (object) {
+                        return object.type === 'path' && object.nodes.length > 2;
+                    })
+                    .sort(function (a, b) {
+                        return b.nodes.length - a.nodes.length;
+                    })[0];
+                if (!path) {
+                    break;
+                }
+                path.nodes = path.nodes.filter(function (node, index) {
+                    return index === 0 || index === path.nodes.length - 1 || index % 2 === 0;
+                });
+                repaired += 1;
+            }
+            state.documents[side] = documentData;
+        });
+        if (repaired) {
+            state.revision += 1;
+            state.dirty = true;
+            pushHistory();
+        }
+        return repaired;
+    }
+
+    function repairObjectForSave(object, index, used, aggressive) {
+        var repaired = 0;
+        var types = renderer.shapeTypes.concat(['text', 'image', 'qr', 'barcode']);
+        if (!object || typeof object !== 'object') {
+            object = {};
+        }
+        if (!types.includes(object.type)) {
+            object.type = 'rect';
+            repaired += 1;
+        }
+        var base =
+            String(object.id || object.type + '-' + (index + 1))
+                .replace(/[^A-Za-z0-9_-]/g, '')
+                .replace(/^[^A-Za-z0-9]+/, '')
+                .slice(0, 64) || object.type + '-' + (index + 1);
+        var id = base,
+            suffix = 2;
+        while (used[id]) {
+            id = (base.slice(0, 60) + '-' + suffix).slice(0, 64);
+            suffix += 1;
+        }
+        used[id] = true;
+        if (object.id !== id) {
+            object.id = id;
+            repaired += 1;
+        }
+        var minimum = minimumSize(object),
+            maximum = Math.hypot(state.widthMm, state.heightMm);
+        repaired += repairNumber(object, 'x', state.widthMm / 2, 0, state.widthMm);
+        repaired += repairNumber(object, 'y', state.heightMm / 2, 0, state.heightMm);
+        repaired += repairNumber(object, 'width', Math.min(20, state.widthMm), minimum, maximum);
+        repaired += repairNumber(object, 'height', Math.min(10, state.heightMm), minimum, maximum);
+        repaired += repairNumber(object, 'rotation', 0, -360, 360);
+        repaired += repairNumber(object, 'opacity', 1, 0, 1);
+        object.visible = object.visible !== false;
+        object.locked = object.locked === true;
+        object.flipX = object.flipX === true;
+        object.flipY = object.flipY === true;
+        var group = String(object.group || '')
+            .replace(/[^A-Za-z0-9_-]/g, '')
+            .replace(/^[^A-Za-z0-9]+/, '')
+            .slice(0, 64);
+        if (object.group !== group) {
+            object.group = group;
+            repaired += 1;
+        }
+        if (object.type === 'path') {
+            var nodes = Array.isArray(object.nodes) ? object.nodes.slice(0, 256) : [];
+            nodes = nodes.map(repairCurveNode).filter(Boolean);
+            if (nodes.length < 2) {
+                object.type = 'line';
+                delete object.nodes;
+                delete object.closed;
+                repaired += 1;
+            } else {
+                if (JSON.stringify(nodes) !== JSON.stringify(object.nodes)) {
+                    repaired += 1;
+                }
+                object.nodes = nodes;
+                object.closed = object.closed === true;
+            }
+        }
+        if (['polygon', 'star', 'arrow'].includes(object.type)) {
+            object.shape = object.shape && typeof object.shape === 'object' ? object.shape : {};
+            repaired += repairNumber(object.shape, 'sides', 6, 3, 32, true);
+            repaired += repairNumber(object.shape, 'points', 5, 3, 32, true);
+            repaired += repairNumber(object.shape, 'innerRadius', 0.45, 0.05, 0.95);
+            repaired += repairNumber(object.shape, 'head', 0.35, 0.1, 0.9);
+            repaired += repairNumber(object.shape, 'shaft', 0.4, 0.1, 0.9);
+        }
+        if (object.shadow && !['qr', 'barcode'].includes(object.type)) {
+            if (typeof object.shadow !== 'object') {
+                delete object.shadow;
+                repaired += 1;
+            } else {
+                var shadowColor = safeSaveColor(object.shadow.color, '#000000', true);
+                if (object.shadow.color !== shadowColor) {
+                    object.shadow.color = shadowColor;
+                    repaired += 1;
+                }
+                repaired += repairNumber(object.shadow, 'opacity', 0.25, 0, 1);
+                repaired += repairNumber(object.shadow, 'blur', 1, 0, 10);
+                repaired += repairNumber(object.shadow, 'offsetX', 1, -10, 10);
+                repaired += repairNumber(object.shadow, 'offsetY', 1, -10, 10);
+            }
+        }
+        if (object.type === 'text') {
+            ['text', 'prefix', 'suffix'].forEach(function (key) {
+                var limit = key === 'text' ? 500 : 80;
+                var value = String(object[key] || '')
+                    .replace(/<[^>]*>/g, '')
+                    .slice(0, limit);
+                if (object[key] !== value) {
+                    object[key] = value;
+                    repaired += 1;
+                }
+            });
+            if (
+                object.binding &&
+                !Object.prototype.hasOwnProperty.call(config.bindings || {}, object.binding)
+            ) {
+                object.binding = '';
+                repaired += 1;
+            }
+            repaired += repairNumber(object, 'fontSize', 3, 1.5, 20);
+            repaired += repairNumber(object, 'lineHeight', 1.16, 0.7, 3);
+            repaired += repairNumber(object, 'charSpacing', 0, -200, 1000, true);
+            repaired += repairChoice(
+                object,
+                'fontFamily',
+                ['Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'Verdana', 'Courier New'],
+                'Arial'
+            );
+            repaired += repairChoice(object, 'fontWeight', ['normal', 'bold'], 'normal');
+            repaired += repairChoice(object, 'fontStyle', ['normal', 'italic'], 'normal');
+            repaired += repairChoice(object, 'align', ['left', 'center', 'right'], 'left');
+            repaired += repairColor(object, 'fill', '#111827', true);
+            repaired += repairColor(object, 'stroke', 'transparent', true);
+            repaired += repairNumber(object, 'strokeWidth', 0, 0, 5);
+        }
+        if (renderer.shapeTypes.includes(object.type) || object.type === 'image') {
+            repaired += repairColor(
+                object,
+                'stroke',
+                object.type === 'image' ? 'transparent' : '#64748b',
+                true
+            );
+            repaired += repairColor(
+                object,
+                'fill',
+                object.type === 'line' ? 'transparent' : '#e2e8f0',
+                true
+            );
+            repaired += repairNumber(
+                object,
+                'strokeWidth',
+                object.type === 'line' ? 0.25 : 0,
+                0,
+                5
+            );
+            repaired += repairNumber(object, 'radius', 0, 0, object.type === 'image' ? 50 : 30);
+        }
+        if (object.type === 'image') {
+            object.fit = ['cover', 'contain', 'fill'].includes(object.fit) ? object.fit : 'cover';
+            var imageBindings = [
+                'school.logo',
+                'school.signature',
+                'school.background',
+                config.subjectType + '.photo'
+            ];
+            if (!(number(object.assetId, 0) > 0) && !imageBindings.includes(object.binding)) {
+                object.binding = config.subjectType + '.photo';
+                object.assetId = null;
+                repaired += 1;
+            }
+        }
+        if (['qr', 'barcode'].includes(object.type)) {
+            var allowed = ['attendance.credential'];
+            if (object.type === 'barcode') {
+                allowed.push(
+                    config.subjectType === 'staff' ? 'staff.employee_id' : 'student.admission_no'
+                );
+            }
+            if (!allowed.includes(object.binding)) {
+                object.binding = allowed[0];
+                repaired += 1;
+            }
+            repaired += repairColor(object, 'foreground', '#111827');
+            repaired += repairColor(object, 'background', '#ffffff');
+            object.label = String(object.label || '')
+                .replace(/<[^>]*>/g, '')
+                .slice(0, 80);
+        }
+        if (aggressive && object.type === 'path' && byteLength(object.nodes) > 120000) {
+            object.nodes = object.nodes.filter(function (node, nodeIndex) {
+                return (
+                    nodeIndex === 0 || nodeIndex === object.nodes.length - 1 || nodeIndex % 2 === 0
+                );
+            });
+            repaired += 1;
+        }
+        var fields = [
+            'id',
+            'type',
+            'x',
+            'y',
+            'width',
+            'height',
+            'rotation',
+            'opacity',
+            'visible',
+            'locked',
+            'group',
+            'flipX',
+            'flipY'
+        ];
+        if (!['qr', 'barcode'].includes(object.type)) {
+            fields.push('shadow');
+        }
+        if (renderer.shapeTypes.includes(object.type)) {
+            fields.push('fill', 'stroke', 'strokeWidth', 'radius');
+        }
+        if (['polygon', 'star', 'arrow'].includes(object.type)) {
+            fields.push('shape');
+        }
+        if (object.type === 'path') {
+            fields.push('nodes', 'closed');
+        }
+        if (object.type === 'text') {
+            fields.push(
+                'binding',
+                'text',
+                'prefix',
+                'suffix',
+                'fontFamily',
+                'fontSize',
+                'fontWeight',
+                'fontStyle',
+                'align',
+                'fill',
+                'lineHeight',
+                'charSpacing',
+                'stroke',
+                'strokeWidth'
+            );
+        }
+        if (object.type === 'image') {
+            fields.push('assetId', 'binding', 'fit', 'radius', 'stroke', 'strokeWidth');
+        }
+        if (['qr', 'barcode'].includes(object.type)) {
+            fields.push('binding', 'foreground', 'background', 'label');
+        }
+        repaired += retainFields(object, fields);
+        if (object.shadow) {
+            repaired += retainFields(object.shadow, [
+                'color',
+                'opacity',
+                'blur',
+                'offsetX',
+                'offsetY'
+            ]);
+        }
+        if (object.shape) {
+            repaired += retainFields(object.shape, [
+                'sides',
+                'points',
+                'innerRadius',
+                'head',
+                'shaft'
+            ]);
+        }
+        return repaired;
+    }
+
+    function minimumSize(object) {
+        return ['path', 'line'].includes(object.type) ? 0.1 : 0.5;
+    }
+
+    function repairNumber(target, key, fallback, minimum, maximum, integer) {
+        var original = target[key];
+        var value = clamp(number(original, fallback), minimum, maximum);
+        if (integer) {
+            value = Math.round(value);
+        }
+        target[key] = value;
+        return original === value ? 0 : 1;
+    }
+
+    function repairCurveNode(node) {
+        if (!node || typeof node !== 'object') {
+            return null;
+        }
+        var clean = {
+            x: clamp(number(node.x, 0.5), 0, 1),
+            y: clamp(number(node.y, 0.5), 0, 1),
+            mode: node.mode === 'smooth' ? 'smooth' : 'corner'
+        };
+        ['in', 'out'].forEach(function (handle) {
+            if (node[handle] && typeof node[handle] === 'object') {
+                clean[handle] = {
+                    x: clamp(number(node[handle].x, clean.x), 0, 1),
+                    y: clamp(number(node[handle].y, clean.y), 0, 1)
+                };
+            }
+        });
+        return clean;
+    }
+
+    function safeSaveColor(value, fallback, transparent) {
+        value = String(value || '')
+            .trim()
+            .toLowerCase();
+        return (transparent && value === 'transparent') || /^#[0-9a-f]{6}$/.test(value)
+            ? value
+            : fallback;
+    }
+
+    function repairColor(target, key, fallback, transparent) {
+        var original = target[key];
+        var value = safeSaveColor(original, fallback, transparent);
+        target[key] = value;
+        return original === value ? 0 : 1;
+    }
+
+    function repairChoice(target, key, choices, fallback) {
+        var original = target[key];
+        var value = choices.includes(original) ? original : fallback;
+        target[key] = value;
+        return original === value ? 0 : 1;
+    }
+
+    function retainFields(target, fields) {
+        var removed = 0;
+        Object.keys(target).forEach(function (key) {
+            if (!fields.includes(key)) {
+                delete target[key];
+                removed += 1;
+            }
+        });
+        return removed;
+    }
+
+    function truncateUtf8(value, maximum) {
+        var result = '';
+        Array.from(value).some(function (character) {
+            if (byteLength(result + character) > maximum) {
+                return true;
+            }
+            result += character;
+            return false;
+        });
+        return result;
+    }
+
+    function byteLength(value) {
+        return new Blob([JSON.stringify(value)]).size;
+    }
+
     function publish() {
         saveDraft(false)
             .then(function () {
@@ -1998,9 +2527,23 @@
                 var form = new FormData();
                 form.append('studio_csrf', config.csrf);
                 form.append('expected_checksum', state.checksum);
+                form.append('expected_published_version_id', config.publishedVersionId || '');
                 setSaveState('Publishing…');
                 var publishedRevision = state.revision;
-                return request(config.endpoints.publish, form).then(function (response) {
+                function submitPublish(attempt) {
+                    return request(config.endpoints.publish, form).catch(function (error) {
+                        if ((!error.status || error.status >= 500) && attempt < 2) {
+                            setSaveState('Server error; retrying publish…');
+                            return new Promise(function (resolve) {
+                                window.setTimeout(resolve, 300 * (attempt + 1));
+                            }).then(function () {
+                                return submitPublish(attempt + 1);
+                            });
+                        }
+                        throw error;
+                    });
+                }
+                return submitPublish(0).then(function (response) {
                     if (response.status !== 'published') {
                         throw new Error(response.message || 'The design was not published.');
                     }
@@ -3345,7 +3888,7 @@
     function finishPath() {
         if (state.drawNodes.length < 2) {
             showMessage('Add at least two points, or Cancel to leave drawing.', 'info');
-            return;
+            return Promise.resolve(false);
         }
         var nodes = renderer.clone(state.drawNodes),
             tolerance = 0.15;
@@ -3410,7 +3953,7 @@
             });
         });
         setTool('select');
-        addCanonical({
+        return addCanonical({
             id: nextId('path'),
             type: 'path',
             x: left + width / 2,
@@ -3426,7 +3969,10 @@
             strokeWidth: 0.25,
             nodes: nodes,
             closed: false
-        }).then(enterNodeEdit);
+        }).then(function () {
+            enterNodeEdit();
+            return true;
+        });
     }
     function drawPenPreview() {
         var ctx = canvas.getContext();

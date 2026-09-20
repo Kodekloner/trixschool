@@ -145,6 +145,31 @@ function check(value, message) {
             await add(shape);
         }
         check((await objects()).length === 12, 'every shape and text/code tool creates an object');
+        check(
+            await page.evaluate(() =>
+                testCanvas.getObjects().every((object) => object.padding === 0)
+            ),
+            'selection borders have zero padding around every object frame'
+        );
+        check(
+            await page.evaluate(() =>
+                ['polygon', 'star'].every((type) => {
+                    const object = SchoolLiftIdCardRenderer.toCanonical(
+                        testCanvas,
+                        'front',
+                        {}
+                    ).objects.find((item) => item.type === type);
+                    const nodes = SchoolLiftIdCardGeometry.shapeNodes(object);
+                    return (
+                        Math.min(...nodes.map((node) => node.x)) === 0 &&
+                        Math.max(...nodes.map((node) => node.x)) === 1 &&
+                        Math.min(...nodes.map((node) => node.y)) === 0 &&
+                        Math.max(...nodes.map((node) => node.y)) === 1
+                    );
+                })
+            ),
+            'polygon and star artwork reaches every edge of its bounding box'
+        );
         await select(['star-1']);
         await page.locator('#idstudio-shape-points').fill('7');
         await page.locator('#idstudio-shape-points').press('Tab');
@@ -178,6 +203,90 @@ function check(value, message) {
         );
         await save();
         check(true, 'all tools pass the real PHP v2 validator');
+        let retryAttempts = 0;
+        await page.route('**/fixture/save', async (route) => {
+            retryAttempts++;
+            if (retryAttempts === 1) {
+                await route.fulfill({
+                    status: 422,
+                    contentType: 'application/json',
+                    body: JSON.stringify({message: 'Unexpected validator error.'})
+                });
+            } else {
+                await route.continue();
+            }
+        });
+        await add('diamond');
+        const recoveredSave = page.waitForResponse(
+            (response) => response.url().endsWith('/fixture/save') && response.status() === 200
+        );
+        await action('save');
+        await recoveredSave;
+        await page.waitForFunction(() => !testState.dirty && !testState.savePromise);
+        await page.unroute('**/fixture/save');
+        check(retryAttempts === 2, 'Save repairs and retries an unexpected validation error');
+
+        await page.evaluate(() => {
+            const object = testCanvas.getObjects()[0];
+            object.set({left: -1000, top: -1000, scaleX: 50, scaleY: 50});
+            object.studioData.untrustedPayload = 'x'.repeat(300000);
+            object.setCoords();
+            testState.documents.back = 'invalid document';
+            document.getElementById('idstudio-title').value = '<b></b>';
+            document.querySelector('[data-tool="pen"]').click();
+        });
+        const cardForIncompletePath = await page.locator('.upper-canvas').boundingBox();
+        await page.mouse.click(cardForIncompletePath.x + 80, cardForIncompletePath.y + 80);
+        let publishAttempts = 0;
+        await page.route('**/fixture/publish', async (route) => {
+            publishAttempts++;
+            if (publishAttempts === 1) {
+                await route.fetch();
+                await route.fulfill({
+                    status: 500,
+                    contentType: 'application/json',
+                    body: JSON.stringify({message: 'Response lost after commit.'})
+                });
+            } else {
+                await route.continue();
+            }
+        });
+        page.once('dialog', (dialog) => dialog.accept());
+        const publishSave = page.waitForResponse(
+            (response) => response.url().endsWith('/fixture/save') && response.status() === 200
+        );
+        const publishResponse = page.waitForResponse(
+            (response) => response.url().endsWith('/fixture/publish') && response.status() === 200
+        );
+        await action('publish');
+        await publishSave;
+        await publishResponse;
+        await page.waitForFunction(() =>
+            document.getElementById('idstudio-save-state').textContent.startsWith('Published')
+        );
+        await page.unroute('**/fixture/publish');
+        check(
+            publishAttempts === 2,
+            'Publish retry recovers a committed request whose response was lost'
+        );
+        check(
+            await page.evaluate(
+                () =>
+                    testState.documents.front.objects.every((object) =>
+                        SchoolLiftIdCardGeometry.inside(
+                            object,
+                            testState.widthMm,
+                            testState.heightMm
+                        )
+                    ) &&
+                    testState.documents.front.objects.every(
+                        (object) => !Object.hasOwn(object, 'untrustedPayload')
+                    ) &&
+                    Array.isArray(testState.documents.back.objects) &&
+                    !testState.drawNodes.length
+            ),
+            'Publish repairs invalid geometry/data, discards an incomplete point and publishes the saved draft'
+        );
         await page.locator('[data-tool="select"]').first().click();
         await page.keyboard.press('Control+a');
         await page.keyboard.press('Delete');
@@ -240,7 +349,10 @@ function check(value, message) {
             c.fire('object:scaling', {target: o, transform: {action: 'scale'}});
             const result = {
                 before: anchor,
-                after: {x: o.left - (o.width * o.scaleX) / 2, y: o.top - (o.height * o.scaleY) / 2}
+                after: {
+                    x: o.left - (o.width * o.scaleX) / 2,
+                    y: o.top - (o.height * o.scaleY) / 2
+                }
             };
             c.fire('object:modified', {target: o});
             return result;
@@ -268,7 +380,12 @@ function check(value, message) {
             angle.angle === angle.old && (await allInside()),
             'invalid rotation retains the last valid angle'
         );
-        await modify('rect-1', {left: 25 * 4, top: 25 * 4, scaleX: 0.5, scaleY: 0.5});
+        await modify('rect-1', {
+            left: 25 * 4,
+            top: 25 * 4,
+            scaleX: 0.5,
+            scaleY: 0.5
+        });
         await add('ellipse');
         await modify('ellipse-1', {left: 60 * 4, top: 35 * 4});
         await select(['rect-1']);
@@ -522,7 +639,9 @@ function check(value, message) {
             route.fulfill({
                 status: 409,
                 contentType: 'application/json',
-                body: JSON.stringify({message: 'Draft changed. Reload before saving.'})
+                body: JSON.stringify({
+                    message: 'Draft changed. Reload before saving.'
+                })
             })
         );
         await action('save');
@@ -716,7 +835,10 @@ function check(value, message) {
             type: 'touchMove',
             touchPoints: [{x: dragArea.x + 80, y: dragArea.y + 80}]
         });
-        await cdp.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
+        await cdp.send('Input.dispatchTouchEvent', {
+            type: 'touchEnd',
+            touchPoints: []
+        });
         check(
             (await touch.evaluate(() => document.getElementById('idstudio-scroll').scrollLeft)) > 0,
             'touch Pan scrolls the design without scrolling the page'

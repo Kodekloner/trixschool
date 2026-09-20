@@ -28,9 +28,32 @@ if ($path === '/fixture/save') {
     }
     exit;
 }
+if ($path === '/fixture/publish') {
+    header('Content-Type: application/json');
+    if (!isset($_SESSION['saved'], $_SESSION['checksum']) || $_POST['expected_checksum'] !== $_SESSION['checksum']) {
+        http_response_code(409); echo json_encode(array('message' => 'Save and reload the latest draft before publishing.')); exit;
+    }
+    $expectedPublished = isset($_POST['expected_published_version_id']) ? (int) $_POST['expected_published_version_id'] : 0;
+    $publishedVersion = isset($_SESSION['published_version_id']) ? (int) $_SESSION['published_version_id'] : 0;
+    if ($expectedPublished !== $publishedVersion) {
+        if ($publishedVersion > 0 && isset($_SESSION['published_checksum']) && $_SESSION['published_checksum'] === $_SESSION['checksum']) {
+            echo json_encode(array('status' => 'published', 'published_version_id' => $publishedVersion, 'draft_checksum' => $_SESSION['checksum'], 'recovered_retry' => true)); exit;
+        }
+        http_response_code(409); echo json_encode(array('message' => 'Published version changed.')); exit;
+    }
+    $_SESSION['published'] = $_SESSION['saved'];
+    $_SESSION['published_version_id'] = $publishedVersion + 2;
+    $_SESSION['published_checksum'] = $_SESSION['checksum'];
+    echo json_encode(array('status' => 'published', 'published_version_id' => $_SESSION['published_version_id'], 'draft_checksum' => $_SESSION['checksum']));
+    exit;
+}
 if ($path !== '/' && $path !== '/fixture' && $path !== '/fixture/runtime') { http_response_code(404); exit; }
 function base_url($path) { return '/' . $path; }
-function site_url($path) { return strpos($path, '/save/') !== false ? '/fixture/save' : '/fixture'; }
+function site_url($path) {
+    if (strpos($path, '/save/') !== false) { return '/fixture/save'; }
+    if (strpos($path, '/publish/') !== false) { return '/fixture/publish'; }
+    return '/fixture';
+}
 function html_escape($text) { return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8'); }
 $subject_type = isset($_GET['staff']) ? 'staff' : 'student';
 $_SESSION['subject'] = $subject_type;
