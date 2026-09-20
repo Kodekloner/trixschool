@@ -354,6 +354,7 @@ class Idcardstudio extends Admin_Controller
 
         return array(
             'title' => $title,
+            'schema_version' => max($front['schemaVersion'], $back['schemaVersion']),
             'width_mm' => round($width, 3),
             'height_mm' => round($height, 3),
             'orientation' => $height > $width ? 'portrait' : 'landscape',

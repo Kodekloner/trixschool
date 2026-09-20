@@ -174,6 +174,7 @@ class Idcardstudio_model extends CI_Model
 
         $now = date('Y-m-d H:i:s');
         $this->db->where('id', $draft->id)->where('state', 'draft')->update('id_card_design_versions', array(
+            'schema_version' => isset($payload['schema_version']) ? (int) $payload['schema_version'] : (int) $draft->schema_version,
             'front_json' => $payload['front_json'],
             'back_json' => $payload['back_json'],
             'print_settings_json' => $payload['print_settings_json'],

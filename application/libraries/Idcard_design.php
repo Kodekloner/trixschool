@@ -11,6 +11,7 @@ defined('BASEPATH') OR define('BASEPATH', __DIR__);
 class Idcard_design
 {
     const SCHEMA_VERSION = 1;
+    const CURRENT_SCHEMA_VERSION = 2;
     const MAX_DOCUMENT_BYTES = 262144;
     const MAX_OBJECTS = 150;
     const MIN_CARD_MM = 40.0;
@@ -265,7 +266,8 @@ class Idcard_design
         $heightMm = $this->validateDimension($heightMm, 'height');
         $data = $this->decodeObject($document, 'design document');
 
-        if ((int) $this->value($data, 'schemaVersion', 0) !== self::SCHEMA_VERSION) {
+        $schemaVersion = (int) $this->value($data, 'schemaVersion', 0);
+        if (!in_array($schemaVersion, array(self::SCHEMA_VERSION, self::CURRENT_SCHEMA_VERSION), true)) {
             throw new InvalidArgumentException('Unsupported ID card design schema version.');
         }
 
@@ -283,7 +285,12 @@ class Idcard_design
         $validated = array();
         $ids = array();
         foreach ($objects as $object) {
-            $item = $this->validateObject($object, $subjectType, $widthMm, $heightMm);
+            try {
+                $item = $this->validateObject($object, $subjectType, $widthMm, $heightMm, $schemaVersion);
+            } catch (InvalidArgumentException $exception) {
+                $name = is_array($object) && isset($object['id']) ? preg_replace('/[^A-Za-z0-9_-]/', '', (string) $object['id']) : 'unknown';
+                throw new InvalidArgumentException('Object "' . substr($name, 0, 64) . '": ' . $exception->getMessage());
+            }
             if (isset($ids[$item['id']])) {
                 throw new InvalidArgumentException('Object IDs must be unique within a card side.');
             }
@@ -292,7 +299,7 @@ class Idcard_design
         }
 
         return array(
-            'schemaVersion' => self::SCHEMA_VERSION,
+            'schemaVersion' => $schemaVersion,
             'side' => $side,
             'background' => $background,
             'objects' => $validated,
@@ -349,7 +356,7 @@ class Idcard_design
         )));
     }
 
-    private function validateObject($object, $subjectType, $cardWidth, $cardHeight)
+    private function validateObject($object, $subjectType, $cardWidth, $cardHeight, $schemaVersion = 1)
     {
         if (!is_array($object)) {
             throw new InvalidArgumentException('Every design object must be a JSON object.');
@@ -361,27 +368,29 @@ class Idcard_design
         }
 
         $type = (string) $this->value($object, 'type', '');
-        if (!in_array($type, $this->objectTypes, true)) {
+        $shapes = array('rect', 'ellipse', 'line', 'triangle', 'diamond', 'polygon', 'star', 'arrow', 'path');
+        $types = $schemaVersion === 2 ? array_merge($this->objectTypes, $shapes) : $this->objectTypes;
+        if (!in_array($type, $types, true)) {
             throw new InvalidArgumentException('Unsupported design object type: ' . $type);
         }
 
-        $minimum = in_array($type, array('line'), true) ? 0.1 : 0.5;
+        $minimum = in_array($type, array('line', 'path'), true) ? 0.1 : 0.5;
         $x = $this->numberBetween($this->value($object, 'x', 0), 0, $cardWidth, 'Object X position');
         $y = $this->numberBetween($this->value($object, 'y', 0), 0, $cardHeight, 'Object Y position');
-        $width = $this->numberBetween($this->value($object, 'width', 10), $minimum, $cardWidth, 'Object width');
-        $height = $this->numberBetween($this->value($object, 'height', 5), $minimum, $cardHeight, 'Object height');
-        if ($x + $width > $cardWidth + 0.01 || $y + $height > $cardHeight + 0.01) {
+        $width = $this->numberBetween($this->value($object, 'width', 10), $minimum, $schemaVersion === 2 ? hypot($cardWidth, $cardHeight) : $cardWidth, 'Object width');
+        $height = $this->numberBetween($this->value($object, 'height', 5), $minimum, $schemaVersion === 2 ? hypot($cardWidth, $cardHeight) : $cardHeight, 'Object height');
+        if ($schemaVersion === 1 && ($x + $width > $cardWidth + 0.01 || $y + $height > $cardHeight + 0.01)) {
             throw new InvalidArgumentException('Design objects must remain inside the card boundary.');
         }
 
         $validated = array(
             'id' => $id,
             'type' => $type,
-            'x' => round($x, 3),
-            'y' => round($y, 3),
-            'width' => round($width, 3),
-            'height' => round($height, 3),
-            'rotation' => round($this->numberBetween($this->value($object, 'rotation', 0), -360, 360, 'Rotation'), 2),
+            'x' => round($x, 6),
+            'y' => round($y, 6),
+            'width' => round($width, 6),
+            'height' => round($height, 6),
+            'rotation' => round($this->numberBetween($this->value($object, 'rotation', 0), -360, 360, 'Rotation'), 6),
             'opacity' => round($this->numberBetween($this->value($object, 'opacity', 1), 0, 1, 'Opacity'), 3),
             'visible' => (bool) $this->value($object, 'visible', true),
             'locked' => (bool) $this->value($object, 'locked', false),
@@ -410,10 +419,10 @@ class Idcard_design
                 ? (string) $this->value($object, 'fontStyle', 'normal') : 'normal';
             $validated['align'] = in_array((string) $this->value($object, 'align', 'left'), array('left', 'center', 'right'), true)
                 ? (string) $this->value($object, 'align', 'left') : 'left';
-            $validated['fill'] = $this->safeColor($this->value($object, 'fill', '#111827'), '#111827');
+            $validated['fill'] = $this->safeColor($this->value($object, 'fill', '#111827'), '#111827', $schemaVersion === 2);
             $validated['lineHeight'] = round($this->numberBetween($this->value($object, 'lineHeight', 1.16), 0.7, 3, 'Line height'), 2);
             $validated['charSpacing'] = (int) $this->numberBetween($this->value($object, 'charSpacing', 0), -200, 1000, 'Letter spacing');
-        } elseif (in_array($type, array('rect', 'ellipse', 'line'), true)) {
+        } elseif (in_array($type, $shapes, true)) {
             $validated['fill'] = $type === 'line' ? 'transparent' : $this->safeColor($this->value($object, 'fill', '#e2e8f0'), '#e2e8f0', true);
             $validated['stroke'] = $this->safeColor($this->value($object, 'stroke', '#64748b'), '#64748b', true);
             $validated['strokeWidth'] = round($this->numberBetween($this->value($object, 'strokeWidth', 0.25), 0, 5, 'Stroke width'), 2);
@@ -447,7 +456,71 @@ class Idcard_design
             $validated['label'] = $this->plainText($this->value($object, 'label', ''), 80, 'Code label');
         }
 
+        if ($schemaVersion === 2) {
+            if ($type === 'text') {
+                $validated['stroke'] = $this->safeColor($this->value($object, 'stroke', 'transparent'), 'transparent', true);
+                $validated['strokeWidth'] = round($this->numberBetween($this->value($object, 'strokeWidth', 0), 0, 5, 'Text outline width'), 2);
+            }
+            $validated['flipX'] = (bool) $this->value($object, 'flipX', false);
+            $validated['flipY'] = (bool) $this->value($object, 'flipY', false);
+            if (in_array($type, array('polygon', 'star', 'arrow'), true)) {
+                $shape = $this->value($object, 'shape', array());
+                if (!is_array($shape)) { throw new InvalidArgumentException('Shape settings must be an object.'); }
+                $validated['shape'] = array(
+                    'sides' => (int) $this->numberBetween($this->value($shape, 'sides', 6), 3, 32, 'Polygon sides'),
+                    'points' => (int) $this->numberBetween($this->value($shape, 'points', 5), 3, 32, 'Star points'),
+                    'innerRadius' => $this->numberBetween($this->value($shape, 'innerRadius', .45), .05, .95, 'Star inner radius'),
+                    'head' => $this->numberBetween($this->value($shape, 'head', .35), .1, .9, 'Arrow head'),
+                    'shaft' => $this->numberBetween($this->value($shape, 'shaft', .4), .1, .9, 'Arrow shaft'),
+                );
+            }
+            if ($type === 'path') {
+                $nodes = $this->value($object, 'nodes', array());
+                if (!is_array($nodes) || count($nodes) < 2 || count($nodes) > 256) {
+                    throw new InvalidArgumentException('A curve must have between 2 and 256 nodes.');
+                }
+                $validated['nodes'] = array();
+                foreach ($nodes as $node) {
+                    if (!is_array($node)) { throw new InvalidArgumentException('Curve nodes must be objects.'); }
+                    $clean = $this->validateCurvePoint($node);
+                    $clean['mode'] = $this->value($node, 'mode', 'corner') === 'smooth' ? 'smooth' : 'corner';
+                    foreach (array('in', 'out') as $handle) {
+                        if (isset($node[$handle])) { $clean[$handle] = $this->validateCurvePoint($node[$handle]); }
+                    }
+                    $validated['nodes'][] = $clean;
+                }
+                $validated['closed'] = (bool) $this->value($object, 'closed', false);
+            }
+            if (isset($object['shadow']) && !in_array($type, array('qr', 'barcode'), true)) {
+                $shadow = $object['shadow'];
+                if (!is_array($shadow)) { throw new InvalidArgumentException('Shadow settings must be an object.'); }
+                $shadowColor = $this->safeColor($this->value($shadow, 'color', '#000000'), '', true);
+                if ($shadowColor === '') { throw new InvalidArgumentException('Shadow colour must be a hexadecimal colour or transparent.'); }
+                $validated['shadow'] = array(
+                    'color' => $shadowColor,
+                    'opacity' => $this->numberBetween($this->value($shadow, 'opacity', .25), 0, 1, 'Shadow opacity'),
+                    'blur' => $this->numberBetween($this->value($shadow, 'blur', 1), 0, 10, 'Shadow blur'),
+                    'offsetX' => $this->numberBetween($this->value($shadow, 'offsetX', 1), -10, 10, 'Shadow X offset'),
+                    'offsetY' => $this->numberBetween($this->value($shadow, 'offsetY', 1), -10, 10, 'Shadow Y offset'),
+                );
+            }
+            $stroke = isset($validated['stroke']) && $validated['stroke'] !== 'transparent' && $type !== 'line' ? $validated['strokeWidth'] : 0;
+            $angle = deg2rad($validated['rotation']);
+            $dx = (abs(cos($angle)) * ($width + $stroke) + abs(sin($angle)) * ($height + $stroke)) / 2;
+            $dy = (abs(sin($angle)) * ($width + $stroke) + abs(cos($angle)) * ($height + $stroke)) / 2;
+            if ($x - $dx < -.001 || $y - $dy < -.001 || $x + $dx > $cardWidth + .001 || $y + $dy > $cardHeight + .001) {
+                throw new InvalidArgumentException('Move or resize this object to fit inside the card, including its border.');
+            }
+        }
         return $validated;
+    }
+
+    private function validateCurvePoint($point)
+    {
+        if (!is_array($point) || !isset($point['x'], $point['y'])) {
+            throw new InvalidArgumentException('Curve points require numeric X and Y coordinates.');
+        }
+        return array('x' => $this->numberBetween($point['x'], 0, 1, 'Curve X'), 'y' => $this->numberBetween($point['y'], 0, 1, 'Curve Y'));
     }
 
     private function validateBackground($background)
