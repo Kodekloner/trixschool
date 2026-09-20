@@ -33,7 +33,7 @@ $studio_config = array(
     ),
 );
 ?>
-<link rel="stylesheet" href="<?php echo base_url('backend/idcard-studio/idcard-studio.css'); ?>">
+<link rel="stylesheet" href="<?php echo base_url('backend/idcard-studio/idcard-studio.css?v=2.0.0'); ?>">
 <script>
     document.documentElement.classList.add('idstudio-editor-active');
     document.body.classList.add('idstudio-editor-active');
@@ -116,11 +116,20 @@ $studio_config = array(
                     </div>
 
                     <div class="idstudio-panel-heading">Add objects</div>
+                    <input id="idstudio-shape-search" type="search" class="form-control input-sm" placeholder="Find a shape or tool…" aria-label="Find a shape or tool">
                     <div class="idstudio-tool-grid">
                         <button type="button" data-add="text"><i class="fa fa-font"></i><span>Text</span></button>
                         <button type="button" data-add="rect"><i class="fa fa-square-o"></i><span>Rectangle</span></button>
                         <button type="button" data-add="ellipse"><i class="fa fa-circle-thin"></i><span>Ellipse</span></button>
                         <button type="button" data-add="line"><i class="fa fa-minus"></i><span>Line</span></button>
+                        <button type="button" data-add="rounded-rect"><span>▢ Rounded rectangle</span></button>
+                        <button type="button" data-add="triangle"><span>△ Triangle</span></button>
+                        <button type="button" data-add="diamond"><span>◇ Diamond</span></button>
+                        <button type="button" data-add="polygon"><span>⬡ Polygon</span></button>
+                        <button type="button" data-add="star"><span>☆ Star</span></button>
+                        <button type="button" data-add="arrow"><span>➜ Arrow</span></button>
+                        <button type="button" data-tool="pen"><span>Pen (P)</span></button>
+                        <button type="button" data-tool="freehand"><span>Freehand</span></button>
                         <button type="button" data-add="qr"><i class="fa fa-qrcode"></i><span>QR</span></button>
                         <button type="button" data-add="barcode"><i class="fa fa-barcode"></i><span>Code128</span></button>
                     </div>
@@ -150,6 +159,14 @@ $studio_config = array(
                 </aside>
 
                 <main class="idstudio-workspace">
+                    <div class="idstudio-tool-rail" role="toolbar" aria-label="Editing tools">
+                        <button type="button" data-tool="select" title="Select (V)" aria-pressed="true">Select</button>
+                        <button type="button" data-tool="pan" title="Pan (H), or hold Space">Pan</button>
+                        <button type="button" data-action="multi-select" aria-pressed="false" title="Multi-select (or Shift-click)">Multi-select</button>
+                        <button type="button" data-action="actions" aria-haspopup="menu">Actions</button>
+                        <button type="button" data-action="commands" title="Search commands (Ctrl/Cmd+K)">⌕ Commands</button>
+                        <button type="button" data-action="shortcuts" title="Shortcut help (?)" aria-label="Shortcut help">?</button>
+                    </div>
                     <div class="idstudio-workspace-toolbar">
                         <div class="idstudio-mobile-panel-actions">
                             <button type="button"
@@ -200,6 +217,11 @@ $studio_config = array(
                         </div>
                     </div>
 
+                    <div class="idstudio-contextbar" aria-live="polite">
+                        <span id="idstudio-reference-label">Align to: Card</span>
+                        <span id="idstudio-tool-hint">Shift-select another object to use it as the alignment reference.</span>
+                        <span id="idstudio-draw-actions" hidden><button type="button" data-action="finish-path">Finish</button> <button type="button" data-action="cancel-path">Cancel</button></span>
+                    </div>
                     <div id="idstudio-scroll" class="idstudio-scroll">
                         <div id="idstudio-ruler-x" class="idstudio-ruler idstudio-ruler-x"></div>
                         <div id="idstudio-ruler-y" class="idstudio-ruler idstudio-ruler-y"></div>
@@ -225,13 +247,20 @@ $studio_config = array(
                         </button>
                     </div>
 
+                    <div class="idstudio-panel-tabs" role="tablist" aria-label="Inspector">
+                        <button type="button" role="tab" data-tab="properties" aria-selected="true" aria-controls="idstudio-tab-properties">Properties</button>
+                        <button type="button" role="tab" data-tab="layers" aria-selected="false" aria-controls="idstudio-tab-layers">Layers</button>
+                        <button type="button" role="tab" data-tab="arrange" aria-selected="false" aria-controls="idstudio-tab-arrange">Arrange</button>
+                        <button type="button" role="tab" data-tab="output" aria-selected="false" aria-controls="idstudio-tab-output">Output</button>
+                    </div>
+                    <div id="idstudio-tab-properties" class="idstudio-tab-pane" role="tabpanel">
                     <div class="idstudio-panel-heading">Selection</div>
                     <div id="idstudio-no-selection" class="text-muted idstudio-empty">Select an object to edit its properties.</div>
                     <div id="idstudio-properties" class="idstudio-properties" hidden>
                         <label>Object name<input id="idstudio-object-name" class="form-control input-sm" maxlength="64"></label>
                         <div class="idstudio-property-grid">
-                            <label>X (mm)<input id="idstudio-prop-x" type="number" step="0.1" class="form-control input-sm"></label>
-                            <label>Y (mm)<input id="idstudio-prop-y" type="number" step="0.1" class="form-control input-sm"></label>
+                            <label>Centre X (mm)<input id="idstudio-prop-x" type="number" step="0.1" class="form-control input-sm"></label>
+                            <label>Centre Y (mm)<input id="idstudio-prop-y" type="number" step="0.1" class="form-control input-sm"></label>
                             <label>Width<input id="idstudio-prop-width" type="number" step="0.1" class="form-control input-sm"></label>
                             <label>Height<input id="idstudio-prop-height" type="number" step="0.1" class="form-control input-sm"></label>
                             <label>Rotate<input id="idstudio-prop-rotation" type="number" min="-360" max="360" step="1" class="form-control input-sm"></label>
@@ -252,6 +281,8 @@ $studio_config = array(
                             <label class="checkbox-inline"><input id="idstudio-prop-italic" type="checkbox"> Italic</label>
                         </div>
                         <div id="idstudio-shape-properties">
+                            <label><input id="idstudio-no-fill" data-advanced-prop type="checkbox"> Transparent fill</label>
+                            <label><input id="idstudio-no-stroke" data-advanced-prop type="checkbox"> No outline</label>
                             <div class="idstudio-property-grid">
                                 <label>Fill<input id="idstudio-prop-shape-fill" type="color" class="form-control input-sm"></label>
                                 <label>Border<input id="idstudio-prop-stroke" type="color" class="form-control input-sm"></label>
@@ -260,13 +291,48 @@ $studio_config = array(
                             </div>
                             <label id="idstudio-image-fit-row">Image fit<select id="idstudio-prop-fit" class="form-control input-sm"><option value="cover">Crop to cover</option><option value="contain">Contain</option><option value="fill">Stretch</option></select></label>
                         </div>
+                        <div id="idstudio-shape-options" class="idstudio-property-grid">
+                            <label data-for-shape="polygon">Sides<input id="idstudio-shape-sides" data-advanced-prop type="number" min="3" max="32" step="1" class="form-control input-sm"></label>
+                            <label data-for-shape="star">Points<input id="idstudio-shape-points" data-advanced-prop type="number" min="3" max="32" step="1" class="form-control input-sm"></label>
+                            <label data-for-shape="star">Inner radius<input id="idstudio-shape-innerRadius" data-advanced-prop type="number" min="0.05" max="0.95" step="0.05" class="form-control input-sm"></label>
+                            <label data-for-shape="arrow">Head ratio<input id="idstudio-shape-head" data-advanced-prop type="number" min="0.1" max="0.9" step="0.05" class="form-control input-sm"></label>
+                            <label data-for-shape="arrow">Shaft ratio<input id="idstudio-shape-shaft" data-advanced-prop type="number" min="0.1" max="0.9" step="0.05" class="form-control input-sm"></label>
+                        </div>
+                        <div id="idstudio-appearance">
+                            <button type="button" data-action="flip-horizontal">Flip horizontal</button>
+                            <button type="button" data-action="flip-vertical">Flip vertical</button>
+                            <label><input id="idstudio-shadow-enabled" data-advanced-prop type="checkbox"> Drop shadow (clipped at card edge)</label>
+                            <div class="idstudio-property-grid">
+                                <label>Colour<input id="idstudio-shadow-color" data-advanced-prop type="color" value="#000000" class="form-control input-sm"></label>
+                                <label>Opacity<input id="idstudio-shadow-opacity" data-advanced-prop type="number" min="0" max="1" step="0.05" value="0.3" class="form-control input-sm"></label>
+                                <label>Blur mm<input id="idstudio-shadow-blur" data-advanced-prop type="number" min="0" max="10" step="0.1" value="1" class="form-control input-sm"></label>
+                                <label>Offset X<input id="idstudio-shadow-offsetX" data-advanced-prop type="number" min="-10" max="10" step="0.1" value="1" class="form-control input-sm"></label>
+                                <label>Offset Y<input id="idstudio-shadow-offsetY" data-advanced-prop type="number" min="-10" max="10" step="0.1" value="1" class="form-control input-sm"></label>
+                            </div>
+                        </div>
+                        <div id="idstudio-curve-actions">
+                            <button type="button" data-action="convert-curves">Convert to curves</button>
+                            <button type="button" data-action="node-edit">Edit nodes (N)</button>
+                            <div id="idstudio-node-actions" hidden>
+                                <p id="idstudio-node-status">Select a node.</p>
+                                <button type="button" data-action="node-insert">Insert node</button>
+                                <button type="button" data-action="node-delete">Delete node</button>
+                                <button type="button" data-action="node-smooth">Smooth</button>
+                                <button type="button" data-action="node-corner">Corner</button>
+                                <button type="button" data-action="node-straight">Straight segment</button>
+                                <button type="button" data-action="node-curve">Curved segment</button>
+                                <button type="button" data-action="path-closed">Open / close</button>
+                                <button type="button" data-tool="select">Done editing</button>
+                            </div>
+                        </div>
                         <div class="idstudio-property-actions">
                             <button type="button" class="btn btn-default btn-xs" data-action="duplicate"><i class="fa fa-copy"></i> Duplicate</button>
                             <button type="button" class="btn btn-default btn-xs" data-action="lock"><i class="fa fa-lock"></i> Lock</button>
                             <button type="button" class="btn btn-danger btn-xs" data-action="delete"><i class="fa fa-trash"></i> Delete</button>
                         </div>
                     </div>
-
+                    </div>
+                    <div id="idstudio-tab-layers" class="idstudio-tab-pane" role="tabpanel" hidden>
                     <div class="idstudio-panel-heading idstudio-layer-heading">
                         <span>Layers</span>
                         <span class="btn-group">
@@ -275,8 +341,12 @@ $studio_config = array(
                         </span>
                     </div>
                     <ol id="idstudio-layers" class="idstudio-layers"></ol>
-
+                    </div>
+                    <div id="idstudio-tab-arrange" class="idstudio-tab-pane" role="tabpanel" hidden>
                     <div class="idstudio-panel-heading">Align selection</div>
+                    <label>Align to<select id="idstudio-align-target" class="form-control input-sm"><option value="card">Card</option><option value="bounds">Selection bounds</option><option value="reference">Reference object (last selected)</option></select></label>
+                    <button type="button" data-action="set-reference">Set selected object as reference</button>
+                    <p class="help-block">Select A, then Shift-select B. B stays fixed. You can also use Multi-select or the reference button in Layers.</p>
                     <div class="idstudio-align-grid">
                         <button type="button" data-align="left" title="Align left"><i class="fa fa-align-left"></i></button>
                         <button type="button" data-align="center" title="Centre horizontally"><i class="fa fa-align-center"></i></button>
@@ -284,12 +354,14 @@ $studio_config = array(
                         <button type="button" data-align="top" title="Align top">Top</button>
                         <button type="button" data-align="middle" title="Centre vertically">Mid</button>
                         <button type="button" data-align="bottom" title="Align bottom">Bottom</button>
+                        <button type="button" data-align="both" title="Centre horizontally and vertically">Centre both</button>
                         <button type="button" data-action="distribute-horizontal" title="Distribute selected objects horizontally">Distribute H</button>
                         <button type="button" data-action="distribute-vertical" title="Distribute selected objects vertically">Distribute V</button>
                         <button type="button" data-action="group" title="Group selected objects">Group</button>
                         <button type="button" data-action="ungroup" title="Ungroup selected objects">Ungroup</button>
                     </div>
-
+                    </div>
+                    <div id="idstudio-tab-output" class="idstudio-tab-pane" role="tabpanel" hidden>
                     <details class="idstudio-print-settings">
                         <summary>Print and export</summary>
                         <label>Paper<select id="idstudio-print-paper" class="form-control input-sm"><option value="a4">A4 grid</option><option value="card">Exact card size</option></select></label>
@@ -319,6 +391,7 @@ $studio_config = array(
                             <?php } ?>
                         </ul>
                     </details>
+                    </div>
                 </aside>
             </div>
         </div>
@@ -332,5 +405,6 @@ window.ID_CARD_STUDIO_CONFIG = <?php echo json_encode($studio_config, JSON_HEX_T
 <script src="<?php echo base_url('backend/idcard-studio/vendor/qrcode-1.0.0.min.js'); ?>"></script>
 <script src="<?php echo base_url('backend/idcard-studio/vendor/jsbarcode-3.11.6.min.js'); ?>"></script>
 <script src="<?php echo base_url('backend/idcard-studio/vendor/jspdf-2.5.2.umd.min.js'); ?>"></script>
-<script src="<?php echo base_url('backend/idcard-studio/idcard-renderer.js'); ?>"></script>
-<script src="<?php echo base_url('backend/idcard-studio/idcard-studio.js'); ?>"></script>
+<script src="<?php echo base_url('backend/idcard-studio/idcard-geometry.js?v=2.0.0'); ?>"></script>
+<script src="<?php echo base_url('backend/idcard-studio/idcard-renderer.js?v=2.0.0'); ?>"></script>
+<script src="<?php echo base_url('backend/idcard-studio/idcard-studio.js?v=2.0.0'); ?>"></script>

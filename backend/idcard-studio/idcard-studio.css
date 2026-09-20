@@ -12,7 +12,7 @@ body.idstudio-editor-active .wrapper {
 }
 
 body.idstudio-editor-active .content-wrapper.idstudio-page {
-    height: var(--idstudio-viewport-height, 100vh);
+    height: var(--idstudio-page-height, 100vh);
     min-height: 0 !important;
     display: flex;
     flex-direction: column;
@@ -39,6 +39,8 @@ body.idstudio-editor-active .main-footer {
 }
 
 .idstudio-content {
+    width: 100%;
+    margin: 0;
     position: relative;
     min-height: 0;
     flex: 1 1 auto;
@@ -55,7 +57,7 @@ body.idstudio-editor-active .main-footer {
     z-index: 80;
     display: none;
     margin: 0;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, .18);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
 }
 
 .idstudio-alert.is-visible {
@@ -79,7 +81,7 @@ body.idstudio-editor-active .main-footer {
     border-radius: 10px;
     background: #e8edf4;
     color: var(--studio-ink);
-    box-shadow: 0 6px 22px rgba(15, 23, 42, .08);
+    box-shadow: 0 6px 22px rgba(15, 23, 42, 0.08);
 }
 
 .idstudio-topbar {
@@ -164,6 +166,170 @@ body.idstudio-editor-active .main-footer {
     display: none;
 }
 
+.idstudio-app [hidden] {
+    display: none !important;
+}
+.idstudio-tool-rail,
+.idstudio-contextbar,
+.idstudio-panel-tabs {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 6px;
+    background: #fff;
+    border-bottom: 1px solid #dbe3ed;
+}
+.idstudio-contextbar {
+    min-height: 30px;
+    color: #475569;
+    font-size: 11px;
+}
+#idstudio-reference-label {
+    color: #92400e;
+    font-weight: 600;
+}
+.idstudio-tool-rail button,
+.idstudio-contextbar button,
+.idstudio-panel-tabs button,
+#idstudio-appearance button,
+#idstudio-curve-actions button,
+#idstudio-tab-arrange > button {
+    border: 1px solid #cbd5e1;
+    border-radius: 5px;
+    background: #fff;
+    color: #334155;
+    padding: 5px 7px;
+    font-size: 12px;
+}
+.idstudio-tool-rail button[aria-pressed='true'],
+.idstudio-panel-tabs button[aria-selected='true'] {
+    background: #eff6ff;
+    border-color: #2563eb;
+    color: #1d4ed8;
+}
+.idstudio-panel-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+}
+.idstudio-panel-tabs button {
+    padding: 7px 3px;
+    font-size: 11px;
+}
+.idstudio-tab-pane {
+    padding-bottom: 12px;
+}
+#idstudio-shape-search {
+    margin: 8px;
+    width: calc(100% - 16px);
+}
+#idstudio-appearance,
+#idstudio-curve-actions {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #e2e8f0;
+}
+#idstudio-curve-actions button {
+    margin: 3px 0;
+}
+#idstudio-tab-arrange > label,
+#idstudio-tab-arrange > p,
+#idstudio-tab-arrange > button {
+    margin: 8px;
+}
+.idstudio-command-menu {
+    position: fixed;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    width: min(360px, calc(100vw - 16px));
+    max-height: min(560px, calc(100dvh - 16px));
+    padding: 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #fff;
+    color: #1e293b;
+    box-shadow: 0 12px 48px #0f172a40;
+}
+.idstudio-command-menu header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 8px;
+}
+.idstudio-command-menu input {
+    flex: 0 0 auto;
+    padding: 8px;
+    margin-bottom: 6px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+}
+.idstudio-command-menu button {
+    border: 0;
+    border-radius: 4px;
+    background: #fff;
+    color: inherit;
+    padding: 8px;
+}
+.idstudio-command-list {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+.idstudio-command-list button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+}
+.idstudio-command-menu button:hover,
+.idstudio-command-menu button:focus {
+    background: #eff6ff;
+    outline: 2px solid #2563eb;
+    outline-offset: -2px;
+}
+.idstudio-command-list button:disabled {
+    opacity: 0.4;
+    outline: none;
+}
+.idstudio-command-list kbd {
+    background: none;
+    color: #64748b;
+    box-shadow: none;
+    font-size: 10px;
+}
+@media (max-width: 1199px) {
+    .idstudio-panel-tabs {
+        top: 42px;
+    }
+}
+@media (max-width: 767px) {
+    .idstudio-tool-rail {
+        gap: 4px;
+        padding: 4px;
+    }
+    .idstudio-tool-rail button {
+        font-size: 11px;
+        padding: 7px 5px;
+    }
+    #idstudio-tool-hint {
+        display: none;
+    }
+    .idstudio-contextbar {
+        min-height: 26px;
+        padding: 4px 6px;
+    }
+    .idstudio-command-list button {
+        min-height: 44px;
+    }
+}
+
 .idstudio-main {
     position: relative;
     min-width: 0;
@@ -205,7 +371,7 @@ body.idstudio-editor-active .main-footer {
     font-weight: 700;
     font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: .04em;
+    letter-spacing: 0.04em;
 }
 
 .idstudio-panel-heading:first-child {
@@ -289,6 +455,7 @@ body.idstudio-editor-active .main-footer {
     min-height: 44px;
     flex: 0 0 auto;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 12px;
     padding: 6px 10px;
@@ -340,9 +507,17 @@ body.idstudio-editor-active .main-footer {
     -webkit-overflow-scrolling: touch;
     padding: 56px;
     background-color: #d8dee8;
-    background-image: linear-gradient(45deg, rgba(255,255,255,.28) 25%, transparent 25%), linear-gradient(-45deg, rgba(255,255,255,.28) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgba(255,255,255,.28) 75%), linear-gradient(-45deg, transparent 75%, rgba(255,255,255,.28) 75%);
+    background-image:
+        linear-gradient(45deg, rgba(255, 255, 255, 0.28) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255, 255, 255, 0.28) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.28) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.28) 75%);
     background-size: 18px 18px;
-    background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+    background-position:
+        0 0,
+        0 9px,
+        9px -9px,
+        -9px 0;
 }
 
 .idstudio-stage {
@@ -351,7 +526,7 @@ body.idstudio-editor-active .main-footer {
     height: max-content;
     margin: 0 auto;
     transform-origin: top left;
-    box-shadow: 0 14px 36px rgba(15, 23, 42, .28);
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.28);
 }
 
 .idstudio-stage .canvas-container {
@@ -366,7 +541,7 @@ body.idstudio-editor-active .main-footer {
     position: absolute;
     inset: 12px;
     z-index: 4;
-    border: 1px dashed rgba(220, 38, 38, .8);
+    border: 1px dashed rgba(220, 38, 38, 0.8);
     pointer-events: none;
 }
 
@@ -374,7 +549,7 @@ body.idstudio-editor-active .main-footer {
     position: absolute;
     inset: -12px;
     z-index: 3;
-    border: 1px dashed rgba(2, 132, 199, .9);
+    border: 1px dashed rgba(2, 132, 199, 0.9);
     pointer-events: none;
 }
 
@@ -385,13 +560,19 @@ body.idstudio-editor-active .main-footer {
     left: 0;
     padding: 1px 4px;
     border-radius: 2px;
-    background: rgba(255,255,255,.9);
+    background: rgba(255, 255, 255, 0.9);
     font-size: 9px;
     line-height: 13px;
 }
 
-.idstudio-bleed-area::before { content: '3 mm bleed'; color: #0369a1; }
-.idstudio-safe-area::before { content: 'safe area'; color: #b91c1c; }
+.idstudio-bleed-area::before {
+    content: '3 mm bleed';
+    color: #0369a1;
+}
+.idstudio-safe-area::before {
+    content: 'safe area';
+    color: #b91c1c;
+}
 
 .idstudio-safe-area.is-hidden,
 .idstudio-bleed-area.is-hidden {
@@ -495,7 +676,7 @@ body.idstudio-editor-active .main-footer {
 .idstudio-layers li {
     min-height: 32px;
     display: grid;
-    grid-template-columns: 22px minmax(0, 1fr) 24px 24px;
+    grid-template-columns: 22px minmax(0, 1fr) 24px 24px 24px;
     align-items: center;
     gap: 3px;
     margin-bottom: 3px;
@@ -606,8 +787,10 @@ body.idstudio-editor-active .main-footer {
         visibility: hidden;
         opacity: 0;
         border: 0;
-        background: rgba(15, 23, 42, .42);
-        transition: opacity .18s ease, visibility .18s ease;
+        background: rgba(15, 23, 42, 0.42);
+        transition:
+            opacity 0.18s ease,
+            visibility 0.18s ease;
     }
 
     .idstudio-app[data-open-panel] .idstudio-panel-backdrop {
@@ -615,11 +798,11 @@ body.idstudio-editor-active .main-footer {
         opacity: 1;
     }
 
-    .idstudio-app[data-open-panel="design"] .idstudio-topbar {
+    .idstudio-app[data-open-panel='design'] .idstudio-topbar {
         z-index: 30;
     }
 
-    .idstudio-app[data-open-panel="design"] .idstudio-topbar > :not(.idstudio-design-settings) {
+    .idstudio-app[data-open-panel='design'] .idstudio-topbar > :not(.idstudio-design-settings) {
         pointer-events: none;
     }
 
@@ -631,8 +814,10 @@ body.idstudio-editor-active .main-footer {
         z-index: 30;
         width: min(330px, calc(100% - 44px));
         visibility: hidden;
-        box-shadow: 0 12px 32px rgba(15, 23, 42, .24);
-        transition: transform .2s ease, visibility .2s ease;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.24);
+        transition:
+            transform 0.2s ease,
+            visibility 0.2s ease;
     }
 
     .idstudio-left-panel {
@@ -647,8 +832,8 @@ body.idstudio-editor-active .main-footer {
         transform: translateX(105%);
     }
 
-    .idstudio-app[data-open-panel="tools"] .idstudio-left-panel,
-    .idstudio-app[data-open-panel="properties"] .idstudio-right-panel {
+    .idstudio-app[data-open-panel='tools'] .idstudio-left-panel,
+    .idstudio-app[data-open-panel='properties'] .idstudio-right-panel {
         visibility: visible;
         transform: translateX(0);
     }
@@ -683,12 +868,15 @@ body.idstudio-editor-active .main-footer {
         border: 1px solid var(--studio-border);
         border-radius: 8px;
         background: #fff;
-        box-shadow: 0 14px 38px rgba(15, 23, 42, .28);
+        box-shadow: 0 14px 38px rgba(15, 23, 42, 0.28);
         transform: translateY(-8px);
-        transition: transform .18s ease, opacity .18s ease, visibility .18s ease;
+        transition:
+            transform 0.18s ease,
+            opacity 0.18s ease,
+            visibility 0.18s ease;
     }
 
-    .idstudio-app[data-open-panel="design"] .idstudio-design-settings {
+    .idstudio-app[data-open-panel='design'] .idstudio-design-settings {
         visibility: visible;
         opacity: 1;
         transform: translateY(0);
@@ -783,9 +971,11 @@ body.idstudio-editor-active .main-footer {
         border: 1px solid var(--studio-border);
         border-radius: 16px;
         background: #fff;
-        box-shadow: 0 16px 45px rgba(15, 23, 42, .32);
+        box-shadow: 0 16px 45px rgba(15, 23, 42, 0.32);
         transform: translateY(calc(100% + 16px));
-        transition: transform .2s ease, visibility .2s ease;
+        transition:
+            transform 0.2s ease,
+            visibility 0.2s ease;
     }
 
     .idstudio-view-toggle {
@@ -799,7 +989,7 @@ body.idstudio-editor-active .main-footer {
         margin: -12px -12px 0;
     }
 
-    .idstudio-app[data-open-panel="view"] .idstudio-view-options {
+    .idstudio-app[data-open-panel='view'] .idstudio-view-options {
         visibility: visible;
         transform: translateY(0);
     }
@@ -840,8 +1030,8 @@ body.idstudio-editor-active .main-footer {
         transform: translateY(105%);
     }
 
-    .idstudio-app[data-open-panel="tools"] .idstudio-left-panel,
-    .idstudio-app[data-open-panel="properties"] .idstudio-right-panel {
+    .idstudio-app[data-open-panel='tools'] .idstudio-left-panel,
+    .idstudio-app[data-open-panel='properties'] .idstudio-right-panel {
         transform: translateY(0);
     }
 
@@ -860,7 +1050,7 @@ body.idstudio-editor-active .main-footer {
         transform: translateY(calc(100% + 16px));
     }
 
-    .idstudio-app[data-open-panel="design"] .idstudio-design-settings {
+    .idstudio-app[data-open-panel='design'] .idstudio-design-settings {
         transform: translateY(0);
     }
 
@@ -990,6 +1180,9 @@ body.idstudio-editor-active .main-footer {
     .idstudio-left-panel,
     .idstudio-right-panel,
     .idstudio-workspace-toolbar,
+    .idstudio-tool-rail,
+    .idstudio-contextbar,
+    .idstudio-command-menu,
     .idstudio-statusbar,
     .idstudio-panel-backdrop {
         display: none !important;

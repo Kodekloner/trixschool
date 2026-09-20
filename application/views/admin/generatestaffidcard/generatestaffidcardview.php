@@ -118,7 +118,7 @@
                                                        
                                                         <td><?php echo $staff_value['contact_no']; ?></td>
 												<td><?php echo $this->customlib->dateFormat($staff_value['dob']); ?></td>
-                                                        <td class="text-right"><a class="btn btn-default btn-xs" target="_blank" rel="noopener" href="<?php echo site_url('admin/generatestaffidcard/generate/' . (int) $staff_value['id'] . '/' . (int) $idcardResult[0]->id); ?>"><i class="fa fa-id-card-o"></i> Generate</a></td>
+                                                        <td class="text-right"><button class="btn btn-default btn-xs generateSingle" type="button" data-staff-id="<?php echo (int) $staff_value['id']; ?>" data-id-card="<?php echo (int) $idcardResult[0]->id; ?>"><i class="fa fa-id-card-o"></i> Generate</button></td>
                                                     </tr>
                                                     <?php
                                                     $count++;
@@ -166,32 +166,43 @@
 </script>
 <script type="text/javascript">
     $(document).ready(function () {
+        function requestStaffCards(arrayToPrint, idCard) {
+            return $.ajax({
+                url: '<?php echo site_url("admin/generatestaffidcard/generatemultiple") ?>',
+                type: 'post',
+                dataType: "html",
+                data: {
+                    'data': JSON.stringify(arrayToPrint),
+                    'id_card': idCard,
+                    'idcard_generation_csrf': <?php echo json_encode($idcard_generation_csrf); ?>
+                },
+                success: function (response) {
+                    Popup(response);
+                }
+            });
+        }
+
         $(document).on('click', '.printSelected', function () {
             var array_to_print = [];
             var idCard = $("#id_card_id").val();
             $.each($("input[name='check']:checked"), function () {
                 var staffId = $(this).data('staff_id');
-                item = {}
+                var item = {};
                 item ["staff_id"] = staffId;
                 array_to_print.push(item);
             });
             if (array_to_print.length == 0) {
                 alert("<?php echo $this->lang->line('no_record_selected');?>");
             } else {
-                $.ajax({
-                    url: '<?php echo site_url("admin/generatestaffidcard/generatemultiple") ?>',
-                    type: 'post',
-                    dataType: "html",
-                    data: {
-                        'data': JSON.stringify(array_to_print),
-                        'id_card': idCard,
-                        'idcard_generation_csrf': <?php echo json_encode($idcard_generation_csrf); ?>
-                    },
-                    success: function (response) {
-                        Popup(response);
-                    }
-                });
+                requestStaffCards(array_to_print, idCard);
             }
+        });
+
+        $(document).on('click', '.generateSingle', function () {
+            requestStaffCards(
+                [{staff_id: parseInt($(this).attr('data-staff-id'), 10)}],
+                parseInt($(this).attr('data-id-card'), 10)
+            );
         });
     });
 </script>
