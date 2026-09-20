@@ -338,76 +338,24 @@ class Question_model extends MY_model
                 'subjects' => array_values($subjects),
             );
         }
-        $teacher_id = (int) $this->customlib->getStaffID();
-        $subject_classes = $this->db->distinct()->select('classes.id, classes.class')
-            ->from('teacher_subjects')
-            ->join('class_sections', 'class_sections.id = teacher_subjects.class_section_id')
-            ->join('classes', 'classes.id = class_sections.class_id')
-            ->where('teacher_subjects.teacher_id', $teacher_id)
-            ->where('teacher_subjects.session_id', $session_id)
-            ->order_by('classes.id')
-            ->get()->result_array();
-        $class_teacher_classes = array();
-        if ($mode === 'view') {
-            $class_teacher_classes = $this->db->distinct()->select('classes.id, classes.class')
-                ->from('class_teacher')
-                ->join('classes', 'classes.id = class_teacher.class_id')
-                ->where('class_teacher.staff_id', $teacher_id)
-                ->where('class_teacher.session_id', $session_id)
-                ->order_by('classes.id')->get()->result_array();
-        }
-        $classes = array();
-        foreach (array_merge($subject_classes, $class_teacher_classes) as $row) {
-            $classes[(int) $row['id']] = $row;
-        }
-
+        $classes = $this->academicaccess_model->classChoicesFor($mode, $session_id);
         $sections = array();
         $subjects = array();
         if ((int) $class_id > 0) {
-            $rows = $this->db->distinct()
-                ->select('sections.id AS section_id, sections.section, subjects.id AS subject_id, subjects.name, subjects.code')
-                ->from('teacher_subjects')
-                ->join('class_sections', 'class_sections.id = teacher_subjects.class_section_id')
-                ->join('sections', 'sections.id = class_sections.section_id')
-                ->join('subjects', 'subjects.id = teacher_subjects.subject_id')
-                ->where('teacher_subjects.teacher_id', $teacher_id)
-                ->where('teacher_subjects.session_id', $session_id)
-                ->where('class_sections.class_id', (int) $class_id)
-                ->order_by('sections.section')
-                ->order_by('subjects.name')
-                ->get()->result_array();
-            foreach ($rows as $row) {
-                $sections[(int) $row['section_id']] = array(
-                    'id' => (int) $row['section_id'],
-                    'section_id' => (int) $row['section_id'],
-                    'section' => $row['section'],
-                );
-                if ((int) $section_id < 1 || (int) $row['section_id'] === (int) $section_id) {
-                    $subjects[(int) $row['subject_id']] = array(
-                        'id' => (int) $row['subject_id'],
-                        'name' => $row['name'],
-                        'code' => $row['code'],
-                    );
+            $assignments = $this->academicaccess_model->subjectTeacherAssignments($session_id, (int) $class_id);
+            $section_ids = array_map('intval', array_column($assignments, 'section_id'));
+            $subject_ids = array();
+            foreach ($assignments as $assignment) {
+                if ((int) $section_id < 1 || (int) $assignment['section_id'] === (int) $section_id) {
+                    $subject_ids[] = (int) $assignment['subject_id'];
                 }
             }
             if ($mode === 'view') {
-                $class_sections = $this->db->distinct()->select('sections.id AS section_id, sections.section')
-                    ->from('class_teacher')->join('sections', 'sections.id=class_teacher.section_id')
-                    ->where('class_teacher.staff_id', $teacher_id)
-                    ->where('class_teacher.session_id', $session_id)
-                    ->where('class_teacher.class_id', (int) $class_id)
-                    ->order_by('sections.section')->get()->result_array();
-                foreach ($class_sections as $row) {
-                    $sections[(int) $row['section_id']] = array(
-                        'id' => (int) $row['section_id'],
-                        'section_id' => (int) $row['section_id'],
-                        'section' => $row['section'],
-                    );
-                }
                 // A class teacher may filter/view every curriculum subject and
                 // every preserved legacy-question subject in their own arms.
                 // Authoring choices remain subject-assignment only.
-                $class_teacher_sections = array_map('intval', array_column($class_sections, 'section_id'));
+                $class_teacher_sections = $this->academicaccess_model->classTeacherSectionIds($session_id, (int) $class_id);
+                $section_ids = array_merge($section_ids, $class_teacher_sections);
                 if ((int) $section_id > 0) {
                     $class_teacher_sections = in_array((int) $section_id, $class_teacher_sections, true)
                         ? array((int) $section_id) : array();
@@ -423,20 +371,37 @@ class Question_model extends MY_model
                         ->where('sgcs.session_id', $session_id)
                         ->where('sgs.session_id', $session_id)
                         ->get()->result_array();
-                    $visible_subjects = $this->db->distinct()->select('subjects.id, subjects.name, subjects.code')
-                        ->from('questions')->join('subjects', 'subjects.id=questions.subject_id')
+                    $visible_subjects = $this->db->distinct()->select('questions.subject_id AS id')
+                        ->from('questions')
                         ->where('questions.session_id', $session_id)
                         ->where('questions.class_id', (int) $class_id)
                         ->group_start()->where_in('questions.section_id', $class_teacher_sections)
                         ->or_where('questions.section_id', 0)->group_end()
                         ->get()->result_array();
                     foreach (array_merge($curriculum_subjects, $visible_subjects) as $row) {
-                        $subjects[(int) $row['id']] = $row;
+                        $subject_ids[] = (int) $row['id'];
                     }
                 }
             }
+            $section_ids = array_values(array_unique(array_filter(array_map('intval', $section_ids))));
+            if (!empty($section_ids)) {
+                foreach ($this->db->select('id, section')->where_in('id', $section_ids)
+                    ->order_by('section')->get('sections')->result_array() as $row) {
+                    $sections[(int) $row['id']] = array(
+                        'id' => (int) $row['id'],
+                        'section_id' => (int) $row['id'],
+                        'section' => $row['section'],
+                    );
+                }
+            }
+            $subject_ids = array_values(array_unique(array_filter(array_map('intval', $subject_ids))));
+            if (!empty($subject_ids)) {
+                foreach ($this->db->select('id, name, code')->where_in('id', $subject_ids)
+                    ->order_by('name')->get('subjects')->result_array() as $row) {
+                    $subjects[(int) $row['id']] = $row;
+                }
+            }
         }
-        ksort($classes);
         return array('classes' => array_values($classes), 'sections' => array_values($sections), 'subjects' => array_values($subjects));
     }
 

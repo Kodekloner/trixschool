@@ -32,11 +32,15 @@ question_bank_assert(substr_count($controller, "(int) \$this->input->post('subje
 question_bank_assert(strpos($controller, 'public function academicchoices()') !== false, 'Question Bank forms need an assignment-filtered academic choices endpoint.');
 question_bank_assert(strpos($controller, 'getInaccessibleQuestionIds') !== false, 'Bulk deletion must reject crafted out-of-scope identifiers.');
 question_bank_assert(strpos($model, 'questionVisibilitySql') !== false, 'Question Bank rows must use the shared academic visibility policy.');
-question_bank_assert(strpos($academic_access, 'subjectTeacherSectionIds') !== false
-    && strpos($academic_access, "->where('teacher_subjects.subject_id', (int) \$subject_id)") !== false,
-    'Question read/write access must require the exact assigned subject.');
-question_bank_assert(strpos($academic_access, "->where('teacher_subjects.session_id', (int) \$session_id)") !== false,
-    'Question access must not reuse a teaching assignment from another session.');
+question_bank_assert(strpos($academic_access, 'subjectTeacherAssignments') !== false
+    && strpos($academic_access, 'teacher_subjects.subject_id') !== false
+    && strpos($academic_access, 'access_timetable_subject.subject_id') !== false,
+    'Question read/write access must require an exact subject assignment from a recognized assignment source.');
+question_bank_assert(strpos($academic_access, "->where('teacher_subjects.session_id', \$session_id)") !== false
+    && strpos($academic_access, "->where('access_timetable.session_id', \$session_id)") !== false,
+    'Question access must not reuse a direct or timetable teaching assignment from another session.');
+question_bank_assert(strpos($academic_access, "array('subjecttables', 'subject_timetable')") !== false,
+    'The shared policy must recognize both subject timetable formats used by tenant schools.');
 question_bank_assert(strpos($academic_access, 'classTeacherSectionIds') !== false
     && strpos($academic_access, "array('content', 'mark')") !== false,
     'Class-teacher viewing/candidate scope must remain separate from content/marking scope.');

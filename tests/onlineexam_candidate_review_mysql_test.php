@@ -85,6 +85,10 @@ $db->query("CREATE TABLE sections (id INT PRIMARY KEY, section VARCHAR(30))");
 $db->query("CREATE TABLE class_sections (id INT PRIMARY KEY, class_id INT, section_id INT)");
 $db->query("CREATE TABLE class_teacher (id INT AUTO_INCREMENT PRIMARY KEY, class_id INT, staff_id INT, section_id INT, session_id INT)");
 $db->query("CREATE TABLE teacher_subjects (id INT AUTO_INCREMENT PRIMARY KEY, teacher_id INT, subject_id INT, session_id INT, class_section_id INT)");
+$db->query("CREATE TABLE subjecttables (id INT AUTO_INCREMENT PRIMARY KEY, day VARCHAR(20), class_id INT, section_id INT,
+    subject_group_id INT, subject_group_subject_id INT, staff_id INT, session_id INT)");
+$db->query("CREATE TABLE subject_timetable (id INT AUTO_INCREMENT PRIMARY KEY, day VARCHAR(20), class_id INT, section_id INT,
+    subject_group_id INT, subject_group_subject_id INT, staff_id INT, session_id INT)");
 $db->query("CREATE TABLE subject_group_class_sections (id INT AUTO_INCREMENT PRIMARY KEY, subject_group_id INT, class_section_id INT, session_id INT)");
 $db->query("CREATE TABLE subject_group_subjects (id INT AUTO_INCREMENT PRIMARY KEY, subject_group_id INT, subject_id INT, session_id INT)");
 $db->query("CREATE TABLE sessions (id INT PRIMARY KEY, session VARCHAR(30))");
@@ -186,11 +190,16 @@ $db->query("INSERT INTO class_sections VALUES (1,1,1),(2,1,2)");
 $db->query("INSERT INTO subject_group_class_sections(subject_group_id,class_section_id,session_id) VALUES (1,1,1),(2,2,1),(3,1,2)");
 $db->query("INSERT INTO subject_group_subjects(subject_group_id,subject_id,session_id) VALUES (1,1,1),(2,2,1),(3,3,2),(1,3,2)");
 $db->query("INSERT INTO teacher_subjects(teacher_id,subject_id,session_id,class_section_id) VALUES (10,1,1,1),(10,2,2,2),(11,2,1,2)");
+$db->query("INSERT INTO subjecttables(day,class_id,section_id,subject_group_id,subject_group_subject_id,staff_id,session_id)
+    VALUES ('Monday',1,2,2,2,10,1)");
+$db->query("INSERT INTO subject_timetable(day,class_id,section_id,subject_group_id,subject_group_subject_id,staff_id,session_id)
+    VALUES ('Tuesday',1,1,1,1,10,1)");
 $choices = $legacy->getWorkflowAcademicChoices(1,1,'1st',1);
 review_assert(array_column($choices['subjects'],'id') === array(2,1), 'Subjects must be filtered by both curriculum session records.');
 review_assert(array_column($choices['sections'],'id') === array(1), 'Class arms must be filtered by the chosen subject.');
 $choices = $legacy->getWorkflowAcademicChoices(1,1,'2nd',1,10);
-review_assert(array_column($choices['subjects'],'id') === array(1), 'Teacher assignments from other sessions must not grant subject access.');
+review_assert(array_column($choices['subjects'],'id') === array(2,1), 'Direct and timetable assignments in the selected session must both grant exact subject access.');
+review_assert(array_column($legacy->getWorkflowAcademicChoices(1,1,'2nd',2,10)['sections'],'id') === array(2), 'A timetable assignment must expose only its exact class arm.');
 review_assert(array_column($legacy->getWorkflowClassChoices(1,10),'id') === array(1), 'Teachers must see only classes with an assignment in the selected session.');
 review_assert($legacy->getWorkflowAcademicChoices(1,1,'4th',1)['subjects'] === array(), 'Invalid terms must be rejected.');
 
@@ -201,7 +210,8 @@ $db->query("INSERT INTO questions (id,staff_id,subject_id,question_type,class_id
            (2,10,2,'singlechoice',1,2,2,'English previous','opt_a'),
            (3,10,1,'singlechoice',1,2,2,'Science class-teacher view','opt_a'),
            (4,11,1,'singlechoice',1,0,NULL,'Legacy all arms','opt_a'),
-           (5,10,1,'multichoice',1,1,1,'Shared across sessions','')");
+           (5,10,1,'multichoice',1,1,1,'Shared across sessions',''),
+           (6,10,2,'singlechoice',1,2,2,'English timetable assignment','opt_a')");
 $db->query("INSERT INTO question_options (id,question_id,`option`) VALUES (51,5,'Alpha'),(52,5,'Beta')");
 $db->query("INSERT INTO question_answers (question_id,option_id) VALUES (5,52)");
 $db->insert('onlineexam_question_definitions', array('question_id'=>5,'definition_version'=>1,
@@ -239,17 +249,20 @@ $db->where_in('id', array(9,10,11))->delete('onlineexam_questions');
 $db->where_in('id', array(95,96,97))->delete('onlineexam');
 
 // The shared policy gives class teachers view/candidate scope across their arm,
-// while content and marks still require an exact teacher_subjects assignment.
+// while content and marks still require an exact recognized subject assignment.
 $db->query("INSERT INTO class_teacher(class_id,staff_id,section_id,session_id) VALUES (1,10,2,1)");
 require_once APPPATH . 'models/Question_model.php';
 $question_bank = new Question_model();
 review_assert($question_bank->canAccessQuestionScope(1,1,1), 'A teacher must access their assigned subject and arm.');
 review_assert(!$question_bank->canAccessQuestionScope(1,2,1), 'An assignment in another arm must not grant access here.');
-review_assert(!$question_bank->canAccessQuestionScope(1,2,2), 'Another teacher\'s subject in the same class must remain inaccessible.');
+review_assert($question_bank->canAccessQuestionScope(1,2,2), 'A subjecttables timetable assignment must grant its exact subject and arm.');
+review_assert(!$question_bank->canAccessQuestionScope(1,1,2), 'A timetable assignment in another arm must not grant access here.');
 review_assert($question_bank->canAccessQuestion(1) && !$question_bank->canAccessQuestion(2) && $question_bank->canAccessQuestion(3), 'Question reads must combine subject-teacher scope with class-teacher arm viewing.');
 review_assert(!$question_bank->canAccessQuestion(3,null,'content'), 'Class-teacher visibility must not grant question editing without the subject assignment.');
 review_assert($question_bank->canAccessQuestion(2,2), 'Assessment authoring must evaluate the teaching assignment in that assessment\'s session.');
 review_assert($question_bank->canAccessQuestion(4), 'A class-wide question remains reusable only when the teacher has that subject in the class.');
+review_assert($question_bank->canAccessQuestion(6,null,'content'), 'A timetable-assigned current-session question must be editable by its subject teacher.');
+review_assert(!$question_bank->canAccessQuestion(4,null,'content'), 'A legacy all-arm question must still require the subject assignment in every arm.');
 $question_choices = $question_bank->getQuestionBankAcademicChoices(1,1);
 review_assert(array_map('intval', array_column($question_choices['subjects'],'id')) === array(1)
     && array_map('intval', array_column($question_choices['sections'],'id')) === array(1,2),
@@ -257,8 +270,11 @@ review_assert(array_map('intval', array_column($question_choices['subjects'],'id
         . json_encode($question_choices));
 $question_write_choices = $question_bank->getQuestionBankAcademicChoices(1,1,null,'content');
 review_assert(array_map('intval', array_column($question_write_choices['subjects'],'id')) === array(1)
-    && array_map('intval', array_column($question_write_choices['sections'],'id')) === array(1),
+    && array_map('intval', array_column($question_write_choices['sections'],'id')) === array(1,2),
     'Question Bank authoring choices must remain limited to exact subject assignments.');
+$question_timetable_choices = $question_bank->getQuestionBankAcademicChoices(1,2,null,'content');
+review_assert(array_map('intval', array_column($question_timetable_choices['subjects'],'id')) === array(2),
+    'Question Bank authoring must expose the subject assigned through subjecttables.');
 
 $future_start = date('Y-m-d H:i:s', time()+3600);
 $future_end = date('Y-m-d H:i:s', time()+7200);
@@ -304,6 +320,8 @@ for ($id = 1; $id <= 4; $id++) {
     $db->insert('students', array('id'=>$id,'is_active'=>'yes'));
     $db->insert('student_session', array('id'=>$id,'student_id'=>$id,'session_id'=>1,'class_id'=>1,'section_id'=>$id === 4 ? 2 : 1));
 }
+review_assert(array_map('intval', array_column($review->sections(1,1,10),'id')) === array(1,2),
+    'Online Examination Review must recognize direct and timetable subject assignments.');
 $papers = array();
 for ($id = 1; $id <= 2; $id++) {
     $papers[] = array('id'=>$id,'paper_type'=>'objective','delivery_mode'=>'cbt','duration_minutes'=>30,

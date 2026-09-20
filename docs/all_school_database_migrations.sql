@@ -3262,7 +3262,7 @@ EXECUTE question_139_stmt;
 DEALLOCATE PREPARE question_139_stmt;
 
 -- RBAC opens the menus/actions; application row-level policy still requires
--- the staff member's exact class_teacher/teacher_subjects assignment.
+-- the staff member's exact class-teacher or recognized subject assignment.
 INSERT INTO roles_permissions
   (role_id,perm_cat_id,can_view,can_add,can_edit,can_delete,created_at)
 SELECT r.id,p.id,

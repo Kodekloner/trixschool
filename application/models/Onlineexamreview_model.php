@@ -7,7 +7,7 @@ class Onlineexamreview_model extends CI_Model
     public function __construct()
     {
         parent::__construct();
-        $this->load->model(array('onlineexam_model', 'onlineexamoperations_model', 'onlineexamattempt_model'));
+        $this->load->model(array('onlineexam_model', 'onlineexamoperations_model', 'onlineexamattempt_model', 'academicaccess_model'));
         $this->load->library('onlineexam_review');
     }
 
@@ -20,14 +20,18 @@ class Onlineexamreview_model extends CI_Model
         if ($teacher_id !== null) {
             $staff_id = (int) $teacher_id;
             $session_id = (int) $session_id;
+            $subject_assignment = $this->academicaccess_model->subjectAssignmentExistsSql(
+                'cs.class_id',
+                'cs.section_id',
+                (string) $session_id,
+                null,
+                $staff_id
+            );
             $query->where('(EXISTS (SELECT 1 FROM class_teacher review_ct'
                 . ' WHERE review_ct.staff_id=' . $staff_id
                 . ' AND review_ct.session_id=' . $session_id
                 . ' AND review_ct.class_id=cs.class_id AND review_ct.section_id=cs.section_id)'
-                . ' OR EXISTS (SELECT 1 FROM teacher_subjects review_ts'
-                . ' WHERE review_ts.teacher_id=' . $staff_id
-                . ' AND review_ts.session_id=' . $session_id
-                . ' AND review_ts.class_section_id=cs.id))', null, false);
+                . ' OR ' . $subject_assignment . ')', null, false);
         }
         return $query->order_by('s.section')->get()->result_array();
     }
