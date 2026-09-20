@@ -97,7 +97,7 @@ foreach ((array) $authored_questions as $authored_question) {
         </div>
         <?php } ?>
 
-        <?php if (!$editable) { ?>
+        <?php if (empty($revision_editable)) { ?>
             <div class="alert alert-info"><i class="fa fa-lock"></i> This revision is frozen. Papers, sections, questions, marks, and result mappings cannot be edited.</div>
         <?php } elseif (!$can_edit_assessment && !$can_edit_questions) { ?>
             <div class="alert alert-info"><i class="fa fa-eye"></i> You have view-only access to this draft assessment.</div>
@@ -369,6 +369,7 @@ foreach ((array) $authored_questions as $authored_question) {
                     <div class="form-group"><label for="builder_question_type">Question type</label><select id="builder_question_type" class="form-control"><option value="">All types</option><?php foreach ($question_type as $value => $label) { ?><option value="<?php echo html_escape($value); ?>"><?php echo html_escape($label); ?></option><?php } ?></select></div>
                     <div class="form-group question-bank-search-group"><button type="submit" id="builder_search" class="btn btn-success btn-block"><i class="fa fa-search" aria-hidden="true"></i> Search</button></div>
                 </form>
+                <div id="builder_question_scope_notice" class="alert alert-info" role="status" <?php echo empty($question_bank_scope_message) ? 'style="display:none"' : ''; ?>><?php echo html_escape($question_bank_scope_message); ?></div>
                 <div id="builder_question_status" class="question-bank-status text-muted" role="status" aria-live="polite"></div>
                 <div id="builder_question_results" aria-busy="false"></div>
                 <div id="builder_question_pagination" class="clearfix"></div>
@@ -606,7 +607,9 @@ foreach ((array) $authored_questions as $authored_question) {
             success: function (response) {
                 $('#builder_question_results').html(response.content || '<div class="alert alert-warning">No matching questions.</div>');
                 $('#builder_question_pagination').html(response.navigation || '');
-                $('#builder_question_status').text(response.content ? 'Question list updated.' : 'No matching questions found.');
+                var scopeMessage = response.message || '';
+                $('#builder_question_scope_notice').text(scopeMessage).toggle(!!scopeMessage);
+                $('#builder_question_status').text(scopeMessage || (response.content ? 'Question list updated.' : 'No matching questions found.'));
                 updateBankNegativeMarks();
             },
             error: function (xhr, status) {

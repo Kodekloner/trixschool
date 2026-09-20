@@ -46,6 +46,12 @@ compact_ui_assert(strpos($builder, 'paper-form-grid') !== false, 'Paper fields n
 compact_ui_assert(strpos($builder, 'workflow-edit-authored') !== false, 'Assigned structured questions need in-place edit controls.');
 compact_ui_assert(strpos($builder, 'question-bank-filter-grid') !== false, 'Question-bank filters need a responsive grid.');
 compact_ui_assert(strpos($builder, 'builder_question_status') !== false && strpos($builder, "aria-busy', 'true") !== false, 'Question-bank loading needs a visible accessible state.');
+compact_ui_assert(strpos($builder, 'builder_question_scope_notice') !== false
+    && strpos($builder, 'response.message') !== false,
+    'Partial-arm Question Bank access needs a clear server-provided scope notice.');
+compact_ui_assert(strpos($builder, 'empty($revision_editable)') !== false
+    && strpos($builder, 'You have view-only access to this draft assessment.') !== false,
+    'A permission-scoped read-only builder must not be mislabeled as a frozen revision.');
 compact_ui_assert(strpos($builder, 'paper-section-item') !== false && strpos($builder, 'paper-section-actions') !== false, 'Paper-section labels and actions need a non-overlapping flex layout.');
 compact_ui_assert(strpos($builder, '$can_view_roster') !== false && strpos($builder, '$can_view_operations') !== false, 'Builder navigation must respect destination-page privileges.');
 compact_ui_assert(substr_count($builder, '!empty($compact_supported)') >= 2, 'Historical builder views must not link into retired roster or operations routes.');

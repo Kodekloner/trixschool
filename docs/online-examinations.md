@@ -275,6 +275,16 @@ marks. A staff member who is both class teacher and subject teacher receives
 the union of those rights. RBAC privileges are still required before any of
 these row-level rights take effect.
 
+For a multi-arm assessment, a staff member who can view only some selected
+arms may open the builder and search the Question Bank. The search returns
+questions only from the arms that staff member can view and displays the
+excluded-arm notice returned by the server. This partial view is read-only.
+Assigning or removing questions, creating a structured question in the
+builder, changing papers, marks or rubrics, and freezing/publishing still
+require the exact subject assignment in every arm selected for the assessment.
+This is necessary because one assessment question set is delivered to every
+candidate arm in that assessment.
+
 ### One academic slot rule
 
 The database reserves one live assessment slot for this exact identity:
