@@ -480,11 +480,15 @@ class Onlineexam extends Admin_Controller
         if (empty($capabilities['can_view'])) {
             access_denied();
         }
+        $question_bank_scope = $this->workflowQuestionBankScope($exam, $capabilities);
 
         $publish_validation = $compact_supported
             ? $this->onlineexamworkflow_model->validateAssessment($exam->id)
             : array('valid' => false, 'errors' => array('This historical assessment is read-only.'));
         $result_profile = $this->onlineexam_model->getWorkflowResultProfile($exam->id, $exam->result_adapter);
+        $revision_editable = $compact_supported
+            && $exam->lifecycle_status === 'draft'
+            && !$this->onlineexam_model->hasWorkflowAttemptsForRevision($exam->id, $exam->revision);
         $data = array(
             'exam'             => $exam,
             'papers'           => $this->onlineexam_model->getWorkflowPapers($exam->id),
@@ -492,8 +496,10 @@ class Onlineexam extends Admin_Controller
             'native_question_types' => $this->localizedQuestionTypes(),
             'authored_questions' => $this->onlineexam_model->getWorkflowAuthoredQuestions($exam->id),
             'compact_supported' => $compact_supported,
-            'editable'         => !empty($capabilities['can_manage_content']) && $compact_supported && $exam->lifecycle_status === 'draft' && !$this->onlineexam_model->hasWorkflowAttemptsForRevision($exam->id, $exam->revision),
+            'editable'         => !empty($capabilities['can_manage_content']) && $revision_editable,
+            'revision_editable' => $revision_editable,
             'capabilities'     => $capabilities,
+            'question_bank_scope_message' => $question_bank_scope['message'],
             'publish_errors'   => $publish_validation['valid'] ? array() : $publish_validation['errors'],
             'configuration'    => $this->onlineexam_model->getAcademicConfiguration(
                 $exam->class_id,
@@ -1726,6 +1732,85 @@ class Onlineexam extends Admin_Controller
         );
     }
 
+    /**
+     * Read access may cover only part of a multi-arm assessment. Question and
+     * paper mutations remain assessment-wide and therefore require content
+     * ownership of every selected arm.
+     */
+    private function workflowQuestionBankScope($exam, array $capabilities = null)
+    {
+        $exam = (object) $exam;
+        $assessment_sections = array_values(array_unique(array_filter(array_map(
+            'intval', (array) $exam->section_ids
+        ))));
+        if ($capabilities === null) {
+            $capabilities = $this->academicaccess_model->assessmentCapabilities(
+                (array) $exam,
+                $assessment_sections
+            );
+        }
+        $view_sections = array_values(array_intersect(
+            $assessment_sections,
+            array_map('intval', (array) $capabilities['view_sections'])
+        ));
+        $content_sections = array_values(array_intersect(
+            $assessment_sections,
+            array_map('intval', (array) $capabilities['content_sections'])
+        ));
+        $missing_view_sections = array_values(array_diff($assessment_sections, $view_sections));
+        $missing_content_sections = array_values(array_diff($assessment_sections, $content_sections));
+        $can_view_all = !empty($assessment_sections) && empty($missing_view_sections);
+        $can_manage_all = !empty($capabilities['can_manage_content']);
+        $message = '';
+
+        if (!empty($view_sections) && !empty($missing_view_sections)) {
+            $message = 'You can view ' . (string) $exam->subject_name . ' questions for '
+                . $this->workflowArmPhrase($exam->class_id, $view_sections)
+                . '. This assessment also includes '
+                . $this->workflowArmPhrase($exam->class_id, $missing_view_sections)
+                . ', which ' . (count($missing_view_sections) === 1 ? 'is' : 'are')
+                . ' outside your teaching assignment.';
+        } elseif (!empty($view_sections) && !$can_manage_all && !empty($missing_content_sections)) {
+            $message = 'You can view ' . (string) $exam->subject_name . ' questions for '
+                . $this->workflowArmPhrase($exam->class_id, $view_sections)
+                . '. This builder is read-only because '
+                . $this->workflowArmPhrase($exam->class_id, $missing_content_sections)
+                . ' ' . (count($missing_content_sections) === 1 ? 'is' : 'are')
+                . ' outside your subject assignment.';
+        }
+
+        return array(
+            'capabilities' => $capabilities,
+            'view_section_ids' => $view_sections,
+            'content_section_ids' => $content_sections,
+            'can_view_all' => $can_view_all,
+            'can_manage_all' => $can_manage_all,
+            'message' => $message,
+        );
+    }
+
+    private function workflowArmPhrase($class_id, array $section_ids)
+    {
+        $section_ids = array_values(array_unique(array_filter(array_map('intval', $section_ids))));
+        if (empty($section_ids)) {
+            return 'no assigned arm';
+        }
+        $labels = array();
+        foreach ($this->onlineexam_model->getClassSectionsForWorkflow((int) $class_id) as $section) {
+            if (in_array((int) $section['id'], $section_ids, true)) {
+                $labels[(int) $section['id']] = trim((string) $section['section']);
+            }
+        }
+        $names = array();
+        foreach ($section_ids as $section_id) {
+            $names[] = isset($labels[$section_id]) && $labels[$section_id] !== ''
+                ? $labels[$section_id] : ('#' . $section_id);
+        }
+        $last = array_pop($names);
+        $joined = empty($names) ? $last : implode(', ', $names) . ' and ' . $last;
+        return (count($section_ids) === 1 ? 'arm ' : 'arms ') . $joined;
+    }
+
     /** Operational scope passed to the v2 domain model on every read/write. */
     private function workflowOperationScope($exam, $mode = 'view')
     {
@@ -2775,8 +2860,12 @@ class Onlineexam extends Admin_Controller
         }
         $this->requireWorkflowCsrf();
         $this->requireCompactAssessment($workflow_exam, true);
-        if (!$this->workflowTeacherHasAssignment($workflow_exam->class_id, $workflow_exam->section_ids, $workflow_exam->subject_id, $workflow_exam->session_id)) {
-            access_denied();
+        $question_scope = $this->workflowQuestionBankScope($workflow_exam);
+        if (empty($question_scope['view_section_ids'])) {
+            return $this->output->set_status_header(403)->set_content_type('application/json')->set_output(json_encode(array(
+                'status' => 0,
+                'message' => 'You are not assigned to any class arm in this assessment.',
+            )));
         }
         $keyword            = trim((string) $this->input->post('keyword'));
         $question_type      = strtolower(trim((string) $this->input->post('question_type')));
@@ -2819,13 +2908,18 @@ class Onlineexam extends Admin_Controller
                 $where_search['class_id'] = $workflow_exam->class_id;
                 $where_search['question_session_id'] = $workflow_exam->session_id;
                 $where_search['question_term'] = strtolower($workflow_exam->term);
-                $where_search['allowed_section_ids'] = array_values(array_unique(array_merge(
-                    array(0),
-                    array_map('intval', (array) $workflow_exam->section_ids)
-                )));
+                $allowed_section_ids = $question_scope['view_section_ids'];
+                // A class-wide legacy question is visible only when the staff
+                // member can view every arm selected for this assessment.
+                if ($question_scope['can_view_all']) {
+                    $allowed_section_ids[] = 0;
+                }
+                $where_search['allowed_section_ids'] = array_values(array_unique(array_map('intval', $allowed_section_ids)));
                 $data['workflow_exam'] = $workflow_exam;
                 $data['workflow_papers'] = $this->onlineexam_model->getWorkflowPapers($workflow_exam->id);
-                $data['workflow_editable'] = $workflow_exam->lifecycle_status === 'draft' && !$this->onlineexam_model->hasWorkflowAttemptsForRevision($workflow_exam->id, $workflow_exam->revision);
+                $data['workflow_editable'] = $question_scope['can_manage_all']
+                    && $workflow_exam->lifecycle_status === 'draft'
+                    && !$this->onlineexam_model->hasWorkflowAttemptsForRevision($workflow_exam->id, $workflow_exam->revision);
             }
             $data['question_type']   = $workflow_exam ? array_diff_key($this->localizedQuestionTypes(), array('grouped_passage' => true)) : $this->config->item('question_type');
             $questionList            = $this->onlineexamquestion_model->getByExamID($exam_id, $per_page, $start, $where_search);
@@ -2916,6 +3010,8 @@ class Onlineexam extends Admin_Controller
         }
 
         $response = array(
+            'status'        => 1,
+            'message'       => $question_scope['message'],
             'content'       => $pag_content,
             'navigation'    => $pag_navigation,
             'show_from'     => ($total_display <= 0) ? 0 : $show_from,

@@ -33,7 +33,7 @@ $studio_config = array(
     ),
 );
 ?>
-<link rel="stylesheet" href="<?php echo base_url('backend/idcard-studio/idcard-studio.css?v=2.0.0'); ?>">
+<link rel="stylesheet" href="<?php echo base_url('backend/idcard-studio/idcard-studio.css?v=2.0.1'); ?>">
 <script>
     document.documentElement.classList.add('idstudio-editor-active');
     document.body.classList.add('idstudio-editor-active');
@@ -405,6 +405,6 @@ window.ID_CARD_STUDIO_CONFIG = <?php echo json_encode($studio_config, JSON_HEX_T
 <script src="<?php echo base_url('backend/idcard-studio/vendor/qrcode-1.0.0.min.js'); ?>"></script>
 <script src="<?php echo base_url('backend/idcard-studio/vendor/jsbarcode-3.11.6.min.js'); ?>"></script>
 <script src="<?php echo base_url('backend/idcard-studio/vendor/jspdf-2.5.2.umd.min.js'); ?>"></script>
-<script src="<?php echo base_url('backend/idcard-studio/idcard-geometry.js?v=2.0.0'); ?>"></script>
-<script src="<?php echo base_url('backend/idcard-studio/idcard-renderer.js?v=2.0.0'); ?>"></script>
-<script src="<?php echo base_url('backend/idcard-studio/idcard-studio.js?v=2.0.0'); ?>"></script>
+<script src="<?php echo base_url('backend/idcard-studio/idcard-geometry.js?v=2.0.1'); ?>"></script>
+<script src="<?php echo base_url('backend/idcard-studio/idcard-renderer.js?v=2.0.1'); ?>"></script>
+<script src="<?php echo base_url('backend/idcard-studio/idcard-studio.js?v=2.0.1'); ?>"></script>

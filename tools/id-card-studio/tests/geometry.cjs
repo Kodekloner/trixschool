@@ -48,9 +48,18 @@ for (const type of ['rect', 'ellipse', 'triangle', 'diamond', 'polygon', 'star',
             assert.ok(p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1);
     const commands = g.pathCommands(nodes, true, 20, 15);
     assert.ok(commands.every((c) => ['M', 'L', 'C', 'Z'].includes(c[0])));
+    if (type === 'polygon' || type === 'star') {
+        assert.equal(Math.min(...nodes.map((node) => node.x)), 0);
+        assert.equal(Math.max(...nodes.map((node) => node.x)), 1);
+        assert.equal(Math.min(...nodes.map((node) => node.y)), 0);
+        assert.equal(Math.max(...nodes.map((node) => node.y)), 1);
+    }
     cases++;
 }
-const points = Array.from({length: 2000}, (_, i) => ({x: i / 50, y: Math.sin(i / 100)}));
+const points = Array.from({length: 2000}, (_, i) => ({
+    x: i / 50,
+    y: Math.sin(i / 100)
+}));
 assert.ok(g.simplify(points, 0.1).length < 256);
 cases++;
 console.log(cases + ' geometry checks passed');

@@ -71,6 +71,6 @@ html, body { margin: 0; padding: 0; background: #fff; font-family: Arial, sans-s
 <script src="<?php echo base_url('backend/idcard-studio/vendor/qrcode-1.0.0.min.js'); ?>"></script>
 <script src="<?php echo base_url('backend/idcard-studio/vendor/jsbarcode-3.11.6.min.js'); ?>"></script>
 <script src="<?php echo base_url('backend/idcard-studio/vendor/jspdf-2.5.2.umd.min.js'); ?>"></script>
-<script src="<?php echo base_url('backend/idcard-studio/idcard-geometry.js?v=2.0.0'); ?>"></script>
-<script src="<?php echo base_url('backend/idcard-studio/idcard-renderer.js?v=2.0.0'); ?>"></script>
-<script src="<?php echo base_url('backend/idcard-studio/idcard-runtime.js?v=2.0.0'); ?>"></script>
+<script src="<?php echo base_url('backend/idcard-studio/idcard-geometry.js?v=2.0.1'); ?>"></script>
+<script src="<?php echo base_url('backend/idcard-studio/idcard-renderer.js?v=2.0.1'); ?>"></script>
+<script src="<?php echo base_url('backend/idcard-studio/idcard-runtime.js?v=2.0.1'); ?>"></script>

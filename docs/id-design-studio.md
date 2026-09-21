@@ -77,6 +77,7 @@ Uploaded artwork is limited to a genuine PNG or JPEG under 5 MB. The server veri
 - Use rulers, Fit, and 25–250% zoom (Ctrl/Cmd-wheel zooms around the pointer).
 - Drag, resize, and rotate selected objects directly.
 - Shift-click or drag-select multiple objects where the browser/pointer permits.
+- Selection borders use the object's exact outer frame: handle centres sit on its edges without added selection padding.
 
 Grid, rulers, and safe-area indicators are editor aids and are not printed.
 
@@ -218,6 +219,7 @@ Shortcuts do not intercept normal typing while focus is in an input, textarea, s
 - A changed draft autosaves after about 2.5 seconds of inactivity.
 - Edits during an in-flight save remain pending and are saved using the latest successful checksum. Autosave waits for active gestures/drawing to finish; a failed or conflicting save does not clear pending changes.
 - **Save draft** forces an immediate save.
+- Manual Save and Publish finish a valid in-progress path, discard an incomplete one-point path, correct recoverable object/data errors, and retry one unexpected validation failure. Temporary network or server failures are retried automatically; retries are idempotent if the server committed before its response was lost.
 - The browser warns before leaving with unsaved changes.
 - The server checks an expected checksum. If another browser saved first, it returns a conflict rather than overwriting that work. Reload, compare, and reapply the intended change.
 - Publishing first saves the draft, requests confirmation, archives the previous published version, marks the approved version published, and opens a new draft version for later changes.
@@ -357,6 +359,7 @@ For both a student and staff design:
 | Migration warning | Tenant database migration version/tables | Apply migration 131 through the normal all-school process |
 | No Open Studio button | Template is Legacy only | Use Convert to Design Studio with edit permission |
 | Save conflict | Another tab/user changed the checksum | Reload; do not repeatedly force stale saves |
+| Save/Publish keeps retrying or fails | Temporary server/network problem, expired session, permission/CSRF failure, or a real version conflict | Let automatic retries finish, then restore connectivity or session access; security and conflict checks are never bypassed |
 | Image upload rejected | Type, actual file signature, 5 MB limit | Use a genuine optimized PNG/JPEG |
 | Image previews but export fails | Storage/CORS/session/asset permission | Check authenticated same-origin asset response and S3 URL configuration |
 | QR issuance unavailable | Server QR encryption key/OpenSSL missing | Configure and securely back up `BIOMETRIC_QR_ENCRYPTION_KEY` (32+ random characters), restart PHP/web service; never bypass the check |

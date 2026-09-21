@@ -194,6 +194,14 @@ $db->query("INSERT INTO subjecttables(day,class_id,section_id,subject_group_id,s
     VALUES ('Monday',1,2,2,2,10,1)");
 $db->query("INSERT INTO subject_timetable(day,class_id,section_id,subject_group_id,subject_group_subject_id,staff_id,session_id)
     VALUES ('Tuesday',1,1,1,1,10,1)");
+$academic_access = $GLOBALS['review_services']['academicaccess_model'];
+$partial_scope = $academic_access->assessmentCapabilities(array(
+    'session_id'=>1, 'class_id'=>1, 'subject_id'=>1,
+), array(1,2));
+review_assert($partial_scope['view_sections'] === array(1)
+    && $partial_scope['content_sections'] === array(1)
+    && $partial_scope['can_view'] && !$partial_scope['can_manage_content'],
+    'A subject teacher must be able to view their arm of a multi-arm assessment without gaining assessment-wide mutation rights.');
 $choices = $legacy->getWorkflowAcademicChoices(1,1,'1st',1);
 review_assert(array_column($choices['subjects'],'id') === array(2,1), 'Subjects must be filtered by both curriculum session records.');
 review_assert(array_column($choices['sections'],'id') === array(1), 'Class arms must be filtered by the chosen subject.');
@@ -251,6 +259,13 @@ $db->where_in('id', array(95,96,97))->delete('onlineexam');
 // The shared policy gives class teachers view/candidate scope across their arm,
 // while content and marks still require an exact recognized subject assignment.
 $db->query("INSERT INTO class_teacher(class_id,staff_id,section_id,session_id) VALUES (1,10,2,1)");
+$class_teacher_scope = $academic_access->assessmentCapabilities(array(
+    'session_id'=>1, 'class_id'=>1, 'subject_id'=>1,
+), array(1,2));
+review_assert($class_teacher_scope['view_sections'] === array(1,2)
+    && $class_teacher_scope['content_sections'] === array(1)
+    && !$class_teacher_scope['can_manage_content'],
+    'Class-teacher visibility in another arm must remain read-only without the exact subject assignment.');
 require_once APPPATH . 'models/Question_model.php';
 $question_bank = new Question_model();
 review_assert($question_bank->canAccessQuestionScope(1,1,1), 'A teacher must access their assigned subject and arm.');

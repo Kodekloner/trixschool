@@ -293,7 +293,9 @@
             cornerColor: '#2563eb',
             borderColor: '#2563eb',
             cornerStyle: 'circle',
-            padding: 1,
+            // Selection borders and control centres must sit on the object's
+            // actual outer frame. Fabric adds this value outside that frame.
+            padding: 0,
             studioId: object.id,
             studioType: object.type,
             studioGroup: object.group || '',

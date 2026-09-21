@@ -145,7 +145,10 @@
                 var radius = type === 'star' && i % 2 ? (p.innerRadius || 0.45) / 2 : 0.5;
                 nodes.push(node(0.5 + Math.cos(angle) * radius, 0.5 + Math.sin(angle) * radius));
             }
-            return nodes;
+            // Regular shapes do not always have vertices at all four cardinal
+            // directions. Normalize their real extrema so the declared frame,
+            // selection border and visible shape share the same four edges.
+            return normalizeNodes(nodes);
         }
         if (type === 'arrow') {
             var head = 1 - (p.head || 0.35),
@@ -176,6 +179,24 @@
             ];
         }
         return [node(0, 0), node(1, 0), node(1, 1), node(0, 1)];
+    }
+
+    function normalizeNodes(nodes) {
+        var xs = nodes.map(function (point) {
+                return point.x;
+            }),
+            ys = nodes.map(function (point) {
+                return point.y;
+            });
+        var left = Math.min.apply(null, xs),
+            top = Math.min.apply(null, ys),
+            width = Math.max.apply(null, xs) - left,
+            height = Math.max.apply(null, ys) - top;
+        return nodes.map(function (point) {
+            point.x = width ? (point.x - left) / width : 0.5;
+            point.y = height ? (point.y - top) / height : 0.5;
+            return point;
+        });
     }
     function pathCommands(nodes, closed, width, height) {
         function p(n) {

@@ -150,6 +150,7 @@ class Idcardstudio extends Admin_Controller
         $result = $this->Idcardstudio_model->publish(
             $design->id,
             (string) $this->input->post('expected_checksum'),
+            (int) $this->input->post('expected_published_version_id'),
             (int) $this->customlib->getStaffID()
         );
         if ($result['status'] === 'conflict') {

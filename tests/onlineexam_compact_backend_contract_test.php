@@ -68,6 +68,26 @@ compact_backend_assert(strpos($admin, '$this->question_model->canAccessQuestion(
 compact_backend_assert(strpos($admin, 'workflowTeacherHasAssignment(') !== false
     && strpos($admin, 'canManageAllSections') !== false,
     'Teacher Question Bank searches and assessment changes must use exact subject/session/class-arm assignments.');
+$question_search_start = strpos($admin, 'public function searchQuestionByExamID()');
+$question_search_end = strpos($admin, 'public function rankgenerate()', $question_search_start);
+$question_search_source = substr($admin, $question_search_start, $question_search_end - $question_search_start);
+compact_backend_assert(strpos($question_search_source, 'workflowQuestionBankScope') !== false
+    && strpos($question_search_source, "['view_section_ids']") !== false
+    && strpos($question_search_source, "['can_manage_all']") !== false,
+    'Question Bank AJAX reads must use partial view scope while assignment controls require every assessment arm.');
+compact_backend_assert(strpos($question_search_source, 'workflowTeacherHasAssignment(') === false,
+    'A teacher who can view at least one assessment arm must not be rejected by the Question Bank AJAX reader.');
+compact_backend_assert(strpos($question_search_source, 'set_status_header(403)') !== false
+    && strpos($question_search_source, 'You are not assigned to any class arm in this assessment.') !== false,
+    'An out-of-scope Question Bank AJAX request must return an explicit JSON authorization error.');
+foreach (array('paperSave', 'paperDelete', 'paperSectionSave', 'paperSectionDelete',
+    'workflowQuestionSave', 'workflowQuestionAuthor', 'workflowQuestionDelete', 'lifecycle') as $full_scope_action) {
+    $action_start = strpos($admin, 'public function ' . $full_scope_action . '(');
+    $action_end = strpos($admin, "\n    public function ", $action_start + 1);
+    $action_source = substr($admin, $action_start, $action_end - $action_start);
+    compact_backend_assert($action_start !== false && strpos($action_source, 'workflowTeacherHasAssignment(') !== false,
+        $full_scope_action . ' must continue requiring subject ownership of every assessment arm.');
+}
 compact_backend_assert(strpos($admin, 'This question belongs to a class arm that is not selected for the assessment.') !== false, 'Question assignment must reject crafted identifiers from an unselected class arm.');
 compact_backend_assert(strpos($admin, "\$mark_scope = \$this->workflowOperationScope(\$exam, 'mark');") !== false
     && substr_count($admin, "->where_in('ss.section_id', \$mark_scope['section_ids'])") >= 2,
