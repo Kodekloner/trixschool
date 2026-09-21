@@ -16,8 +16,11 @@
     var cancelled = false;
     var statusNode = document.getElementById('studio-runtime-status');
     var progressNode = document.getElementById('studio-runtime-progress');
+    var credentialWarningNode = document.getElementById('studio-runtime-credential-warning');
     var cancelButton = document.querySelector('[data-runtime-action="cancel"]');
     var jobs = [];
+    var credentialIssues = attendanceCredentialIssues();
+    window.IDCARD_STUDIO_CREDENTIAL_WARNING = '';
 
     (config.cards || []).forEach(function (card, index) {
         jobs.push(renderCard('front', index, card, index));
@@ -31,8 +34,12 @@
     Promise.all(jobs).then(function () {
         window.IDCARD_STUDIO_RENDER_READY = true;
         document.body.setAttribute('data-idcard-render-ready', '1');
-        setProgress(100, (config.cards || []).length + ' card' + ((config.cards || []).length === 1 ? '' : 's') + ' ready.');
         bindToolbar();
+        if (credentialIssues.length) {
+            showCredentialWarning(credentialIssues);
+        } else {
+            setProgress(100, (config.cards || []).length + ' card' + ((config.cards || []).length === 1 ? '' : 's') + ' ready.');
+        }
     }).catch(function (error) {
         fail(error && error.message ? error.message : 'The cards could not be rendered.');
     });
@@ -65,6 +72,59 @@
             return true;
         });
         return copy;
+    }
+
+    function attendanceCredentialIssues() {
+        var documents = [config.front];
+        if (config.printSettings && config.printSettings.duplex) {
+            documents.push(config.back);
+        }
+        var required = documents.some(function (documentData) {
+            return (documentData && documentData.objects || []).some(function (object) {
+                return (object.type === 'qr' || object.type === 'barcode') &&
+                    object.binding === 'attendance.credential' && object.visible !== false;
+            });
+        });
+        if (!required) { return []; }
+        return (config.cards || []).map(function (card, index) {
+            var token = card.bindings && card.bindings['attendance.credential'];
+            if (typeof token === 'string' && token.length > 0) { return null; }
+            return {
+                label: card.attendanceQrLabel || ('Card ' + (index + 1)),
+                status: card.attendanceQrStatus || 'not_issued'
+            };
+        }).filter(Boolean);
+    }
+
+    function showCredentialWarning(issues) {
+        var unavailable = issues.some(function (issue) { return issue.status === 'unavailable'; });
+        var labels = issues.slice(0, 5).map(function (issue) { return issue.label; });
+        var remaining = issues.length - labels.length;
+        var message = issues.length + ' card' + (issues.length === 1 ? '' : 's') +
+            ' cannot print the attendance QR: ' + labels.join(', ') +
+            (remaining > 0 ? ' and ' + remaining + ' more' : '') + '. ' +
+            (unavailable
+                ? 'The active credential cannot be read. Restore the matching QR encryption key or revoke and reissue it.'
+                : 'Issue an active QR credential before printing.');
+        window.IDCARD_STUDIO_CREDENTIAL_WARNING = message;
+        document.body.classList.add('studio-runtime-credential-blocked');
+        if (credentialWarningNode) {
+            credentialWarningNode.textContent = message + ' ';
+            if (config.credentialManagementUrl) {
+                var link = document.createElement('a');
+                link.href = config.credentialManagementUrl;
+                link.target = '_blank';
+                link.rel = 'noopener';
+                link.textContent = 'Manage attendance credentials';
+                credentialWarningNode.appendChild(link);
+            }
+            credentialWarningNode.style.display = 'block';
+        }
+        document.querySelectorAll('[data-runtime-action="print"], [data-runtime-action="png"], [data-runtime-action="exact-pdf"], [data-runtime-action="a4-pdf"]').forEach(function (button) {
+            button.disabled = true;
+            button.title = 'Resolve the missing attendance QR credential before printing or exporting.';
+        });
+        setProgress(100, 'Cards rendered, but attendance QR credentials require attention.');
     }
 
     function bindToolbar() {

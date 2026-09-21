@@ -38,6 +38,13 @@
     .staround2{position: relative; z-index: 9;}
     .stbottom{background: #453278;height: 20px;width: 100%;clear: both;margin-bottom: 5px;}
     .principal{margin-top: -40px;margin-right:10px; float:right;}
+    .legacy-card-footer{position:relative;z-index:10;padding:3px 6px 5px;text-align:right;}
+    .legacy-card-auth{display:flex;align-items:flex-end;justify-content:space-between;gap:5px;margin-top:5px;}
+    .legacy-card-auth .signature{flex:1;margin-top:0;padding:3px;}
+    .legacy-card-auth .signature img{max-width:100%;height:24px;object-fit:contain;}
+    .legacy-attendance-qr{display:inline-block;flex:0 0 44px;width:44px;height:44px;padding:3px;vertical-align:bottom;background:#fff;box-sizing:border-box;}
+    .legacy-attendance-qr-missing{display:inline-flex;align-items:center;justify-content:center;color:#991b1b;border:1px solid #dc2626;font-size:7px;line-height:1.1;text-align:center;}
+    .legacy-qr-warning{margin:0 0 12px;padding:10px 12px;border:1px solid #d97706;color:#78350f;background:#fffbeb;font:12px Arial,sans-serif;}
     .stred{color: #000;}
     .spanlr{padding-left: 5px; padding-right: 5px;}
     .cardleft{width: 20%;float: left;}
@@ -47,6 +54,11 @@
     .vertlist{padding: 0; margin:0; list-style: none;height: 132px;}
     .vertlist li{text-align: left;display: inline-block;width: 100%; padding-bottom: 2px;color: #000;}
     .vertlist li span{width:55%;float: right;}
+    @media print{
+        .legacy-qr-warning{display:none!important;}
+        .legacy-qr-blocked .legacy-qr-warning{display:block!important;border:2px solid #000;color:#000;}
+        .legacy-qr-blocked .legacy-card-sheet{display:none!important;}
+    }
 </style>
 
 <?php
@@ -55,14 +67,26 @@ $i = 0;
 $card_background_url = get_school_asset_url($id_card[0]->background, 'uploads/student_id_card/background');
 $card_logo_url = get_school_asset_url($id_card[0]->logo, 'uploads/student_id_card/logo');
 $card_signature_url = get_school_asset_url($id_card[0]->sign_image, 'uploads/student_id_card/signature');
+$legacy_attendance_qr_enabled = !empty($legacy_attendance_qr_enabled);
+$legacy_attendance_qr_tokens = isset($legacy_attendance_qr_tokens) && is_array($legacy_attendance_qr_tokens) ? $legacy_attendance_qr_tokens : array();
+$legacy_attendance_qr_missing = isset($legacy_attendance_qr_missing) && is_array($legacy_attendance_qr_missing) ? $legacy_attendance_qr_missing : array();
+$legacy_attendance_qr_unavailable = isset($legacy_attendance_qr_unavailable) && is_array($legacy_attendance_qr_unavailable) ? $legacy_attendance_qr_unavailable : array();
 
 ?>
+<?php if ($legacy_attendance_qr_enabled && (!empty($legacy_attendance_qr_missing) || !empty($legacy_attendance_qr_unavailable))) { ?>
+    <div class="legacy-qr-warning"><strong>Attendance QR cannot be printed for every selected student.</strong>
+        <?php echo !empty($legacy_attendance_qr_unavailable)
+            ? 'At least one active credential cannot be decrypted. Restore the matching QR encryption key or revoke and reissue affected credentials.'
+            : 'Issue active QR credentials for the affected students first.'; ?>
+        <?php if (!empty($legacy_attendance_qr_manage_url)) { ?><a target="_blank" rel="noopener" href="<?php echo htmlspecialchars($legacy_attendance_qr_manage_url, ENT_QUOTES, 'UTF-8'); ?>">Manage attendance credentials</a><?php } ?>
+    </div>
+<?php } ?>
 <?php
 if($id_card[0]->enable_vertical_card)
 {
 ?>
 
-<table cellpadding="0" cellspacing="0" width="100%">
+<table cellpadding="0" cellspacing="0" width="100%" class="legacy-card-sheet">
     <tr>
         <?php
         foreach ($students as $student) {
@@ -76,6 +100,9 @@ if($id_card[0]->enable_vertical_card)
                 !empty($student->image) ? $student->image : $student_fallback_url,
                 'uploads/student_images'
             );
+            $student_session_id = isset($student->student_session_id) ? (int) $student->student_session_id : 0;
+            $attendance_qr_token = isset($legacy_attendance_qr_tokens[$student_session_id]) ? $legacy_attendance_qr_tokens[$student_session_id] : '';
+            $attendance_qr_label = trim($student->firstname . ' ' . $student->middlename . ' ' . $student->lastname);
             ?>
             <td valign="top" class="width32">
              <table cellpadding="0" cellspacing="0" width="100%" style="background: <?php echo $id_card[0]->header_color; ?>;">
@@ -149,7 +176,14 @@ if($id_card[0]->enable_vertical_card)
 
                                         <?php if ($id_card[0]->enable_blood_group == 1) { ?><li class="stred"><?php echo $this->lang->line('blood_group'); ?><span><?php echo $student->blood_group; ?></span></li><?php } ?>
                         </ul>
-                        <div class="signature"><?php if ($card_signature_url !== '') { ?><img src="<?php echo htmlspecialchars($card_signature_url, ENT_QUOTES, 'UTF-8'); ?>" width="150" height="24" style="width: 150px;" /><?php } ?></div>
+                        <?php if ($legacy_attendance_qr_enabled) { ?>
+                            <div class="legacy-card-auth">
+                                <div class="legacy-attendance-qr<?php echo $attendance_qr_token === '' ? ' legacy-attendance-qr-missing' : ''; ?>" data-attendance-qr="<?php echo htmlspecialchars($attendance_qr_token, ENT_QUOTES, 'UTF-8'); ?>" data-attendance-qr-label="<?php echo htmlspecialchars($attendance_qr_label, ENT_QUOTES, 'UTF-8'); ?>"><?php if ($attendance_qr_token === '') { ?>QR unavailable<?php } ?></div>
+                                <div class="signature"><?php if ($card_signature_url !== '') { ?><img src="<?php echo htmlspecialchars($card_signature_url, ENT_QUOTES, 'UTF-8'); ?>" width="120" height="24" /><?php } ?></div>
+                            </div>
+                        <?php } else { ?>
+                            <div class="signature"><?php if ($card_signature_url !== '') { ?><img src="<?php echo htmlspecialchars($card_signature_url, ENT_QUOTES, 'UTF-8'); ?>" width="150" height="24" style="width: 150px;" /><?php } ?></div>
+                        <?php } ?>
                     </td>
                 </tr>
             </table>
@@ -174,7 +208,7 @@ if($id_card[0]->enable_vertical_card)
 }else{
     ?>
 
-<table cellpadding="0" cellspacing="0" width="100%">
+<table cellpadding="0" cellspacing="0" width="100%" class="legacy-card-sheet">
     <tr>
         <?php
         foreach ($students as $student) {
@@ -188,6 +222,9 @@ if($id_card[0]->enable_vertical_card)
                 !empty($student->image) ? $student->image : $student_fallback_url,
                 'uploads/student_images'
             );
+            $student_session_id = isset($student->student_session_id) ? (int) $student->student_session_id : 0;
+            $attendance_qr_token = isset($legacy_attendance_qr_tokens[$student_session_id]) ? $legacy_attendance_qr_tokens[$student_session_id] : '';
+            $attendance_qr_label = trim($student->firstname . ' ' . $student->middlename . ' ' . $student->lastname);
             ?>
             <td valign="top" class="width32">
                 <table cellpadding="0" cellspacing="0" width="100%" class="tc-container" style="background: #efefef;">
@@ -259,7 +296,10 @@ if($id_card[0]->enable_vertical_card)
                         </td>
                     </tr>
                     <tr>
-                        <td valign="top" align="right" class="principal"><?php if ($card_signature_url !== '') { ?><img src="<?php echo htmlspecialchars($card_signature_url, ENT_QUOTES, 'UTF-8'); ?>" width="66" height="40" /><?php } ?></td>
+                        <td valign="top" align="right" class="legacy-card-footer">
+                            <?php if ($legacy_attendance_qr_enabled) { ?><div class="legacy-attendance-qr<?php echo $attendance_qr_token === '' ? ' legacy-attendance-qr-missing' : ''; ?>" data-attendance-qr="<?php echo htmlspecialchars($attendance_qr_token, ENT_QUOTES, 'UTF-8'); ?>" data-attendance-qr-label="<?php echo htmlspecialchars($attendance_qr_label, ENT_QUOTES, 'UTF-8'); ?>"><?php if ($attendance_qr_token === '') { ?>QR unavailable<?php } ?></div><?php } ?>
+                            <?php if ($card_signature_url !== '') { ?><img src="<?php echo htmlspecialchars($card_signature_url, ENT_QUOTES, 'UTF-8'); ?>" width="66" height="40" alt="Signature" /><?php } ?>
+                        </td>
                     </tr>
                 </table>
             </td>
@@ -279,3 +319,7 @@ if($id_card[0]->enable_vertical_card)
 }
 
  ?>
+<?php if ($legacy_attendance_qr_enabled) { ?>
+    <script src="<?php echo base_url('backend/idcard-studio/vendor/qrcode-1.0.0.min.js'); ?>"></script>
+    <script src="<?php echo base_url('backend/idcard-studio/idcard-legacy-qr.js?v=1.0.0'); ?>"></script>
+<?php } ?>

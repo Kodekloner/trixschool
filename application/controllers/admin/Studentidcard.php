@@ -59,6 +59,7 @@ class studentidcard extends Admin_Controller {
             $phone = 0;
             $dob = 0;
             $bloodgroup = 0;
+            $attendance_qr = 0;
             $vertical_card =0;
             if ($this->input->post('is_active_admission_no') == 1) {
                 $admission_no = $this->input->post('is_active_admission_no');
@@ -87,6 +88,9 @@ class studentidcard extends Admin_Controller {
             if ($this->input->post('is_active_blood_group') == 1) {
                 $bloodgroup = $this->input->post('is_active_blood_group');
             }
+            if ($this->input->post('is_active_attendance_qr') == 1) {
+                $attendance_qr = 1;
+            }
             $enable_vertical_card=$this->input->post('enable_vertical_card');
              if (isset($enable_vertical_card)) {
                 $vertical_card = 1;
@@ -105,6 +109,7 @@ class studentidcard extends Admin_Controller {
                 'enable_phone' => $phone,
                 'enable_dob' => $dob,
                 'enable_blood_group' => $bloodgroup,
+                'enable_attendance_qr' => $attendance_qr,
                 'enable_vertical_card' => $vertical_card,
                 'status' => 1,
             );
@@ -273,6 +278,7 @@ class studentidcard extends Admin_Controller {
             $phone = 0;
             $dob = 0;
             $bloodgroup = 0;
+            $attendance_qr = 0;
             $vertical_card=0;
 
             if ($this->input->post('is_active_admission_no') == 1) {
@@ -301,6 +307,9 @@ class studentidcard extends Admin_Controller {
             }
             if ($this->input->post('is_active_blood_group') == 1) {
                 $bloodgroup = $this->input->post('is_active_blood_group');
+            }
+            if ($this->input->post('is_active_attendance_qr') == 1) {
+                $attendance_qr = 1;
             }
             $enable_vertical_card=$this->input->post('enable_vertical_card');
              if (isset($enable_vertical_card)) {
@@ -405,6 +414,7 @@ class studentidcard extends Admin_Controller {
                 'enable_phone' => $phone,
                 'enable_dob' => $dob,
                 'enable_blood_group' => $bloodgroup,
+                'enable_attendance_qr' => $attendance_qr,
                 'enable_vertical_card'=>$vertical_card,
                 'status' => 1,
             );

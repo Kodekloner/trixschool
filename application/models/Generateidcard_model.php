@@ -13,7 +13,7 @@ class Generateidcard_model extends CI_model {
         $this->db->select('*');
         $this->db->from('id_card');
         $query = $this->db->get();
-        return $query->result();
+        return $this->withLegacyOptions($query->result());
     }
 
     public function getidcardbyid($idcard) {
@@ -21,7 +21,18 @@ class Generateidcard_model extends CI_model {
         $this->db->from('id_card');
         $this->db->where('id', $idcard);
         $query = $this->db->get();
-        return $query->result();
+        return $this->withLegacyOptions($query->result());
+    }
+
+    private function withLegacyOptions($records) {
+        foreach ($records as $record) {
+            $layout = !empty($record->layout_json) ? json_decode($record->layout_json, true) : array();
+            if (!is_array($layout)) {
+                $layout = array();
+            }
+            $record->enable_attendance_qr = !empty($layout['_options']['attendance_qr']) ? 1 : 0;
+        }
+        return $records;
     }
 
 }

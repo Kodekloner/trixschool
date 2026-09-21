@@ -12,6 +12,7 @@ $runtime_config = array(
     'printSettings' => json_decode($studio_design->print_settings_json, true),
     'assets' => $runtime_assets,
     'cards' => array_values($studio_cards),
+    'credentialManagementUrl' => site_url('admin/biometricattendance') . '#bio-scanner',
 );
 $duplex = !empty($runtime_config['printSettings']['duplex']);
 $paper_orientation = !empty($runtime_config['printSettings']['orientation']) && $runtime_config['printSettings']['orientation'] === 'landscape' ? 'landscape' : 'portrait';
@@ -26,6 +27,8 @@ html, body { margin: 0; padding: 0; background: #fff; font-family: Arial, sans-s
 .studio-print-side-label { display: none; }
 .studio-duplex-back { page-break-before: always; }
 .studio-runtime-error { padding: 12px; border: 1px solid #b91c1c; color: #991b1b; }
+.studio-runtime-credential-warning { display: none; margin: 0 0 6mm; padding: 10px 12px; border: 1px solid #d97706; border-radius: 4px; color: #78350f; background: #fffbeb; }
+.studio-runtime-credential-warning a { color: #92400e; font-weight: 700; text-decoration: underline; }
 .studio-runtime-toolbar { position: sticky; top: 0; z-index: 100; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px; margin: -10mm -10mm 8mm; color: #172033; background: #fff; border-bottom: 1px solid #cbd5e1; box-shadow: 0 2px 10px rgba(15,23,42,.12); }
 .studio-runtime-toolbar button { padding: 7px 10px; border: 1px solid #94a3b8; border-radius: 4px; background: #f8fafc; cursor: pointer; }
 .studio-runtime-toolbar button:hover { border-color: #2563eb; color: #1d4ed8; }
@@ -37,6 +40,11 @@ html, body { margin: 0; padding: 0; background: #fff; font-family: Arial, sans-s
     .studio-print-side-label { display: block; grid-column: 1 / -1; margin: 2mm 0; font-weight: 700; }
 }
 @media print { .studio-runtime-toolbar { display: none !important; } body { padding: 0; } }
+@media print {
+    .studio-runtime-credential-blocked .studio-runtime-credential-warning { display: block !important; border: 2px solid #000; color: #000; }
+    .studio-runtime-credential-blocked .studio-print-side-label,
+    .studio-runtime-credential-blocked .studio-print-sheet { display: none !important; }
+}
 </style>
 
 <div class="studio-runtime-toolbar" id="studio-runtime-toolbar">
@@ -49,6 +57,8 @@ html, body { margin: 0; padding: 0; background: #fff; font-family: Arial, sans-s
     <button type="button" data-runtime-action="close">Close</button>
     <div class="studio-runtime-progress"><span id="studio-runtime-status">Rendering cards…</span><progress id="studio-runtime-progress" value="0" max="100"></progress></div>
 </div>
+
+<div class="studio-runtime-credential-warning" id="studio-runtime-credential-warning" role="alert"></div>
 
 <div class="studio-print-side-label">Front</div>
 <div class="studio-print-sheet" id="studio-runtime-front">
@@ -71,6 +81,6 @@ html, body { margin: 0; padding: 0; background: #fff; font-family: Arial, sans-s
 <script src="<?php echo base_url('backend/idcard-studio/vendor/qrcode-1.0.0.min.js'); ?>"></script>
 <script src="<?php echo base_url('backend/idcard-studio/vendor/jsbarcode-3.11.6.min.js'); ?>"></script>
 <script src="<?php echo base_url('backend/idcard-studio/vendor/jspdf-2.5.2.umd.min.js'); ?>"></script>
-<script src="<?php echo base_url('backend/idcard-studio/idcard-geometry.js?v=2.0.1'); ?>"></script>
-<script src="<?php echo base_url('backend/idcard-studio/idcard-renderer.js?v=2.0.1'); ?>"></script>
-<script src="<?php echo base_url('backend/idcard-studio/idcard-runtime.js?v=2.0.1'); ?>"></script>
+<script src="<?php echo base_url('backend/idcard-studio/idcard-geometry.js?v=2.0.2'); ?>"></script>
+<script src="<?php echo base_url('backend/idcard-studio/idcard-renderer.js?v=2.0.2'); ?>"></script>
+<script src="<?php echo base_url('backend/idcard-studio/idcard-runtime.js?v=2.0.2'); ?>"></script>

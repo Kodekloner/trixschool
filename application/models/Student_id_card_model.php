@@ -6,10 +6,11 @@ class Student_id_card_model extends MY_model {
         $this->db->select('*');
         $this->db->from('id_card');
         $query = $this->db->get();
-        return $query->result();
+        return $this->withLegacyOptions($query->result());
     }
 
     public function addidcard($data) {
+        $data = $this->prepareLegacyOptions($data);
         $this->db->trans_start(); # Starting Transaction
         $this->db->trans_strict(false); # See Note 01. If you wish can remove as well
         //=======================Code Start===========================
@@ -60,7 +61,7 @@ class Student_id_card_model extends MY_model {
         $this->db->from('id_card');
         $this->db->where('id', $id);
         $query = $this->db->get();
-        return $query->row();
+        return $this->withLegacyOption($query->row());
     }
 
     public function get($id) {
@@ -69,7 +70,7 @@ class Student_id_card_model extends MY_model {
         $this->db->where('status = 1');
         $this->db->where('id', $id);
         $query = $this->db->get();
-        return $query->result();
+        return $this->withLegacyOptions($query->result());
     }
 
     public function remove($id) {
@@ -92,6 +93,63 @@ class Student_id_card_model extends MY_model {
         } else {
             //return $return_value;
         }
+    }
+
+    /**
+     * Legacy templates already have a JSON metadata column for layout details.
+     * Keep optional legacy renderer settings there so tenant databases do not
+     * need another schema migration for a single switch.
+     */
+    private function prepareLegacyOptions($data)
+    {
+        if (!array_key_exists('enable_attendance_qr', $data)) {
+            return $data;
+        }
+
+        $enabled = !empty($data['enable_attendance_qr']) ? 1 : 0;
+        unset($data['enable_attendance_qr']);
+
+        if (!$this->db->field_exists('layout_json', 'id_card')) {
+            return $data;
+        }
+
+        $raw = isset($data['layout_json']) ? $data['layout_json'] : '';
+        if ($raw === '' && !empty($data['id'])) {
+            $current = $this->db->select('layout_json')->where('id', (int) $data['id'])
+                ->limit(1)->get('id_card')->row_array();
+            $raw = isset($current['layout_json']) ? $current['layout_json'] : '';
+        }
+        $layout = is_string($raw) && trim($raw) !== '' ? json_decode($raw, true) : array();
+        if (!is_array($layout)) {
+            $layout = array();
+        }
+        if (!isset($layout['_options']) || !is_array($layout['_options'])) {
+            $layout['_options'] = array();
+        }
+        $layout['_options']['attendance_qr'] = $enabled;
+        $data['layout_json'] = json_encode($layout, JSON_UNESCAPED_SLASHES);
+        return $data;
+    }
+
+    private function withLegacyOptions($records)
+    {
+        foreach ($records as $record) {
+            $this->withLegacyOption($record);
+        }
+        return $records;
+    }
+
+    private function withLegacyOption($record)
+    {
+        if (!$record) {
+            return $record;
+        }
+        $layout = !empty($record->layout_json) ? json_decode($record->layout_json, true) : array();
+        if (!is_array($layout)) {
+            $layout = array();
+        }
+        $record->enable_attendance_qr = !empty($layout['_options']['attendance_qr']) ? 1 : 0;
+        return $record;
     }
 
 }

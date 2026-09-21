@@ -104,6 +104,8 @@ class Generateidcard extends Admin_Controller
             return;
         }
 
+        $data = array_merge($data, $this->legacyStudentQrPayload($idcardlist[0], (array) $resultlist));
+
         // The unchanged legacy view uses array access while the current
         // student query returns objects. Preserve that renderer contract.
         $data['resultlist'] = array_map(function ($record) {
@@ -157,6 +159,7 @@ class Generateidcard extends Admin_Controller
             $data = array_merge($data, $this->studioStudentPayload($studioDesign, $data['id_card'][0], $data['students']));
             $id_cards = $this->load->view('admin/idcardstudio/runtime_cards', $data, true);
         } else {
+            $data = array_merge($data, $this->legacyStudentQrPayload($data['id_card'][0], $data['students']));
             $id_cards = $this->load->view('admin/certificate/generatemultiple', $data, true);
         }
         return $this->output->set_content_type('application/json')
@@ -169,10 +172,8 @@ class Generateidcard extends Admin_Controller
         foreach ($students as $student) {
             $student = is_array($student) ? (object) $student : $student;
             $sessionId = isset($student->student_session_id) ? (int) $student->student_session_id : 0;
-            $credential = $sessionId > 0 && $this->db->table_exists('biometric_qr_credentials')
-                ? $this->biometric_attendance_service->getActiveQrCredential('student', $sessionId, true)
-                : null;
-            $token = $credential && !empty($credential['token']) ? $credential['token'] : '';
+            $attendanceQr = $this->attendanceQrCredential('student', $sessionId);
+            $token = $attendanceQr['token'];
             $fullName = $this->customlib->getFullName(
                 isset($student->firstname) ? $student->firstname : '',
                 isset($student->middlename) ? $student->middlename : '',
@@ -184,25 +185,29 @@ class Generateidcard extends Admin_Controller
             if (!empty($student->dob) && $student->dob !== '0000-00-00') {
                 $dob = date($this->customlib->getSchoolDateFormat(), $this->customlib->dateYYYYMMDDtoStrtotime($student->dob));
             }
-            $cards[] = array('bindings' => array(
-                'school.name' => (string) $legacyCard->school_name,
-                'school.address' => (string) $legacyCard->school_address,
-                'school.logo' => !empty($legacyCard->logo) ? site_url('admin/idcardstudio/legacy_asset/student/' . (int) $legacyCard->id . '/logo') : '',
-                'school.signature' => !empty($legacyCard->sign_image) ? site_url('admin/idcardstudio/legacy_asset/student/' . (int) $legacyCard->id . '/sign_image') : '',
-                'school.background' => !empty($legacyCard->background) ? site_url('admin/idcardstudio/legacy_asset/student/' . (int) $legacyCard->id . '/background') : '',
-                'card.title' => (string) $legacyCard->title,
-                'attendance.credential' => $token,
-                'student.full_name' => $fullName,
-                'student.admission_no' => isset($student->admission_no) ? (string) $student->admission_no : '',
-                'student.class_section' => trim((isset($student->class) ? $student->class : '') . ' - ' . (isset($student->section) ? $student->section : ''), ' -'),
-                'student.father_name' => isset($student->father_name) ? (string) $student->father_name : '',
-                'student.mother_name' => isset($student->mother_name) ? (string) $student->mother_name : '',
-                'student.address' => isset($student->current_address) ? (string) $student->current_address : '',
-                'student.phone' => isset($student->mobileno) ? (string) $student->mobileno : '',
-                'student.dob' => $dob,
-                'student.blood_group' => isset($student->blood_group) ? (string) $student->blood_group : '',
-                'student.photo' => !empty($student->image) ? site_url('admin/idcardstudio/subject_photo/student/' . (int) $student->id) : '',
-            ));
+            $cards[] = array(
+                'attendanceQrStatus' => $attendanceQr['status'],
+                'attendanceQrLabel' => $fullName !== '' ? $fullName : ('Student #' . (int) $student->id),
+                'bindings' => array(
+                    'school.name' => (string) $legacyCard->school_name,
+                    'school.address' => (string) $legacyCard->school_address,
+                    'school.logo' => !empty($legacyCard->logo) ? site_url('admin/idcardstudio/legacy_asset/student/' . (int) $legacyCard->id . '/logo') : '',
+                    'school.signature' => !empty($legacyCard->sign_image) ? site_url('admin/idcardstudio/legacy_asset/student/' . (int) $legacyCard->id . '/sign_image') : '',
+                    'school.background' => !empty($legacyCard->background) ? site_url('admin/idcardstudio/legacy_asset/student/' . (int) $legacyCard->id . '/background') : '',
+                    'card.title' => (string) $legacyCard->title,
+                    'attendance.credential' => $token,
+                    'student.full_name' => $fullName,
+                    'student.admission_no' => isset($student->admission_no) ? (string) $student->admission_no : '',
+                    'student.class_section' => trim((isset($student->class) ? $student->class : '') . ' - ' . (isset($student->section) ? $student->section : ''), ' -'),
+                    'student.father_name' => isset($student->father_name) ? (string) $student->father_name : '',
+                    'student.mother_name' => isset($student->mother_name) ? (string) $student->mother_name : '',
+                    'student.address' => isset($student->current_address) ? (string) $student->current_address : '',
+                    'student.phone' => isset($student->mobileno) ? (string) $student->mobileno : '',
+                    'student.dob' => $dob,
+                    'student.blood_group' => isset($student->blood_group) ? (string) $student->blood_group : '',
+                    'student.photo' => !empty($student->image) ? site_url('admin/idcardstudio/subject_photo/student/' . (int) $student->id) : '',
+                ),
+            );
         }
 
         return array(
@@ -210,6 +215,61 @@ class Generateidcard extends Admin_Controller
             'studio_assets' => $this->Idcardstudio_model->publishedAssets($studioDesign->id),
             'studio_cards' => $cards,
         );
+    }
+
+    private function legacyStudentQrPayload($template, array $students)
+    {
+        $enabled = !empty($template->enable_attendance_qr);
+        $tokens = array();
+        $missing = array();
+        $unavailable = array();
+
+        if ($enabled) {
+            foreach ($students as $student) {
+                $student = is_array($student) ? (object) $student : $student;
+                $sessionId = isset($student->student_session_id) ? (int) $student->student_session_id : 0;
+                $credential = $this->attendanceQrCredential('student', $sessionId);
+                if ($credential['token'] !== '') {
+                    $tokens[$sessionId] = $credential['token'];
+                    continue;
+                }
+                $label = $this->customlib->getFullName(
+                    isset($student->firstname) ? $student->firstname : '',
+                    isset($student->middlename) ? $student->middlename : '',
+                    isset($student->lastname) ? $student->lastname : '',
+                    $this->sch_setting_detail->middlename,
+                    $this->sch_setting_detail->lastname
+                );
+                if ($credential['status'] === 'unavailable') {
+                    $unavailable[] = $label !== '' ? $label : ('Student #' . (isset($student->id) ? (int) $student->id : 0));
+                } else {
+                    $missing[] = $label !== '' ? $label : ('Student #' . (isset($student->id) ? (int) $student->id : 0));
+                }
+            }
+        }
+
+        return array(
+            'legacy_attendance_qr_enabled' => $enabled,
+            'legacy_attendance_qr_tokens' => $tokens,
+            'legacy_attendance_qr_missing' => $missing,
+            'legacy_attendance_qr_unavailable' => $unavailable,
+            'legacy_attendance_qr_manage_url' => site_url('admin/biometricattendance') . '#bio-scanner',
+        );
+    }
+
+    private function attendanceQrCredential($subjectType, $subjectId)
+    {
+        if ((int) $subjectId < 1 || !$this->db->table_exists('biometric_qr_credentials')) {
+            return array('status' => 'unavailable', 'token' => '');
+        }
+        $credential = $this->biometric_attendance_service->getActiveQrCredential($subjectType, (int) $subjectId, true);
+        if (!$credential) {
+            return array('status' => 'not_issued', 'token' => '');
+        }
+        if (empty($credential['token'])) {
+            return array('status' => 'unavailable', 'token' => '');
+        }
+        return array('status' => 'ready', 'token' => (string) $credential['token']);
     }
 
     private function requireGenerationCsrf()

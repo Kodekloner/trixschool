@@ -723,6 +723,35 @@ function check(value, message) {
                 base + '/fixture/runtime?reload' + (subject === 'staff' ? '&staff' : '')
             );
             await runtime.waitForFunction(() => window.IDCARD_STUDIO_RENDER_READY === true);
+            const qrVisible = await runtime.evaluate(() => {
+                const config = ID_CARD_RUNTIME_CONFIG,
+                    qr = (config.front.objects || []).find(
+                        (object) => object.type === 'qr' && object.binding === 'attendance.credential'
+                    );
+                if (!qr) return false;
+                const scale = SchoolLiftIdCardRenderer.PX_PER_MM,
+                    isV2 = Number(config.front.schemaVersion || 1) === 2,
+                    left = (isV2 ? qr.x - qr.width / 2 : qr.x) * scale,
+                    top = (isV2 ? qr.y - qr.height / 2 : qr.y) * scale,
+                    width = Math.max(1, Math.floor(qr.width * scale)),
+                    height = Math.max(1, Math.floor(qr.height * scale)),
+                    canvas = document.getElementById('studio-card-front-0'),
+                    pixels = canvas.getContext('2d').getImageData(
+                        Math.max(0, Math.floor(left)),
+                        Math.max(0, Math.floor(top)),
+                        Math.min(width, canvas.width - Math.max(0, Math.floor(left))),
+                        Math.min(height, canvas.height - Math.max(0, Math.floor(top)))
+                    ).data;
+                let dark = 0, light = 0, count = 0;
+                for (let i = 0; i < pixels.length; i += 16) {
+                    const luminance = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+                    if (luminance < 100) dark++;
+                    if (luminance > 220) light++;
+                    count++;
+                }
+                return count > 0 && dark / count > 0.05 && light / count > 0.15;
+            });
+            check(qrVisible, subject + ' attendance QR is visibly rendered in print preview');
             const matches = await runtime.evaluate(async () => {
                 const config = ID_CARD_RUNTIME_CONFIG,
                     doc = SchoolLiftIdCardRenderer.clone(config.front),
@@ -751,6 +780,45 @@ function check(value, message) {
             }
             await runtime.close();
         }
+        for (const subject of ['student', 'staff']) {
+            const missingQr = await context.newPage();
+            missingQr.on('pageerror', (error) => errors.push(error.message));
+            await missingQr.goto(
+                base + '/fixture/runtime?reload&missingqr' + (subject === 'staff' ? '&staff' : '')
+            );
+            await missingQr.waitForFunction(() => window.IDCARD_STUDIO_RENDER_READY === true);
+            check(
+                await missingQr.evaluate(() =>
+                    !!window.IDCARD_STUDIO_CREDENTIAL_WARNING &&
+                    document.getElementById('studio-runtime-credential-warning').offsetParent !== null &&
+                    document.querySelector('[data-runtime-action="print"]').disabled
+                ),
+                subject + ' preview blocks printing when attendance credentials are missing'
+            );
+            await missingQr.close();
+        }
+        const legacyQr = await context.newPage();
+        legacyQr.on('pageerror', (error) => errors.push(error.message));
+        await legacyQr.goto(base + '/fixture/legacy-qr');
+        await legacyQr.waitForFunction(() => window.IDCARD_LEGACY_QR_READY === true);
+        check(
+            await legacyQr.evaluate(() => {
+                const holder = document.querySelector('[data-attendance-qr]');
+                return holder.getAttribute('data-attendance-qr-rendered') === '1' &&
+                    !!holder.querySelector('canvas, img');
+            }),
+            'legacy student template renders its attendance QR locally'
+        );
+        await legacyQr.goto(base + '/fixture/legacy-qr?missingqr');
+        await legacyQr.waitForFunction(() => !!window.IDCARD_LEGACY_QR_ERROR);
+        check(
+            await legacyQr.evaluate(() =>
+                document.body.classList.contains('legacy-qr-blocked') &&
+                !!document.querySelector('.legacy-qr-warning')
+            ),
+            'legacy student template blocks output when its credential is missing'
+        );
+        await legacyQr.close();
         const touchContext = await browser.newContext({
             viewport: {width: 390, height: 844},
             hasTouch: true,

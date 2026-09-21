@@ -335,9 +335,13 @@
         );
     }
 
-    function loadImage(url, object, options) {
-        return new Promise(function (resolve) {
+    function loadImage(url, object, options, requiredLabel) {
+        return new Promise(function (resolve, reject) {
             if (!url) {
+                if (requiredLabel) {
+                    reject(new Error(requiredLabel + ' could not be generated. Reload the page and try again.'));
+                    return;
+                }
                 resolve(
                     placeholder(
                         object,
@@ -351,6 +355,10 @@
                 url,
                 function (image) {
                     if (!image || !image.width || !image.height) {
+                        if (requiredLabel) {
+                            reject(new Error(requiredLabel + ' could not be loaded into the card. Reload the page and try again.'));
+                            return;
+                        }
                         resolve(placeholder(object, 'Image unavailable', options));
                         return;
                     }
@@ -417,7 +425,7 @@
 
     function qrDataUrl(value, foreground, background) {
         return new Promise(function (resolve) {
-            if (!window.QRCode) {
+            if (!window.QRCode || !value) {
                 resolve('');
                 return;
             }
@@ -427,7 +435,7 @@
             document.body.appendChild(holder);
             try {
                 new QRCode(holder, {
-                    text: String(value || 'UNISSUED-CREDENTIAL'),
+                    text: String(value),
                     width: 512,
                     height: 512,
                     colorDark: foreground || '#111827',
@@ -436,7 +444,19 @@
                 });
                 var canvas = holder.querySelector('canvas');
                 var image = holder.querySelector('img');
-                resolve(canvas ? canvas.toDataURL('image/png') : image ? image.src : '');
+                if (canvas) {
+                    var quietZone = 32;
+                    var output = document.createElement('canvas');
+                    output.width = canvas.width + quietZone * 2;
+                    output.height = canvas.height + quietZone * 2;
+                    var context = output.getContext('2d');
+                    context.fillStyle = background || '#ffffff';
+                    context.fillRect(0, 0, output.width, output.height);
+                    context.drawImage(canvas, quietZone, quietZone);
+                    resolve(output.toDataURL('image/png'));
+                } else {
+                    resolve(image ? image.src : '');
+                }
             } catch (error) {
                 resolve('');
             } finally {
@@ -446,12 +466,12 @@
     }
 
     function barcodeDataUrl(value, foreground, background) {
-        if (!window.JsBarcode) {
+        if (!window.JsBarcode || !value) {
             return '';
         }
         var canvas = document.createElement('canvas');
         try {
-            JsBarcode(canvas, String(value || 'UNISSUED'), {
+            JsBarcode(canvas, String(value), {
                 format: 'CODE128',
                 displayValue: false,
                 margin: 4,
@@ -468,12 +488,15 @@
 
     function codeImage(object, bindings, options) {
         var value = bindings[object.binding] || '';
+        if (!value) {
+            return Promise.reject(new Error('The ' + (object.type === 'qr' ? 'QR code' : 'barcode') + ' has no credential value.'));
+        }
         var source =
             object.type === 'qr'
                 ? qrDataUrl(value, object.foreground, object.background)
                 : Promise.resolve(barcodeDataUrl(value, object.foreground, object.background));
         return source.then(function (dataUrl) {
-            return loadImage(dataUrl, object, options);
+            return loadImage(dataUrl, object, options, object.type === 'qr' ? 'QR code' : 'Barcode');
         });
     }
 

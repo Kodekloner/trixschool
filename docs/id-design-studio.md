@@ -244,6 +244,10 @@ For issuance:
 4. Verify the scanner displays the correct photograph/name before accepting IN/OUT.
 5. Record issuance according to school policy.
 
+Studio print preview checks every visible `attendance.credential` QR/barcode before enabling Print or export. If a selected person has no active credential, or the stored token cannot be decrypted with the server's current key, the preview names the affected cards and links to **Biometric Attendance > QR Scanner**. It never substitutes an admission number, employee number, URL, or demo value on a real card.
+
+The legacy Student ID Card template also has an **Attendance QR** switch. It uses the same active credential and local bundled QR renderer as Studio output. The switch is stored in the template's existing `layout_json` metadata, so enabling it requires no additional database migration. The legacy batch print waits for every QR to finish and stops with an actionable message when any selected student needs credential issuance/recovery.
+
 For a lost/stolen/damaged card:
 
 1. Revoke the existing credential immediately.
@@ -364,6 +368,7 @@ For both a student and staff design:
 | Image previews but export fails | Storage/CORS/session/asset permission | Check authenticated same-origin asset response and S3 URL configuration |
 | QR issuance unavailable | Server QR encryption key/OpenSSL missing | Configure and securely back up `BIOMETRIC_QR_ENCRYPTION_KEY` (32+ random characters), restart PHP/web service; never bypass the check |
 | Existing QR renders blank after restore | The database was restored without its matching QR encryption key | Restore the exact protected key or revoke/reissue affected credentials |
+| Preview says a QR credential is missing | No active credential has been issued for one or more selected people | Open Biometric Attendance > QR Scanner, issue the credentials, then generate the cards again |
 | QR does not scan | Too small, low contrast, patterned background, print scaling | Enlarge it, use dark-on-light, preserve quiet zone, print Actual size |
 | Card size is wrong | Browser/printer fitting enabled | Disable fit/shrink and measure a 100% sample |
 | Duplex back is mirrored/wrong edge | Driver flip convention | Test one paper sheet and select correct printer edge/orientation |

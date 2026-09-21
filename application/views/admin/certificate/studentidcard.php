@@ -11,6 +11,13 @@ $student_photo_url = get_school_asset_url(
     !empty($resultlist[0]['image']) ? $resultlist[0]['image'] : $student_fallback_url,
     'uploads/student_images'
 );
+$legacy_attendance_qr_enabled = !empty($legacy_attendance_qr_enabled);
+$legacy_attendance_qr_tokens = isset($legacy_attendance_qr_tokens) && is_array($legacy_attendance_qr_tokens) ? $legacy_attendance_qr_tokens : array();
+$legacy_attendance_qr_missing = isset($legacy_attendance_qr_missing) && is_array($legacy_attendance_qr_missing) ? $legacy_attendance_qr_missing : array();
+$legacy_attendance_qr_unavailable = isset($legacy_attendance_qr_unavailable) && is_array($legacy_attendance_qr_unavailable) ? $legacy_attendance_qr_unavailable : array();
+$student_session_id = isset($resultlist[0]['student_session_id']) ? (int) $resultlist[0]['student_session_id'] : 0;
+$attendance_qr_token = isset($legacy_attendance_qr_tokens[$student_session_id]) ? $legacy_attendance_qr_tokens[$student_session_id] : '';
+$attendance_qr_label = trim((isset($resultlist[0]['firstname']) ? $resultlist[0]['firstname'] : '') . ' ' . (isset($resultlist[0]['middlename']) ? $resultlist[0]['middlename'] : '') . ' ' . (isset($resultlist[0]['lastname']) ? $resultlist[0]['lastname'] : ''));
 ?>
 <!doctype html>
 <html lang="en">
@@ -70,6 +77,15 @@ $student_photo_url = get_school_asset_url(
                 background: #453277;
                 text-transform: uppercase;}*/
             .principal{margin-top: -40px;margin-right:10px; float:right;}
+            .legacy-card-footer{position:relative;z-index:10;padding:3px 10px 6px;text-align:right;}
+            .legacy-attendance-qr{display:inline-block;width:52px;height:52px;padding:3px;margin-right:8px;vertical-align:bottom;background:#fff;box-sizing:border-box;}
+            .legacy-attendance-qr-missing{display:inline-flex;align-items:center;justify-content:center;color:#991b1b;border:1px solid #dc2626;font-size:8px;line-height:1.1;text-align:center;}
+            .legacy-qr-warning{max-width:760px;margin:0 auto 16px;padding:10px 12px;border:1px solid #d97706;color:#78350f;background:#fffbeb;text-align:left;}
+            @media print{
+                .legacy-qr-warning{display:none!important;}
+                .legacy-qr-blocked .legacy-qr-warning{display:block!important;border:2px solid #000;color:#000;}
+                .legacy-qr-blocked .legacy-card-sheet{display:none!important;}
+            }
             .stred{color: #000;}
             .spanlr{padding-left: 5px; padding-right: 5px;}
             .cardleft{width: 20%;float: left;}
@@ -81,7 +97,15 @@ $student_photo_url = get_school_asset_url(
         </style>
     </head>
     <body style="margin-top: 50px">
-    <center>
+    <?php if ($legacy_attendance_qr_enabled && (!empty($legacy_attendance_qr_missing) || !empty($legacy_attendance_qr_unavailable))) { ?>
+        <div class="legacy-qr-warning"><strong>Attendance QR cannot be printed yet.</strong>
+            <?php echo !empty($legacy_attendance_qr_unavailable)
+                ? 'An active credential cannot be decrypted. Restore the matching QR encryption key or revoke and reissue the credential.'
+                : 'Issue an active QR credential for this student first.'; ?>
+            <?php if (!empty($legacy_attendance_qr_manage_url)) { ?><a target="_blank" rel="noopener" href="<?php echo htmlspecialchars($legacy_attendance_qr_manage_url, ENT_QUOTES, 'UTF-8'); ?>">Manage attendance credentials</a><?php } ?>
+        </div>
+    <?php } ?>
+    <center class="legacy-card-sheet">
         <table cellpadding="0" cellspacing="0" width="32%">
             <tr>
                 <td valign="top" width="32%" >
@@ -169,12 +193,19 @@ $student_photo_url = get_school_asset_url(
                             </td>
                         </tr>
                         <tr>
-                            <td valign="top" align="right" class="principal"><?php if ($card_signature_url !== '') { ?><img src="<?php echo htmlspecialchars($card_signature_url, ENT_QUOTES, 'UTF-8'); ?>" width="66" height="40" /><?php } ?></td>
+                            <td valign="top" align="right" class="legacy-card-footer">
+                                <?php if ($legacy_attendance_qr_enabled) { ?><div class="legacy-attendance-qr<?php echo $attendance_qr_token === '' ? ' legacy-attendance-qr-missing' : ''; ?>" data-attendance-qr="<?php echo htmlspecialchars($attendance_qr_token, ENT_QUOTES, 'UTF-8'); ?>" data-attendance-qr-label="<?php echo htmlspecialchars($attendance_qr_label, ENT_QUOTES, 'UTF-8'); ?>"><?php if ($attendance_qr_token === '') { ?>QR unavailable<?php } ?></div><?php } ?>
+                                <?php if ($card_signature_url !== '') { ?><img src="<?php echo htmlspecialchars($card_signature_url, ENT_QUOTES, 'UTF-8'); ?>" width="66" height="40" alt="Signature" /><?php } ?>
+                            </td>
                         </tr>
                     </table>
                 </td>
             </tr>
         </table>
     </center>
+    <?php if ($legacy_attendance_qr_enabled) { ?>
+        <script src="<?php echo base_url('backend/idcard-studio/vendor/qrcode-1.0.0.min.js'); ?>"></script>
+        <script src="<?php echo base_url('backend/idcard-studio/idcard-legacy-qr.js?v=1.0.0'); ?>"></script>
+    <?php } ?>
 </body>
 </html>
