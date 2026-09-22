@@ -69,7 +69,7 @@ Prepare the following:
 5. Use one explicit Check In selection and one explicit Check Out selection. Do not infer direction from time.
 6. Do not assume `0 = IN` and `1 = OUT` until the actual terminal transactions prove it.
 7. Back up terminal information before switching its PUSH protocol. Some firmware may restart or clear information during the change.
-8. Do not enable Live after only one successful test. Complete the Shadow pilot first.
+8. Do not enable Live after only one successful scan. Complete the supervised Shadow readiness cycle in this guide first; no fixed number of waiting days is required.
 
 ---
 
@@ -589,9 +589,99 @@ The initial physical test is successful only when every applicable item is check
 
 ## What happens next
 
-Continue operating in Shadow for at least five normal school days. Review incorrect user selections, missed checkouts, mapping errors, queue behaviour, network/power interruptions, duplicate transactions, and peak gate traffic.
+There is no mandatory five-day delay. The school may proceed as soon as one supervised readiness cycle has passed every enforced check: the same registered terminal must complete a real Shadow IN and OUT, every enabled projection type must be tested, the connector queue must be clear, and all exceptions must be resolved. Still review wrong-direction selections, missed checkouts, mapping errors, queue behaviour, network/power interruptions, duplicates, and peak gate traffic before the administrator accepts responsibility for Live mode.
 
-Only after the Shadow pilot is accepted should an authorized administrator consider Live mode. Live mode requires the SchoolLift readiness checks, appropriate permissions, and administrator password confirmation. Once enabled, valid IN events can create or update official daily attendance according to the configured projection rules, so it must not be used casually for experiments.
+Only after that Shadow evidence is accepted should an authorized administrator enable Live. Live requires the SchoolLift readiness checks, the on-screen acknowledgement, appropriate permissions, and administrator password confirmation. Once enabled, valid IN events can create or update official daily attendance and optionally queue paid guardian notifications, so experiments must remain in Simulation or Shadow.
+
+---
+
+# Part 11 — Start Live safely without a five-day wait
+
+Use this section only after every applicable item in the successful-test checklist is complete. “No five-day wait” does not mean “skip testing.” It means SchoolLift uses visible evidence instead of a calendar delay.
+
+## Step 26: Install the operational database update
+
+The school database must include migrations through **140**. Migration 140 adds the Live pilot switch, per-person pilot selection, guardian notification queue, automated retention evidence, and the stronger Live readiness checks.
+
+For a server maintained with the consolidated SQL, back up the selected GIS school database and import:
+
+```text
+docs/all_school_database_migrations.sql
+```
+
+The file is rerunnable, but select only the intended school database and verify the migration result sets before continuing. Do not import it into every database at once without a separate verified backup for each tenant.
+
+The disposable-clone results for all supplied school dumps are recorded in `docs/biometric-migration-140-test-report.md`.
+
+## Step 27: Choose who may write official attendance first
+
+Open **Attendance > Biometric Attendance > Identity Mapping**.
+
+1. Find the tested student mapping and click **Add pilot**.
+2. If staff projection will be enabled, find the tested staff mapping and click **Add pilot** too.
+3. Open **Setup & Devices**.
+4. Tick **Restrict official Live projection to people marked Live pilot**.
+5. Enable only the required projection groups: Students, Staff, or both.
+
+If Student projection is enabled, at least one active student mapping must be in the pilot. If Staff projection is enabled, at least one active staff mapping must be in the pilot. This prevents a student-only pilot from accidentally opening official attendance for every staff member, or the reverse.
+
+## Step 28: Make the final Shadow evidence
+
+While the mode is still **Shadow**:
+
+1. Make a physical IN and a separate physical OUT on the same SenseFace serial for a pilot student if Student projection is enabled.
+2. Repeat for a pilot staff member if Staff projection is enabled.
+3. Confirm **Events** shows `source = gateway`, `mode = shadow`, `status = accepted`, the expected raw punch states, and the correct direction.
+4. Confirm **Daily Sessions** shows the person's name, school code, earliest IN, latest OUT, and a completed checkout.
+5. Confirm **School Computer Connector** is online, ZKBio is reachable, the last sync succeeded, and Waiting, Retry, and Failed are all zero.
+6. Resolve every open exception.
+
+The Go-live checklist should now be entirely green. Browser Simulation events cannot satisfy these physical checks.
+
+SchoolLift locks punch-state editing while Live is running. If later firmware/API evidence shows that IN or OUT is wrong, return to Shadow, correct and retest the state mapping, clear the resulting exceptions, and pass the checklist again before returning to Live.
+
+## Step 29: Switch to Live
+
+Do this before arrivals on a fresh attendance day, not halfway through a day:
+
+1. Take a fresh database backup.
+2. Open **Setup & Devices**.
+3. Confirm the Present/Late attendance types, late times, timezone, Student/Staff projection, and Live pilot selection.
+4. Select **Live**.
+5. Tick the Live acknowledgement.
+6. Enter the current password of the authorized administrator.
+7. Click **Save mode and rules**.
+
+The account needs both Biometric Attendance Edit permission and General Settings Edit permission. SchoolLift refuses Live if the physical IN/OUT proof, connector health, queue, mapping, pilot membership, or exception checks fail. Removing the pilot restriction or enabling a new projection group later is also treated as widening Live attendance and requires the same readiness review, acknowledgement, permission, and password.
+
+## Step 30: Verify the first real Live attendance
+
+Use one approved pilot person first:
+
+1. The person selects **Check In** on the SenseFace and identifies.
+2. In **Events**, confirm the new event is Live, accepted, correctly named, and has the expected raw punch state.
+3. In **Daily Sessions**, confirm the official projection says Projected.
+4. Open the ordinary student or staff attendance page and confirm exactly one correct daily record exists.
+5. Later, have the same person explicitly select **Check Out** and identify again.
+6. Confirm the latest OUT and duration appear without creating another official daily row.
+
+Repeated IN keeps the earliest valid IN. Repeated OUT keeps the latest valid OUT. An OUT without an IN creates an exception; SchoolLift never invents a missing arrival or checkout.
+
+## Step 31: Optional guardian alerts
+
+Guardian alerts are off by default. Before enabling them, configure and test the school's email, SMS, or WhatsApp provider and understand any provider charges.
+
+Under **Setup & Devices**, choose Check In and/or Check Out and then choose the delivery channels. Alerts are queued only for successfully projected Live student events. They are never created by Simulation or Shadow, and repeated scans do not create more than one alert for the same student, school day, direction, and channel. The normal SchoolLift cron processes the queue; **Process notification queue now** is available for an authorized manual check. Recent delivery status and a redacted error appear on the page. A delivery failure is retried safely and never reverses attendance. After correcting a permanently failed provider/contact issue, type `RETRY_FAILED_NOTIFICATIONS` and use **Retry failed alerts**.
+
+## Step 32: Monitor, report, and retain data
+
+- **Events**, **Daily Sessions**, **Reconciliation**, **Identity Mapping**, and **Audit** now have filters and paging.
+- Events update on screen every five seconds when the first Events page has no filter.
+- CSV buttons export the current filter, up to the documented safety limit.
+- Events and exceptions display the raw punch state needed to diagnose firmware mappings.
+- **Data cleanup** can run the configured retention policy immediately. Normal cron maintenance runs it at most once per UTC day and preserves official attendance, linked official summaries, open exceptions, configuration, credentials, and audit history.
+
+If anything looks wrong, switch to **Shadow** or **Disabled** immediately. Preserve the events and exceptions, correct the cause, repeat the readiness cycle, and only then return to Live.
 
 ---
 

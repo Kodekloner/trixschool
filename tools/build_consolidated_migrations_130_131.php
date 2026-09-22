@@ -1,7 +1,8 @@
 <?php
 
 /**
- * Regenerates the migration 130/131 section of the all-school SQL bundle.
+ * Regenerates the migration 130-132 section of the all-school SQL bundle.
+ * Later migrations and the bundle header are deliberately left untouched.
  * Run from the repository root with PHP 7.4+.
  */
 
@@ -55,35 +56,18 @@ function addIndexSql($table, $index, $columns)
 
 $m130 = migrationTables($root . '/application/migrations/130_add_biometric_attendance.php');
 $m131 = migrationTables($root . '/application/migrations/131_add_id_card_design_studio.php');
+$m132 = migrationTables($root . '/application/migrations/132_add_biometric_gateway_control.php');
 
-$start = '-- BEGIN GENERATED MIGRATIONS 130-131';
-$end = '-- END GENERATED MIGRATIONS 130-131';
-if (strpos($bundle, $start) !== false) {
-    $bundle = preg_replace('/\n?' . preg_quote($start, '/') . '.*?' . preg_quote($end, '/') . '\n?/s', "\n", $bundle);
+$start = '-- BEGIN GENERATED MIGRATIONS 130-132';
+$end = '-- END GENERATED MIGRATIONS 130-132';
+$blockPattern = '/-- BEGIN GENERATED MIGRATIONS 130-(?:131|132).*?-- END GENERATED MIGRATIONS 130-(?:131|132)\s*/s';
+if (!preg_match($blockPattern, $bundle, $existing, PREG_OFFSET_CAPTURE)) {
+    fwrite(STDERR, "Generated migration 130-132 marker was not found.\n");
+    exit(1);
 }
-
-$bundle = preg_replace(
-    '/-- SchoolLift consolidated tenant-database migrations \(126 through \d+\)\./',
-    '-- SchoolLift consolidated tenant-database migrations (126 through 131).',
-    $bundle,
-    1
-);
-$bundle = preg_replace(
-    '/-- Generated for deployment to every school database on \d{4}-\d{2}-\d{2}\./',
-    '-- Generated for deployment to every school database on 2026-08-12.',
-    $bundle,
-    1
-);
-$bundle = preg_replace(
-    '/(?:--   130_add_biometric_attendance\.php\n|--   131_add_id_card_design_studio\.php\n)+/',
-    '',
-    $bundle
-);
-$bundle = str_replace(
-    "--   129_add_monnify_payments.php\n",
-    "--   129_add_monnify_payments.php\n--   130_add_biometric_attendance.php\n--   131_add_id_card_design_studio.php\n",
-    $bundle
-);
+$insertPosition = (int) $existing[0][1];
+$bundle = substr($bundle, 0, $insertPosition)
+    . substr($bundle, $insertPosition + strlen($existing[0][0]));
 
 $section = array();
 $section[] = $start;
@@ -91,7 +75,7 @@ $section[] = '-- ===============================================================
 $section[] = '-- Migration 130: production biometric attendance (single terminal)';
 $section[] = '-- ========================================================================';
 $section[] = '';
-$section[] = '-- Migration 130/131 prerequisites. Every result set must be empty.';
+$section[] = '-- Migration 130-132 prerequisites. Every result set must be empty.';
 $section[] = "SELECT required.`table_name`, required.`column_name` AS `missing_prerequisite`\nFROM (\n"
     . "  SELECT 'student_attendences' AS `table_name`, 'id' AS `column_name`\n"
     . "  UNION ALL SELECT 'staff_attendance', 'id'\n"
@@ -176,13 +160,17 @@ $section[] = "UPDATE `id_card` SET `card_width` = 53.98, `card_height` = 85.60, 
     . "UPDATE `staff_id_card` SET `card_width` = 53.98, `card_height` = 85.60, `card_unit` = 'mm'\n"
     . "WHERE @trix_staff_id_card_had_dimensions = 0 AND `enable_vertical_card` = 1;";
 $section[] = implode("\n\n", $m131);
+$section[] = '-- ========================================================================';
+$section[] = '-- Migration 132: outbound Windows connector heartbeat and fixed web actions';
+$section[] = '-- ========================================================================';
+$section[] = implode("\n\n", $m132);
 
-$allNewTables = array_merge(array_keys($m130), array_keys($m131));
+$allNewTables = array_merge(array_keys($m130), array_keys($m131), array_keys($m132));
 $union = array();
 foreach ($allNewTables as $i => $table) {
     $union[] = ($i ? 'UNION ALL ' : '') . "SELECT '{$table}' AS `table_name`";
 }
-$section[] = '-- Migration 130/131 verification. Every result set below must be empty.';
+$section[] = '-- Migration 130-132 verification. Every result set below must be empty.';
 $section[] = "SELECT required.`table_name` AS `missing_migration_table`\nFROM (\n  "
     . implode("\n  ", $union) . "\n) AS required\nLEFT JOIN INFORMATION_SCHEMA.TABLES actual\n"
     . "  ON actual.TABLE_SCHEMA = DATABASE() AND actual.TABLE_NAME = required.table_name\n"
@@ -202,23 +190,13 @@ $section[] = "SELECT 'biometric_settings' AS `missing_seed`, 1 AS `expected_id`\
     . "UNION ALL SELECT 'biometric_attendance_permission', 1 WHERE NOT EXISTS (SELECT 1 FROM `permission_category` WHERE `short_code` = 'biometric_attendance');";
 $section[] = $end;
 
-$marker = '-- Consolidated verification';
-$position = strpos($bundle, $marker);
-if ($position === false) {
-    fwrite(STDERR, "Consolidated verification marker was not found.\n");
-    exit(1);
-}
-$dividerPosition = strrpos(substr($bundle, 0, $position), '-- ========================================================================');
-if ($dividerPosition !== false) {
-    $position = $dividerPosition;
-}
 $generated = implode("\n\n", $section) . "\n\n";
-$prefix = rtrim(substr($bundle, 0, $position)) . "\n\n";
-$suffix = ltrim(substr($bundle, $position));
+$prefix = rtrim(substr($bundle, 0, $insertPosition)) . "\n\n";
+$suffix = ltrim(substr($bundle, $insertPosition));
 $bundle = $prefix . $generated . $suffix;
 
 if (file_put_contents($bundlePath, $bundle) === false) {
     fwrite(STDERR, "Could not update consolidated SQL.\n");
     exit(1);
 }
-echo "Updated {$bundlePath} with migrations 130 and 131.\n";
+echo "Updated {$bundlePath} with migrations 130 through 132.\n";

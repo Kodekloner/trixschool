@@ -104,7 +104,7 @@ Keep a separate disposable school/tenant for sales demonstrations where possible
 
 ### Prerequisites
 
-1. Deploy the application code and database migrations through **132** to a disposable or backed-up school database. Migration 132 adds the connector heartbeat and safe website-action tables.
+1. Deploy the application code and database migrations through **140** to a disposable or backed-up school database. Migration 140 adds enforced IN/OUT go-live proof, pilot selection, retention execution, operational reporting, and queued guardian alerts.
 2. Sign in as a staff user whose role has the biometric attendance permissions needed for setup, mapping, test-terminal operation, and event viewing.
 3. Open **Attendance > Biometric Attendance**.
 4. Set the mode to `simulation`. Do not use `live` for a demonstration.
@@ -379,9 +379,22 @@ From the repository root:
 ```bash
 php tools/biometric-sandbox/tests/run.php
 php tools/biometric-gateway/tests/run.php
+php tests/biometric_backend_contract_test.php
+php tests/biometric_attendance_service_test.php
+php tests/biometric_event_policy_test.php
+php tests/biometric_gateway_control_service_test.php
 ```
 
 The gateway suite verifies one-serial IN/OUT, stripped template/image fields, durable SQLite restart, cursor overlap, deduplication, `401`, `429`, `503`, provider outage, and repaired-credential recovery.
+
+Migration engineers can also prove the biometric SQL twice against cloned school dumps on an isolated, network-disabled MySQL server:
+
+```bash
+BIOMETRIC_DUMP_MIGRATION_TEST_SOCKET=/absolute/path/mysql.sock \
+  php tests/biometric_migration_140_dump_test.php
+```
+
+That test creates random temporary databases, imports each dump, applies migrations 130–132 and 140 twice, verifies the operational schema, checks that legacy attendance/card rows and any existing personal-layout JSON are unchanged, and drops only those temporary databases. It refuses to run unless an explicit local socket is supplied. This is a developer/CI release check, not a production website button.
 
 ### Start the mock ZKBio provider
 
@@ -681,7 +694,7 @@ These are not quotes. Add VAT/delivery and 10–15% contingency.
 | **Hardware/infrastructure total** | **₦2,979,455–₦3,279,455** |
 | ZKBio on-prem licence/API | Add formal quote |
 
-At this size, the five-day shadow pilot must measure peak persons/minute and queue length. Add capacity only when evidence justifies it.
+At this size, the supervised Shadow readiness cycle must measure peak persons/minute and queue length. Add capacity only when evidence justifies it.
 
 Costs excluded: VAT not shown, delivery/insurance outside Lagos, civil work beyond allowances, primary internet, SMS/WhatsApp, DPCO/legal work, ongoing support, replacement batteries, backup storage, spare hardware, locks/turnstiles, and exact software/API licences.
 
@@ -716,7 +729,7 @@ At minimum:
 ### Stage 1: disabled
 
 - Back up every tenant database and gateway/ZKBio configuration.
-- Apply migrations through **132** and verify the new tables/permissions before opening Biometric Attendance.
+- Apply migrations through **140** and verify the new tables/permissions before opening Biometric Attendance.
 - Create integration/device/mappings while ingestion remains disabled.
 
 ### Stage 2: simulation
@@ -728,7 +741,7 @@ At minimum:
 
 ### Stage 3: physical shadow mode
 
-Run at least five school days:
+Run a complete supervised Shadow readiness cycle. There is no fixed number of waiting days, but every check below must pass before Live:
 
 1. A pilot person selects IN, then identifies on the one terminal.
 2. Confirm the API's exact punch state and SchoolLift IN.
@@ -741,8 +754,8 @@ Run at least five school days:
 
 ### Stage 4: limited live pilot
 
-- Password-confirm the audited switch to `live`.
-- Enable only the approved pilot group.
+- Mark at least one active mapping in every enabled projection group as a Live pilot member, then enable the setting that restricts official projection to those marked people.
+- Password-confirm the audited switch to `live`. Widening a running Live scope by enabling another projection group or removing the pilot restriction requires the same readiness review, acknowledgement, permission, and password.
 - Reconcile official student session/term and staff attendance types daily.
 - Confirm manual records are not silently overwritten.
 - Hide/reject Test Terminal actions and revoke simulator credentials in live mode.

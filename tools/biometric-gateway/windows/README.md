@@ -18,9 +18,12 @@ channel can accept only named, argument-free gateway requests.
 8. Make one Check In and one Check Out punch on the same physical terminal and
    confirm both events on the SchoolLift website.
 
-After that, Windows runs the gateway once every minute. When the five-day
-Shadow pilot is approved, an authorized SchoolLift administrator changes the
-website to Live mode. Nothing is reinstalled and no command is run on Windows.
+After that, Windows runs the gateway once every minute. There is no fixed
+waiting period: once the same terminal has produced a supervised physical IN
+and OUT, every enabled person type has passed its Shadow check, the queue is
+clear, and all exceptions are resolved, an authorized SchoolLift administrator
+may complete the website's Live preflight and password confirmation. Nothing
+is reinstalled and no command is run on Windows.
 
 ## Fields in the manager
 

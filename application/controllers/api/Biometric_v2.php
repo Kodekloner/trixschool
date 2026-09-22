@@ -61,7 +61,7 @@ class Biometric_v2 extends CI_Controller
             return $this->respond(array('status' => 'error', 'message' => 'Invalid bearer token.'), 401, array('WWW-Authenticate' => 'Bearer'));
         }
         if (!$this->biometric_attendance_service->isReady()) {
-            return $this->respond(array('status' => 'error', 'message' => 'Biometric migrations through 132 have not been applied.'), 503);
+            return $this->respond(array('status' => 'error', 'message' => 'Biometric migrations through 140 have not been applied.'), 503);
         }
         $settings = $this->biometric_attendance_service->getSettings();
         return $this->respond(array(

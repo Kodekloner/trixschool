@@ -1,5 +1,5 @@
--- SchoolLift consolidated tenant-database migrations (126 through 139).
--- Updated for deployment to every school database on 2026-09-16.
+-- SchoolLift consolidated tenant-database migrations (126 through 140).
+-- Updated for deployment to every school database on 2026-09-22.
 --
 -- IMPORTANT:
 --   * Select exactly one school database before importing this file.
@@ -31,6 +31,7 @@
 --   137_onlineexam_candidate_paper_review.php
 --   138_onlineexam_single_subject_slots.php
 --   139_session_scope_question_bank.php
+--   140_harden_biometric_operations.php
 --
 -- Supported targets: MySQL 5.7+/8.0 and compatible MariaDB releases.
 -- This is a schema/permission migration bundle, not a full database dump.
@@ -3316,3 +3317,219 @@ DROP TEMPORARY TABLE IF EXISTS question_139_primary_context;
 DROP TEMPORARY TABLE IF EXISTS question_139_first_context;
 DROP TEMPORARY TABLE IF EXISTS question_139_contexts;
 DROP TEMPORARY TABLE IF EXISTS question_139_pending_roots;
+
+-- -------------------------------------------------------------------------
+-- Migration 140: production biometric operational hardening.
+-- Additive and rerunnable; no historical biometric or attendance row is
+-- rewritten or removed by this migration.
+-- -------------------------------------------------------------------------
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_settings' AND COLUMN_NAME='live_pilot_enabled'
+), 'SELECT 1 AS biometric_live_pilot_setting_present',
+  'ALTER TABLE biometric_settings ADD COLUMN live_pilot_enabled TINYINT(1) NOT NULL DEFAULT 0');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_settings' AND COLUMN_NAME='notify_student_in'
+), 'SELECT 1 AS biometric_notify_in_setting_present',
+  'ALTER TABLE biometric_settings ADD COLUMN notify_student_in TINYINT(1) NOT NULL DEFAULT 0');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_settings' AND COLUMN_NAME='notify_student_out'
+), 'SELECT 1 AS biometric_notify_out_setting_present',
+  'ALTER TABLE biometric_settings ADD COLUMN notify_student_out TINYINT(1) NOT NULL DEFAULT 0');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_settings' AND COLUMN_NAME='notify_email'
+), 'SELECT 1 AS biometric_notify_email_setting_present',
+  'ALTER TABLE biometric_settings ADD COLUMN notify_email TINYINT(1) NOT NULL DEFAULT 0');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_settings' AND COLUMN_NAME='notify_sms'
+), 'SELECT 1 AS biometric_notify_sms_setting_present',
+  'ALTER TABLE biometric_settings ADD COLUMN notify_sms TINYINT(1) NOT NULL DEFAULT 0');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_settings' AND COLUMN_NAME='notify_whatsapp'
+), 'SELECT 1 AS biometric_notify_whatsapp_setting_present',
+  'ALTER TABLE biometric_settings ADD COLUMN notify_whatsapp TINYINT(1) NOT NULL DEFAULT 0');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_settings' AND COLUMN_NAME='live_acknowledged_by'
+), 'SELECT 1 AS biometric_live_ack_actor_present',
+  'ALTER TABLE biometric_settings ADD COLUMN live_acknowledged_by INT NULL');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_settings' AND COLUMN_NAME='live_acknowledged_at'
+), 'SELECT 1 AS biometric_live_ack_time_present',
+  'ALTER TABLE biometric_settings ADD COLUMN live_acknowledged_at DATETIME NULL');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_settings' AND COLUMN_NAME='last_retention_run_at'
+), 'SELECT 1 AS biometric_retention_time_present',
+  'ALTER TABLE biometric_settings ADD COLUMN last_retention_run_at DATETIME NULL');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_identity_mappings' AND COLUMN_NAME='live_pilot'
+), 'SELECT 1 AS biometric_mapping_pilot_present',
+  'ALTER TABLE biometric_identity_mappings ADD COLUMN live_pilot TINYINT(1) NOT NULL DEFAULT 0');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+CREATE TABLE IF NOT EXISTS `biometric_notification_queue` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `event_id` BIGINT UNSIGNED NOT NULL,
+  `channel` VARCHAR(16) NOT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'pending',
+  `attempt_count` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  `next_attempt_at` DATETIME DEFAULT NULL,
+  `last_error` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME NOT NULL,
+  `updated_at` DATETIME NOT NULL,
+  `delivered_at` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_biometric_notification_event_channel` (`event_id`,`channel`),
+  KEY `idx_biometric_notification_delivery` (`status`,`next_attempt_at`,`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Repair a rare partial/manual creation of the queue table. A normal first
+-- run already has all of these columns, so each statement becomes a no-op.
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_notification_queue' AND COLUMN_NAME='id'
+), 'SELECT 1 AS biometric_notification_id_present',
+  'ALTER TABLE biometric_notification_queue ADD COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_notification_queue' AND COLUMN_NAME='event_id'
+), 'SELECT 1 AS biometric_notification_event_present',
+  'ALTER TABLE biometric_notification_queue ADD COLUMN event_id BIGINT UNSIGNED NOT NULL');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_notification_queue' AND COLUMN_NAME='channel'
+), 'SELECT 1 AS biometric_notification_channel_present',
+  'ALTER TABLE biometric_notification_queue ADD COLUMN channel VARCHAR(16) NOT NULL');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_notification_queue' AND COLUMN_NAME='status'
+), 'SELECT 1 AS biometric_notification_status_present',
+  'ALTER TABLE biometric_notification_queue ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT ''pending''');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_notification_queue' AND COLUMN_NAME='attempt_count'
+), 'SELECT 1 AS biometric_notification_attempt_present',
+  'ALTER TABLE biometric_notification_queue ADD COLUMN attempt_count SMALLINT UNSIGNED NOT NULL DEFAULT 0');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_notification_queue' AND COLUMN_NAME='next_attempt_at'
+), 'SELECT 1 AS biometric_notification_next_attempt_present',
+  'ALTER TABLE biometric_notification_queue ADD COLUMN next_attempt_at DATETIME NULL');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_notification_queue' AND COLUMN_NAME='last_error'
+), 'SELECT 1 AS biometric_notification_error_present',
+  'ALTER TABLE biometric_notification_queue ADD COLUMN last_error VARCHAR(500) NULL');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_notification_queue' AND COLUMN_NAME='created_at'
+), 'SELECT 1 AS biometric_notification_created_present',
+  'ALTER TABLE biometric_notification_queue ADD COLUMN created_at DATETIME NULL');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_notification_queue' AND COLUMN_NAME='updated_at'
+), 'SELECT 1 AS biometric_notification_updated_present',
+  'ALTER TABLE biometric_notification_queue ADD COLUMN updated_at DATETIME NULL');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_notification_queue' AND COLUMN_NAME='delivered_at'
+), 'SELECT 1 AS biometric_notification_delivered_present',
+  'ALTER TABLE biometric_notification_queue ADD COLUMN delivered_at DATETIME NULL');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_notification_queue' AND INDEX_NAME='uq_biometric_notification_event_channel'
+), 'SELECT 1 AS biometric_notification_unique_index_present',
+  'ALTER TABLE biometric_notification_queue ADD UNIQUE KEY uq_biometric_notification_event_channel (event_id,channel)');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_notification_queue' AND INDEX_NAME='idx_biometric_notification_delivery'
+), 'SELECT 1 AS biometric_notification_delivery_index_present',
+  'ALTER TABLE biometric_notification_queue ADD KEY idx_biometric_notification_delivery (status,next_attempt_at,id)');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+SET @bio_140_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='biometric_identity_mappings' AND INDEX_NAME='idx_biometric_mapping_pilot'
+), 'SELECT 1 AS biometric_mapping_pilot_index_present',
+  'ALTER TABLE biometric_identity_mappings ADD KEY idx_biometric_mapping_pilot (live_pilot,is_active)');
+PREPARE bio_140_stmt FROM @bio_140_sql; EXECUTE bio_140_stmt; DEALLOCATE PREPARE bio_140_stmt;
+
+-- Migration 140 verification: this result set must be empty.
+SELECT required.table_name,required.column_name AS missing_migration_140_item
+FROM (
+  SELECT 'biometric_settings' AS table_name,'live_pilot_enabled' AS column_name
+  UNION ALL SELECT 'biometric_settings','notify_student_in'
+  UNION ALL SELECT 'biometric_settings','notify_student_out'
+  UNION ALL SELECT 'biometric_settings','notify_email'
+  UNION ALL SELECT 'biometric_settings','notify_sms'
+  UNION ALL SELECT 'biometric_settings','notify_whatsapp'
+  UNION ALL SELECT 'biometric_settings','live_acknowledged_by'
+  UNION ALL SELECT 'biometric_settings','live_acknowledged_at'
+  UNION ALL SELECT 'biometric_settings','last_retention_run_at'
+  UNION ALL SELECT 'biometric_identity_mappings','live_pilot'
+  UNION ALL SELECT 'biometric_notification_queue','id'
+  UNION ALL SELECT 'biometric_notification_queue','event_id'
+  UNION ALL SELECT 'biometric_notification_queue','channel'
+  UNION ALL SELECT 'biometric_notification_queue','status'
+  UNION ALL SELECT 'biometric_notification_queue','attempt_count'
+  UNION ALL SELECT 'biometric_notification_queue','next_attempt_at'
+  UNION ALL SELECT 'biometric_notification_queue','last_error'
+  UNION ALL SELECT 'biometric_notification_queue','created_at'
+  UNION ALL SELECT 'biometric_notification_queue','updated_at'
+  UNION ALL SELECT 'biometric_notification_queue','delivered_at'
+) required
+LEFT JOIN INFORMATION_SCHEMA.COLUMNS c
+  ON c.TABLE_SCHEMA=DATABASE() AND c.TABLE_NAME=required.table_name
+ AND c.COLUMN_NAME=required.column_name
+WHERE c.COLUMN_NAME IS NULL;
+
+SELECT 'OK: migration 140 biometric operational hardening is installed.' AS migration_status;

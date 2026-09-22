@@ -45,6 +45,20 @@ gateway_readiness_assert(!$model->isReady(), 'A migration-130-only database must
 $model->db->tables[] = 'biometric_gateway_agents';
 gateway_readiness_assert(!$model->isReady(), 'Both migration 132 tables are required.');
 $model->db->tables[] = 'biometric_gateway_commands';
-gateway_readiness_assert($model->isReady(), 'A complete schema through migration 132 must report ready.');
+gateway_readiness_assert(!$model->isReady(), 'Migration 140 notification storage is required.');
+$model->db->tables[] = 'biometric_notification_queue';
+$model->db->fields['biometric_settings'] = array(
+    'live_pilot_enabled', 'notify_student_in', 'notify_student_out',
+    'notify_email', 'notify_sms', 'notify_whatsapp',
+    'live_acknowledged_by', 'live_acknowledged_at', 'last_retention_run_at',
+);
+$model->db->fields['biometric_identity_mappings'] = array('live_pilot');
+$model->db->fields['biometric_notification_queue'] = array('id', 'event_id', 'channel');
+gateway_readiness_assert(!$model->isReady(), 'A partially installed migration 140 queue must not report ready.');
+$model->db->fields['biometric_notification_queue'] = array(
+    'id', 'event_id', 'channel', 'status', 'attempt_count', 'next_attempt_at',
+    'last_error', 'created_at', 'updated_at', 'delivered_at',
+);
+gateway_readiness_assert($model->isReady(), 'A complete schema through migration 140 must report ready.');
 
 echo "biometric gateway control readiness tests passed\n";

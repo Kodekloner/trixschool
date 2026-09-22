@@ -1,7 +1,7 @@
 # SchoolLift Biometric Attendance Explained Simply
 
 Last reviewed: 13 August 2026
-Applies to: the single-terminal biometric workflow and connector controls through migration 132
+Applies to: the single-terminal biometric workflow and operational controls through migration 140
 
 This guide explains the SchoolLift biometric attendance system in very simple language. It is written for school owners, administrators, teachers, gate staff, installers, and support staff who may not be technical.
 
@@ -234,7 +234,7 @@ Authorized administrators can still prepare the system while intake is Disabled.
 
 Use Disabled:
 
-- immediately after installing the biometric migrations through 132;
+- immediately after installing the biometric migrations through 140;
 - before the school has tested anything;
 - during major maintenance;
 - if the integration token may be stolen;
@@ -412,7 +412,7 @@ Shadow never writes official student or staff attendance. It never changes payro
 
 The physical data is real, but it stays in a separate Shadow notebook.
 
-### Why the school should run Shadow for at least five school days
+### Why the school must complete a supervised Shadow readiness cycle
 
 One successful face scan proves very little. A proper pilot should cover:
 
@@ -431,7 +431,7 @@ One successful face scan proves very little. A proper pilot should cover:
 - queue length; and
 - missing checkout at the end of each day.
 
-Five school days is an operational rule, not an automatic timer in the website. SchoolLift checks technical prerequisites, but a responsible human must confirm that the pilot truly lasted long enough and included both real IN and real OUT events.
+There is no fixed waiting period. SchoolLift checks the technical evidence and requires the same physical path to complete real IN and OUT events. A responsible administrator must still review the results and accept the on-screen Live warning; do not treat one face recognition result as a complete test.
 
 ### Shadow does not become Live later
 
@@ -584,7 +584,7 @@ The checklist is a safety gate, but it is not a replacement for responsible test
 
 The software does not automatically prove that:
 
-- five complete Shadow days were observed;
+- the required real student/staff IN and OUT evidence was observed;
 - the exact same physical terminal successfully sent both IN and OUT;
 - `0 = IN` and `1 = OUT` are correct for the purchased firmware;
 - the school tested the morning queue;
@@ -1058,7 +1058,9 @@ This page contains:
 - the go-live checklist; and
 - Simulation cleanup.
 
-The configured retention value records the school's policy. The current web service does not yet automatically prove that old SchoolLift ledger rows have been deleted merely because this number is saved. Retention must be supported by an approved operational cleanup process and verified backups.
+The configured retention value is enforced by the normal SchoolLift cron maintenance and can also be run by an authorized administrator from **Setup & Devices > Data cleanup**. It deletes old operational events in safe chunks while preserving official attendance, linked official daily summaries, open exceptions, configuration, credentials, and audit history. Backups must still be verified before relying on any deletion policy.
+
+The same page shows the guardian-alert queue. It tells the administrator which student alert used Email, SMS, or WhatsApp, whether it was delivered, and a safe redacted reason when it failed. After the contact/provider problem is corrected, an authorized administrator can deliberately return permanently failed alerts to the retry queue. Attendance remains recorded even if every notification provider is unavailable.
 
 ### Identity Mapping
 
@@ -1110,7 +1112,7 @@ Disabled -> Simulation -> Shadow -> Live
 ### Stage 1: Disabled
 
 1. Back up the tenant database.
-2. Apply the database migrations through 132.
+2. Apply the database migrations through 140.
 3. Confirm mode is Disabled.
 4. Configure timezone, attendance types, and late cutoffs.
 5. Create the integration and securely store its one-time token.
@@ -1136,7 +1138,7 @@ Disabled -> Simulation -> Shadow -> Live
 3. Confirm **School Computer Connector** reports a recent heartbeat, a successful connection check, and a clear queue.
 4. Send a real IN and a real OUT from the same serial.
 5. Verify the raw punch-state meaning against the purchased firmware.
-6. Run at least five complete school days.
+6. Complete one supervised readiness cycle and make sure every enforced check passes. No fixed waiting period is required.
 7. Review queues, outages, mappings, wrong direction choices, duplicates, and missing checkout.
 8. Confirm official attendance remains unchanged.
 9. Resolve every open exception.
@@ -1373,7 +1375,7 @@ Only authenticated staff with the required biometric Edit permission. Live addit
 
 ### Does the Retention setting instantly delete old records?
 
-No. It records the chosen policy value, but the current website service does not automatically prove that old ledger rows have been purged. The school must use a documented retention and backup procedure.
+No. Saving the number does not delete records at that exact moment. The normal SchoolLift cron maintenance applies the policy in safe chunks at most once each UTC day, and an authorized administrator can use **Setup & Devices > Data cleanup** to run it immediately. The page records the last run time. Official attendance, linked official daily summaries, open exceptions, configuration, credentials, and audit history are preserved. The school must still keep verified backups and an approved privacy/retention procedure.
 
 ### What should the school do during a power or network outage?
 
@@ -1383,14 +1385,14 @@ Keep evidence, restore power/network safely, check gateway and ZKBio queues, all
 
 Before approving Live, the owner should be able to answer **Yes** to every question:
 
-- Has the database been backed up and the migrations through 132 verified?
+- Has the database been backed up and the migrations through 140 verified?
 - Is one physical terminal configured for explicit IN and OUT?
 - Did the supplier prove the actual punch-state values?
 - Is the terminal registered with the correct serial and integration?
 - Are student and staff mappings reviewed?
 - Did Simulation prove IN, OUT, Duplicate, quarantine, and reconciliation?
 - Did Simulation leave official attendance unchanged?
-- Did Shadow run for at least five complete school days?
+- Did the supervised Shadow readiness cycle prove the required IN and OUT paths?
 - Did the same physical serial send both a real IN and a real OUT?
 - Were outage, retry, delay, and restart behaviour tested?
 - Are all open exceptions resolved?

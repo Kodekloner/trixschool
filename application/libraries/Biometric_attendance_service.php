@@ -39,13 +39,15 @@ class Biometric_attendance_service
     }
 
     /**
-     * $options['live_authorized'] must be true for a transition to live. The
-     * admin controller is responsible for password and RBAC verification.
+     * $options['live_authorized'] must be true for a transition to live. A
+     * password-confirmed expansion of an existing Live projection scope uses
+     * $options['live_scope_authorized']. The admin controller verifies RBAC,
+     * readiness evidence, acknowledgement, and the operator password.
      */
     public function updateSettings(array $data, $actorId = null, array $options = array())
     {
         if (!$this->isReady()) {
-            return $this->failure('Biometric migrations through 132 have not been applied.');
+            return $this->failure('Biometric migrations through 140 have not been applied.');
         }
 
         $before = $this->getSettings();
@@ -53,7 +55,9 @@ class Biometric_attendance_service
             'mode', 'timezone', 'student_late_after', 'staff_late_after',
             'student_present_type_id', 'student_late_type_id',
             'staff_present_type_id', 'staff_late_type_id', 'project_students',
-            'project_staff', 'retention_days', 'max_event_age_days'
+            'project_staff', 'retention_days', 'max_event_age_days',
+            'live_pilot_enabled', 'notify_student_in', 'notify_student_out',
+            'notify_email', 'notify_sms', 'notify_whatsapp'
         );
         $save = $this->only($data, $allowed);
         $errors = array();
@@ -93,10 +97,22 @@ class Biometric_attendance_service
                 }
             }
         }
-        foreach (array('project_students', 'project_staff') as $field) {
+        foreach (array(
+            'project_students', 'project_staff', 'live_pilot_enabled',
+            'notify_student_in', 'notify_student_out', 'notify_email',
+            'notify_sms', 'notify_whatsapp'
+        ) as $field) {
             if (isset($save[$field])) {
                 $save[$field] = empty($save[$field]) ? 0 : 1;
             }
+        }
+        $wideningLive = is_array($before) && $before['mode'] === 'live'
+            && (!isset($save['mode']) || $save['mode'] === 'live')
+            && ((isset($save['project_students']) && empty($before['project_students']) && !empty($save['project_students']))
+                || (isset($save['project_staff']) && empty($before['project_staff']) && !empty($save['project_staff']))
+                || (isset($save['live_pilot_enabled']) && !empty($before['live_pilot_enabled']) && empty($save['live_pilot_enabled'])));
+        if ($wideningLive && empty($options['live_scope_authorized'])) {
+            $errors['mode'] = 'A password-confirmed authorization is required to widen Live attendance projection.';
         }
         if (isset($save['retention_days'])) {
             $save['retention_days'] = max(30, min(3650, (int) $save['retention_days']));
@@ -110,6 +126,15 @@ class Biometric_attendance_service
 
         $save['updated_by'] = $this->actorId($actorId);
         $save['updated_at'] = $this->now();
+        if (isset($save['mode']) && $save['mode'] === 'live'
+            && (!is_array($before) || $before['mode'] !== 'live')
+            && !empty($options['live_authorized'])) {
+            $save['live_acknowledged_by'] = $this->actorId($actorId);
+            $save['live_acknowledged_at'] = $save['updated_at'];
+        } elseif (!empty($options['live_scope_authorized'])) {
+            $save['live_acknowledged_by'] = $this->actorId($actorId);
+            $save['live_acknowledged_at'] = $save['updated_at'];
+        }
         if (!$before) {
             $save['created_by'] = $save['updated_by'];
             $save['created_at'] = $save['updated_at'];
@@ -220,7 +245,9 @@ class Biometric_attendance_service
             'direction_mode' => 'bidirectional',
             'firmware_version' => $this->nullableString(isset($data['firmware_version']) ? $data['firmware_version'] : null, 100),
             'is_virtual' => $isVirtual,
-            'is_active' => isset($data['is_active']) && !$data['is_active'] ? 0 : 1,
+            'is_active' => array_key_exists('is_active', $data)
+                ? (empty($data['is_active']) ? 0 : 1)
+                : ($before ? (int) $before['is_active'] : 1),
             'updated_by' => $this->actorId($actorId),
             'updated_at' => $now,
         );
@@ -255,13 +282,19 @@ class Biometric_attendance_service
 
     public function listMappings(array $filters = array(), $page = 1, $perPage = 50)
     {
-        return $this->model->paginate(
+        $search = isset($filters['search']) ? $filters['search'] : '';
+        unset($filters['search']);
+        $result = $this->model->paginateAdvanced(
             'biometric_identity_mappings',
-            $this->filter($filters, array('id', 'subject_type', 'subject_id', 'external_person_code', 'is_active')),
+            $this->filter($filters, array('id', 'subject_type', 'subject_id', 'external_person_code', 'is_active', 'live_pilot')),
             $page,
             $perPage,
-            'id'
+            'id',
+            'DESC',
+            $search,
+            array('external_person_code')
         );
+        return $this->decorateSubjects($result);
     }
 
     /** Student subject_id is student_session.id; staff subject_id is staff.id. */
@@ -315,6 +348,9 @@ class Biometric_attendance_service
             'valid_from' => empty($data['valid_from']) ? null : $data['valid_from'],
             'valid_until' => empty($data['valid_until']) ? null : $data['valid_until'],
             'is_active' => isset($data['is_active']) && !$data['is_active'] ? 0 : 1,
+            'live_pilot' => array_key_exists('live_pilot', $data)
+                ? (empty($data['live_pilot']) ? 0 : 1)
+                : ($before && !empty($before['live_pilot']) ? 1 : 0),
             'updated_by' => $this->actorId($actorId),
             'updated_at' => $now,
         );
@@ -344,6 +380,26 @@ class Biometric_attendance_service
         ));
         $item = $this->model->getMapping($before['id']);
         $this->audit($enabled ? 'mapping.enabled' : 'mapping.disabled', 'mapping', $before['id'], $before, $item, $actorId);
+        return array('success' => true, 'errors' => array(), 'item' => $item);
+    }
+
+    public function setMappingPilot($mappingId, $enabled, $actorId = null)
+    {
+        if (!in_array($enabled, array(true, false, 0, 1, '0', '1'), true)) {
+            return array('success' => false, 'errors' => array('live_pilot' => 'Pilot state must be boolean.'), 'item' => null);
+        }
+        $pilot = $enabled === true || $enabled === 1 || $enabled === '1';
+        $before = $this->model->getMapping((int) $mappingId);
+        if (!$before) {
+            return $this->failure('Identity mapping not found.');
+        }
+        $this->CI->db->where('id', $before['id'])->update('biometric_identity_mappings', array(
+            'live_pilot' => $pilot ? 1 : 0,
+            'updated_by' => $this->actorId($actorId),
+            'updated_at' => $this->now(),
+        ));
+        $item = $this->model->getMapping($before['id']);
+        $this->audit($pilot ? 'mapping.pilot_enabled' : 'mapping.pilot_disabled', 'mapping', $before['id'], $before, $item, $actorId);
         return array('success' => true, 'errors' => array(), 'item' => $item);
     }
 
@@ -1232,6 +1288,10 @@ class Biometric_attendance_service
         if ($device) {
             $this->CI->db->where('id', $device['id'])->update('biometric_devices', array('last_seen_at' => $now, 'updated_at' => $now));
         }
+        if ($settings['mode'] === 'live' && $mapping['subject_type'] === 'student'
+            && isset($day['projection_status']) && $day['projection_status'] === 'projected') {
+            $this->enqueueAttendanceNotifications($eventId, $direction, $settings);
+        }
         if (!$this->CI->db->trans_status()) {
             $this->CI->db->trans_rollback();
             return $baseResult + array('status' => 'rejected', 'message' => 'The event could not be stored safely.');
@@ -1251,7 +1311,11 @@ class Biometric_attendance_service
 
     public function listEvents(array $filters = array(), $page = 1, $perPage = 50)
     {
-        return $this->model->paginate(
+        $search = isset($filters['search']) ? $filters['search'] : '';
+        $from = isset($filters['date_from']) ? $filters['date_from'] : null;
+        $to = isset($filters['date_to']) ? $filters['date_to'] : null;
+        unset($filters['search'], $filters['date_from'], $filters['date_to']);
+        $result = $this->model->paginateAdvanced(
             'biometric_events',
             $this->filter($filters, array(
                 'id', 'batch_id', 'integration_id', 'device_id', 'attendance_day_id',
@@ -1262,13 +1326,21 @@ class Biometric_attendance_service
             )),
             $page,
             $perPage,
-            'id'
+            'id',
+            'DESC',
+            $search,
+            array('person_code', 'device_serial', 'external_event_id', 'failure_code'),
+            array('attendance_date' => array('from' => $from, 'to' => $to))
         );
+        return $this->decorateSubjects($result);
     }
 
     public function listDays(array $filters = array(), $page = 1, $perPage = 50)
     {
-        return $this->model->paginate(
+        $from = isset($filters['date_from']) ? $filters['date_from'] : null;
+        $to = isset($filters['date_to']) ? $filters['date_to'] : null;
+        unset($filters['date_from'], $filters['date_to'], $filters['search']);
+        $result = $this->model->paginateAdvanced(
             'biometric_attendance_days',
             $this->filter($filters, array(
                 'id', 'subject_type', 'subject_id', 'attendance_date', 'record_scope',
@@ -1276,30 +1348,82 @@ class Biometric_attendance_service
             )),
             $page,
             $perPage,
-            'attendance_date'
+            'attendance_date',
+            'DESC',
+            '',
+            array(),
+            array('attendance_date' => array('from' => $from, 'to' => $to))
         );
+        return $this->decorateSubjects($result);
     }
 
     public function listExceptions(array $filters = array(), $page = 1, $perPage = 50)
     {
-        return $this->model->paginate(
+        $search = isset($filters['search']) ? $filters['search'] : '';
+        $from = isset($filters['date_from']) ? $filters['date_from'] : null;
+        $to = isset($filters['date_to']) ? $filters['date_to'] : null;
+        unset($filters['search'], $filters['date_from'], $filters['date_to']);
+        $result = $this->model->paginateAdvanced(
             'biometric_exceptions',
             $this->filter($filters, array('id', 'event_id', 'attendance_day_id', 'exception_code', 'status')),
             $page,
             $perPage,
-            'id'
+            'id',
+            'DESC',
+            $search,
+            array('exception_code', 'message'),
+            array('created_at' => array(
+                'from' => $from ? $from . ' 00:00:00' : null,
+                'to' => $to ? $to . ' 23:59:59' : null,
+            ))
         );
+        foreach ($result['items'] as &$item) {
+            $event = !empty($item['event_id']) ? $this->model->getEvent((int) $item['event_id']) : null;
+            $day = !empty($item['attendance_day_id']) ? $this->model->getDay((int) $item['attendance_day_id']) : null;
+            $subjectType = $event && !empty($event['subject_type']) ? $event['subject_type'] : ($day ? $day['subject_type'] : null);
+            $subjectId = $event && !empty($event['subject_id']) ? (int) $event['subject_id'] : ($day ? (int) $day['subject_id'] : 0);
+            $summary = $subjectType && $subjectId ? $this->subjectSummary($subjectType, $subjectId) : null;
+            $item['person_code'] = $event ? $event['person_code'] : null;
+            $item['raw_punch_state'] = $event ? $event['raw_punch_state'] : null;
+            $item['subject_type'] = $subjectType;
+            $item['subject_id'] = $subjectId ?: null;
+            $item['subject_name'] = $summary ? $summary['name'] : null;
+            $item['subject_code'] = $summary ? $summary['code'] : null;
+        }
+        unset($item);
+        return $result;
     }
 
     public function listAudit(array $filters = array(), $page = 1, $perPage = 50)
     {
-        return $this->model->paginate(
+        $search = isset($filters['search']) ? $filters['search'] : '';
+        $from = isset($filters['date_from']) ? $filters['date_from'] : null;
+        $to = isset($filters['date_to']) ? $filters['date_to'] : null;
+        unset($filters['search'], $filters['date_from'], $filters['date_to']);
+        return $this->model->paginateAdvanced(
             'biometric_audit_logs',
             $this->filter($filters, array('id', 'actor_id', 'action', 'entity_type', 'entity_id')),
             $page,
             $perPage,
-            'id'
+            'id',
+            'DESC',
+            $search,
+            array('action', 'entity_type', 'entity_id'),
+            array('created_at' => array(
+                'from' => $from ? $from . ' 00:00:00' : null,
+                'to' => $to ? $to . ' 23:59:59' : null,
+            ))
         );
+    }
+
+    public function recentEventsAfter($eventId, $limit = 50)
+    {
+        $eventId = max(0, (int) $eventId);
+        $limit = max(1, min(100, (int) $limit));
+        $items = $this->CI->db->where('id >', $eventId)->order_by('id', 'ASC')
+            ->limit($limit)->get('biometric_events')->result_array();
+        $result = array('items' => $items, 'total' => count($items), 'page' => 1, 'per_page' => $limit, 'pages' => 1);
+        return $this->decorateSubjects($result);
     }
 
     /**
@@ -1429,6 +1553,39 @@ class Biometric_attendance_service
         return array('success' => true, 'errors' => array(), 'item' => $item);
     }
 
+    public function setScannerStationActive($stationId, $active, $actorId = null)
+    {
+        if (!in_array($active, array(true, false, 0, 1, '0', '1'), true)) {
+            return array('success' => false, 'errors' => array('is_active' => 'Station state must be boolean.'), 'item' => null);
+        }
+        $enabled = $active === true || $active === 1 || $active === '1';
+        $before = $this->model->getScannerStation((int) $stationId);
+        if (!$before) {
+            return $this->failure('Scanner station not found.');
+        }
+        $now = $this->now();
+        $this->CI->db->trans_start();
+        $this->CI->db->where('id', $before['id'])->update('biometric_scanner_stations', array(
+            'is_active' => $enabled ? 1 : 0,
+            'updated_by' => $this->actorId($actorId),
+            'updated_at' => $now,
+        ));
+        if (!empty($before['device_id'])) {
+            $this->CI->db->where('id', (int) $before['device_id'])->update('biometric_devices', array(
+                'is_active' => $enabled ? 1 : 0,
+                'updated_by' => $this->actorId($actorId),
+                'updated_at' => $now,
+            ));
+        }
+        $this->CI->db->trans_complete();
+        if (!$this->CI->db->trans_status()) {
+            return $this->failure('Scanner station state could not be changed.');
+        }
+        $item = $this->model->getScannerStation($before['id']);
+        $this->audit($enabled ? 'scanner.enabled' : 'scanner.disabled', 'scanner_station', $before['id'], $before, $item, $actorId);
+        return array('success' => true, 'errors' => array(), 'item' => $item);
+    }
+
     public function issueQrCredential($subjectType, $subjectId, $actorId = null, array $options = array())
     {
         $subjectType = strtolower(trim($subjectType));
@@ -1552,7 +1709,7 @@ class Biometric_attendance_service
             unset($item['token_hash'], $item['token_ciphertext']);
         }
         unset($item);
-        return $result;
+        return $this->decorateSubjects($result);
     }
 
     public function revokeQrCredential($credentialId, $actorId = null, $reason = 'Revoked by administrator')
@@ -1643,6 +1800,207 @@ class Biometric_attendance_service
             'subject' => $this->subjectSummary($credential['subject_type'], (int) $credential['subject_id']),
             'direction' => $direction,
         );
+    }
+
+    public function notificationQueueSummary()
+    {
+        $summary = array('pending' => 0, 'retry' => 0, 'processing' => 0, 'delivered' => 0, 'failed' => 0);
+        if (!$this->CI->db->table_exists('biometric_notification_queue')) {
+            return $summary;
+        }
+        $rows = $this->CI->db->select('status, COUNT(*) AS total', false)
+            ->group_by('status')->get('biometric_notification_queue')->result_array();
+        foreach ($rows as $row) {
+            if (array_key_exists($row['status'], $summary)) {
+                $summary[$row['status']] = (int) $row['total'];
+            }
+        }
+        return $summary;
+    }
+
+    /** Recent guardian-alert delivery records for the administrator page. */
+    public function listNotificationQueue($limit = 50)
+    {
+        if (!$this->CI->db->table_exists('biometric_notification_queue')) {
+            return array('items' => array(), 'total' => 0, 'page' => 1, 'per_page' => 0, 'pages' => 0);
+        }
+        $limit = max(1, min(100, (int) $limit));
+        $items = $this->CI->db
+            ->select('biometric_notification_queue.*, biometric_events.subject_type, biometric_events.subject_id, biometric_events.direction, biometric_events.occurred_at_local')
+            ->from('biometric_notification_queue')
+            ->join('biometric_events', 'biometric_events.id = biometric_notification_queue.event_id', 'left')
+            ->order_by('biometric_notification_queue.id', 'DESC')->limit($limit)->get()->result_array();
+        return $this->decorateSubjects(array(
+            'items' => $items, 'total' => count($items), 'page' => 1,
+            'per_page' => $limit, 'pages' => $items ? 1 : 0,
+        ));
+    }
+
+    /** Deliberately retry terminally failed alerts after their cause is fixed. */
+    public function retryFailedNotifications($actorId, $confirmation)
+    {
+        if (!hash_equals('RETRY_FAILED_NOTIFICATIONS', trim((string) $confirmation))) {
+            return array('success' => false, 'errors' => array('confirmation' => 'Type RETRY_FAILED_NOTIFICATIONS exactly.'), 'count' => 0);
+        }
+        $before = $this->notificationQueueSummary();
+        $now = $this->now();
+        $this->CI->db->where('status', 'failed')->update('biometric_notification_queue', array(
+            'status' => 'retry', 'attempt_count' => 0, 'next_attempt_at' => $now,
+            'last_error' => null, 'updated_at' => $now,
+        ));
+        $count = (int) $this->CI->db->affected_rows();
+        $this->audit('notifications.failed_requeued', 'notification_queue', null, $before, array('count' => $count), $actorId);
+        return array('success' => true, 'errors' => array(), 'count' => $count);
+    }
+
+    /** Process queued guardian alerts. Delivery failures never undo attendance. */
+    public function processNotificationQueue($limit = 20)
+    {
+        if (!$this->CI->db->table_exists('biometric_notification_queue')) {
+            return array('selected' => 0, 'delivered' => 0, 'retried' => 0, 'failed' => 0, 'skipped' => 0);
+        }
+        $limit = max(1, min(100, (int) $limit));
+        $now = $this->now();
+        // Recover work abandoned by a killed cron process after fifteen minutes.
+        $stale = gmdate('Y-m-d H:i:s', time() - 900);
+        $this->CI->db->where('status', 'processing')->where('updated_at <', $stale)
+            ->update('biometric_notification_queue', array('status' => 'retry', 'next_attempt_at' => $now, 'updated_at' => $now));
+
+        $this->CI->db->group_start()->where('status', 'pending')->or_where('status', 'retry')->group_end();
+        $this->CI->db->group_start()->where('next_attempt_at IS NULL', null, false)->or_where('next_attempt_at <=', $now)->group_end();
+        $rows = $this->CI->db->order_by('id', 'ASC')->limit($limit)
+            ->get('biometric_notification_queue')->result_array();
+        $result = array('selected' => count($rows), 'delivered' => 0, 'retried' => 0, 'failed' => 0, 'skipped' => 0);
+
+        foreach ($rows as $row) {
+            $this->CI->db->where('id', $row['id'])->where_in('status', array('pending', 'retry'))
+                ->update('biometric_notification_queue', array('status' => 'processing', 'updated_at' => $now));
+            if ($this->CI->db->affected_rows() !== 1) {
+                continue;
+            }
+            $delivery = $this->deliverAttendanceNotification($row);
+            $attempts = (int) $row['attempt_count'] + 1;
+            if (!empty($delivery['success'])) {
+                $this->CI->db->where('id', $row['id'])->update('biometric_notification_queue', array(
+                    'status' => 'delivered', 'attempt_count' => $attempts,
+                    'next_attempt_at' => null, 'last_error' => null,
+                    'delivered_at' => $this->now(), 'updated_at' => $this->now(),
+                ));
+                $result['delivered']++;
+                continue;
+            }
+            if (!empty($delivery['skip'])) {
+                $safeError = substr($this->redactGatewayText($delivery['message']), 0, 500);
+                $this->CI->db->where('id', $row['id'])->update('biometric_notification_queue', array(
+                    'status' => 'failed', 'attempt_count' => $attempts,
+                    'next_attempt_at' => null,
+                    'last_error' => $safeError,
+                    'updated_at' => $this->now(),
+                ));
+                $result['skipped']++;
+                continue;
+            }
+            $failed = $attempts >= 5;
+            $delayMinutes = min(240, (int) pow(2, max(0, $attempts - 1)) * 5);
+            $safeError = substr($this->redactGatewayText($delivery['message']), 0, 500);
+            $this->CI->db->where('id', $row['id'])->update('biometric_notification_queue', array(
+                'status' => $failed ? 'failed' : 'retry',
+                'attempt_count' => $attempts,
+                'next_attempt_at' => $failed ? null : gmdate('Y-m-d H:i:s', time() + ($delayMinutes * 60)),
+                'last_error' => $safeError,
+                'updated_at' => $this->now(),
+            ));
+            $result[$failed ? 'failed' : 'retried']++;
+        }
+        return $result;
+    }
+
+    /**
+     * Apply the configured retention policy in bounded chunks. Official
+     * attendance and its linked daily summary are never deleted.
+     */
+    public function runRetentionCleanup($actorId = null, $limit = 1000)
+    {
+        $settings = $this->getSettings();
+        if (!$settings) {
+            return array('success' => false, 'message' => 'Biometric storage is not ready.', 'counts' => array());
+        }
+        $limit = max(1, min(5000, (int) $limit));
+        $days = max(30, min(3650, (int) $settings['retention_days']));
+        $cutoffDate = gmdate('Y-m-d', time() - ($days * 86400));
+        $cutoffTime = $cutoffDate . ' 00:00:00';
+        $counts = array('actions' => 0, 'exceptions' => 0, 'notifications' => 0, 'events' => 0, 'days' => 0, 'batches' => 0, 'commands' => 0);
+
+        $exceptionRows = $this->CI->db->select('id')->where_in('status', array('resolved', 'ignored'))
+            ->where('updated_at <', $cutoffTime)->limit($limit)->get('biometric_exceptions')->result_array();
+        $exceptionIds = array_map('intval', array_column($exceptionRows, 'id'));
+
+        $eventRows = $this->CI->db->select('biometric_events.id')->from('biometric_events')
+            ->join('biometric_exceptions', "biometric_exceptions.event_id = biometric_events.id AND biometric_exceptions.status = 'open'", 'left', false)
+            ->where('biometric_events.occurred_at_utc <', $cutoffTime)
+            ->where('biometric_exceptions.id IS NULL', null, false)
+            ->limit($limit)->get()->result_array();
+        $eventIds = array_map('intval', array_column($eventRows, 'id'));
+
+        $dayRows = $this->CI->db->select('biometric_attendance_days.id')->from('biometric_attendance_days')
+            ->join('biometric_exceptions', "biometric_exceptions.attendance_day_id = biometric_attendance_days.id AND biometric_exceptions.status = 'open'", 'left', false)
+            ->where('biometric_attendance_days.attendance_date <', $cutoffDate)
+            ->where('biometric_attendance_days.official_attendance_id IS NULL', null, false)
+            ->where('biometric_exceptions.id IS NULL', null, false)
+            ->limit($limit)->get()->result_array();
+        $dayIds = array_map('intval', array_column($dayRows, 'id'));
+
+        $this->CI->db->trans_start();
+        if ($exceptionIds) {
+            $counts['actions'] = (int) $this->CI->db->where_in('exception_id', $exceptionIds)->count_all_results('biometric_reconciliation_actions');
+            $this->CI->db->where_in('exception_id', $exceptionIds)->delete('biometric_reconciliation_actions');
+            $this->CI->db->where_in('id', $exceptionIds)->delete('biometric_exceptions');
+            $counts['exceptions'] = count($exceptionIds);
+        }
+        if ($eventIds) {
+            $counts['notifications'] = (int) $this->CI->db->where_in('event_id', $eventIds)->count_all_results('biometric_notification_queue');
+            $this->CI->db->where_in('event_id', $eventIds)->delete('biometric_notification_queue');
+            $this->CI->db->where_in('id', $eventIds)->delete('biometric_events');
+            $counts['events'] = count($eventIds);
+        }
+        if ($dayIds) {
+            // A bounded event pass may leave another retained event linked to a
+            // candidate day. Preserve such summaries until the next run.
+            $safeDayIds = array();
+            foreach ($dayIds as $dayId) {
+                if (!$this->CI->db->where('attendance_day_id', $dayId)->count_all_results('biometric_events')) {
+                    $safeDayIds[] = $dayId;
+                }
+            }
+            if ($safeDayIds) {
+                $this->CI->db->where_in('id', $safeDayIds)->delete('biometric_attendance_days');
+                $counts['days'] = count($safeDayIds);
+            }
+        }
+        $batchRows = $this->CI->db->select('biometric_gateway_batches.id')->from('biometric_gateway_batches')
+            ->join('biometric_events', 'biometric_events.batch_id = biometric_gateway_batches.id', 'left')
+            ->where('biometric_gateway_batches.created_at <', $cutoffTime)
+            ->where('biometric_events.id IS NULL', null, false)
+            ->limit($limit)->get()->result_array();
+        $batchIds = array_map('intval', array_column($batchRows, 'id'));
+        if ($batchIds) {
+            $this->CI->db->where_in('id', $batchIds)->delete('biometric_gateway_batches');
+            $counts['batches'] = count($batchIds);
+        }
+        $commandRows = $this->CI->db->select('id')->where_in('status', array('succeeded', 'failed', 'expired'))
+            ->where('updated_at <', $cutoffTime)->limit($limit)->get('biometric_gateway_commands')->result_array();
+        $commandIds = array_map('intval', array_column($commandRows, 'id'));
+        if ($commandIds) {
+            $this->CI->db->where_in('id', $commandIds)->delete('biometric_gateway_commands');
+            $counts['commands'] = count($commandIds);
+        }
+        $this->CI->db->where('id', 1)->update('biometric_settings', array('last_retention_run_at' => $this->now(), 'updated_at' => $this->now()));
+        $this->CI->db->trans_complete();
+        if (!$this->CI->db->trans_status()) {
+            return array('success' => false, 'message' => 'Retention cleanup could not be committed.', 'counts' => array());
+        }
+        $this->audit('retention.completed', 'settings', 1, null, array('cutoff' => $cutoffDate, 'counts' => $counts), $actorId);
+        return array('success' => true, 'message' => 'Retention cleanup completed.', 'cutoff' => $cutoffDate, 'counts' => $counts);
     }
 
     public function markManualOverride($attendanceTable, $attendanceId, $actorId = null)
@@ -1844,6 +2202,14 @@ class Biometric_attendance_service
         }
         if ($day['subject_type'] === 'staff' && empty($settings['project_staff'])) {
             return $this->setDayProjection($day, 'disabled');
+        }
+        if (!empty($settings['live_pilot_enabled'])) {
+            $pilotMapping = $this->CI->db->select('live_pilot')->where('subject_type', $day['subject_type'])
+                ->where('subject_id', (int) $day['subject_id'])->where('is_active', 1)
+                ->limit(1)->get('biometric_identity_mappings')->row_array();
+            if (!$pilotMapping || empty($pilotMapping['live_pilot'])) {
+                return $this->setDayProjection($day, 'pilot_excluded');
+            }
         }
         if ($day['subject_type'] === 'student') {
             $schoolAttendance = $this->CI->db->select('attendence_type')->limit(1)
@@ -2137,6 +2503,142 @@ class Biometric_attendance_service
             $this->CI->db->where_in('is_active', array('yes', '1', 1));
         }
         return (bool) $this->CI->db->count_all_results();
+    }
+
+    protected function enqueueAttendanceNotifications($eventId, $direction, array $settings)
+    {
+        $direction = strtoupper((string) $direction);
+        if (($direction === 'IN' && empty($settings['notify_student_in']))
+            || ($direction === 'OUT' && empty($settings['notify_student_out']))) {
+            return;
+        }
+        $channels = array(
+            'email' => !empty($settings['notify_email']),
+            'sms' => !empty($settings['notify_sms']),
+            'whatsapp' => !empty($settings['notify_whatsapp']),
+        );
+        $event = $this->model->getEvent((int) $eventId);
+        if (!$event || empty($event['attendance_day_id'])) {
+            return;
+        }
+        $now = $this->now();
+        foreach ($channels as $channel => $enabled) {
+            if (!$enabled) {
+                continue;
+            }
+            // One guardian alert per daily session, direction, and channel.
+            // Repeated scans may refine earliest IN/latest OUT, but must not
+            // create repeated paid messages for the same school day.
+            $alreadyQueued = $this->CI->db->select('biometric_notification_queue.id')
+                ->from('biometric_notification_queue')
+                ->join('biometric_events', 'biometric_events.id = biometric_notification_queue.event_id')
+                ->where('biometric_events.attendance_day_id', (int) $event['attendance_day_id'])
+                ->where('biometric_events.direction', $direction)
+                ->where('biometric_notification_queue.channel', $channel)
+                ->limit(1)->get()->row_array();
+            if ($alreadyQueued) {
+                continue;
+            }
+            $this->CI->db->query(
+                "INSERT IGNORE INTO `biometric_notification_queue`
+                 (`event_id`, `channel`, `status`, `attempt_count`, `created_at`, `updated_at`)
+                 VALUES (?, ?, 'pending', 0, ?, ?)",
+                array((int) $eventId, $channel, $now, $now)
+            );
+        }
+    }
+
+    protected function deliverAttendanceNotification(array $queueRow)
+    {
+        $event = $this->model->getEvent((int) $queueRow['event_id']);
+        if (!$event || $event['operating_mode'] !== 'live' || $event['processing_status'] !== 'accepted'
+            || $event['projection_status'] !== 'projected' || $event['subject_type'] !== 'student') {
+            return array('success' => false, 'skip' => true, 'message' => 'The linked event is no longer an eligible projected Live student event.');
+        }
+        $settings = $this->getSettings();
+        $channel = strtolower((string) $queueRow['channel']);
+        $channelSetting = array('email' => 'notify_email', 'sms' => 'notify_sms', 'whatsapp' => 'notify_whatsapp');
+        if (!isset($channelSetting[$channel]) || empty($settings[$channelSetting[$channel]])) {
+            return array('success' => false, 'skip' => true, 'message' => 'This notification channel is disabled.');
+        }
+        if (($event['direction'] === 'IN' && empty($settings['notify_student_in']))
+            || ($event['direction'] === 'OUT' && empty($settings['notify_student_out']))) {
+            return array('success' => false, 'skip' => true, 'message' => 'Notifications for this attendance direction are disabled.');
+        }
+
+        $student = $this->CI->db->select("students.guardian_email, students.guardian_phone, students.firstname, students.middlename, students.lastname, students.admission_no, CONCAT_WS(' ', students.firstname, students.middlename, students.lastname) AS student_name", false)
+            ->from('student_session')->join('students', 'students.id = student_session.student_id')
+            ->where('student_session.id', (int) $event['subject_id'])->get()->row_array();
+        if (!$student) {
+            return array('success' => false, 'skip' => true, 'message' => 'The student record no longer exists.');
+        }
+        $this->CI->load->model('setting_model');
+        $school = $this->CI->setting_model->getSetting();
+        $schoolName = is_object($school) && !empty($school->name) ? $school->name : 'SchoolLift school';
+        $verb = $event['direction'] === 'IN' ? 'checked in' : 'checked out';
+        $time = date('g:i A', strtotime($event['occurred_at_local']));
+        $date = date('j M Y', strtotime($event['occurred_at_local']));
+        $message = trim($student['student_name']) . ' (' . $student['admission_no'] . ') ' . $verb
+            . ' at ' . $time . ' on ' . $date . ' at ' . $schoolName . '.';
+        $subject = 'Student ' . ($event['direction'] === 'IN' ? 'check-in' : 'checkout') . ' — ' . $schoolName;
+
+        try {
+            if ($channel === 'email') {
+                $recipient = trim((string) $student['guardian_email']);
+                if ($recipient === '') {
+                    return array('success' => false, 'skip' => true, 'message' => 'No guardian email address is recorded.');
+                }
+                $this->CI->load->library('mailer');
+                $sent = $this->CI->mailer->send_mail(
+                    $recipient,
+                    $subject,
+                    nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8'))
+                );
+            } elseif ($channel === 'sms') {
+                $recipient = trim((string) $student['guardian_phone']);
+                if ($recipient === '') {
+                    return array('success' => false, 'skip' => true, 'message' => 'No guardian phone number is recorded.');
+                }
+                $this->CI->load->library('smsgateway');
+                $sent = $this->CI->smsgateway->sendSMS($recipient, $message);
+            } else {
+                $recipient = trim((string) $student['guardian_phone']);
+                if ($recipient === '') {
+                    return array('success' => false, 'skip' => true, 'message' => 'No guardian WhatsApp phone number is recorded.');
+                }
+                $this->CI->load->library('whatsappgateway');
+                $sent = $this->CI->whatsappgateway->sendMessage($recipient, $message, $subject);
+            }
+        } catch (Throwable $exception) {
+            return array('success' => false, 'skip' => false, 'message' => $exception->getMessage());
+        }
+        return $sent === false
+            ? array('success' => false, 'skip' => false, 'message' => 'The configured ' . $channel . ' gateway rejected the message.')
+            : array('success' => true, 'skip' => false, 'message' => 'Delivered.');
+    }
+
+    protected function decorateSubjects(array $result)
+    {
+        $cache = array();
+        foreach ($result['items'] as &$item) {
+            $type = isset($item['subject_type']) ? $item['subject_type'] : null;
+            $id = isset($item['subject_id']) ? (int) $item['subject_id'] : 0;
+            $key = $type . ':' . $id;
+            if (!$type || !$id) {
+                $summary = null;
+            } else {
+                if (!array_key_exists($key, $cache)) {
+                    $cache[$key] = $this->subjectSummary($type, $id);
+                }
+                $summary = $cache[$key];
+            }
+            $item['subject_name'] = $summary ? $summary['name'] : null;
+            $item['subject_code'] = $summary ? $summary['code'] : null;
+            $item['subject_class'] = $summary && isset($summary['class']) ? $summary['class'] : null;
+            $item['subject_section'] = $summary && isset($summary['section']) ? $summary['section'] : null;
+        }
+        unset($item);
+        return $result;
     }
 
     protected function subjectSummary($subjectType, $subjectId)
