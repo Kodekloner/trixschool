@@ -21,7 +21,9 @@ $required = array(
     'listScannerStations', 'saveScannerStation', 'listQrCredentials',
     'issueQrCredential', 'qrEncryptionReady', 'getActiveQrCredential', 'getQrCredentialToken',
     'revokeQrCredential', 'lookupQrCredential', 'scanQrCredential',
-    'markManualOverride', 'purgeSimulationData'
+    'markManualOverride', 'purgeSimulationData',
+    'pollGateway', 'completeGatewayCommand', 'getGatewayStatus',
+    'listGatewayAgents', 'queueGatewayCommand', 'listGatewayCommands'
 );
 foreach ($required as $method) {
     biometric_contract_assert($service->hasMethod($method) && $service->getMethod($method)->isPublic(), 'Missing public service method: ' . $method);
@@ -49,10 +51,35 @@ biometric_contract_assert(strpos($migration, '`token_ciphertext` TEXT NOT NULL')
 $routes = file_get_contents(__DIR__ . '/../application/config/routes.php');
 biometric_contract_assert(strpos($routes, "api/biometric/v2/events") !== false, 'V2 event route is missing.');
 biometric_contract_assert(strpos($routes, "api/biometric/v2/health") !== false, 'V2 health route is missing.');
+biometric_contract_assert(strpos($routes, "api/biometric/v2/gateway/poll") !== false, 'Gateway poll route is missing.');
+biometric_contract_assert(strpos($routes, "api/biometric/v2/gateway/result") !== false, 'Gateway result route is missing.');
+
+$controlMigration = file_get_contents(__DIR__ . '/../application/migrations/132_add_biometric_gateway_control.php');
+foreach (array('biometric_gateway_agents', 'biometric_gateway_commands') as $table) {
+    biometric_contract_assert(strpos($controlMigration, "CREATE TABLE `{$table}`") !== false, 'Migration 132 is missing table: ' . $table);
+}
+biometric_contract_assert(strpos($controlMigration, 'UNIQUE KEY `uq_biometric_gateway_agent_id` (`gateway_id`)') !== false, 'Migration 132 must keep gateway IDs globally owned by one integration.');
+$consolidatedSql = file_get_contents(__DIR__ . '/../docs/all_school_database_migrations.sql');
+biometric_contract_assert(strpos($consolidatedSql, 'UNIQUE KEY `uq_biometric_gateway_agent_id` (`gateway_id`)') !== false, 'Consolidated SQL must match migration 132 gateway ownership.');
+foreach (array('connection_test', 'sync_now', 'retry_failed') as $command) {
+    biometric_contract_assert(strpos($service->getFileName() ? file_get_contents($service->getFileName()) : '', "'{$command}'") !== false, 'Gateway command allowlist is missing: ' . $command);
+}
+$migrationConfig = file_get_contents(__DIR__ . '/../application/config/migration.php');
+biometric_contract_assert(
+    preg_match('/migration_version[\'\"]?\]\s*=\s*(\d+)\s*;/', $migrationConfig, $migrationMatch) === 1
+        && (int) $migrationMatch[1] >= 132,
+    'Migration target must include 132 or a later migration.'
+);
 
 $controller = file_get_contents(__DIR__ . '/../application/controllers/api/Biometric_v2.php');
 biometric_contract_assert(strpos($controller, "'results' => array()") !== false, 'API errors must retain the results[] contract.');
 biometric_contract_assert(strpos($controller, 'authenticateToken') !== false, 'V2 API must authenticate bearer tokens.');
+biometric_contract_assert(strpos($controller, 'gatewayJsonRequest') !== false, 'Gateway control endpoints must share authenticated bounded JSON handling.');
+biometric_contract_assert(strpos($controller, 'migrations through 132') !== false, 'API readiness errors must identify the current biometric migration level.');
+
+$modelSource = file_get_contents(__DIR__ . '/../application/models/Biometric_attendance_model.php');
+biometric_contract_assert(strpos($modelSource, "'biometric_gateway_agents'") !== false, 'Biometric readiness must require the gateway agent table.');
+biometric_contract_assert(strpos($modelSource, "'biometric_gateway_commands'") !== false, 'Biometric readiness must require the gateway command table.');
 
 $adminView = file_get_contents(__DIR__ . '/../application/views/admin/biometricattendance/index.php');
 $readyPosition = strpos($adminView, '$(function () {');

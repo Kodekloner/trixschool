@@ -30,6 +30,8 @@ class Biometricattendance extends Admin_Controller
             ? $rawDashboard['counters'] : array();
         $integrations = $this->biometric_attendance_service->listIntegrations(array(), 1, 100);
         $integrationItems = isset($integrations['items']) ? $integrations['items'] : array();
+        $gatewayAgents = $this->biometric_attendance_service->listGatewayAgents(array(), 1, 100);
+        $gatewayCommands = $this->biometric_attendance_service->listGatewayCommands(array(), 1, 50);
         $devices = $this->biometric_attendance_service->listDevices(array(), 1, 100);
         $punchStateMappings = array();
         foreach ($integrationItems as $integration) {
@@ -72,6 +74,8 @@ class Biometricattendance extends Admin_Controller
             'devices' => $devices,
             'mappings' => $this->biometric_attendance_service->listMappings(array(), 1, 100),
             'integrations' => $integrations,
+            'gateway_agents' => $gatewayAgents,
+            'gateway_commands' => $gatewayCommands,
             'punch_state_mappings' => $punchStateMappings,
             'events' => $this->biometric_attendance_service->listEvents(array(), 1, 100),
             'days' => $this->biometric_attendance_service->listDays(array(), 1, 100),
@@ -191,6 +195,48 @@ class Biometricattendance extends Admin_Controller
             $this->actorId()
         );
         return $this->resultRedirect($result, $active ? 'Integration enabled.' : 'Integration disabled.', '#bio-setup');
+    }
+
+    /**
+     * Queue one fixed connector action. The web server never executes a local
+     * process: the authenticated Windows connector collects this request on
+     * its next outbound heartbeat.
+     */
+    public function gatewaycommand()
+    {
+        $this->requireMutation('can_edit');
+        $type = strtolower(trim((string) $this->input->post('command_type', true)));
+        $integrationId = (int) $this->input->post('integration_id');
+        if (!in_array($type, array('connection_test', 'sync_now', 'retry_failed'), true)) {
+            return $this->failRedirect('Choose a supported school-computer connector action.', '#bio-connector');
+        }
+
+        $settings = $this->biometric_attendance_service->getSettings();
+        if (!is_array($settings) || !in_array($settings['mode'], array('shadow', 'live'), true)) {
+            return $this->failRedirect('School-computer connector actions are available only in Shadow or Live mode.', '#bio-connector');
+        }
+        if ($type === 'retry_failed') {
+            $confirmation = trim((string) $this->input->post('confirmation', true));
+            if (!hash_equals('RETRY_FAILED_ITEMS', $confirmation)) {
+                return $this->failRedirect('Type RETRY_FAILED_ITEMS exactly before retrying permanently failed connector items.', '#bio-connector');
+            }
+        }
+
+        $result = $this->biometric_attendance_service->queueGatewayCommand(
+            $type,
+            $integrationId,
+            $this->actorId(),
+            300
+        );
+        $labels = array(
+            'connection_test' => 'Connection check requested. The school computer should collect it within one minute.',
+            'sync_now' => 'Synchronization requested. The school computer should collect it within one minute.',
+            'retry_failed' => 'Retry requested. The school computer should collect it within one minute.',
+        );
+        if (!empty($result['duplicate'])) {
+            $labels[$type] = 'That connector action is already waiting or running; another copy was not created.';
+        }
+        return $this->resultRedirect($result, $labels[$type], '#bio-connector');
     }
 
     public function punchstates()
@@ -548,7 +594,7 @@ class Biometricattendance extends Admin_Controller
     private function requireReady()
     {
         if (!$this->biometric_attendance_service->isReady()) {
-            show_error('Biometric attendance migration 130 has not been installed for this school database.', 503);
+            show_error('Biometric attendance migrations through 132 have not been installed for this school database.', 503);
         }
     }
 
@@ -623,49 +669,86 @@ class Biometricattendance extends Admin_Controller
                 $activeIntegrations[(int) $integration['id']] = $integration;
             }
         }
+        // Go-live evidence must describe one coherent connector path. Without
+        // this guard, a terminal on integration A, punch states on B, and a
+        // healthy connector on C could incorrectly satisfy separate checks.
+        $integrationReady = count($activeIntegrations) === 1;
+        $integrationId = $integrationReady ? (int) key($activeIntegrations) : null;
         $physical = array();
         foreach ($devices as $device) {
             if (!empty($device['is_active']) && empty($device['is_virtual'])
                 && $device['device_type'] === 'biometric'
-                && isset($activeIntegrations[(int) $device['integration_id']])) {
+                && $integrationId !== null && (int) $device['integration_id'] === $integrationId) {
                 $physical[] = $device;
             }
         }
         $mapped = $this->biometric_attendance_service->listMappings(array('is_active' => 1), 1, 1);
         $exceptions = $this->biometric_attendance_service->listExceptions(array('status' => 'open'), 1, 1);
+        $gatewayAgents = $this->biometric_attendance_service->listGatewayAgents(
+            array('integration_id' => $integrationId), 1, 100
+        );
+        $recentAgents = array();
+        foreach (isset($gatewayAgents['items']) ? $gatewayAgents['items'] : array() as $agent) {
+            $heartbeat = !empty($agent['last_heartbeat_at']) ? strtotime($agent['last_heartbeat_at'] . ' UTC') : false;
+            if ($heartbeat !== false && time() - $heartbeat <= 600) {
+                $recentAgents[] = $agent;
+            }
+        }
+        // A second recent connector would poll the same school integration.
+        // Keep exactly one active path for the single-school-computer design;
+        // stale records from a replaced PC do not block the transition.
+        $connectorOnline = count($recentAgents) === 1;
+        $activeAgent = $connectorOnline ? $recentAgents[0] : null;
+        $connectorHealthy = $activeAgent !== null
+            && (int) $activeAgent['provider_reachable'] === 1
+            && (int) $activeAgent['last_sync_ok'] === 1;
+        $connectorQueueClear = $connectorHealthy
+            && (int) $activeAgent['queue_pending'] === 0
+            && (int) $activeAgent['queue_retry'] === 0
+            && (int) $activeAgent['queue_dead'] === 0;
         $hasPunchMap = false;
-        foreach ($activeIntegrations as $integrationId => $integration) {
+        if ($integrationId !== null) {
             $directions = array();
             foreach ($this->biometric_attendance_service->getPunchStateMappings($integrationId) as $mapping) {
                 $directions[] = isset($mapping['direction']) ? $mapping['direction'] : null;
             }
-            if (in_array('IN', $directions, true) && in_array('OUT', $directions, true)) {
-                $hasPunchMap = true;
-                break;
-            }
+            $hasPunchMap = in_array('IN', $directions, true) && in_array('OUT', $directions, true);
         }
-        $hasSeenPhysical = false;
+        $hasSeenPhysical = !empty($physical);
         foreach ($physical as $device) {
-            if (!empty($device['last_seen_at'])) {
-                $hasSeenPhysical = true;
+            $shadowEvents = $this->biometric_attendance_service->listEvents(array(
+                'integration_id' => $integrationId,
+                'device_id' => (int) $device['id'],
+                'source' => 'gateway',
+                'operating_mode' => 'shadow',
+                'processing_status' => 'accepted',
+            ), 1, 1);
+            if (empty($shadowEvents['total'])) {
+                $hasSeenPhysical = false;
                 break;
             }
         }
         $problems = array();
-        if (!$activeIntegrations) { $problems[] = 'Create and enable a ZKBio integration.'; }
+        if (!$integrationReady) { $problems[] = 'Enable exactly one ZKBio integration for this school connector path.'; }
         if (!$physical) { $problems[] = 'Register one enabled physical bidirectional terminal.'; }
         if (!$hasPunchMap) { $problems[] = 'Confirm distinct IN and OUT punch-state mappings.'; }
         if (empty($mapped['total'])) { $problems[] = 'Map at least one active student or staff identity.'; }
+        if (!$connectorOnline) { $problems[] = 'Keep exactly one Windows connector online for that integration, with a heartbeat within ten minutes.'; }
+        if (!$connectorHealthy) { $problems[] = 'Complete a successful ZKBio connection and synchronization check.'; }
+        if (!$connectorQueueClear) { $problems[] = 'Drain or resolve every waiting, retrying, and failed connector item before Live.'; }
         if (!$hasSeenPhysical) { $problems[] = 'Process at least one accepted physical event in Shadow mode.'; }
         if (!empty($exceptions['total'])) { $problems[] = 'Resolve all open biometric exceptions.'; }
         return array(
             'ready' => !$problems,
             'problems' => $problems,
             'checks' => array(
-                'integration' => (bool) $activeIntegrations,
+                'integration' => $integrationReady,
                 'physical_device' => (bool) $physical,
                 'punch_states' => $hasPunchMap,
                 'identity_mapping' => !empty($mapped['total']),
+                'connector_online' => $connectorOnline,
+                'connector_healthy' => $connectorHealthy,
+                'connector_queue_clear' => $connectorQueueClear,
                 'shadow_event' => $hasSeenPhysical,
                 'exceptions_clear' => empty($exceptions['total']),
             ),

@@ -38,7 +38,7 @@ final class CurlHttpTransport implements HttpTransport
             CURLOPT_CONNECTTIMEOUT => min(10, max(1, $timeoutSeconds)),
             CURLOPT_TIMEOUT => max(1, $timeoutSeconds),
             CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_USERAGENT => 'SchoolLift-Biometric-Gateway/1.0.0',
+            CURLOPT_USERAGENT => 'SchoolLift-Biometric-Gateway/1.1.0',
             CURLOPT_SSL_VERIFYPEER => $this->verifyTls,
             CURLOPT_SSL_VERIFYHOST => $this->verifyTls ? 2 : 0,
             CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,

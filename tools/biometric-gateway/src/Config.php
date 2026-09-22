@@ -15,12 +15,37 @@ final class Config
     {
         if (!is_file($path)) {
             throw new RuntimeException(
-                'Gateway configuration not found: ' . $path . '. Copy config.example.php to config.php.'
+                'Gateway configuration not found: ' . $path . '. Use the Windows manager or copy a configuration example.'
             );
         }
-        $loaded = require $path;
+
+        if (strtolower((string) pathinfo($path, PATHINFO_EXTENSION)) === 'json') {
+            $contents = file_get_contents($path);
+            if (!is_string($contents)) {
+                throw new RuntimeException('Unable to read the gateway JSON configuration.');
+            }
+            if (strlen($contents) > 131072) {
+                throw new RuntimeException('Gateway JSON configuration exceeds the 128 KiB safety limit.');
+            }
+            // Windows PowerShell 5.1 writes a UTF-8 BOM by default. Accept it
+            // so an administrator does not need to edit the generated file.
+            if (strncmp($contents, "\xEF\xBB\xBF", 3) === 0) {
+                $contents = substr($contents, 3);
+            }
+            if ($contents === '' || substr(ltrim($contents), 0, 1) !== '{') {
+                throw new RuntimeException('Gateway JSON configuration must contain one top-level object.');
+            }
+            try {
+                $loaded = json_decode($contents, true, 32, JSON_THROW_ON_ERROR);
+            } catch (\JsonException $error) {
+                throw new RuntimeException('Gateway JSON configuration is invalid: ' . $error->getMessage());
+            }
+        } else {
+            // Retain compatibility with existing protected config.php files.
+            $loaded = require $path;
+        }
         if (!is_array($loaded)) {
-            throw new RuntimeException('Gateway configuration must return a PHP array.');
+            throw new RuntimeException('Gateway configuration must contain a JSON object or return a PHP array.');
         }
 
         $root = dirname(realpath($path) ?: $path);
@@ -62,6 +87,8 @@ final class Config
                 'bearer_token' => '',
                 'events_path' => '/api/biometric/v2/events',
                 'health_path' => '/api/biometric/v2/health',
+                'control_poll_path' => '/api/biometric/v2/gateway/poll',
+                'control_result_path' => '/api/biometric/v2/gateway/result',
                 'batch_size' => 100,
                 'max_batches_per_run' => 10,
             ],
@@ -129,6 +156,12 @@ final class Config
         if (strlen((string) $config['schoollift']['bearer_token']) < 32
             || preg_match('/[\x00-\x1F\x7F]/', (string) $config['schoollift']['bearer_token'])) {
             throw new RuntimeException('schoollift.bearer_token must be a high-entropy token without control characters.');
+        }
+        foreach (['events_path', 'health_path', 'control_poll_path', 'control_result_path'] as $pathKey) {
+            $path = (string) ($config['schoollift'][$pathKey] ?? '');
+            if (!preg_match('#^/[A-Za-z0-9/_-]{1,190}$#', $path)) {
+                throw new RuntimeException('schoollift.' . $pathKey . ' must be a local absolute API path.');
+            }
         }
         if ((string) $config['provider']['terminal_serial'] === 'SIM-IN-001'
             || (string) $config['provider']['terminal_serial'] === 'SIM-OUT-001') {

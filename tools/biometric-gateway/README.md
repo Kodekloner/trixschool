@@ -9,13 +9,15 @@ The gateway does not guess direction, alternate punch direction, receive face/fi
 Each `once` run performs this sequence:
 
 1. Acquire a non-blocking file lock so overlapping Task Scheduler runs cannot race.
-2. Deliver any previously queued events.
-3. Authenticate to ZKBio Time and poll the configured terminal with an overlap window.
-4. Copy only the stable event ID, person code, occurrence time, terminal serial, punch state, and verification-method code.
-5. Atomically save new events and the polling cursor in SQLite.
-6. POST batches to `/api/biometric/v2/events` with the SchoolLift bearer token.
-7. Mark `accepted`, `duplicate`, `quarantined`, and `rejected` outcomes as durably acknowledged.
-8. Defer network errors, `401`, `403`, `408`, `429`, and `5xx` responses with bounded exponential backoff.
+2. Send a safe status heartbeat and claim at most one website-requested action.
+3. Deliver any previously queued events.
+4. Authenticate to ZKBio Time and poll the configured terminal with an overlap window.
+5. Copy only the stable event ID, person code, occurrence time, terminal serial, punch state, and verification-method code.
+6. Atomically save new events and the polling cursor in SQLite.
+7. POST batches to `/api/biometric/v2/events` with the SchoolLift bearer token.
+8. Mark `accepted`, `duplicate`, `quarantined`, and `rejected` outcomes as durably acknowledged.
+9. Save and report the requested action's safe result, then send a final heartbeat.
+10. Defer network errors, `401`, `403`, `408`, `429`, and `5xx` responses with bounded exponential backoff.
 
 If the process crashes after SchoolLift accepts a batch but before SQLite is updated, the next run repeats the same external event IDs. SchoolLift's event-level idempotency returns `duplicate`; it must not create another attendance event.
 
@@ -35,18 +37,80 @@ Run this from the gateway directory to verify extensions:
 & "C:\PHP82\php.exe" -m | Select-String "curl|json|openssl|PDO|pdo_sqlite|sqlite3"
 ```
 
+## Recommended no-terminal Windows setup
+
+An ordinary school operator should not type PHP or PowerShell commands. On the
+protected Windows computer that runs ZKBio Time:
+
+1. Put this gateway folder in a permanent location outside every IIS, Apache,
+   Nginx, XAMPP, WAMP, or Laragon web directory. Do not run it from a temporary
+   download folder that may later be deleted.
+2. Install PHP 8.2 with the required extensions, or use a production installer
+   that bundles the approved PHP runtime.
+3. In SchoolLift, create the ZKBio integration token and set the attendance mode
+   to **Shadow** before testing the physical connection.
+4. Double-click
+   `windows\SchoolLift-Gateway-Manager.cmd` and approve the Windows UAC prompt.
+5. Enter the SchoolLift HTTPS address, local ZKBio address, one terminal serial,
+   read-only ZKBio API credentials, and the one-time SchoolLift integration
+   token.
+6. Select **Save protected configuration**, then **Test connections**.
+7. Select **Install / repair automatic sync**. The manager installs the existing
+   once-per-minute task under Windows `LOCAL SERVICE`, starts it, and verifies
+   that the task contains only the fixed gateway action and fixed configuration
+   path. It also makes the gateway code read-only to ordinary local users so
+   they cannot replace code that the service identity will execute.
+
+The manager saves non-executable JSON at
+`C:\ProgramData\SchoolLift\Biometric\gateway-config.json`. Its SQLite queue,
+lock, and redacted log live in the protected `runtime` directory beside it. The
+configuration is ACL-restricted to Administrators, SYSTEM, and read-only access
+for the gateway service identity. Secrets are never placed in Task Scheduler
+arguments.
+
+The manager provides only these fixed local controls:
+
+- test ZKBio and SchoolLift connections (`doctor`);
+- inspect the local queue (`status`);
+- request one synchronization (`once`);
+- show the last 100 redacted log lines;
+- requeue permanently failed records after a separate warning and confirmation;
+- install, verify, or remove only the named SchoolLift scheduled task.
+
+It has no command box, file picker, configurable program path, inbound listener,
+or remote shell. The hosted website may enqueue only the gateway's named,
+short-lived `connection_test`, `sync_now`, or confirmed `retry_failed` request.
+The already-running gateway asks for one such request over its authenticated
+outbound HTTPS connection and maps it to fixed internal code; it never receives
+command text, arguments, executable names, or filesystem paths.
+
+These repository `.cmd` and PowerShell files are an auditable setup aid, but
+they are not code-signed. Production distribution should be an Authenticode-
+signed MSI/EXE that bundles and verifies the approved PHP runtime, installs the
+gateway in Program Files, creates Start Menu shortcuts, and supports controlled
+upgrades. Do not train schools to ignore Windows publisher warnings.
+
+After installation, the same background task is used for both **Shadow** and
+**Live**. Change the operating mode only in the protected SchoolLift website.
+Moving from Shadow to Live does not require a command, reinstall, or different
+gateway configuration.
+
 ## Configuration
 
 Keep configuration and runtime data outside the website directory. A typical layout is:
 
 ```text
 C:\SchoolLift\biometric-gateway\       gateway code (read-only for service account)
-C:\ProgramData\SchoolLift\Biometric\  config.php, gateway.sqlite, log and lock
+C:\ProgramData\SchoolLift\Biometric\  gateway-config.json
+C:\ProgramData\SchoolLift\Biometric\runtime\  SQLite queue, log and lock
 ```
 
 The repository's `tools/.htaccess` denies browser access in Apache deployments. Configure an equivalent explicit deny rule in Nginx/IIS, and preferably copy the gateway code outside the web document root as shown above.
 
-Copy `config.example.php` to the protected location and edit it. The important settings are:
+The Windows manager creates a protected JSON configuration automatically. For a
+manual maintainer installation, copy either `config.example.json` or
+`config.example.php` to the protected location and edit it. Existing PHP
+configuration files remain supported. The important settings are:
 
 - `gateway_id`: stable name for this installation; do not change it casually.
 - `provider.base_url`: local ZKBio Time URL.
@@ -58,7 +122,7 @@ Copy `config.example.php` to the protected location and edit it. The important s
 
 The committed example uses local `http://127.0.0.1` for ZKBio because many on-prem editions expose their API only on the same Windows host; `allow_insecure_localhost` cannot authorize an HTTP LAN/public host. If the licensed edition supports HTTPS, use it and turn the exception off. SchoolLift must always use HTTPS outside a fully local disposable test.
 
-The example reads passwords from `ZKBIO_GATEWAY_USERNAME`, `ZKBIO_GATEWAY_PASSWORD`, and `SCHOOLLIFT_BIOMETRIC_TOKEN`. A Task Scheduler service identity must have those variables in its own environment. Alternatively, put the values in an external `config.php` protected with Windows ACLs; never put secrets into the repository, a shortcut, a batch file, or Task Scheduler arguments.
+The PHP example reads passwords from `ZKBIO_GATEWAY_USERNAME`, `ZKBIO_GATEWAY_PASSWORD`, and `SCHOOLLIFT_BIOMETRIC_TOKEN`. A Task Scheduler service identity must have those variables in its own environment. Alternatively, use the manager-generated JSON or an external `config.php` protected with Windows ACLs; never put secrets into the repository, a shortcut, a batch file, or Task Scheduler arguments.
 
 Example ACL setup, run in an elevated PowerShell window and substitute the actual service identity:
 
@@ -68,12 +132,16 @@ icacls "C:\ProgramData\SchoolLift\Biometric" /inheritance:r
 icacls "C:\ProgramData\SchoolLift\Biometric" /grant:r "Administrators:(OI)(CI)F" "SCHOOL\schoollift-gateway:(OI)(CI)M"
 ```
 
-## Commands
+## Maintainer CLI fallback
+
+The following commands remain available for installation engineers, automated
+testing, and recovery. They are not routine Shadow/Live operating instructions;
+use the Windows manager for normal setup and support.
 
 ```powershell
 $Php = "C:\PHP82\php.exe"
 $Gateway = "C:\SchoolLift\biometric-gateway\bin\gateway.php"
-$Config = "C:\ProgramData\SchoolLift\Biometric\config.php"
+$Config = "C:\ProgramData\SchoolLift\Biometric\gateway-config.json"
 
 & $Php $Gateway doctor --config=$Config
 & $Php $Gateway once --config=$Config
@@ -88,22 +156,42 @@ $Config = "C:\ProgramData\SchoolLift\Biometric\config.php"
 
 Exit code `0` means success (or another process already owns the lock). Exit code `1` means an endpoint, configuration, or delivery needs attention. Task Scheduler should retain the last result and the JSON-lines gateway log should be monitored.
 
-## Install the Windows scheduled task
+## Routine website controls
+
+After the one-time Windows installation, authorized school staff use the
+Biometric Attendance page instead of these maintainer commands. Each automatic
+run posts a heartbeat with only connection state, last-sync state, queue counts,
+cursor, and a bounded error message. The website can show whether the gateway is
+healthy even when nobody has punched recently.
+
+The gateway stores a claimed website action in SQLite before running it and
+stores its safe result before reporting it. If Windows, the internet, or PHP
+stops between those steps, the same identifier can be replayed safely. Failure
+of this control channel is logged but does not stop the normal durable attendance
+synchronization.
+
+## Manual scheduled-task fallback
 
 Create a dedicated, non-administrator local or domain service account. Deny interactive login where local policy permits, grant only read/execute access to the code and modify access to the protected runtime directory, and do not use a personal administrator account.
 
-In an elevated PowerShell window:
+The manager normally performs this step. For a manual installation in an
+elevated PowerShell window:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process RemoteSigned
 cd "C:\SchoolLift\biometric-gateway"
 .\windows\install-task.ps1 `
   -PhpPath "C:\PHP82\php.exe" `
-  -ConfigPath "C:\ProgramData\SchoolLift\Biometric\config.php" `
+  -ConfigPath "C:\ProgramData\SchoolLift\Biometric\gateway-config.json" `
   -TaskUser "SCHOOL\schoollift-gateway"
 ```
 
 The installer requests that account's password without placing it in the task arguments. It creates a once-per-minute task with a five-minute ceiling, `IgnoreNew` overlap protection, restart policy, and limited run level. The application lock is a second safety layer.
+
+The manager instead uses the built-in restricted `LOCAL SERVICE` identity and
+calls the same script with `-UseLocalService`. Use that identity only when it can
+reach the local ZKBio API; a vendor environment that requires a domain identity
+must be commissioned by an administrator with the manual credential path.
 
 After installation:
 
@@ -124,6 +212,13 @@ The uninstall script deliberately keeps configuration, SQLite state, logs, and c
 ## No-device gateway test
 
 The separate `tools/biometric-sandbox` process behaves like a small ZKBio transaction API. It is a developer fixture, not the school-facing Test Terminal.
+
+Ordinary demonstrations use **Attendance > Biometric Attendance > Test
+Terminal** in Simulation mode and require no local command. The commands below
+are retained for gateway developers and commissioning engineers. Run them only
+on loopback against a disposable staging school in **Shadow** mode. Never expose
+the mock on the public website, never use its synthetic events against a live
+school, and never add a Live-mode simulation bypass.
 
 Terminal 1:
 
@@ -210,7 +305,7 @@ Recognized outcomes are `accepted`, `duplicate`, `quarantined`, and `rejected`. 
 - Authentication and server/network errors stay pending until the attempt limit, then become dead and require operator review.
 - Delivered rows remain for 30 days by default so overlap polls cannot requeue them.
 
-Back up `config.php` securely and back up `gateway.sqlite` with an SQLite-safe method while the scheduled task is stopped. Copying only the main database while WAL files are active can produce an incomplete backup.
+Back up the protected JSON/PHP configuration securely and back up `gateway.sqlite` with an SQLite-safe method while the scheduled task is stopped. Copying only the main database while WAL files are active can produce an incomplete backup.
 
 ## Test suite
 

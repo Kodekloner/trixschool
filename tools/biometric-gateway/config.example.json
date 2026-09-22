@@ -1,0 +1,52 @@
+{
+  "gateway_id": "school-main-gateway-01",
+  "timezone": "Africa/Lagos",
+  "database_path": "C:\\ProgramData\\SchoolLift\\Biometric\\gateway.sqlite",
+  "lock_path": "C:\\ProgramData\\SchoolLift\\Biometric\\gateway.lock",
+  "log_path": "C:\\ProgramData\\SchoolLift\\Biometric\\gateway.log",
+  "log_to_stdout": false,
+  "verify_tls": true,
+  "allow_insecure_localhost": true,
+  "request_timeout_seconds": 20,
+  "provider": {
+    "base_url": "http://127.0.0.1:8098",
+    "username": "replace-with-read-only-zkbio-user",
+    "password": "replace-with-zkbio-password",
+    "auth_path": "/api-token-auth/",
+    "auth_body_format": "json",
+    "token_field": "token",
+    "authorization_scheme": "Token",
+    "transactions_path": "/iclock/api/transactions/",
+    "data_field": "data",
+    "terminal_serial": "SCHOOL-GATE-001",
+    "verification_method_map": {
+      "0": "pin",
+      "1": "fingerprint",
+      "2": "card",
+      "4": "face",
+      "15": "face"
+    },
+    "page_size": 100,
+    "max_pages": 50,
+    "overlap_seconds": 172800,
+    "initial_lookback_seconds": 172800
+  },
+  "schoollift": {
+    "base_url": "https://school.example.edu.ng",
+    "bearer_token": "paste-the-one-time-integration-token-here",
+    "events_path": "/api/biometric/v2/events",
+    "health_path": "/api/biometric/v2/health",
+    "control_poll_path": "/api/biometric/v2/gateway/poll",
+    "control_result_path": "/api/biometric/v2/gateway/result",
+    "batch_size": 100,
+    "max_batches_per_run": 10
+  },
+  "retry": {
+    "base_seconds": 5,
+    "maximum_seconds": 900,
+    "maximum_attempts": 12,
+    "provider_base_seconds": 15,
+    "provider_maximum_seconds": 900
+  },
+  "delivered_retention_days": 30
+}

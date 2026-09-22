@@ -45,7 +45,7 @@ class Biometric_attendance_service
     public function updateSettings(array $data, $actorId = null, array $options = array())
     {
         if (!$this->isReady()) {
-            return $this->failure('Biometric migration 130 has not been applied.');
+            return $this->failure('Biometric migrations through 132 have not been applied.');
         }
 
         $before = $this->getSettings();
@@ -694,6 +694,215 @@ class Biometric_attendance_service
             return null;
         }
         return hash_equals($integration['token_hash'], hash('sha256', trim($token))) ? $integration : null;
+    }
+
+    /**
+     * Records an authenticated outbound gateway heartbeat and, when the
+     * gateway is ready, atomically claims at most one queued command.
+     */
+    public function pollGateway(array $integration, array $payload)
+    {
+        if (!$this->gatewayControlReady()) {
+            return $this->gatewayFailure('Gateway control migration 132 has not been applied.', 503);
+        }
+        if (empty($integration['id']) || empty($integration['is_active'])) {
+            return $this->gatewayFailure('Invalid integration credential.', 401);
+        }
+        if (array_diff(array_keys($payload), array('gateway_id', 'gateway_version', 'status'))) {
+            return $this->gatewayFailure('Gateway poll contains unsupported fields.', 422);
+        }
+
+        $gatewayId = trim(isset($payload['gateway_id']) ? (string) $payload['gateway_id'] : '');
+        $version = trim(isset($payload['gateway_version']) ? (string) $payload['gateway_version'] : '');
+        $status = isset($payload['status']) && is_array($payload['status']) ? $payload['status'] : null;
+        if (!$this->validGatewayId($gatewayId)) {
+            return $this->gatewayFailure('gateway_id must be 3-128 letters, numbers, dots, dashes or underscores.', 422);
+        }
+        if ($version === '' || strlen($version) > 40 || preg_match('/[\x00-\x1F\x7F]/', $version)) {
+            return $this->gatewayFailure('gateway_version is required and must not exceed 40 characters.', 422);
+        }
+        $safeStatus = $this->sanitizeGatewayStatus($status);
+        if ($safeStatus === null) {
+            return $this->gatewayFailure('status does not match the supported heartbeat schema.', 422);
+        }
+
+        $integrationId = (int) $integration['id'];
+        $now = $this->now();
+        $lastSyncAt = $this->atomDateToDatabase(isset($safeStatus['last_sync_at']) ? $safeStatus['last_sync_at'] : null);
+        if (isset($safeStatus['last_sync_at']) && $safeStatus['last_sync_at'] !== null && $lastSyncAt === null) {
+            return $this->gatewayFailure('status.last_sync_at must be a valid UTC ISO-8601 timestamp.', 422);
+        }
+        $lastError = isset($safeStatus['last_error']) ? $safeStatus['last_error'] : null;
+        $agent = $this->model->findGatewayAgentByGatewayId($gatewayId);
+        if ($agent && (int) $agent['integration_id'] !== $integrationId) {
+            return $this->gatewayFailure('gateway_id is already owned by a different integration.', 409);
+        }
+        $agentRow = array(
+            'integration_id' => $integrationId,
+            'gateway_id' => $gatewayId,
+            'gateway_version' => $version,
+            'status_json' => json_encode($safeStatus),
+            'provider_reachable' => $this->nullableBooleanDatabase($safeStatus['provider_reachable']),
+            'last_sync_ok' => $this->nullableBooleanDatabase($safeStatus['last_sync_ok']),
+            'last_sync_at' => $lastSyncAt,
+            'queue_pending' => (int) $safeStatus['queue']['pending'],
+            'queue_retry' => (int) $safeStatus['queue']['retry'],
+            'queue_dead' => (int) $safeStatus['queue']['dead'],
+            'provider_cursor' => $safeStatus['cursor'],
+            'last_error' => $lastError === null ? null : $this->redactGatewayText($lastError),
+            'last_heartbeat_at' => $now,
+            'updated_at' => $now,
+        );
+        if ($agent) {
+            $this->CI->db->where('id', (int) $agent['id'])->update('biometric_gateway_agents', $agentRow);
+        } else {
+            $agentRow['first_seen_at'] = $now;
+            $agentRow['created_at'] = $now;
+            $this->CI->db->insert('biometric_gateway_agents', $agentRow);
+        }
+
+        // A finishing heartbeat is status-only. This prevents the end of one
+        // run from accidentally claiming work intended for the next run.
+        $command = null;
+        if ($safeStatus['can_accept_command'] === true) {
+            $command = $this->claimGatewayCommand($integrationId, $gatewayId, $now);
+        }
+        return array(
+            'success' => true,
+            'http_status' => 200,
+            'server_time_utc' => gmdate(DateTime::ATOM),
+            'command' => $command,
+        );
+    }
+
+    /** Records an idempotent, authenticated command result from its owner. */
+    public function completeGatewayCommand(array $integration, array $payload)
+    {
+        if (!$this->gatewayControlReady()) {
+            return $this->gatewayFailure('Gateway control migration 132 has not been applied.', 503);
+        }
+        if (empty($integration['id']) || empty($integration['is_active'])) {
+            return $this->gatewayFailure('Invalid integration credential.', 401);
+        }
+        if (array_diff(array_keys($payload), array('gateway_id', 'command_uuid', 'status', 'result'))) {
+            return $this->gatewayFailure('Gateway result contains unsupported fields.', 422);
+        }
+        $gatewayId = trim(isset($payload['gateway_id']) ? (string) $payload['gateway_id'] : '');
+        $commandUuid = strtolower(trim(isset($payload['command_uuid']) ? (string) $payload['command_uuid'] : ''));
+        $status = strtolower(trim(isset($payload['status']) ? (string) $payload['status'] : ''));
+        if (!$this->validGatewayId($gatewayId) || !preg_match('/^[a-f0-9]{32}$/', $commandUuid)) {
+            return $this->gatewayFailure('A valid gateway_id and command_uuid are required.', 422);
+        }
+        if (!in_array($status, array('succeeded', 'failed'), true)) {
+            return $this->gatewayFailure('status must be succeeded or failed.', 422);
+        }
+        $safeResult = $this->sanitizeGatewayResult(isset($payload['result']) ? $payload['result'] : null);
+        if ($safeResult === null) {
+            return $this->gatewayFailure('result does not match the supported, bounded result schema.', 422);
+        }
+        $command = $this->model->getGatewayCommandByUuid($commandUuid);
+        if (!$command || (int) $command['integration_id'] !== (int) $integration['id']) {
+            return $this->gatewayFailure('Gateway command was not found for this integration.', 404);
+        }
+        if ($command['gateway_id'] === null || !hash_equals((string) $command['gateway_id'], $gatewayId)) {
+            return $this->gatewayFailure('Gateway command is owned by a different gateway.', 409);
+        }
+        if (in_array($command['status'], array('succeeded', 'failed'), true)) {
+            $stored = json_decode((string) $command['result_json'], true);
+            if ($command['status'] !== $status || $this->canonicalJson($stored) !== $this->canonicalJson($safeResult)) {
+                return $this->gatewayFailure('A different result was already recorded for this command.', 409);
+            }
+            return array('success' => true, 'http_status' => 200, 'replayed' => true, 'command_uuid' => $commandUuid, 'status' => $status);
+        }
+        if ($command['status'] !== 'claimed') {
+            return $this->gatewayFailure('Only a claimed command can receive a result.', 409);
+        }
+        $now = $this->now();
+        $this->CI->db->where('id', (int) $command['id'])->where('status', 'claimed')
+            ->update('biometric_gateway_commands', array(
+                'status' => $status,
+                'result_json' => json_encode($safeResult),
+                'completed_at' => $now,
+                'updated_at' => $now,
+            ));
+        if ($this->CI->db->affected_rows() !== 1) {
+            return $this->gatewayFailure('The command changed while its result was being recorded.', 409);
+        }
+        return array('success' => true, 'http_status' => 200, 'replayed' => false, 'command_uuid' => $commandUuid, 'status' => $status);
+    }
+
+    public function getGatewayStatus($integrationId = null, $gatewayId = null)
+    {
+        if (!$this->gatewayControlReady()) {
+            return array('items' => array(), 'total' => 0, 'page' => 1, 'per_page' => 200, 'pages' => 0);
+        }
+        return $this->listGatewayAgents(array('integration_id' => $integrationId, 'gateway_id' => $gatewayId), 1, 200);
+    }
+
+    public function listGatewayAgents(array $filters = array(), $page = 1, $perPage = 50)
+    {
+        if (!$this->gatewayControlReady()) {
+            return array('items' => array(), 'total' => 0, 'page' => max(1, (int) $page), 'per_page' => (int) $perPage, 'pages' => 0);
+        }
+        return $this->model->paginate('biometric_gateway_agents',
+            $this->filter($filters, array('id', 'integration_id', 'gateway_id')),
+            $page, $perPage, 'last_heartbeat_at');
+    }
+
+    /** Admin-facing command queue. Command payloads are intentionally absent. */
+    public function queueGatewayCommand($type, $integrationId, $actorId = null, $expiresInSeconds = 300)
+    {
+        if (!$this->gatewayControlReady()) {
+            return $this->failure('Gateway control migration 132 has not been applied.');
+        }
+        $type = strtolower(trim((string) $type));
+        if (!in_array($type, array('connection_test', 'sync_now', 'retry_failed'), true)) {
+            return $this->failure('Unsupported gateway command.');
+        }
+        $integration = $this->model->getIntegration((int) $integrationId);
+        if (!$integration || empty($integration['is_active'])) {
+            return $this->failure('Choose an active biometric integration.');
+        }
+        $expiresInSeconds = max(60, min(900, (int) $expiresInSeconds));
+        $now = $this->now();
+        $this->expireGatewayCommands($now);
+
+        // Repeated browser submissions return the existing actionable command
+        // instead of causing the gateway to run the same operation twice.
+        $existing = $this->CI->db->where('integration_id', (int) $integrationId)
+            ->where('command_type', $type)->where_in('status', array('queued', 'claimed'))
+            ->order_by('id', 'DESC')->limit(1)->get('biometric_gateway_commands')->row_array();
+        if ($existing) {
+            return array('success' => true, 'errors' => array(), 'item' => $existing, 'duplicate' => true);
+        }
+        $row = array(
+            'command_uuid' => bin2hex(random_bytes(16)),
+            'integration_id' => (int) $integrationId,
+            'gateway_id' => null,
+            'command_type' => $type,
+            'status' => 'queued',
+            'queued_by' => $this->actorId($actorId),
+            'queued_at' => $now,
+            'expires_at' => gmdate('Y-m-d H:i:s', time() + $expiresInSeconds),
+            'created_at' => $now,
+            'updated_at' => $now,
+        );
+        $this->CI->db->insert('biometric_gateway_commands', $row);
+        $row['id'] = (int) $this->CI->db->insert_id();
+        $this->audit('gateway.command_queued', 'gateway_command', $row['command_uuid'], null,
+            array('integration_id' => (int) $integrationId, 'command_type' => $type, 'expires_at' => $row['expires_at']), $actorId);
+        return array('success' => true, 'errors' => array(), 'item' => $row, 'duplicate' => false);
+    }
+
+    public function listGatewayCommands(array $filters = array(), $page = 1, $perPage = 50)
+    {
+        if (!$this->gatewayControlReady()) {
+            return array('items' => array(), 'total' => 0, 'page' => max(1, (int) $page), 'per_page' => (int) $perPage, 'pages' => 0);
+        }
+        $this->expireGatewayCommands($this->now());
+        return $this->model->paginate('biometric_gateway_commands',
+            $this->filter($filters, array('id', 'command_uuid', 'integration_id', 'gateway_id', 'command_type', 'status')),
+            $page, $perPage, 'id');
     }
 
     /**
@@ -2082,6 +2291,220 @@ class Biometric_attendance_service
             $value[$key] = $this->canonicalize($child);
         }
         return $value;
+    }
+
+    protected function gatewayControlReady()
+    {
+        return $this->CI->db->table_exists('biometric_gateway_agents')
+            && $this->CI->db->table_exists('biometric_gateway_commands');
+    }
+
+    protected function validGatewayId($gatewayId)
+    {
+        return is_string($gatewayId)
+            && preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$/', $gatewayId) === 1;
+    }
+
+    protected function sanitizeGatewayStatus($status)
+    {
+        if (!is_array($status) || !array_key_exists('can_accept_command', $status)
+            || !is_bool($status['can_accept_command'])) {
+            return null;
+        }
+        $allowed = array('can_accept_command', 'provider_reachable', 'last_sync_ok', 'last_sync_at', 'queue', 'cursor', 'last_error');
+        if (array_diff(array_keys($status), $allowed)) {
+            return null;
+        }
+        foreach (array('provider_reachable', 'last_sync_ok') as $key) {
+            if (array_key_exists($key, $status) && $status[$key] !== null && !is_bool($status[$key])) {
+                return null;
+            }
+        }
+        if (!isset($status['queue']) || !is_array($status['queue'])
+            || array_diff(array_keys($status['queue']), array('pending', 'retry', 'dead'))) {
+            return null;
+        }
+        foreach (array('pending', 'retry', 'dead') as $key) {
+            if (!array_key_exists($key, $status['queue']) || !is_int($status['queue'][$key])
+                || $status['queue'][$key] < 0 || $status['queue'][$key] > 1000000) {
+                return null;
+            }
+        }
+        foreach (array('last_sync_at' => 64, 'cursor' => 191, 'last_error' => 500) as $key => $limit) {
+            if (array_key_exists($key, $status) && $status[$key] !== null
+                && (!is_string($status[$key]) || strlen($status[$key]) > $limit
+                    || preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', $status[$key]))) {
+                return null;
+            }
+        }
+        return array(
+            'can_accept_command' => $status['can_accept_command'],
+            'provider_reachable' => array_key_exists('provider_reachable', $status) ? $status['provider_reachable'] : null,
+            'last_sync_ok' => array_key_exists('last_sync_ok', $status) ? $status['last_sync_ok'] : null,
+            'last_sync_at' => array_key_exists('last_sync_at', $status) ? $status['last_sync_at'] : null,
+            'queue' => array('pending' => $status['queue']['pending'], 'retry' => $status['queue']['retry'], 'dead' => $status['queue']['dead']),
+            'cursor' => array_key_exists('cursor', $status) ? $status['cursor'] : null,
+            'last_error' => array_key_exists('last_error', $status) && $status['last_error'] !== null
+                ? $this->redactGatewayText($status['last_error']) : null,
+        );
+    }
+
+    protected function sanitizeGatewayResult($result)
+    {
+        if (!is_array($result) || array_diff(array_keys($result),
+            array('summary', 'provider', 'schoollift', 'queue', 'retried', 'message'))) {
+            return null;
+        }
+        $safe = $this->boundedGatewayValue($result, 0);
+        if ($safe === null || strlen(json_encode($safe)) > 12000) {
+            return null;
+        }
+        return $safe;
+    }
+
+    protected function boundedGatewayValue($value, $depth)
+    {
+        if ($depth > 3) {
+            return null;
+        }
+        if (is_array($value)) {
+            if (count($value) > 40) {
+                return null;
+            }
+            $safe = array();
+            foreach ($value as $key => $child) {
+                if (!is_int($key) && (!is_string($key) || !preg_match('/^[A-Za-z0-9_.-]{1,64}$/', $key)
+                    || preg_match('/token|password|secret|credential|authorization|cookie/i', $key))) {
+                    return null;
+                }
+                $normalized = $this->boundedGatewayValue($child, $depth + 1);
+                if ($normalized === null && $child !== null) {
+                    return null;
+                }
+                $safe[$key] = $normalized;
+            }
+            return $safe;
+        }
+        if ($value === null || is_bool($value) || is_int($value)) {
+            return $value;
+        }
+        if (is_float($value)) {
+            return is_finite($value) ? $value : null;
+        }
+        if (!is_string($value) || strlen($value) > 1000
+            || preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', $value)) {
+            return null;
+        }
+        return $this->redactGatewayText($value);
+    }
+
+    protected function claimGatewayCommand($integrationId, $gatewayId, $now)
+    {
+        $this->expireGatewayCommands($now);
+        $this->CI->db->trans_begin();
+        // Re-deliver an outstanding command to the same gateway. The first
+        // HTTP response may have been lost before the local SQLite store could
+        // persist it; stable UUIDs make this replay safe and idempotent.
+        $claimed = $this->CI->db->query(
+            "SELECT * FROM `biometric_gateway_commands`
+             WHERE `integration_id` = ? AND `gateway_id` = ? AND `status` = 'claimed'
+             ORDER BY `id` ASC LIMIT 1 FOR UPDATE",
+            array((int) $integrationId, $gatewayId)
+        )->row_array();
+        if ($claimed) {
+            $this->CI->db->trans_commit();
+            return $this->publicGatewayCommand($claimed);
+        }
+        $row = $this->CI->db->query(
+            "SELECT * FROM `biometric_gateway_commands`
+             WHERE `integration_id` = ? AND `status` = 'queued' AND `expires_at` > ?
+             ORDER BY `id` ASC LIMIT 1 FOR UPDATE",
+            array((int) $integrationId, $now)
+        )->row_array();
+        if (!$row) {
+            $this->CI->db->trans_commit();
+            return null;
+        }
+        if (!in_array($row['command_type'], array('connection_test', 'sync_now', 'retry_failed'), true)) {
+            $this->CI->db->where('id', (int) $row['id'])->update('biometric_gateway_commands', array(
+                'status' => 'expired', 'updated_at' => $now,
+            ));
+            $this->CI->db->trans_commit();
+            return null;
+        }
+        $this->CI->db->where('id', (int) $row['id'])->where('status', 'queued')
+            ->update('biometric_gateway_commands', array(
+                'gateway_id' => $gatewayId,
+                'status' => 'claimed',
+                'claimed_at' => $now,
+                'updated_at' => $now,
+            ));
+        if ($this->CI->db->affected_rows() !== 1) {
+            $this->CI->db->trans_rollback();
+            return null;
+        }
+        $this->CI->db->trans_commit();
+        return $this->publicGatewayCommand($row);
+    }
+
+    protected function publicGatewayCommand(array $row)
+    {
+        return array(
+            'command_uuid' => $row['command_uuid'],
+            'type' => $row['command_type'],
+            'expires_at' => gmdate(DateTime::ATOM, strtotime($row['expires_at'] . ' UTC')),
+        );
+    }
+
+    protected function expireGatewayCommands($now)
+    {
+        // Expiry prevents stale queued work from starting. Once claimed, the
+        // gateway owns the command and may safely report its durable result
+        // after the deadline (for example after a crash or network outage).
+        $this->CI->db->where('status', 'queued')->where('expires_at <=', $now)
+            ->update('biometric_gateway_commands', array('status' => 'expired', 'updated_at' => $now));
+    }
+
+    protected function atomDateToDatabase($value)
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        try {
+            $date = new DateTimeImmutable($value);
+            if ($date->format('P') !== '+00:00') {
+                return null;
+            }
+            return $date->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        } catch (Exception $exception) {
+            return null;
+        }
+    }
+
+    protected function nullableBooleanDatabase($value)
+    {
+        return $value === null ? null : ($value ? 1 : 0);
+    }
+
+    protected function canonicalJson($value)
+    {
+        return json_encode($this->canonicalize($value), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
+    protected function redactGatewayText($value)
+    {
+        $value = (string) $value;
+        $patterns = array(
+            '/\bBearer\s+[A-Za-z0-9._~+\/-]+=*/i',
+            '/\bslbio_[a-f0-9]{12}_[A-Za-z0-9_-]{20,100}\b/i',
+            '/\b(password|secret|token|authorization|cookie)\s*[:=]\s*[^\s,;]+/i',
+        );
+        return preg_replace($patterns, '$1[REDACTED]', $value);
+    }
+
+    protected function gatewayFailure($message, $status)
+    {
+        return array('success' => false, 'http_status' => (int) $status, 'message' => $message, 'command' => null);
     }
 
     protected function base64Url($bytes)

@@ -6,6 +6,7 @@ use SchoolLift\BiometricGateway\Clock;
 use SchoolLift\BiometricGateway\Config;
 use SchoolLift\BiometricGateway\CurlHttpTransport;
 use SchoolLift\BiometricGateway\EventNormalizer;
+use SchoolLift\BiometricGateway\GatewayControl;
 use SchoolLift\BiometricGateway\GatewayRunner;
 use SchoolLift\BiometricGateway\GatewayStore;
 use SchoolLift\BiometricGateway\JsonLogger;
@@ -88,6 +89,23 @@ function unitTests(): void
     $reopened = new GatewayStore($databasePath);
     assertSame(1, $reopened->status()['pending'], 'SQLite queue must survive gateway restart.');
     assertSame('2026-08-11T07:01:00+00:00', $reopened->providerCursor(), 'Cursor must survive gateway restart.');
+    $initialHeartbeat = $reopened->heartbeatStatus(true);
+    assertSame(true, $initialHeartbeat['can_accept_command'], 'Heartbeat should advertise command readiness explicitly.');
+    assertSame(null, $initialHeartbeat['last_sync_ok'], 'A new gateway should not invent a previous sync result.');
+    assertSame(0, $initialHeartbeat['queue']['retry'], 'A new pending event has not yet entered retry state.');
+
+    $command = [
+        'command_uuid' => '11111111111111111111111111111111',
+        'type' => 'sync_now',
+        'expires_at' => '2026-08-11T08:00:00+00:00',
+    ];
+    $reopened->claimCommand($command, $now);
+    assertSame(true, $reopened->hasOutstandingCommand(), 'A claimed website command must survive in SQLite.');
+    assertSame('sync_now', $reopened->claimedCommand()['command_type'], 'Claimed command type must be durable.');
+    $reopened->completeCommand($command['command_uuid'], 'succeeded', ['message' => 'done'], $now);
+    assertSame('succeeded', $reopened->pendingCommandResult()['status'], 'Command result must be durable before reporting.');
+    $reopened->markCommandReported($command['command_uuid'], $now);
+    assertSame(false, $reopened->hasOutstandingCommand(), 'An acknowledged command must no longer block the next claim.');
     $pending = $reopened->pending(100, $now->modify('+2 minutes'));
     assertSame(
         '2026-08-11T07:00:00+00:00',
@@ -135,6 +153,33 @@ function unitTests(): void
     assertSame('SIM-GATE-001', $loaded['provider']['terminal_serial'], 'Config should accept one bidirectional simulator serial.');
     assertSame(100, $loaded['schoollift']['batch_size'], 'Config should default to the API batch ceiling.');
 
+    $jsonConfigPath = $temporaryDirectory . '/config-test.json';
+    file_put_contents(
+        $jsonConfigPath,
+        "\xEF\xBB\xBF" . json_encode($minimumConfig, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+    );
+    $jsonLoaded = Config::load($jsonConfigPath);
+    assertSame('config-test-gateway', $jsonLoaded['gateway_id'], 'Manager JSON configuration should load without executing PHP.');
+    assertSame('user', $jsonLoaded['provider']['username'], 'UTF-8 BOM from Windows PowerShell should be accepted.');
+
+    file_put_contents($jsonConfigPath, '{not-valid-json');
+    $invalidJsonRejected = false;
+    try {
+        Config::load($jsonConfigPath);
+    } catch (Throwable $error) {
+        $invalidJsonRejected = str_contains($error->getMessage(), 'JSON configuration is invalid');
+    }
+    assertSame(true, $invalidJsonRejected, 'Malformed manager JSON configuration should fail closed.');
+
+    file_put_contents($jsonConfigPath, '[]');
+    $jsonListRejected = false;
+    try {
+        Config::load($jsonConfigPath);
+    } catch (Throwable $error) {
+        $jsonListRejected = str_contains($error->getMessage(), 'top-level object');
+    }
+    assertSame(true, $jsonListRejected, 'Manager JSON configuration should require one top-level object.');
+
     $minimumConfig['provider']['terminal_serial'] = 'SIM-IN-001';
     file_put_contents($configPath, '<?php return ' . var_export($minimumConfig, true) . ';');
     $rejectedFixedSerial = false;
@@ -152,7 +197,10 @@ function integrationTests(): void
     $sandboxState = $temporaryDirectory . '/sandbox.json';
     $receiverState = $temporaryDirectory . '/receiver.json';
     file_put_contents($sandboxState, '');
-    file_put_contents($receiverState, json_encode(['known' => [], 'batches' => [], 'failure' => null]));
+    file_put_contents($receiverState, json_encode([
+        'known' => [], 'batches' => [], 'failure' => null,
+        'commands' => [], 'polls' => [], 'command_results' => [],
+    ]));
 
     $sandboxPort = reservePort();
     $receiverPort = reservePort();
@@ -198,6 +246,52 @@ function integrationTests(): void
     $config = testConfig($temporaryDirectory . '/integration.sqlite', $sandboxPort, $receiverPort);
     $store = new GatewayStore($config['database_path']);
     $runner = makeRunner($config, $store, $clock, $http);
+
+    $commandUuid = '22222222222222222222222222222222';
+    $receiver = readJson($receiverState);
+    $receiver['commands'][] = [
+        'command_uuid' => $commandUuid,
+        'type' => 'connection_test',
+        'expires_at' => '2026-08-12T12:00:00+00:00',
+    ];
+    file_put_contents($receiverState, json_encode($receiver, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX);
+    $control = new GatewayControl(
+        $store,
+        new SchoolLiftClient($http, $config['schoollift'], $config['gateway_id']),
+        $clock,
+        3
+    );
+    $claimed = $control->poll(true);
+    assertSame('connection_test', $claimed['command_type'], 'Heartbeat should claim only the named allowlisted command.');
+    assertSame(false, $control->poll(false) !== null, 'End heartbeat must not claim another command.');
+    $control->complete($commandUuid, true, [
+        'summary' => ['ok' => true],
+        'message' => 'connection ok',
+        'password' => 'must-not-leave',
+    ]);
+    assertSame(true, $control->reportPending(), 'Durable command result should be acknowledged by SchoolLift.');
+    $receiver = readJson($receiverState);
+    assertSame(2, count($receiver['polls']), 'Control test should submit a claim poll and heartbeat-only poll.');
+    assertSame(true, $receiver['polls'][0]['status']['can_accept_command'], 'Claim poll must advertise readiness.');
+    assertSame(false, $receiver['polls'][1]['status']['can_accept_command'], 'End poll must explicitly disable claiming.');
+    assertSame(1, count($receiver['command_results']), 'Exactly one allowlisted command result should be reported.');
+    assertSame(false, array_key_exists('password', $receiver['command_results'][0]['result']), 'Unapproved result keys must not leave the gateway.');
+
+    $receiver['commands'][] = [
+        'command_uuid' => '33333333333333333333333333333333',
+        'type' => 'run_shell',
+        'expires_at' => '2026-08-12T12:00:00+00:00',
+    ];
+    file_put_contents($receiverState, json_encode($receiver, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX);
+    $unsupportedRejected = false;
+    try {
+        $control->poll(true);
+    } catch (Throwable $error) {
+        $unsupportedRejected = str_contains($error->getMessage(), 'unsupported gateway command type');
+    }
+    assertSame(true, $unsupportedRejected, 'Gateway must reject every command outside the fixed allowlist.');
+    assertSame(false, $store->hasOutstandingCommand(), 'A rejected command must never enter the durable execution queue.');
+
     $first = $runner->runOnce();
     assertSame(true, $first['ok'], 'Normal gateway run should succeed.');
     assertSame(2, $first['provider']['received'], 'One terminal should provide an explicit IN and OUT event.');

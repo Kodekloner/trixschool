@@ -13,7 +13,8 @@ class Biometric_attendance_model extends MY_Model
             'biometric_events', 'biometric_attendance_days',
             'biometric_exceptions', 'biometric_reconciliation_actions',
             'biometric_scanner_stations', 'biometric_qr_credentials',
-            'biometric_audit_logs'
+            'biometric_audit_logs', 'biometric_gateway_agents',
+            'biometric_gateway_commands'
         ) as $table) {
             if (!$this->db->table_exists($table)) {
                 return false;
@@ -102,6 +103,25 @@ class Biometric_attendance_model extends MY_Model
     {
         return $this->db->where('id', (int) $id)
             ->get('biometric_integrations')->row_array();
+    }
+
+    public function getGatewayAgent($integrationId, $gatewayId)
+    {
+        return $this->db->where('integration_id', (int) $integrationId)
+            ->where('gateway_id', $gatewayId)
+            ->get('biometric_gateway_agents')->row_array();
+    }
+
+    public function findGatewayAgentByGatewayId($gatewayId)
+    {
+        return $this->db->where('gateway_id', $gatewayId)
+            ->get('biometric_gateway_agents')->row_array();
+    }
+
+    public function getGatewayCommandByUuid($commandUuid)
+    {
+        return $this->db->where('command_uuid', $commandUuid)
+            ->get('biometric_gateway_commands')->row_array();
     }
 
     public function findIntegrationByPrefix($prefix)

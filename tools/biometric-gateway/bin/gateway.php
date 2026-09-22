@@ -6,6 +6,8 @@ use SchoolLift\BiometricGateway\Config;
 use SchoolLift\BiometricGateway\CurlHttpTransport;
 use SchoolLift\BiometricGateway\EventNormalizer;
 use SchoolLift\BiometricGateway\FileLock;
+use SchoolLift\BiometricGateway\GatewayControl;
+use SchoolLift\BiometricGateway\GatewayDiagnostics;
 use SchoolLift\BiometricGateway\GatewayRunner;
 use SchoolLift\BiometricGateway\GatewayStore;
 use SchoolLift\BiometricGateway\JsonLogger;
@@ -65,54 +67,95 @@ try {
     $http = new CurlHttpTransport((bool) $config['verify_tls']);
     $provider = new ZkBioClient($http, $config['provider']);
     $schoolLift = new SchoolLiftClient($http, $config['schoollift'], (string) $config['gateway_id']);
+    $diagnostics = new GatewayDiagnostics($store, $provider, $schoolLift, $clock, $config);
 
     if ($command === 'doctor') {
-        $checks = [
-            'php_version' => PHP_VERSION,
-            'pdo_sqlite' => extension_loaded('pdo_sqlite'),
-            'curl' => extension_loaded('curl'),
-            'openssl' => extension_loaded('openssl'),
-            'database' => $store->status(),
-            'terminal_serial' => $config['provider']['terminal_serial'],
-        ];
-        $ok = true;
-        try {
-            $source = $provider->fetchTransactions(
-                $clock->now()->setTimezone(new DateTimeZone((string) $config['timezone']))
-                    ->modify('-5 minutes')->format('Y-m-d H:i:s'),
-                (int) $config['request_timeout_seconds']
-            );
-            $checks['provider'] = ['ok' => true, 'transactions_in_last_five_minutes' => count($source)];
-        } catch (Throwable $error) {
-            $ok = false;
-            $checks['provider'] = ['ok' => false, 'error' => $error->getMessage()];
-        }
-        try {
-            $health = $schoolLift->health((int) $config['request_timeout_seconds']);
-            $reachable = $health['status'] >= 200 && $health['status'] <= 299;
-            $acceptsGateway = is_array($health['json'])
-                && ($health['json']['accepts_gateway_events'] ?? null) === true;
-            $checks['schoollift'] = [
-                'ok' => $reachable && $acceptsGateway,
-                'http_status' => $health['status'],
-                'operating_mode' => is_array($health['json']) ? ($health['json']['operating_mode'] ?? null) : null,
-                'accepts_gateway_events' => $acceptsGateway,
-            ];
-            if ($reachable && !$acceptsGateway) {
-                $checks['schoollift']['message'] = 'Use shadow or live mode before starting gateway synchronization.';
-            }
-            $ok = $ok && $checks['schoollift']['ok'];
-        } catch (Throwable $error) {
-            $ok = false;
-            $checks['schoollift'] = ['ok' => false, 'error' => $error->getMessage()];
-        }
-        output(['ok' => $ok, 'checks' => $checks]);
-        exit($ok ? 0 : 1);
+        $result = $diagnostics->run();
+        output($result);
+        exit($result['ok'] ? 0 : 1);
     }
 
     $normalizer = new EventNormalizer((string) $config['timezone'], $config['provider']['verification_method_map']);
     $runner = new GatewayRunner($store, $provider, $schoolLift, $normalizer, $clock, $logger, $config);
+    $control = new GatewayControl($store, $schoolLift, $clock, (int) $config['request_timeout_seconds']);
+    $controlSummary = ['claimed' => null, 'reported' => false, 'warnings' => []];
+
+    // A result survives a process or network failure in SQLite. Report it
+    // before asking for another command, so commands cannot overtake each other.
+    try {
+        $controlSummary['reported'] = $control->reportPending();
+    } catch (Throwable $error) {
+        controlWarning($logger, $controlSummary, 'Could not report the previous website command result.', $error);
+    }
+
+    try {
+        $claimed = $control->poll(!$store->hasOutstandingCommand());
+        $controlSummary['claimed'] = is_array($claimed) ? ($claimed['command_type'] ?? null) : null;
+    } catch (Throwable $error) {
+        // Control-plane availability must never stop the durable attendance
+        // synchronization that Task Scheduler launched.
+        controlWarning($logger, $controlSummary, 'Website command polling was unavailable.', $error);
+    }
+
+    $claimed = $control->claimedCommand();
+    $commandType = is_array($claimed) ? (string) ($claimed['command_type'] ?? '') : '';
+    $commandResult = null;
+    $retried = null;
+    if ($commandType === 'connection_test') {
+        $commandResult = $diagnostics->run();
+    } elseif ($commandType === 'retry_failed') {
+        $retried = $store->retryDead($clock->now());
+    }
+
     $result = $runner->runOnce();
+    $store->recordSyncResult($result, $clock->now());
+
+    if (is_array($claimed)) {
+        $safeRun = safeRunSummary($result, $store->status());
+        if ($commandType === 'connection_test' && is_array($commandResult)) {
+            $succeeded = ($commandResult['ok'] ?? false) === true;
+            $websiteResult = $diagnostics->safeResult($commandResult);
+        } elseif ($commandType === 'sync_now') {
+            $succeeded = ($result['ok'] ?? false) === true;
+            $websiteResult = [
+                'summary' => $safeRun,
+                'queue' => safeQueue($store->status()),
+                'message' => $succeeded
+                    ? 'Synchronization completed.'
+                    : 'Synchronization ran, but one or more provider or delivery steps failed.',
+            ];
+        } elseif ($commandType === 'retry_failed') {
+            $succeeded = ($result['ok'] ?? false) === true;
+            $websiteResult = [
+                'retried' => (int) $retried,
+                'summary' => $safeRun,
+                'queue' => safeQueue($store->status()),
+                'message' => $succeeded
+                    ? 'Failed queue records were released and synchronization completed.'
+                    : 'Failed queue records were released, but synchronization still needs attention.',
+            ];
+        } else {
+            // This branch is defensive; GatewayControl never accepts another
+            // type, and no command text is executed under any circumstance.
+            $succeeded = false;
+            $websiteResult = ['message' => 'The stored command type is not supported by this gateway.'];
+        }
+        $control->complete((string) $claimed['command_uuid'], $succeeded, $websiteResult);
+        try {
+            $controlSummary['reported'] = $control->reportPending() || $controlSummary['reported'];
+        } catch (Throwable $error) {
+            controlWarning($logger, $controlSummary, 'The website command result was saved locally for retry.', $error);
+        }
+    }
+
+    // The end-of-run poll is a heartbeat only. `false` is sent explicitly so
+    // it cannot claim a second command in the same scheduled execution.
+    try {
+        $control->poll(false);
+    } catch (Throwable $error) {
+        controlWarning($logger, $controlSummary, 'The final website heartbeat was unavailable.', $error);
+    }
+    $result['control'] = $controlSummary;
     output($result);
     exit($result['ok'] ? 0 : 1);
 } catch (Throwable $error) {
@@ -121,6 +164,62 @@ try {
         'error' => $error->getMessage(),
     ], JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE) . PHP_EOL);
     exit(1);
+}
+
+/** @param array<string, mixed> $controlSummary */
+function controlWarning(
+    JsonLogger $logger,
+    array &$controlSummary,
+    string $message,
+    Throwable $error
+): void {
+    $detail = boundedMessage($error->getMessage());
+    $controlSummary['warnings'][] = $message . ' ' . $detail;
+    $logger->log('warning', $message, ['error' => $detail]);
+}
+
+/** @param array<string, mixed> $result @param array<string, mixed> $queue
+ *  @return array<string, mixed>
+ */
+function safeRunSummary(array $result, array $queue): array
+{
+    $provider = isset($result['provider']) && is_array($result['provider']) ? $result['provider'] : [];
+    $delivery = isset($result['delivery']) && is_array($result['delivery']) ? $result['delivery'] : [];
+    return [
+        'ok' => ($result['ok'] ?? false) === true,
+        'started_at' => isset($result['started_at']) ? (string) $result['started_at'] : null,
+        'finished_at' => isset($result['finished_at']) ? (string) $result['finished_at'] : null,
+        'provider_polled' => ($provider['polled'] ?? false) === true,
+        'provider_received' => (int) ($provider['received'] ?? 0),
+        'provider_inserted' => (int) ($provider['inserted'] ?? 0),
+        'provider_duplicates' => (int) ($provider['duplicates'] ?? 0),
+        'delivered' => (int) ($delivery['delivered'] ?? 0),
+        'deferred' => (int) ($delivery['deferred'] ?? 0),
+        'dead_this_run' => (int) ($delivery['dead'] ?? 0),
+        'pending_after_run' => (int) ($queue['pending'] ?? 0),
+        'dead_after_run' => (int) ($queue['dead'] ?? 0),
+        'error' => isset($delivery['error']) && $delivery['error'] !== null
+            ? boundedMessage((string) $delivery['error'])
+            : (isset($provider['error']) ? boundedMessage((string) $provider['error']) : null),
+    ];
+}
+
+/** @param array<string, mixed> $queue @return array<string, int|string|null> */
+function safeQueue(array $queue): array
+{
+    return [
+        'cursor' => isset($queue['provider_cursor']) && $queue['provider_cursor'] !== ''
+            ? (string) $queue['provider_cursor'] : null,
+        'pending' => (int) ($queue['pending'] ?? 0),
+        'retry' => (int) ($queue['retry'] ?? 0),
+        'dead' => (int) ($queue['dead'] ?? 0),
+    ];
+}
+
+function boundedMessage(string $message): string
+{
+    $message = preg_replace('/[\x00-\x1F\x7F]+/', ' ', $message) ?? '';
+    return function_exists('mb_substr') ? mb_substr($message, 0, 500) : substr($message, 0, 500);
 }
 
 /** @param array<int, string> $arguments @return array<string, string|bool> */

@@ -7,7 +7,9 @@ param(
 
     [string]$TaskName = "SchoolLift Biometric Gateway",
     [string]$TaskUser = "$env:USERDOMAIN\$env:USERNAME",
-    [System.Management.Automation.PSCredential]$Credential
+    [System.Management.Automation.PSCredential]$Credential,
+
+    [switch]$UseLocalService
 )
 
 $ErrorActionPreference = "Stop"
@@ -39,22 +41,42 @@ $Settings = New-ScheduledTaskSettingsSet `
     -StartWhenAvailable `
     -RestartCount 3 `
     -RestartInterval (New-TimeSpan -Minutes 1)
-if ($null -eq $Credential) {
-    $Credential = Get-Credential -UserName $TaskUser -Message "Credentials for the restricted SchoolLift gateway account"
-}
-$TaskUser = $Credential.UserName
-$TaskPassword = $Credential.GetNetworkCredential().Password
+if ($UseLocalService) {
+    if ($null -ne $Credential) {
+        throw "Credential cannot be combined with UseLocalService."
+    }
+    $LocalServiceSid = New-Object System.Security.Principal.SecurityIdentifier("S-1-5-19")
+    $TaskUser = $LocalServiceSid.Translate([System.Security.Principal.NTAccount]).Value
+    $Principal = New-ScheduledTaskPrincipal `
+        -UserId $TaskUser `
+        -LogonType ServiceAccount `
+        -RunLevel Limited
+    Register-ScheduledTask `
+        -TaskName $TaskName `
+        -Action $Action `
+        -Trigger $Trigger `
+        -Settings $Settings `
+        -Principal $Principal `
+        -Description "Polls one bidirectional ZKBio terminal and sends attendance events to SchoolLift." `
+        -Force | Out-Null
+} else {
+    if ($null -eq $Credential) {
+        $Credential = Get-Credential -UserName $TaskUser -Message "Credentials for the restricted SchoolLift gateway account"
+    }
+    $TaskUser = $Credential.UserName
+    $TaskPassword = $Credential.GetNetworkCredential().Password
 
-Register-ScheduledTask `
-    -TaskName $TaskName `
-    -Action $Action `
-    -Trigger $Trigger `
-    -Settings $Settings `
-    -User $TaskUser `
-    -Password $TaskPassword `
-    -RunLevel Limited `
-    -Description "Polls one bidirectional ZKBio terminal and sends attendance events to SchoolLift." `
-    -Force | Out-Null
+    Register-ScheduledTask `
+        -TaskName $TaskName `
+        -Action $Action `
+        -Trigger $Trigger `
+        -Settings $Settings `
+        -User $TaskUser `
+        -Password $TaskPassword `
+        -RunLevel Limited `
+        -Description "Polls one bidirectional ZKBio terminal and sends attendance events to SchoolLift." `
+        -Force | Out-Null
+}
 
 Write-Host "Installed scheduled task: $TaskName"
 Write-Host "Run it once from Task Scheduler, then inspect gateway status and log before leaving the site."
