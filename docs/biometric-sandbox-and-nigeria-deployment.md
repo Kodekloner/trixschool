@@ -61,6 +61,32 @@ It is not an automatic animation. The operator must choose a person/code, choose
 
 Use the website Test Terminal to explain the school workflow. Use the mock plus gateway to prove the machine-to-machine integration. Neither replaces the physical recognition, liveness, capacity, lighting, power, or firmware pilot.
 
+## Who needs a command line?
+
+Ordinary school staff do **not** need a command line for Simulation, Shadow, or Live operation.
+
+- A staff member demonstrates without hardware from **Attendance > Biometric Attendance > Test Terminal**.
+- An administrator chooses `shadow` or `live` on the protected SchoolLift page.
+- The same Windows connector works in both Shadow and Live. Windows starts it automatically once every minute after the one-time installation.
+- The **School computer connector** page shows its latest heartbeat, queue, last synchronization, and safe error summary. An authorized administrator can request **Check connections**, **Synchronize now**, or a carefully confirmed **Retry failed items** action there.
+- The connector collects a website request on its next scheduled contact, performs only that fixed action on the school computer, and returns a redacted result. A request normally starts within one minute; it cannot wake a computer that is switched off or whose connector is stopped.
+
+The website does not run PowerShell, PHP commands, arbitrary programs, or user-supplied command text on the school computer. The hosted SchoolLift server is outside the school network and cannot safely reach `127.0.0.1`, ZKBio Time, or Windows Task Scheduler on that computer. Giving a public web page that power would create a remote-command security weakness.
+
+The one unavoidable local step is initial installation on the Windows/ZKBio computer. A technician uses the supplied double-click Setup/Manager, approves the Windows administrator prompt, enters the ZKBio and one-time SchoolLift credentials locally, and installs the automatic task. After that setup, its Manager buttons and the SchoolLift website replace routine terminal commands.
+
+The `tests/run.php`, sandbox `serve.php`, and sandbox `simulate.php` commands shown later are developer fixtures. They deliberately remain unavailable as production website buttons. They test source code and imitate ZKBio; they are not steps for a school operating in Shadow or Live.
+
+| Earlier command/configuration | Nontechnical replacement | Why |
+| --- | --- | --- |
+| Sandbox and gateway `tests/run.php` | None for school staff; these run in developer/CI checks before release | A public test runner could expose source paths, consume server resources, and is unrelated to taking attendance |
+| Sandbox `serve.php` and `simulate.php` | Website **Test Terminal** in Simulation | The mock imitates ZKBio for connector developers; Test Terminal is the safe staff demonstration |
+| Manually edit a gateway configuration file | One-time Windows Gateway Setup/Manager form | ZKBio credentials stay on the protected school computer and are never sent back to the website |
+| Gateway `doctor` | **Check connections** on the website or Windows Manager | Runs only the fixed connection checks and returns a redacted result |
+| Gateway `once` | Automatic once-per-minute synchronization; optional **Synchronize now** website request | The same automatic process is used in Shadow and Live |
+| Gateway `status` | **School computer connector** status panel or Windows Manager | Heartbeat and safe queue counts are reported automatically |
+| Gateway `retry-dead` | **Retry failed items**, shown only to an authorized administrator with confirmation | Replaying permanently failed data without correcting its cause can create repeated failures |
+
 ## Operating modes and safety boundaries
 
 | Mode | Accepted source | Event/session records | Official attendance/payroll |
@@ -78,7 +104,7 @@ Keep a separate disposable school/tenant for sales demonstrations where possible
 
 ### Prerequisites
 
-1. Deploy the database migration and biometric V2 application code to a disposable or backed-up school database.
+1. Deploy the application code and database migrations through **140** to a disposable or backed-up school database. Migration 140 adds enforced IN/OUT go-live proof, pilot selection, retention execution, operational reporting, and queued guardian alerts.
 2. Sign in as a staff user whose role has the biometric attendance permissions needed for setup, mapping, test-terminal operation, and event viewing.
 3. Open **Attendance > Biometric Attendance**.
 4. Set the mode to `simulation`. Do not use `live` for a demonstration.
@@ -86,17 +112,190 @@ Keep a separate disposable school/tenant for sales demonstrations where possible
 6. Confirm the migration-created virtual bidirectional terminal `SIM-GATE-001` exists and is enabled.
 7. Confirm the school timezone is `Africa/Lagos` and the current academic session/term is correct.
 
-### Map one student and one staff member
+### Understand identity mapping before creating one
 
-The mapping connects a vendor `person_code` to one SchoolLift identity. It is deliberately separate from the person's name.
+Identity mapping is simply a **translation link between two separate systems**:
 
-1. Open the **Identity Mapping** tab.
-2. Use **Preview/seed active roster codes** to create unambiguous admission-number and employee-ID mappings in a disposable tenant, or add them manually.
-3. For a manual student mapping, choose **Student**, enter the current `student_session.id` (not the general student ID), set a synthetic external code such as `DEMO-STUDENT-001`, and save.
-4. For a manual staff mapping, choose **Staff**, enter the active `staff.id`, and set `DEMO-STAFF-001`.
-5. Verify both mappings are active and have no duplicate external codes.
+```text
+Code used by the terminal/ZKBio          Exact attendance record in SchoolLift
+STU-2024-017                    ------->  Ada's current student enrolment
+TCH-0037                        ------->  Mr Bola's active staff record
+```
 
-For a live school, use the immutable admission/employee number or a documented dedicated code. Never use only the person's name.
+Think of ZKBio and SchoolLift as two people holding different registers. ZKBio says, “person `STU-2024-017` just checked in.” SchoolLift must have a trusted translation card that says, “`STU-2024-017` means this exact active student record.” That translation card is the **identity mapping**.
+
+#### What does “vendor” mean?
+
+In the earlier wording, **vendor** meant the external ZKTeco system: the SenseFace terminal and ZKBio Time/BioTime software. It did not mean the Nigerian shop, reseller, or installer who sold the device.
+
+#### What is the SchoolLift Windows gateway?
+
+The biometric terminal and the SchoolLift website do not speak to each other directly. ZKBio Time first receives the punches from the terminal and keeps them on a computer inside the school.
+
+The **SchoolLift Windows gateway** is a small SchoolLift program installed on that school Windows computer, usually the same protected computer running ZKBio Time. With the supplied Windows scheduled task, Windows starts it once every minute. On each run it:
+
+1. asks ZKBio Time for new attendance punches;
+2. keeps a pending copy in a protected folder on the school PC while delivery or the internet is unavailable; and
+3. sends the permitted attendance details to the correct SchoolLift school website when a connection is available.
+
+The gateway is **software**, not another biometric machine, router, website page, or person at the gate. Think of it as a trusted messenger carrying attendance slips from the ZKBio register inside the school to the SchoolLift register online.
+
+```text
+Biometric terminal -> ZKBio Time on the school PC
+                           |
+                    Windows gateway
+                   (trusted messenger)
+                           |
+                           v
+                 SchoolLift website online
+```
+
+#### What is the “ZKBio adapter” inside the gateway?
+
+The **ZKBio adapter** is not a separate box or a second program the school must buy. It is simply the ZKBio-reading part of the SchoolLift gateway: the part that knows how to read the names ZKBio uses on its attendance slips. In plain language, “ZKBio adapter” means **ZKBio reader/translator**.
+
+Think of it as the translator inside the messenger:
+
+- ZKBio writes the person's code under the heading `emp_code`.
+- The translator reads that heading and carries the same value to SchoolLift under the clearer heading `person_code`.
+- It does not turn the code into a different person's number. It changes the heading and removes spaces accidentally placed before or after the code. For example, `STU-2024-017` still identifies `STU-2024-017`.
+
+Although `emp_code` looks like an abbreviation for “employee code,” the current gateway expects that field to carry either a student's code or a staff member's code. The supplier must prove that behaviour in the exact ZKBio release purchased by the school.
+
+#### What is the ZKBio API, and why must it be confirmed before purchase?
+
+An **API** is simply an approved software doorway through which one program can ask another program for information. Here, the SchoolLift gateway uses ZKBio Time's doorway to ask, “Please give me the new attendance punches.” It does not open the ZKBio database and guess where information is stored.
+
+Different ZKBio editions, licences, and firmware releases (the terminal's built-in software versions) may expose different information. Some may require an additional paid/licensed permission to use this software doorway. Before the school pays, the supplier must perform a real proof using the exact terminal and ZKBio Time licence being sold. The supplier should enrol a test student and staff member, make an IN and OUT punch, and show that the software doorway returns the person's code as `emp_code`, together with the transaction ID, time, terminal serial number, punch state, and a verification-type field that the gateway can reliably understand as face, fingerprint, card, or PIN.
+
+If the purchased version calls the person field something else or does not make it available, SchoolLift's ZKBio-reading code must be updated, tested, and deployed for that proven format before live use. This is not a setting the installer should guess or casually rename. SchoolLift must never guess which person made a punch.
+
+#### How does `emp_code` become a SchoolLift mapping?
+
+When a person is enrolled in the verified ZKBio setup, the school assigns a unique code such as `STU-2024-017`. Under the proven format, ZKBio includes that value as `emp_code` whenever the person punches. The Windows gateway carries that person's code to SchoolLift as `person_code`. On the **Identity Mapping** page, SchoolLift calls it the **Device person code** and links it to the selected student or staff record.
+
+For example:
+
+```text
+ZKBio calls it:                 emp_code          = STU-2024-017
+The Windows gateway sends it:   person_code       = STU-2024-017
+The Mapping page calls it:      Device person code = STU-2024-017
+```
+
+Configure these three values identically. SchoolLift removes spaces at the beginning or end and treats ordinary Latin uppercase/lowercase letters as the same, but the installer should not rely on that correction. The code is only a machine label; it is not a password, fingerprint, face template, attendance event ID, or terminal serial number.
+
+In `simulation` mode there is no physical ZKTeco device. The website Test Terminal supplies a made-up code such as `DEMO-STUDENT-001`, but SchoolLift resolves that code through the same mapping process used for a real terminal.
+
+#### What is a “SchoolLift identity”?
+
+A **SchoolLift identity** means the exact active database record to which SchoolLift should give attendance. It does **not** mean the person's SchoolLift login, name, NIN, fingerprint, or face.
+
+- For a student, it is the student's **current academic-session enrolment**. Internally this is `student_session.id`: the record connecting the student to the current session, class, and section. It is not a website login session. The permanent student profile may remain the same for years, while the current-enrolment record changes when the student enters a new academic session or class.
+- For a staff member, it is the active internal `staff.id` used by staff attendance.
+- The type is also important. A student and a staff member could both have an internal number such as `37`, so SchoolLift keeps both the type (`student` or `staff`) and the internal record number.
+
+The website handles these internal numbers for the operator. On **Identity Mapping**, search for the person's name, admission number, or employee ID and select the correct result. **Do not type or guess a raw database ID.**
+
+#### Why can SchoolLift not just use the person's name?
+
+Names are useful for people to read, but unsafe for computers to use as identity keys:
+
+- two students can both be called “John Okafor”;
+- a name may be misspelled or entered in a different order;
+- a surname may change;
+- spaces, initials, titles, and middle names may differ between ZKBio and SchoolLift;
+- a device may send only a short code and no name at all.
+
+If SchoolLift guessed by name, it could mark the wrong child or staff member present. Therefore, the name is displayed so an administrator can confirm the person, but the machine lookup uses the exact code-to-record mapping.
+
+#### Why is mapping still required when the code is an admission number?
+
+Using the admission number or employee ID as the device code is recommended when that number is stable, unique, and never reused. Mapping is still necessary because ZKBio and SchoolLift are separate databases. ZKBio does not know SchoolLift's current student-enrolment record, class, section, or internal staff record. The explicit mapping tells SchoolLift which record is allowed to receive attendance from that external code.
+
+Mapping also gives the school a controlled safety point where it can:
+
+- reject an unknown code instead of guessing;
+- find duplicate or reused codes before going live;
+- disable a leaver's link;
+- move a returning student's link to the new academic-session enrolment;
+- audit who created, changed, enabled, or disabled the link.
+
+The underlying mapping service supports optional validity dates, but the present website form does not configure them; ordinary operators should not rely on date limits until that control is added and tested.
+
+The mapping contains no face image, fingerprint image, or biometric template. SchoolLift does not receive or store those items through this attendance pipeline; retention inside the terminal/ZKBio environment depends on the school's approved vendor configuration and privacy process.
+
+#### Complete student example
+
+Suppose the school has this student:
+
+| Item | Example value | Meaning |
+| --- | --- | --- |
+| Name shown to staff | Ada Okafor | Human-readable confirmation only |
+| Permanent SchoolLift student profile | `students.id = 418` | Ada's long-term profile |
+| Current SchoolLift enrolment | `student_session.id = 9102` | Ada in the current session/class/section; this is the attendance target |
+| School admission number | `STU-2024-017` | A stable school number |
+| ZKBio `emp_code` | `STU-2024-017` | The code assigned when Ada is enrolled on the ZKTeco side |
+| SchoolLift mapping | `student` + `9102` + `STU-2024-017` | The trusted translation link |
+
+Ada selects **Check In** and identifies on the terminal. ZKBio produces a transaction containing `emp_code = STU-2024-017`; the gateway sends the same value to SchoolLift as `person_code = STU-2024-017`. SchoolLift finds the active mapping, confirms that enrolment `9102` is active in the current school session, and records the IN event for Ada's current enrolment.
+
+Next academic session, Ada may keep permanent profile `418` and admission number `STU-2024-017`, but receive a new `student_session.id` for her new class/session. The school must preview and update mappings after promotion. The bulk preview can advance the unchanged admission-code mapping to the new current-enrolment record. This does not rewrite old attendance or old accepted events.
+
+#### Complete staff example
+
+Suppose Bola Musa has active SchoolLift staff record `staff.id = 37` and employee ID `TCH-0037`. Enrol him in ZKBio with `emp_code = TCH-0037`, then map device code `TCH-0037` to the selected SchoolLift staff member. If his displayed name is later corrected, the code and staff record still identify the same person.
+
+#### Do not confuse these values
+
+| Value | Answers which question? | Example |
+| --- | --- | --- |
+| Terminal serial | Which physical device sent the transaction? | `SCHOOL-GATE-001` |
+| Device/ZKBio person code | Whom did that device recognize? | `STU-2024-017` |
+| Punch state | Did the person select IN or OUT? | `0` for IN, `1` for OUT after installation proof |
+| External event ID | Which one individual punch is this? | `zkbio:SCHOOL-GATE-001:889144` |
+| Integration token | Is this gateway authorized to call the SchoolLift API? | Secret value, never used as a person code |
+| SchoolLift identity | Which exact active attendance record receives the punch? | Student enrolment `9102` or staff record `37` |
+
+One terminal serial is shared by everyone using that terminal. Each person has a different person code. Every punch has its own event ID.
+
+#### Choose safe person codes
+
+- Prefer the school's admission number for a student and employee ID for staff, provided each value is stable, unique across the whole school, and never reassigned.
+- The student and staff code space is shared. If a student and staff member can both be `001`, use clear prefixes such as `STU-001` and `STF-001`.
+- Configure the exact same code in ZKBio and SchoolLift. SchoolLift trims surrounding spaces and compares codes in uppercase, but punctuation, internal spaces, and leading zeroes still matter.
+- Treat a code as text. For example, keep `STU-001` as text and never send a leading-zero code as a JSON number.
+- Do not use a name, phone number, NIN, class position, or another changeable/reusable value.
+- Do not reuse a former student's or staff member's code for somebody else.
+
+Creating a mapping in SchoolLift does **not** create the person or enrol their face/fingerprint in ZKBio. Creating the person in ZKBio also does **not** create a SchoolLift mapping. They are two separate setup steps joined by the same person code.
+
+A mapping only explains **what the person code means**. It does not prove a face/fingerprint match and does not authenticate the Windows gateway. Device recognition and the gateway's secret integration token are separate safety checks.
+
+The link is one-to-one within one school's database: one device person code can point to only one student **or** one staff member, and that selected SchoolLift record can have only one device-code mapping. A disabled mapping still reserves its code so it cannot quietly be reassigned to somebody else.
+
+This identity mapping is for biometric/Test Terminal person codes. A trusted SchoolLift QR card uses its own random, revocable credential that already points to its student or staff record; the QR token must not be copied into the device person-code field.
+
+#### What happens when the mapping is missing or wrong?
+
+- If the device, punch state, timestamp, and other earlier checks pass but no active, date-valid mapping matches the code, SchoolLift stores the safe event as **quarantined** with an `UNKNOWN_PERSON` exception. It does not create a daily session or official attendance for a guessed person.
+- If the mapping points to a student enrolment or staff record that is no longer active/current, the event is quarantined as `INACTIVE_SUBJECT`.
+- After an administrator creates a missing mapping or safely reactivates the correct existing mapping, the quarantined event can be retried from Reconciliation in its original operating mode.
+- The current page does not provide a safe reassignment editor for an already-wrong mapping. Stop event intake, keep the event quarantined, and have an authorized application/database maintainer correct the link through a controlled, backed-up procedure; do not delete/reuse rows casually.
+- A wrong active mapping is dangerous because it can attribute attendance to the wrong person. Always test mappings in `simulation`, then verify real terminal transactions in `shadow`, before enabling `live`.
+- Changing a mapping affects future events and deliberately retried quarantined events. It does not silently move previously accepted historical events to another person.
+
+#### Create the demonstration mappings on the website
+
+1. Open **Identity Mapping**.
+2. In the first field, choose **Student** or **Staff**.
+3. In the searchable person field, type part of the name, admission number, or employee ID. A student appears only when the student is active **and enrolled in the academic session currently configured for the school**; staff must be active. Select the exact result and the website stores the required internal ID automatically.
+4. In **Device person code**, enter `DEMO-STUDENT-001` for the selected demonstration student or `DEMO-STAFF-001` for the selected demonstration staff member.
+5. Save and confirm that the mapping is active.
+6. In **Test Terminal**, enter the same demonstration code. SchoolLift ignores surrounding spaces and letter case, but different characters, punctuation, internal spaces, or leading zeroes make it a different code.
+
+For many people, **Preview roster codes** proposes mappings from active students' admission numbers or active staff employee IDs. Preview first: blank codes, duplicates, reused codes, and conflicting links are shown for correction. Confirmation creates only unambiguous mappings, and SchoolLift refuses confirmation if the roster changed after the preview.
+
+If an active student produces **No results found**, first check the school's current academic session and the student's enrolment for that session. The student profile alone is not enough: SchoolLift attendance belongs to a session/class/section enrolment. Promote or enrol the student into the correct current session using the normal academic workflow, then search again. Do not map an old `student_session.id` and do not weaken the search to include historical sessions, because live attendance could then be written against the wrong academic year.
 
 ### Submit a student check-in
 
@@ -136,7 +335,7 @@ The software must not create checkout in the background after check-in. A missin
 2. Submit one IN punch.
 3. Verify the event is `quarantined`, not silently assigned to another person.
 4. Open **Reconciliation** and inspect the reason and raw safe metadata.
-5. Open **Identity Mapping** and create/correct the code-to-subject mapping.
+5. Open **Identity Mapping** and create the missing mapping or reactivate the verified correct mapping. If an existing link itself is wrong, stop and use the controlled maintainer procedure described above; do not casually reassign it.
 6. Return to **Reconciliation**, choose **Retry processing**, enter an operator note, and verify it resolves to the intended person.
 7. Confirm the original event remains immutable and the reconciliation actor, time, reason, and result are audited.
 
@@ -165,11 +364,13 @@ Capture screenshots or an exported test record showing:
 - duplicate handling;
 - exception plus reconciliation;
 - no official attendance/payroll change;
-- staff user and timestamps in the audit trail.
+- event timestamps in the event ledger, plus the staff actor/time/note for a separate reconciliation or configuration action in the audit trail. An ordinary Test Terminal punch does not itself create an administrator-action audit row.
 
 Do not use a real student's biometric identifier, production token, or live attendance date in a public sales demonstration.
 
-## Part 2: test the actual gateway without hardware
+## Part 2: developer-only gateway test without hardware
+
+This whole part is for a developer or commissioning engineer using a disposable staging school. A normal school demonstration uses Part 1 and requires no terminal. A real installed school uses the automatic connector and website controls; do not expose these developer fixtures as public buttons and never point the mock at a Live school.
 
 ### Run automated tests
 
@@ -178,9 +379,22 @@ From the repository root:
 ```bash
 php tools/biometric-sandbox/tests/run.php
 php tools/biometric-gateway/tests/run.php
+php tests/biometric_backend_contract_test.php
+php tests/biometric_attendance_service_test.php
+php tests/biometric_event_policy_test.php
+php tests/biometric_gateway_control_service_test.php
 ```
 
 The gateway suite verifies one-serial IN/OUT, stripped template/image fields, durable SQLite restart, cursor overlap, deduplication, `401`, `429`, `503`, provider outage, and repaired-credential recovery.
+
+Migration engineers can also prove the biometric SQL twice against cloned school dumps on an isolated, network-disabled MySQL server:
+
+```bash
+BIOMETRIC_DUMP_MIGRATION_TEST_SOCKET=/absolute/path/mysql.sock \
+  php tests/biometric_migration_140_dump_test.php
+```
+
+That test creates random temporary databases, imports each dump, applies migrations 130–132 and 140 twice, verifies the operational schema, checks that legacy attendance/card rows and any existing personal-layout JSON are unchanged, and drops only those temporary databases. It refuses to run unless an explicit local socket is supplied. This is a developer/CI release check, not a production website button.
 
 ### Start the mock ZKBio provider
 
@@ -230,6 +444,8 @@ php tools/biometric-gateway/bin/gateway.php doctor --config=/secure/path/config.
 php tools/biometric-gateway/bin/gateway.php once --config=/secure/path/config.php
 php tools/biometric-gateway/bin/gateway.php status --config=/secure/path/config.php
 ```
+
+These three commands exercise the underlying developer interface. After the connector has been installed, the ordinary equivalents are **Check connections**, **Synchronize now**, and the automatically refreshed status on the SchoolLift **School computer connector** page or the local Windows Gateway Manager.
 
 Expected result:
 
@@ -322,19 +538,22 @@ Do not use time windows such as “before noon means IN.” Do not toggle each p
 6. Install PHP 8.2 CLI and enable `curl`, `json`, `openssl`, `pdo_sqlite`, and `sqlite3`.
 7. Place the gateway configuration/runtime outside the website tree and protect it with Windows ACLs.
 8. Create the SchoolLift integration token, record it once, and store only its hash in SchoolLift.
-9. Run gateway `doctor`, `once`, and `status` manually.
-10. Install the once-per-minute restricted-account task using `windows/install-task.ps1`.
+9. Open the supplied Windows Gateway Setup/Manager by double-clicking its launcher. Use **Check connections**, **Synchronize now**, and **View status**; the Manager invokes only the fixed safe actions.
+10. In the same Manager, install and verify the once-per-minute restricted-account task. A production deployment should package and code-sign this setup as an MSI/EXE; the repository script may still trigger a Windows warning until it is signed.
 11. Reboot and confirm ZKBio, gateway task, cursor, queue, and SchoolLift health recover.
 
 ### Enroll and map students/staff
 
-1. Use admission number/employee ID or another immutable code as ZKBio `emp_code`.
+1. Read **Understand identity mapping before creating one** above and approve a school-wide person-code format. Use admission number/employee ID only when it is stable, unique across students and staff, and never reused; otherwise use prefixed dedicated codes.
 2. Obtain the approved guardian/student/staff notices and process before collecting biometrics.
-3. Capture face/fingerprint under realistic conditions only in the vendor platform.
-4. Provide a supervised QR, RFID, PIN, or manual path where appropriate.
-5. Create/preview SchoolLift mappings and resolve duplicates before enabling them.
-6. Test one explicit IN and OUT from the same serial for each pilot person.
-7. Disable mappings and revoke cards/QR credentials promptly for leavers, lost cards, or compromised codes.
+3. In ZKBio, create/enrol the person and assign the approved value as the exact ZKBio `emp_code`.
+4. Capture face/fingerprint under realistic conditions only in the ZKTeco/ZKBio environment.
+5. In SchoolLift **Identity Mapping**, choose Student or Staff, search for and select the active person, enter that exact ZKBio code as **Device person code**, and save.
+6. For a bulk setup, preview active-roster mappings first and resolve blank, duplicate, reused, or conflicting admission/employee codes before confirmation.
+7. Provide a supervised QR, RFID, PIN, or manual path where appropriate.
+8. Test one explicit IN and OUT from the same serial for each pilot person while in `shadow`, and confirm the displayed person before live use.
+9. At every new academic session, preview student mappings so each admission code points to the new current student-enrolment record.
+10. Disable mappings and ZKBio enrolments promptly for leavers. Revoke lost-card QR credentials and never reuse an old person's code.
 
 ## Trusted QR fallback
 
@@ -475,7 +694,7 @@ These are not quotes. Add VAT/delivery and 10–15% contingency.
 | **Hardware/infrastructure total** | **₦2,979,455–₦3,279,455** |
 | ZKBio on-prem licence/API | Add formal quote |
 
-At this size, the five-day shadow pilot must measure peak persons/minute and queue length. Add capacity only when evidence justifies it.
+At this size, the supervised Shadow readiness cycle must measure peak persons/minute and queue length. Add capacity only when evidence justifies it.
 
 Costs excluded: VAT not shown, delivery/insurance outside Lagos, civil work beyond allowances, primary internet, SMS/WhatsApp, DPCO/legal work, ongoing support, replacement batteries, backup storage, spare hardware, locks/turnstiles, and exact software/API licences.
 
@@ -499,7 +718,7 @@ At minimum:
 ## Backup and recovery
 
 - Back up every tenant database before migrations, mode changes, and bulk credential issuance.
-- Export and protect the ZKBio configuration/licence, terminal enrollment backup where legally approved, gateway `config.php`, and the gateway SQLite database.
+- Export and protect the ZKBio configuration/licence, terminal enrollment backup where legally approved, the protected gateway configuration, and the gateway SQLite database.
 - Stop the scheduled gateway task before an SQLite file copy, or use an SQLite-consistent backup method; test restoring it on a separate PC.
 - Keep the SchoolLift integration token and `BIOMETRIC_QR_ENCRYPTION_KEY` in the secret/recovery vault, with access logged and limited. The integration token can be rotated from Setup; update the gateway immediately. The QR key cannot be replaced like a normal token without re-encrypting or reissuing cards.
 - Record RTO/RPO, restore owner, vendor licence recovery, and the supervised manual attendance process used during an outage.
@@ -510,7 +729,7 @@ At minimum:
 ### Stage 1: disabled
 
 - Back up every tenant database and gateway/ZKBio configuration.
-- Apply migrations and verify the new tables/permissions.
+- Apply migrations through **140** and verify the new tables/permissions before opening Biometric Attendance.
 - Create integration/device/mappings while ingestion remains disabled.
 
 ### Stage 2: simulation
@@ -522,7 +741,7 @@ At minimum:
 
 ### Stage 3: physical shadow mode
 
-Run at least five school days:
+Run a complete supervised Shadow readiness cycle. There is no fixed number of waiting days, but every check below must pass before Live:
 
 1. A pilot person selects IN, then identifies on the one terminal.
 2. Confirm the API's exact punch state and SchoolLift IN.
@@ -535,8 +754,8 @@ Run at least five school days:
 
 ### Stage 4: limited live pilot
 
-- Password-confirm the audited switch to `live`.
-- Enable only the approved pilot group.
+- Mark at least one active mapping in every enabled projection group as a Live pilot member, then enable the setting that restricts official projection to those marked people.
+- Password-confirm the audited switch to `live`. Widening a running Live scope by enabling another projection group or removing the pilot restriction requires the same readiness review, acknowledgement, permission, and password.
 - Reconcile official student session/term and staff attendance types daily.
 - Confirm manual records are not silently overwritten.
 - Hide/reject Test Terminal actions and revoke simulator credentials in live mode.

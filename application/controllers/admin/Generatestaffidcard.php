@@ -134,41 +134,59 @@ class Generatestaffidcard extends Admin_Controller
         $cards = array();
         foreach ($staffs as $staff) {
             $staff = is_array($staff) ? (object) $staff : $staff;
-            $credential = $this->db->table_exists('biometric_qr_credentials')
-                ? $this->biometric_attendance_service->getActiveQrCredential('staff', (int) $staff->id, true)
-                : null;
-            $token = $credential && !empty($credential['token']) ? $credential['token'] : '';
+            $attendanceQr = $this->attendanceQrCredential((int) $staff->id);
+            $token = $attendanceQr['token'];
+            $fullName = trim((isset($staff->name) ? $staff->name : '') . ' ' . (isset($staff->surname) ? $staff->surname : ''));
             $joiningDate = (!empty($staff->date_of_joining) && $staff->date_of_joining !== '0000-00-00')
                 ? date($this->customlib->getSchoolDateFormat(), $this->customlib->dateYYYYMMDDtoStrtotime($staff->date_of_joining)) : '';
             $dob = (!empty($staff->dob) && $staff->dob !== '0000-00-00')
                 ? date($this->customlib->getSchoolDateFormat(), $this->customlib->dateYYYYMMDDtoStrtotime($staff->dob)) : '';
-            $cards[] = array('bindings' => array(
-                'school.name' => (string) $legacyCard->school_name,
-                'school.address' => (string) $legacyCard->school_address,
-                'school.logo' => !empty($legacyCard->logo) ? site_url('admin/idcardstudio/legacy_asset/staff/' . (int) $legacyCard->id . '/logo') : '',
-                'school.signature' => !empty($legacyCard->sign_image) ? site_url('admin/idcardstudio/legacy_asset/staff/' . (int) $legacyCard->id . '/sign_image') : '',
-                'school.background' => !empty($legacyCard->background) ? site_url('admin/idcardstudio/legacy_asset/staff/' . (int) $legacyCard->id . '/background') : '',
-                'card.title' => (string) $legacyCard->title,
-                'attendance.credential' => $token,
-                'staff.full_name' => trim((isset($staff->name) ? $staff->name : '') . ' ' . (isset($staff->surname) ? $staff->surname : '')),
-                'staff.employee_id' => isset($staff->employee_id) ? (string) $staff->employee_id : '',
-                'staff.role' => isset($staff->user_type) ? (string) $staff->user_type : '',
-                'staff.department' => isset($staff->department) ? (string) $staff->department : '',
-                'staff.designation' => isset($staff->designation) ? (string) $staff->designation : '',
-                'staff.father_name' => isset($staff->father_name) ? (string) $staff->father_name : '',
-                'staff.mother_name' => isset($staff->mother_name) ? (string) $staff->mother_name : '',
-                'staff.joining_date' => $joiningDate,
-                'staff.address' => isset($staff->permanent_address) ? (string) $staff->permanent_address : '',
-                'staff.phone' => isset($staff->contact_no) ? (string) $staff->contact_no : '',
-                'staff.dob' => $dob,
-                'staff.photo' => !empty($staff->image) ? site_url('admin/idcardstudio/subject_photo/staff/' . (int) $staff->id) : '',
-            ));
+            $cards[] = array(
+                'attendanceQrStatus' => $attendanceQr['status'],
+                'attendanceQrLabel' => $fullName !== '' ? $fullName : ('Staff #' . (int) $staff->id),
+                'bindings' => array(
+                    'school.name' => (string) $legacyCard->school_name,
+                    'school.address' => (string) $legacyCard->school_address,
+                    'school.logo' => !empty($legacyCard->logo) ? site_url('admin/idcardstudio/legacy_asset/staff/' . (int) $legacyCard->id . '/logo') : '',
+                    'school.signature' => !empty($legacyCard->sign_image) ? site_url('admin/idcardstudio/legacy_asset/staff/' . (int) $legacyCard->id . '/sign_image') : '',
+                    'school.background' => !empty($legacyCard->background) ? site_url('admin/idcardstudio/legacy_asset/staff/' . (int) $legacyCard->id . '/background') : '',
+                    'card.title' => (string) $legacyCard->title,
+                    'attendance.credential' => $token,
+                    'staff.full_name' => $fullName,
+                    'staff.employee_id' => isset($staff->employee_id) ? (string) $staff->employee_id : '',
+                    'staff.role' => isset($staff->user_type) ? (string) $staff->user_type : '',
+                    'staff.department' => isset($staff->department) ? (string) $staff->department : '',
+                    'staff.designation' => isset($staff->designation) ? (string) $staff->designation : '',
+                    'staff.father_name' => isset($staff->father_name) ? (string) $staff->father_name : '',
+                    'staff.mother_name' => isset($staff->mother_name) ? (string) $staff->mother_name : '',
+                    'staff.joining_date' => $joiningDate,
+                    'staff.address' => isset($staff->permanent_address) ? (string) $staff->permanent_address : '',
+                    'staff.phone' => isset($staff->contact_no) ? (string) $staff->contact_no : '',
+                    'staff.dob' => $dob,
+                    'staff.photo' => !empty($staff->image) ? site_url('admin/idcardstudio/subject_photo/staff/' . (int) $staff->id) : '',
+                ),
+            );
         }
         return array(
             'studio_design' => $studioDesign,
             'studio_assets' => $this->Idcardstudio_model->publishedAssets($studioDesign->id),
             'studio_cards' => $cards,
         );
+    }
+
+    private function attendanceQrCredential($staffId)
+    {
+        if ((int) $staffId < 1 || !$this->db->table_exists('biometric_qr_credentials')) {
+            return array('status' => 'unavailable', 'token' => '');
+        }
+        $credential = $this->biometric_attendance_service->getActiveQrCredential('staff', (int) $staffId, true);
+        if (!$credential) {
+            return array('status' => 'not_issued', 'token' => '');
+        }
+        if (empty($credential['token'])) {
+            return array('status' => 'unavailable', 'token' => '');
+        }
+        return array('status' => 'ready', 'token' => (string) $credential['token']);
     }
 
     private function requireGenerationCsrf()

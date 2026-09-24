@@ -9,6 +9,7 @@ class Biometricattendance extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->load->model('biometric_attendance_model');
         $this->load->library('biometric_attendance_service');
         $this->load->library('enc_lib');
         if (!$this->session->userdata($this->tokenSessionKey)) {
@@ -30,6 +31,8 @@ class Biometricattendance extends Admin_Controller
             ? $rawDashboard['counters'] : array();
         $integrations = $this->biometric_attendance_service->listIntegrations(array(), 1, 100);
         $integrationItems = isset($integrations['items']) ? $integrations['items'] : array();
+        $gatewayAgents = $this->biometric_attendance_service->listGatewayAgents(array(), 1, 100);
+        $gatewayCommands = $this->biometric_attendance_service->listGatewayCommands(array(), 1, 50);
         $devices = $this->biometric_attendance_service->listDevices(array(), 1, 100);
         $punchStateMappings = array();
         foreach ($integrationItems as $integration) {
@@ -55,6 +58,8 @@ class Biometricattendance extends Admin_Controller
             }
         }
         $readiness = $this->liveReadiness($integrationItems, isset($devices['items']) ? $devices['items'] : array());
+        $filters = $this->listFilters();
+        $perPage = 25;
 
         $data = array(
             'title' => 'Biometric Attendance',
@@ -70,18 +75,23 @@ class Biometricattendance extends Admin_Controller
                 'last_cursor' => $lastCursor,
             ),
             'devices' => $devices,
-            'mappings' => $this->biometric_attendance_service->listMappings(array(), 1, 100),
+            'mappings' => $this->biometric_attendance_service->listMappings($filters['mappings'], $this->queryPage('mapping_page'), $perPage),
             'integrations' => $integrations,
+            'gateway_agents' => $gatewayAgents,
+            'gateway_commands' => $gatewayCommands,
             'punch_state_mappings' => $punchStateMappings,
-            'events' => $this->biometric_attendance_service->listEvents(array(), 1, 100),
-            'days' => $this->biometric_attendance_service->listDays(array(), 1, 100),
-            'exceptions' => $this->biometric_attendance_service->listExceptions(array(), 1, 100),
-            'audit' => $this->biometric_attendance_service->listAudit(array(), 1, 100),
+            'events' => $this->biometric_attendance_service->listEvents($filters['events'], $this->queryPage('event_page'), $perPage),
+            'days' => $this->biometric_attendance_service->listDays($filters['days'], $this->queryPage('day_page'), $perPage),
+            'exceptions' => $this->biometric_attendance_service->listExceptions($filters['exceptions'], $this->queryPage('exception_page'), $perPage),
+            'audit' => $this->biometric_attendance_service->listAudit($filters['audit'], $this->queryPage('audit_page'), $perPage),
             'stations' => $stations,
             'qr_credentials' => $this->biometric_attendance_service->listQrCredentials(array(), 1, 100),
             'qr_encryption_ready' => $this->biometric_attendance_service->qrEncryptionReady(),
             'assigned_station' => $assignedStation,
             'live_readiness' => $readiness,
+            'list_filters' => $filters,
+            'notification_queue' => $this->biometric_attendance_service->notificationQueueSummary(),
+            'notification_items' => $this->biometric_attendance_service->listNotificationQueue(25),
             'student_attendance_types' => $this->db->order_by('id', 'ASC')->get('attendence_type')->result_array(),
             'staff_attendance_types' => $this->db->order_by('id', 'ASC')->get('staff_attendance_type')->result_array(),
             'can_add_biometric' => $this->rbac->hasPrivilege('biometric_attendance', 'can_add'),
@@ -106,15 +116,25 @@ class Biometricattendance extends Admin_Controller
         $this->requireMutation('can_edit');
         $before = $this->biometric_attendance_service->getSettings();
         $requestedMode = strtolower(trim((string) $this->input->post('mode', true)));
+        $proposedSettings = is_array($before) ? $before : array();
+        $proposedSettings['project_students'] = (int) $this->input->post('project_students') === 1 ? 1 : 0;
+        $proposedSettings['project_staff'] = (int) $this->input->post('project_staff') === 1 ? 1 : 0;
+        $proposedSettings['live_pilot_enabled'] = (int) $this->input->post('live_pilot_enabled') === 1 ? 1 : 0;
+        $enteringLive = $requestedMode === 'live' && (!is_array($before) || $before['mode'] !== 'live');
+        $wideningLive = $requestedMode === 'live' && is_array($before) && $before['mode'] === 'live'
+            && ((empty($before['project_students']) && !empty($proposedSettings['project_students']))
+                || (empty($before['project_staff']) && !empty($proposedSettings['project_staff']))
+                || (!empty($before['live_pilot_enabled']) && empty($proposedSettings['live_pilot_enabled'])));
         $liveAuthorized = false;
-        if ($requestedMode === 'live' && (!is_array($before) || $before['mode'] !== 'live')) {
+        if ($enteringLive || $wideningLive) {
             $integrations = $this->biometric_attendance_service->listIntegrations(array(), 1, 100);
             $devices = $this->biometric_attendance_service->listDevices(array(), 1, 100);
             $readiness = $this->liveReadiness(
                 isset($integrations['items']) ? $integrations['items'] : array(),
-                isset($devices['items']) ? $devices['items'] : array()
+                isset($devices['items']) ? $devices['items'] : array(),
+                $proposedSettings
             );
-            if (!is_array($before) || $before['mode'] !== 'shadow') {
+            if ($enteringLive && (!is_array($before) || $before['mode'] !== 'shadow')) {
                 return $this->failRedirect('Live mode can be enabled only after the physical gateway has been tested in Shadow mode.', '#bio-setup');
             }
             if (empty($readiness['ready'])) {
@@ -126,14 +146,17 @@ class Biometricattendance extends Admin_Controller
                 return $this->failRedirect('Student live projection supports daily attendance only. Disable student projection or change the school from period-wise attendance before enabling Live.', '#bio-setup');
             }
             if (!$this->rbac->hasPrivilege('general_setting', 'can_edit')) {
-                return $this->failRedirect('General Settings edit permission is also required to enable Live mode.', '#bio-setup');
+                return $this->failRedirect('General Settings edit permission is also required to enable or widen Live attendance.', '#bio-setup');
+            }
+            if ((int) $this->input->post('live_acknowledgement') !== 1) {
+                return $this->failRedirect('Confirm the Live-mode acknowledgement after reviewing the physical IN/OUT evidence and projection scope.', '#bio-setup');
             }
             $user = $this->customlib->getUserData();
             $password = (string) $this->input->post('current_password', false);
             $liveAuthorized = !empty($user['password']) && $password !== ''
                 && $this->enc_lib->passHashDyc($password, $user['password']);
             if (!$liveAuthorized) {
-                return $this->failRedirect('Current password confirmation failed. Live mode was not enabled.', '#bio-setup');
+                return $this->failRedirect('Current password confirmation failed. The Live attendance scope was not changed.', '#bio-setup');
             }
         }
 
@@ -148,9 +171,18 @@ class Biometricattendance extends Admin_Controller
             'staff_late_type_id' => (int) $this->input->post('staff_late_type_id'),
             'project_students' => (int) $this->input->post('project_students'),
             'project_staff' => (int) $this->input->post('project_staff'),
+            'live_pilot_enabled' => (int) $this->input->post('live_pilot_enabled'),
+            'notify_student_in' => (int) $this->input->post('notify_student_in'),
+            'notify_student_out' => (int) $this->input->post('notify_student_out'),
+            'notify_email' => (int) $this->input->post('notify_email'),
+            'notify_sms' => (int) $this->input->post('notify_sms'),
+            'notify_whatsapp' => (int) $this->input->post('notify_whatsapp'),
             'retention_days' => (int) $this->input->post('retention_days'),
             'max_event_age_days' => (int) $this->input->post('max_event_age_days'),
-        ), $this->actorId(), array('live_authorized' => $liveAuthorized));
+        ), $this->actorId(), array(
+            'live_authorized' => $liveAuthorized,
+            'live_scope_authorized' => $liveAuthorized && $wideningLive,
+        ));
 
         return $this->resultRedirect($result, 'Biometric mode and attendance rules were updated.', '#bio-setup');
     }
@@ -193,9 +225,55 @@ class Biometricattendance extends Admin_Controller
         return $this->resultRedirect($result, $active ? 'Integration enabled.' : 'Integration disabled.', '#bio-setup');
     }
 
+    /**
+     * Queue one fixed connector action. The web server never executes a local
+     * process: the authenticated Windows connector collects this request on
+     * its next outbound heartbeat.
+     */
+    public function gatewaycommand()
+    {
+        $this->requireMutation('can_edit');
+        $type = strtolower(trim((string) $this->input->post('command_type', true)));
+        $integrationId = (int) $this->input->post('integration_id');
+        if (!in_array($type, array('connection_test', 'sync_now', 'retry_failed'), true)) {
+            return $this->failRedirect('Choose a supported school-computer connector action.', '#bio-connector');
+        }
+
+        $settings = $this->biometric_attendance_service->getSettings();
+        if (!is_array($settings) || !in_array($settings['mode'], array('shadow', 'live'), true)) {
+            return $this->failRedirect('School-computer connector actions are available only in Shadow or Live mode.', '#bio-connector');
+        }
+        if ($type === 'retry_failed') {
+            $confirmation = trim((string) $this->input->post('confirmation', true));
+            if (!hash_equals('RETRY_FAILED_ITEMS', $confirmation)) {
+                return $this->failRedirect('Type RETRY_FAILED_ITEMS exactly before retrying permanently failed connector items.', '#bio-connector');
+            }
+        }
+
+        $result = $this->biometric_attendance_service->queueGatewayCommand(
+            $type,
+            $integrationId,
+            $this->actorId(),
+            300
+        );
+        $labels = array(
+            'connection_test' => 'Connection check requested. The school computer should collect it within one minute.',
+            'sync_now' => 'Synchronization requested. The school computer should collect it within one minute.',
+            'retry_failed' => 'Retry requested. The school computer should collect it within one minute.',
+        );
+        if (!empty($result['duplicate'])) {
+            $labels[$type] = 'That connector action is already waiting or running; another copy was not created.';
+        }
+        return $this->resultRedirect($result, $labels[$type], '#bio-connector');
+    }
+
     public function punchstates()
     {
         $this->requireMutation('can_edit');
+        $settings = $this->biometric_attendance_service->getSettings();
+        if (is_array($settings) && $settings['mode'] === 'live') {
+            return $this->failRedirect('Return to Shadow before changing the terminal punch-state meanings.', '#bio-setup');
+        }
         $inState = trim((string) $this->input->post('in_state', true));
         $outState = trim((string) $this->input->post('out_state', true));
         if ($inState === '' || $outState === '' || hash_equals($inState, $outState)) {
@@ -213,13 +291,14 @@ class Biometricattendance extends Admin_Controller
     {
         $this->requireMutation('can_edit');
         $result = $this->biometric_attendance_service->saveDevice(array(
+            'id' => (int) $this->input->post('device_id'),
             'serial_number' => trim((string) $this->input->post('serial_number', true)),
             'name' => trim((string) $this->input->post('name', true)),
             'location' => trim((string) $this->input->post('location', true)),
+            'firmware_version' => trim((string) $this->input->post('firmware_version', true)),
             'integration_id' => (int) $this->input->post('integration_id'),
             'device_type' => 'biometric',
             'is_virtual' => 0,
-            'is_active' => 1,
         ), $this->actorId());
         return $this->resultRedirect($result, 'The bidirectional terminal was registered.', '#bio-setup');
     }
@@ -243,6 +322,7 @@ class Biometricattendance extends Admin_Controller
             'subject_type' => trim((string) $this->input->post('subject_type', true)),
             'subject_id' => (int) $this->input->post('subject_id'),
             'external_person_code' => trim((string) $this->input->post('external_person_code', true)),
+            'live_pilot' => (int) $this->input->post('live_pilot'),
             'is_active' => 1,
         ), $this->actorId());
         return $this->resultRedirect($result, 'Identity mapping saved.', '#bio-mappings');
@@ -258,6 +338,18 @@ class Biometricattendance extends Admin_Controller
             $this->actorId()
         );
         return $this->resultRedirect($result, $active ? 'Identity mapping enabled.' : 'Identity mapping disabled.', '#bio-mappings');
+    }
+
+    public function togglemappingpilot()
+    {
+        $this->requireMutation('can_edit');
+        $enabled = (int) $this->input->post('live_pilot') === 1;
+        $result = $this->biometric_attendance_service->setMappingPilot(
+            (int) $this->input->post('mapping_id'),
+            $enabled,
+            $this->actorId()
+        );
+        return $this->resultRedirect($result, $enabled ? 'Person added to the Live pilot.' : 'Person removed from the Live pilot.', '#bio-mappings');
     }
 
     public function bulkseed()
@@ -368,6 +460,13 @@ class Biometricattendance extends Admin_Controller
             array(
                 'action' => trim((string) $this->input->post('action', true)),
                 'note' => trim((string) $this->input->post('note', true)),
+                'mapping' => array(
+                    'subject_type' => trim((string) $this->input->post('subject_type', true)),
+                    'subject_id' => (int) $this->input->post('subject_id'),
+                    'external_person_code' => trim((string) $this->input->post('external_person_code', true)),
+                    'live_pilot' => (int) $this->input->post('live_pilot'),
+                    'is_active' => 1,
+                ),
             ),
             $this->actorId()
         );
@@ -402,6 +501,19 @@ class Biometricattendance extends Admin_Controller
         }
         $this->session->set_userdata('biometric_scanner_station_uuid', $stationUuid);
         return $this->resultRedirect(array('success' => true, 'errors' => array()), 'This browser session is assigned to the selected gate scanner.', '#bio-scanner');
+    }
+
+    public function togglestation()
+    {
+        $this->requireMutation('can_edit');
+        $stationId = (int) $this->input->post('station_id');
+        $active = (int) $this->input->post('is_active') === 1;
+        $station = $this->biometric_attendance_model->getScannerStation($stationId);
+        $result = $this->biometric_attendance_service->setScannerStationActive($stationId, $active, $this->actorId());
+        if (!$active && $station && hash_equals((string) $station['station_uuid'], (string) $this->session->userdata('biometric_scanner_station_uuid'))) {
+            $this->session->unset_userdata('biometric_scanner_station_uuid');
+        }
+        return $this->resultRedirect($result, $active ? 'Scanner station enabled.' : 'Scanner station disabled and its device revoked.', '#bio-scanner');
     }
 
     public function issuecredential()
@@ -484,6 +596,138 @@ class Biometricattendance extends Admin_Controller
         return $this->resultRedirect($result, 'Simulation event, session, and exception data was purged; its audit history was retained.', '#bio-setup');
     }
 
+    public function runretention()
+    {
+        $this->requireMutation('can_delete');
+        if (!hash_equals('RUN_RETENTION_CLEANUP', trim((string) $this->input->post('confirmation', true)))) {
+            return $this->failRedirect('Type RUN_RETENTION_CLEANUP exactly.', '#bio-setup');
+        }
+        $result = $this->biometric_attendance_service->runRetentionCleanup($this->actorId(), 5000);
+        return $this->resultRedirect($result, 'The configured biometric retention policy was applied safely.', '#bio-setup');
+    }
+
+    public function processnotifications()
+    {
+        $this->requireMutation('can_edit');
+        $result = $this->biometric_attendance_service->processNotificationQueue(10);
+        $result['success'] = true;
+        return $this->resultRedirect(
+            $result,
+            'Notification queue processed: ' . (int) $result['delivered'] . ' delivered, '
+                . (int) $result['retried'] . ' scheduled for retry, ' . (int) $result['failed'] . ' failed.',
+            '#bio-setup'
+        );
+    }
+
+    public function retrynotifications()
+    {
+        $this->requireMutation('can_edit');
+        $result = $this->biometric_attendance_service->retryFailedNotifications(
+            $this->actorId(),
+            $this->input->post('confirmation', true)
+        );
+        return $this->resultRedirect(
+            $result,
+            (int) (isset($result['count']) ? $result['count'] : 0) . ' failed notification(s) were safely returned to the retry queue.',
+            '#bio-setup'
+        );
+    }
+
+    public function eventfeed()
+    {
+        $this->requirePrivilege('can_view');
+        $this->requireReady();
+        $after = max(0, (int) $this->input->get('after_id'));
+        $result = $this->biometric_attendance_service->recentEventsAfter($after, 50);
+        return $this->json(array('success' => true, 'items' => $result['items'], 'server_time' => gmdate(DateTime::ATOM)));
+    }
+
+    public function export($type = 'events')
+    {
+        $this->requirePrivilege('can_view');
+        $this->requireReady();
+        $filters = $this->listFilters();
+        $definitions = array(
+            'events' => array(
+                'method' => 'listEvents', 'filters' => $filters['events'],
+                'columns' => array(
+                    'id' => 'Event ID', 'occurred_at_local' => 'Local time', 'subject_name' => 'Person',
+                    'subject_code' => 'School code', 'person_code' => 'Device person code',
+                    'device_serial' => 'Terminal serial', 'raw_punch_state' => 'Raw punch state',
+                    'direction' => 'Direction', 'verification_method' => 'Method', 'source' => 'Source',
+                    'operating_mode' => 'Mode', 'processing_status' => 'Event status',
+                    'projection_status' => 'Projection', 'failure_code' => 'Exception code',
+                ),
+            ),
+            'days' => array(
+                'method' => 'listDays', 'filters' => $filters['days'],
+                'columns' => array(
+                    'attendance_date' => 'Date', 'subject_type' => 'Type', 'subject_name' => 'Person',
+                    'subject_code' => 'School code', 'record_scope' => 'Mode', 'first_in_at' => 'First IN',
+                    'last_out_at' => 'Last OUT', 'duration_minutes' => 'Duration minutes',
+                    'attendance_status' => 'Attendance status', 'missing_checkout' => 'Missing checkout',
+                    'manual_locked' => 'Manual lock', 'projection_status' => 'Projection',
+                ),
+            ),
+            'exceptions' => array(
+                'method' => 'listExceptions', 'filters' => $filters['exceptions'],
+                'columns' => array(
+                    'id' => 'Exception ID', 'created_at' => 'Created', 'exception_code' => 'Code',
+                    'message' => 'Message', 'subject_name' => 'Person', 'subject_code' => 'School code',
+                    'person_code' => 'Device person code', 'raw_punch_state' => 'Raw punch state',
+                    'status' => 'Status', 'resolution_action' => 'Resolution', 'resolution_note' => 'Note',
+                ),
+            ),
+            'mappings' => array(
+                'method' => 'listMappings', 'filters' => $filters['mappings'],
+                'columns' => array(
+                    'subject_type' => 'Type', 'subject_name' => 'Person', 'subject_code' => 'School code',
+                    'external_person_code' => 'Device person code', 'live_pilot' => 'Live pilot',
+                    'is_active' => 'Active', 'valid_from' => 'Valid from', 'valid_until' => 'Valid until',
+                ),
+            ),
+        );
+        if (!isset($definitions[$type])) {
+            show_404();
+        }
+        $definition = $definitions[$type];
+        $rows = array();
+        for ($page = 1; $page <= 25 && count($rows) < 5000; $page++) {
+            $batch = $this->biometric_attendance_service->{$definition['method']}($definition['filters'], $page, 200);
+            foreach ($batch['items'] as $item) {
+                $rows[] = $item;
+                if (count($rows) >= 5000) { break; }
+            }
+            if ($page >= (int) $batch['pages']) { break; }
+        }
+        $filename = 'schoollift-biometric-' . $type . '-' . date('Ymd-His') . '.csv';
+        $this->output->set_header('Content-Type: text/csv; charset=UTF-8');
+        $this->output->set_header('Content-Disposition: attachment; filename="' . $filename . '"');
+        $this->output->set_header('Cache-Control: no-store');
+        $stream = fopen('php://output', 'w');
+        fputcsv($stream, array_values($definition['columns']));
+        foreach ($rows as $row) {
+            $values = array();
+            foreach (array_keys($definition['columns']) as $column) {
+                $values[] = $this->csvSafeValue(isset($row[$column]) ? $row[$column] : '');
+            }
+            fputcsv($stream, $values);
+        }
+        fclose($stream);
+        exit;
+    }
+
+    /** Prevent spreadsheet applications from treating exported text as a formula. */
+    private function csvSafeValue($value)
+    {
+        if (!is_scalar($value) || $value === null) {
+            return '';
+        }
+        $value = (string) $value;
+        return $value !== '' && preg_match('/^[=+\-@\t\r]/', $value)
+            ? "'" . $value : $value;
+    }
+
     public function subjectsearch($subjectType = 'student')
     {
         $this->requirePrivilege('can_view');
@@ -548,7 +792,7 @@ class Biometricattendance extends Admin_Controller
     private function requireReady()
     {
         if (!$this->biometric_attendance_service->isReady()) {
-            show_error('Biometric attendance migration 130 has not been installed for this school database.', 503);
+            show_error('Biometric attendance migrations through 140 have not been installed for this school database.', 503);
         }
     }
 
@@ -615,7 +859,72 @@ class Biometricattendance extends Admin_Controller
         return (int) $this->customlib->getStaffID();
     }
 
-    private function liveReadiness(array $integrations, array $devices)
+    private function queryPage($name)
+    {
+        return max(1, min(100000, (int) $this->input->get($name)));
+    }
+
+    private function listFilters()
+    {
+        return array(
+            'events' => array_filter(array(
+                'search' => $this->queryText('event_search'),
+                'date_from' => $this->queryDate('event_from'),
+                'date_to' => $this->queryDate('event_to'),
+                'direction' => $this->queryEnum('event_direction', array('IN', 'OUT')),
+                'operating_mode' => $this->queryEnum('event_mode', array('simulation', 'shadow', 'live')),
+                'processing_status' => $this->queryEnum('event_status', array('accepted', 'duplicate', 'quarantined', 'rejected')),
+            ), function ($value) { return $value !== null && $value !== ''; }),
+            'days' => array_filter(array(
+                'date_from' => $this->queryDate('day_from'),
+                'date_to' => $this->queryDate('day_to'),
+                'subject_type' => $this->queryEnum('day_type', array('student', 'staff')),
+                'record_scope' => $this->queryEnum('day_mode', array('simulation', 'shadow', 'live')),
+                'attendance_status' => $this->queryEnum('day_status', array('present', 'late', 'incomplete')),
+                'missing_checkout' => $this->queryEnum('day_missing', array('0', '1')),
+            ), function ($value) { return $value !== null && $value !== ''; }),
+            'exceptions' => array_filter(array(
+                'search' => $this->queryText('exception_search'),
+                'date_from' => $this->queryDate('exception_from'),
+                'date_to' => $this->queryDate('exception_to'),
+                'status' => $this->queryEnum('exception_status', array('open', 'resolved', 'ignored')),
+            ), function ($value) { return $value !== null && $value !== ''; }),
+            'mappings' => array_filter(array(
+                'search' => $this->queryText('mapping_search'),
+                'subject_type' => $this->queryEnum('mapping_type', array('student', 'staff')),
+                'is_active' => $this->queryEnum('mapping_active', array('0', '1')),
+                'live_pilot' => $this->queryEnum('mapping_pilot', array('0', '1')),
+            ), function ($value) { return $value !== null && $value !== ''; }),
+            'audit' => array_filter(array(
+                'search' => $this->queryText('audit_search'),
+                'date_from' => $this->queryDate('audit_from'),
+                'date_to' => $this->queryDate('audit_to'),
+            ), function ($value) { return $value !== null && $value !== ''; }),
+        );
+    }
+
+    private function queryText($name)
+    {
+        return substr(trim((string) $this->input->get($name, true)), 0, 100);
+    }
+
+    private function queryEnum($name, array $allowed)
+    {
+        $value = trim((string) $this->input->get($name, true));
+        return in_array($value, $allowed, true) ? $value : null;
+    }
+
+    private function queryDate($name)
+    {
+        $value = trim((string) $this->input->get($name, true));
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return null;
+        }
+        list($year, $month, $day) = array_map('intval', explode('-', $value));
+        return checkdate($month, $day, $year) ? $value : null;
+    }
+
+    private function liveReadiness(array $integrations, array $devices, array $proposedSettings = null)
     {
         $activeIntegrations = array();
         foreach ($integrations as $integration) {
@@ -623,53 +932,157 @@ class Biometricattendance extends Admin_Controller
                 $activeIntegrations[(int) $integration['id']] = $integration;
             }
         }
+        // Go-live evidence must describe one coherent connector path. Without
+        // this guard, a terminal on integration A, punch states on B, and a
+        // healthy connector on C could incorrectly satisfy separate checks.
+        $integrationReady = count($activeIntegrations) === 1;
+        $integrationId = $integrationReady ? (int) key($activeIntegrations) : null;
         $physical = array();
         foreach ($devices as $device) {
             if (!empty($device['is_active']) && empty($device['is_virtual'])
                 && $device['device_type'] === 'biometric'
-                && isset($activeIntegrations[(int) $device['integration_id']])) {
+                && $integrationId !== null && (int) $device['integration_id'] === $integrationId) {
                 $physical[] = $device;
             }
         }
         $mapped = $this->biometric_attendance_service->listMappings(array('is_active' => 1), 1, 1);
         $exceptions = $this->biometric_attendance_service->listExceptions(array('status' => 'open'), 1, 1);
+        $gatewayAgents = $this->biometric_attendance_service->listGatewayAgents(
+            array('integration_id' => $integrationId), 1, 100
+        );
+        $recentAgents = array();
+        foreach (isset($gatewayAgents['items']) ? $gatewayAgents['items'] : array() as $agent) {
+            $heartbeat = !empty($agent['last_heartbeat_at']) ? strtotime($agent['last_heartbeat_at'] . ' UTC') : false;
+            if ($heartbeat !== false && time() - $heartbeat <= 600) {
+                $recentAgents[] = $agent;
+            }
+        }
+        // A second recent connector would poll the same school integration.
+        // Keep exactly one active path for the single-school-computer design;
+        // stale records from a replaced PC do not block the transition.
+        $connectorOnline = count($recentAgents) === 1;
+        $activeAgent = $connectorOnline ? $recentAgents[0] : null;
+        $connectorHealthy = $activeAgent !== null
+            && (int) $activeAgent['provider_reachable'] === 1
+            && (int) $activeAgent['last_sync_ok'] === 1;
+        $connectorQueueClear = $connectorHealthy
+            && (int) $activeAgent['queue_pending'] === 0
+            && (int) $activeAgent['queue_retry'] === 0
+            && (int) $activeAgent['queue_dead'] === 0;
         $hasPunchMap = false;
-        foreach ($activeIntegrations as $integrationId => $integration) {
+        if ($integrationId !== null) {
             $directions = array();
             foreach ($this->biometric_attendance_service->getPunchStateMappings($integrationId) as $mapping) {
                 $directions[] = isset($mapping['direction']) ? $mapping['direction'] : null;
             }
-            if (in_array('IN', $directions, true) && in_array('OUT', $directions, true)) {
-                $hasPunchMap = true;
-                break;
-            }
+            $hasPunchMap = in_array('IN', $directions, true) && in_array('OUT', $directions, true);
         }
-        $hasSeenPhysical = false;
+        $settingsForLive = $proposedSettings !== null ? $proposedSettings : $this->biometric_attendance_service->getSettings();
+        $hasSeenPhysical = !empty($physical);
         foreach ($physical as $device) {
-            if (!empty($device['last_seen_at'])) {
-                $hasSeenPhysical = true;
+            if (!$this->hasCompletedShadowSession((int) $device['id'], $integrationId, null)) {
+                $hasSeenPhysical = false;
                 break;
             }
         }
+        $pilotOnlyProof = !empty($settingsForLive['live_pilot_enabled']);
+        $studentProof = empty($settingsForLive['project_students'])
+            || $this->hasCompletedShadowSession(null, $integrationId, 'student', $pilotOnlyProof);
+        $staffProof = empty($settingsForLive['project_staff'])
+            || $this->hasCompletedShadowSession(null, $integrationId, 'staff', $pilotOnlyProof);
+        $studentPilotReady = empty($settingsForLive['live_pilot_enabled'])
+            || empty($settingsForLive['project_students'])
+            || (bool) $this->db->from('biometric_identity_mappings')
+                ->where('subject_type', 'student')->where('is_active', 1)
+                ->where('live_pilot', 1)->count_all_results();
+        $staffPilotReady = empty($settingsForLive['live_pilot_enabled'])
+            || empty($settingsForLive['project_staff'])
+            || (bool) $this->db->from('biometric_identity_mappings')
+                ->where('subject_type', 'staff')->where('is_active', 1)
+                ->where('live_pilot', 1)->count_all_results();
+        $pilotReady = $studentPilotReady && $staffPilotReady;
         $problems = array();
-        if (!$activeIntegrations) { $problems[] = 'Create and enable a ZKBio integration.'; }
+        if (!$integrationReady) { $problems[] = 'Enable exactly one ZKBio integration for this school connector path.'; }
         if (!$physical) { $problems[] = 'Register one enabled physical bidirectional terminal.'; }
         if (!$hasPunchMap) { $problems[] = 'Confirm distinct IN and OUT punch-state mappings.'; }
         if (empty($mapped['total'])) { $problems[] = 'Map at least one active student or staff identity.'; }
-        if (!$hasSeenPhysical) { $problems[] = 'Process at least one accepted physical event in Shadow mode.'; }
+        if (!$connectorOnline) { $problems[] = 'Keep exactly one Windows connector online for that integration, with a heartbeat within ten minutes.'; }
+        if (!$connectorHealthy) { $problems[] = 'Complete a successful ZKBio connection and synchronization check.'; }
+        if (!$connectorQueueClear) { $problems[] = 'Drain or resolve every waiting, retrying, and failed connector item before Live.'; }
+        if (!$hasSeenPhysical) { $problems[] = 'Complete one accepted physical Shadow IN and OUT session from every enabled terminal.'; }
+        if (!$studentProof) { $problems[] = $pilotOnlyProof ? 'Complete a physical Shadow IN and OUT for a selected student pilot.' : 'Complete a physical student IN and OUT in Shadow before enabling student projection.'; }
+        if (!$staffProof) { $problems[] = $pilotOnlyProof ? 'Complete a physical Shadow IN and OUT for a selected staff pilot.' : 'Complete a physical staff IN and OUT in Shadow before enabling staff projection.'; }
+        if (!$studentPilotReady) { $problems[] = 'Select at least one active student mapping for the Live pilot, or disable student projection.'; }
+        if (!$staffPilotReady) { $problems[] = 'Select at least one active staff mapping for the Live pilot, or disable staff projection.'; }
         if (!empty($exceptions['total'])) { $problems[] = 'Resolve all open biometric exceptions.'; }
         return array(
             'ready' => !$problems,
             'problems' => $problems,
             'checks' => array(
-                'integration' => (bool) $activeIntegrations,
+                'integration' => $integrationReady,
                 'physical_device' => (bool) $physical,
                 'punch_states' => $hasPunchMap,
                 'identity_mapping' => !empty($mapped['total']),
-                'shadow_event' => $hasSeenPhysical,
+                'connector_online' => $connectorOnline,
+                'connector_healthy' => $connectorHealthy,
+                'connector_queue_clear' => $connectorQueueClear,
+                'shadow_in_out' => $hasSeenPhysical,
+                'student_shadow_in_out' => $studentProof,
+                'staff_shadow_in_out' => $staffProof,
+                'student_pilot_ready' => $studentPilotReady,
+                'staff_pilot_ready' => $staffPilotReady,
+                'pilot_ready' => $pilotReady,
                 'exceptions_clear' => empty($exceptions['total']),
             ),
         );
+    }
+
+    /** A completed Shadow session must contain accepted IN and OUT events from the physical gateway. */
+    private function hasCompletedShadowSession($deviceId, $integrationId, $subjectType, $pilotOnly = false)
+    {
+        if ($integrationId === null) {
+            return false;
+        }
+        $sql = "SELECT 1
+                FROM biometric_attendance_days d
+                INNER JOIN biometric_events ein
+                    ON ein.attendance_day_id = d.id
+                   AND ein.direction = 'IN'
+                   AND ein.source = 'gateway'
+                   AND ein.operating_mode = 'shadow'
+                   AND ein.processing_status = 'accepted'
+                INNER JOIN biometric_events eout
+                    ON eout.attendance_day_id = d.id
+                   AND eout.direction = 'OUT'
+                   AND eout.source = 'gateway'
+                   AND eout.operating_mode = 'shadow'
+                   AND eout.processing_status = 'accepted'
+                WHERE d.record_scope = 'shadow'
+                  AND d.first_in_at IS NOT NULL
+                  AND d.last_out_at IS NOT NULL
+                  AND ein.integration_id = ?
+                  AND eout.integration_id = ?";
+        $params = array((int) $integrationId, (int) $integrationId);
+        if ($deviceId !== null) {
+            $sql .= ' AND ein.device_id = ? AND eout.device_id = ?';
+            $params[] = (int) $deviceId;
+            $params[] = (int) $deviceId;
+        }
+        if ($subjectType !== null) {
+            $sql .= ' AND d.subject_type = ?';
+            $params[] = $subjectType;
+        }
+        if ($pilotOnly) {
+            $sql .= " AND EXISTS (
+                         SELECT 1 FROM biometric_identity_mappings pm
+                         WHERE pm.subject_type = d.subject_type
+                           AND pm.subject_id = d.subject_id
+                           AND pm.is_active = 1
+                           AND pm.live_pilot = 1
+                     )";
+        }
+        $sql .= ' LIMIT 1';
+        return (bool) $this->db->query($sql, $params)->row_array();
     }
 
     private function streamTrustedImage($url)

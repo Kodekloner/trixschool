@@ -61,7 +61,7 @@ class Biometric_v2 extends CI_Controller
             return $this->respond(array('status' => 'error', 'message' => 'Invalid bearer token.'), 401, array('WWW-Authenticate' => 'Bearer'));
         }
         if (!$this->biometric_attendance_service->isReady()) {
-            return $this->respond(array('status' => 'error', 'message' => 'Biometric migration 130 has not been applied.'), 503);
+            return $this->respond(array('status' => 'error', 'message' => 'Biometric migrations through 140 have not been applied.'), 503);
         }
         $settings = $this->biometric_attendance_service->getSettings();
         return $this->respond(array(
@@ -76,6 +76,45 @@ class Biometric_v2 extends CI_Controller
                 'last_cursor' => $integration['last_cursor'],
             ),
         ), 200);
+    }
+
+    public function gateway_poll()
+    {
+        return $this->gatewayJsonRequest('pollGateway');
+    }
+
+    public function gateway_result()
+    {
+        return $this->gatewayJsonRequest('completeGatewayCommand');
+    }
+
+    protected function gatewayJsonRequest($serviceMethod)
+    {
+        if ($this->input->method(true) !== 'POST') {
+            return $this->respond(array('success' => false, 'message' => 'Method not allowed.', 'command' => null), 405, array('Allow' => 'POST'));
+        }
+        if (!$this->secureTransport()) {
+            return $this->respond(array('success' => false, 'message' => 'HTTPS is required.', 'command' => null), 426);
+        }
+        $integration = $this->authenticate();
+        if (!$integration) {
+            return $this->respond(array('success' => false, 'message' => 'Invalid bearer token.', 'command' => null), 401, array('WWW-Authenticate' => 'Bearer'));
+        }
+        $contentType = strtolower(trim((string) $this->input->get_request_header('Content-Type', true)));
+        if ($contentType === '' || strpos($contentType, 'application/json') !== 0) {
+            return $this->respond(array('success' => false, 'message' => 'Content-Type must be application/json.', 'command' => null), 415);
+        }
+        $raw = file_get_contents('php://input');
+        if (!is_string($raw) || strlen($raw) > 16384) {
+            return $this->respond(array('success' => false, 'message' => 'Payload is too large.', 'command' => null), 413);
+        }
+        $payload = json_decode($raw, true);
+        if (!is_array($payload) || json_last_error() !== JSON_ERROR_NONE) {
+            return $this->respond(array('success' => false, 'message' => 'Request body must be valid JSON.', 'command' => null), 400);
+        }
+        $result = $this->biometric_attendance_service->{$serviceMethod}($integration, $payload);
+        $status = isset($result['http_status']) ? (int) $result['http_status'] : (!empty($result['success']) ? 200 : 422);
+        return $this->respond($result, $status);
     }
 
     protected function authenticate()

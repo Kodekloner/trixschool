@@ -81,7 +81,24 @@ final class GatewayStore
             'CREATE INDEX IF NOT EXISTS idx_event_queue_delivery
              ON event_queue (state, available_at, created_at)'
         );
-        $this->setMetadata('schema_version', '2', new DateTimeImmutable('now'));
+        $this->database->exec(
+            'CREATE TABLE IF NOT EXISTS gateway_commands (
+                command_uuid TEXT PRIMARY KEY,
+                command_type TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                state TEXT NOT NULL DEFAULT \'claimed\',
+                result_status TEXT NULL,
+                result_json TEXT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                reported_at TEXT NULL
+            )'
+        );
+        $this->database->exec(
+            'CREATE INDEX IF NOT EXISTS idx_gateway_commands_state
+             ON gateway_commands (state, created_at)'
+        );
+        $this->setMetadata('schema_version', '3', new DateTimeImmutable('now'));
     }
 
     /**
@@ -304,14 +321,167 @@ final class GatewayStore
         foreach ($this->database->query('SELECT state, COUNT(*) AS total FROM event_queue GROUP BY state') as $row) {
             $counts[(string) $row['state']] = (int) $row['total'];
         }
+        $retry = (int) $this->database->query(
+            "SELECT COUNT(*) FROM event_queue WHERE state = 'pending' AND attempts > 0"
+        )->fetchColumn();
         return [
             'provider_cursor' => $this->providerCursor(),
             'provider_next_poll_at' => $this->metadata('provider_next_poll_at'),
             'provider_failure_count' => (int) ($this->metadata('provider_failure_count') ?? 0),
             'pending' => $counts['pending'],
+            'retry' => $retry,
             'delivered' => $counts['delivered'],
             'dead' => $counts['dead'],
         ];
+    }
+
+    /** @param array<string, mixed> $summary */
+    public function recordSyncResult(array $summary, DateTimeImmutable $now): void
+    {
+        $provider = isset($summary['provider']) && is_array($summary['provider'])
+            ? $summary['provider'] : [];
+        if (($provider['polled'] ?? false) === true) {
+            $this->setMetadata('provider_reachable', '1', $now);
+        } elseif (isset($provider['error'])) {
+            $this->setMetadata('provider_reachable', '0', $now);
+        }
+
+        $backingOff = ($provider['backoff'] ?? false) === true;
+        $ok = ($summary['ok'] ?? false) === true && !$backingOff;
+        $error = '';
+        if (isset($summary['delivery']['error']) && is_scalar($summary['delivery']['error'])) {
+            $error = trim((string) $summary['delivery']['error']);
+        }
+        if ($error === '' && isset($provider['error']) && is_scalar($provider['error'])) {
+            $error = trim((string) $provider['error']);
+        }
+        if ($error === '' && $backingOff) {
+            $error = 'ZKBio polling is waiting for its automatic retry time.';
+        }
+        $this->setMetadata('last_sync_ok', $ok ? '1' : '0', $now);
+        $this->setMetadata('last_sync_at', $now->setTimezone(new \DateTimeZone('UTC'))->format(DATE_ATOM), $now);
+        $this->setMetadata('last_sync_error', $this->bounded($error) ?? '', $now);
+    }
+
+    /** @return array<string, mixed> */
+    public function heartbeatStatus(bool $canAcceptCommand): array
+    {
+        $queue = $this->status();
+        $providerReachable = $this->storedBoolean('provider_reachable');
+        $lastSyncOk = $this->storedBoolean('last_sync_ok');
+        $lastSyncAt = $this->metadata('last_sync_at');
+        $lastError = $this->metadata('last_sync_error');
+
+        return [
+            'can_accept_command' => $canAcceptCommand,
+            'provider_reachable' => $providerReachable,
+            'last_sync_ok' => $lastSyncOk,
+            'last_sync_at' => $lastSyncAt === null || $lastSyncAt === '' ? null : $lastSyncAt,
+            'queue' => [
+                'pending' => (int) $queue['pending'],
+                'retry' => (int) $queue['retry'],
+                'dead' => (int) $queue['dead'],
+            ],
+            'cursor' => $queue['provider_cursor'] === null || $queue['provider_cursor'] === ''
+                ? null : (string) $queue['provider_cursor'],
+            'last_error' => $lastError === null || $lastError === '' ? null : $lastError,
+        ];
+    }
+
+    /** @param array{command_uuid:string,type:string,expires_at:string} $command */
+    public function claimCommand(array $command, DateTimeImmutable $now): void
+    {
+        $statement = $this->database->prepare(
+            'INSERT OR IGNORE INTO gateway_commands
+             (command_uuid, command_type, expires_at, state, created_at, updated_at)
+             VALUES (:command_uuid, :command_type, :expires_at, \'claimed\', :created_at, :updated_at)'
+        );
+        $statement->execute([
+            ':command_uuid' => $command['command_uuid'],
+            ':command_type' => $command['type'],
+            ':expires_at' => $command['expires_at'],
+            ':created_at' => $now->format(DATE_ATOM),
+            ':updated_at' => $now->format(DATE_ATOM),
+        ]);
+    }
+
+    /** @return array<string, mixed>|null */
+    public function claimedCommand(): ?array
+    {
+        $row = $this->database->query(
+            "SELECT command_uuid, command_type, expires_at, state
+             FROM gateway_commands WHERE state = 'claimed'
+             ORDER BY created_at ASC LIMIT 1"
+        )->fetch();
+        return is_array($row) ? $row : null;
+    }
+
+    public function hasOutstandingCommand(): bool
+    {
+        return (int) $this->database->query(
+            "SELECT COUNT(*) FROM gateway_commands WHERE state IN ('claimed', 'result_pending')"
+        )->fetchColumn() > 0;
+    }
+
+    /** @param array<string, mixed> $result */
+    public function completeCommand(
+        string $commandUuid,
+        string $status,
+        array $result,
+        DateTimeImmutable $now
+    ): void {
+        $encoded = json_encode($result, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+        if ($encoded === false) {
+            throw new RuntimeException('Unable to encode the gateway command result.');
+        }
+        $statement = $this->database->prepare(
+            "UPDATE gateway_commands
+             SET state = 'result_pending', result_status = :result_status,
+                 result_json = :result_json, updated_at = :updated_at
+             WHERE command_uuid = :command_uuid AND state = 'claimed'"
+        );
+        $statement->execute([
+            ':result_status' => $status,
+            ':result_json' => $encoded,
+            ':updated_at' => $now->format(DATE_ATOM),
+            ':command_uuid' => $commandUuid,
+        ]);
+    }
+
+    /** @return array<string, mixed>|null */
+    public function pendingCommandResult(): ?array
+    {
+        $row = $this->database->query(
+            "SELECT command_uuid, result_status, result_json
+             FROM gateway_commands WHERE state = 'result_pending'
+             ORDER BY created_at ASC LIMIT 1"
+        )->fetch();
+        if (!is_array($row)) {
+            return null;
+        }
+        $result = json_decode((string) $row['result_json'], true);
+        if (!is_array($result)) {
+            throw new RuntimeException('A stored gateway command result is invalid.');
+        }
+        return [
+            'command_uuid' => (string) $row['command_uuid'],
+            'status' => (string) $row['result_status'],
+            'result' => $result,
+        ];
+    }
+
+    public function markCommandReported(string $commandUuid, DateTimeImmutable $now): void
+    {
+        $statement = $this->database->prepare(
+            "UPDATE gateway_commands SET state = 'reported', reported_at = :reported_at,
+                 updated_at = :updated_at WHERE command_uuid = :command_uuid
+                 AND state = 'result_pending'"
+        );
+        $statement->execute([
+            ':reported_at' => $now->format(DATE_ATOM),
+            ':updated_at' => $now->format(DATE_ATOM),
+            ':command_uuid' => $commandUuid,
+        ]);
     }
 
     public function providerCanPoll(DateTimeImmutable $now): bool
@@ -363,6 +533,18 @@ final class GatewayStore
         $statement->execute([':metadata_key' => $key]);
         $value = $statement->fetchColumn();
         return $value === false ? null : (string) $value;
+    }
+
+    private function storedBoolean(string $key): ?bool
+    {
+        $value = $this->metadata($key);
+        if ($value === '1') {
+            return true;
+        }
+        if ($value === '0') {
+            return false;
+        }
+        return null;
     }
 
     private function setMetadata(string $key, string $value, DateTimeImmutable $now): void

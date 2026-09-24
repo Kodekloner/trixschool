@@ -38,6 +38,11 @@
             .staround2{position: relative; z-index: 9;}
             .stbottom{background: #453278;height: 20px;width: 100%;clear: both;margin-bottom: 5px;}
             .principal{margin-top: -40px;margin-right:10px; float:right;}
+            .legacy-card-footer{position:relative;z-index:10;padding:3px 8px 6px;text-align:right;}
+            .legacy-card-auth{display:flex;align-items:flex-end;justify-content:space-between;gap:6px;margin-top:8px;}
+            .legacy-card-auth .signature{flex:1;margin-top:0;padding:4px;}
+            .legacy-card-auth .signature img{max-width:100%;height:24px;object-fit:contain;}
+            .legacy-attendance-qr{display:inline-block;flex:0 0 52px;width:52px;height:52px;padding:3px;vertical-align:bottom;background:#fff;box-sizing:border-box;}
             .stred{color: #000;}
             .spanlr{padding-left: 5px; padding-right: 5px;}
             .cardleft{width: 20%;float: left;}
@@ -142,7 +147,14 @@ if($idcard->enable_vertical_card){
                                             }
                                             ?>
                         </ul>
-                        <div class="signature"><img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $idcard->sign_image; ?>" width="200" height="24" /></div>
+                        <?php if (!empty($idcard->enable_attendance_qr)) { ?>
+                            <div class="legacy-card-auth">
+                                <div class="legacy-attendance-qr" data-attendance-qr="SL-DEMO-CREDENTIAL"></div>
+                                <div class="signature"><img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $idcard->sign_image; ?>" width="160" height="24" /></div>
+                            </div>
+                        <?php } else { ?>
+                            <div class="signature"><img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $idcard->sign_image; ?>" width="200" height="24" /></div>
+                        <?php } ?>
                     </td>
                 </tr>
             </table>
@@ -241,7 +253,10 @@ if($idcard->enable_vertical_card){
                             </td>
                         </tr>
                         <tr>
-                            <td valign="top" align="right" class="principal"><img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $idcard->sign_image; ?>" width="66" height="40" /></td>
+                            <td valign="top" align="right" class="legacy-card-footer">
+                                <?php if (!empty($idcard->enable_attendance_qr)) { ?><div class="legacy-attendance-qr" data-attendance-qr="SL-DEMO-CREDENTIAL"></div><?php } ?>
+                                <img src="https://schoollift.s3.us-east-2.amazonaws.com/<?php echo $idcard->sign_image; ?>" width="66" height="40" />
+                            </td>
                         </tr>
                     </table>
                 </td>
@@ -251,3 +266,7 @@ if($idcard->enable_vertical_card){
     <?php
 }
          ?>
+<?php if (!empty($idcard->enable_attendance_qr)) { ?>
+    <script src="<?php echo base_url('backend/idcard-studio/vendor/qrcode-1.0.0.min.js'); ?>"></script>
+    <script src="<?php echo base_url('backend/idcard-studio/idcard-legacy-qr.js?v=1.0.0'); ?>"></script>
+<?php } ?>

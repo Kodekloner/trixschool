@@ -30,6 +30,7 @@ class Cron extends CI_Controller
             $this->feereminder($key);
             $this->onlineexam($key);
             $this->supportemailalerts($key);
+            $this->biometricmaintenance($key);
         } else {
             echo "Invalid Key or Direct access is not allowed";
             return;
@@ -72,6 +73,40 @@ class Cron extends CI_Controller
             echo json_encode(array('support_email_alerts' => $result));
         }
 
+        return $result;
+    }
+
+    /** Deliver attendance alerts and enforce each school's biometric retention policy. */
+    public function biometricmaintenance($key = '')
+    {
+        if (!$this->hasValidCronKey($key)) {
+            echo "Invalid Key or Direct access is not allowed";
+            return array();
+        }
+        $this->load->library('biometric_attendance_service');
+        if (!$this->biometric_attendance_service->isReady()) {
+            $result = array('ready' => false, 'message' => 'Biometric migrations through 140 are not installed.');
+        } else {
+            $settings = $this->biometric_attendance_service->getSettings();
+            $lastRetentionDate = !empty($settings['last_retention_run_at'])
+                ? substr((string) $settings['last_retention_run_at'], 0, 10) : null;
+            $result = array(
+                'ready' => true,
+                'notifications' => $this->biometric_attendance_service->processNotificationQueue(20),
+                // The normal cron may run every minute for notification
+                // delivery. Retention is deliberately limited to one UTC run
+                // per day; an administrator can still run it immediately from
+                // the Biometric Attendance page.
+                'retention' => $lastRetentionDate === gmdate('Y-m-d')
+                    ? array('success' => true, 'skipped' => true, 'message' => 'Retention already ran today.')
+                    : $this->biometric_attendance_service->runRetentionCleanup(null, 1000),
+            );
+        }
+        log_message('info', 'Biometric maintenance: ' . json_encode($result));
+        if ($this->router->fetch_method() === 'biometricmaintenance') {
+            $this->output->set_content_type('application/json');
+            echo json_encode(array('biometric_maintenance' => $result));
+        }
         return $result;
     }
 

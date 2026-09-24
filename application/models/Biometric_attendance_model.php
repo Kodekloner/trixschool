@@ -13,7 +13,8 @@ class Biometric_attendance_model extends MY_Model
             'biometric_events', 'biometric_attendance_days',
             'biometric_exceptions', 'biometric_reconciliation_actions',
             'biometric_scanner_stations', 'biometric_qr_credentials',
-            'biometric_audit_logs'
+            'biometric_audit_logs', 'biometric_gateway_agents',
+            'biometric_gateway_commands', 'biometric_notification_queue'
         ) as $table) {
             if (!$this->db->table_exists($table)) {
                 return false;
@@ -22,6 +23,28 @@ class Biometric_attendance_model extends MY_Model
         foreach (array('student_attendences', 'staff_attendance') as $table) {
             if (!$this->db->field_exists('attendance_source', $table)
                 || !$this->db->field_exists('biometric_day_id', $table)) {
+                return false;
+            }
+        }
+        foreach (array(
+            'live_pilot_enabled', 'notify_student_in', 'notify_student_out',
+            'notify_email', 'notify_sms', 'notify_whatsapp',
+            'live_acknowledged_by', 'live_acknowledged_at',
+            'last_retention_run_at'
+        ) as $field) {
+            if (!$this->db->field_exists($field, 'biometric_settings')) {
+                return false;
+            }
+        }
+        if (!$this->db->field_exists('live_pilot', 'biometric_identity_mappings')) {
+            return false;
+        }
+        foreach (array(
+            'id', 'event_id', 'channel', 'status', 'attempt_count',
+            'next_attempt_at', 'last_error', 'created_at', 'updated_at',
+            'delivered_at'
+        ) as $field) {
+            if (!$this->db->field_exists($field, 'biometric_notification_queue')) {
                 return false;
             }
         }
@@ -104,6 +127,25 @@ class Biometric_attendance_model extends MY_Model
             ->get('biometric_integrations')->row_array();
     }
 
+    public function getGatewayAgent($integrationId, $gatewayId)
+    {
+        return $this->db->where('integration_id', (int) $integrationId)
+            ->where('gateway_id', $gatewayId)
+            ->get('biometric_gateway_agents')->row_array();
+    }
+
+    public function findGatewayAgentByGatewayId($gatewayId)
+    {
+        return $this->db->where('gateway_id', $gatewayId)
+            ->get('biometric_gateway_agents')->row_array();
+    }
+
+    public function getGatewayCommandByUuid($commandUuid)
+    {
+        return $this->db->where('command_uuid', $commandUuid)
+            ->get('biometric_gateway_commands')->row_array();
+    }
+
     public function findIntegrationByPrefix($prefix)
     {
         return $this->db->where('token_prefix', $prefix)->where('is_active', 1)
@@ -139,6 +181,12 @@ class Biometric_attendance_model extends MY_Model
             ->get('biometric_scanner_stations')->row_array();
     }
 
+    public function getScannerStation($id)
+    {
+        return $this->db->where('id', (int) $id)
+            ->get('biometric_scanner_stations')->row_array();
+    }
+
     public function getQrCredentialByUuid($uuid)
     {
         return $this->db->where('credential_uuid', $uuid)
@@ -167,6 +215,42 @@ class Biometric_attendance_model extends MY_Model
         );
     }
 
+    /**
+     * Pagination with a bounded free-text search and range filters. Callers
+     * provide an allowlisted table and field names; no request value is ever
+     * used as an identifier.
+     */
+    public function paginateAdvanced(
+        $table,
+        array $filters,
+        $page,
+        $perPage,
+        $orderBy,
+        $orderDirection = 'DESC',
+        $search = '',
+        array $searchFields = array(),
+        array $ranges = array()
+    ) {
+        $page = max(1, (int) $page);
+        $perPage = max(1, min(200, (int) $perPage));
+        $offset = ($page - 1) * $perPage;
+
+        $this->applyAdvancedFilters($filters, $search, $searchFields, $ranges);
+        $total = $this->db->count_all_results($table);
+
+        $this->applyAdvancedFilters($filters, $search, $searchFields, $ranges);
+        $items = $this->db->order_by($orderBy, $orderDirection)
+            ->limit($perPage, $offset)->get($table)->result_array();
+
+        return array(
+            'items' => $items,
+            'total' => (int) $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'pages' => $total ? (int) ceil($total / $perPage) : 0,
+        );
+    }
+
     protected function applyFilters(array $filters)
     {
         foreach ($filters as $field => $value) {
@@ -177,6 +261,34 @@ class Biometric_attendance_model extends MY_Model
                 $this->db->where_in($field, $value);
             } else {
                 $this->db->where($field, $value);
+            }
+        }
+    }
+
+    protected function applyAdvancedFilters(array $filters, $search, array $searchFields, array $ranges)
+    {
+        $this->applyFilters($filters);
+        $search = trim((string) $search);
+        if ($search !== '' && $searchFields) {
+            $this->db->group_start();
+            foreach (array_values($searchFields) as $index => $field) {
+                if ($index === 0) {
+                    $this->db->like($field, $search);
+                } else {
+                    $this->db->or_like($field, $search);
+                }
+            }
+            $this->db->group_end();
+        }
+        foreach ($ranges as $field => $range) {
+            if (!is_array($range)) {
+                continue;
+            }
+            if (!empty($range['from'])) {
+                $this->db->where($field . ' >=', $range['from']);
+            }
+            if (!empty($range['to'])) {
+                $this->db->where($field . ' <=', $range['to']);
             }
         }
     }

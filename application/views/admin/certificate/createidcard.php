@@ -128,6 +128,13 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                                     </div>
                                 </div>
                                 <div class="form-group switch-inline">
+                                    <label>Attendance QR</label>
+                                    <div class="material-switch switchcheck">
+                                        <input id="enable_attendance_qr" name="is_active_attendance_qr" type="checkbox" class="chk" value="1" <?php echo set_checkbox('is_active_attendance_qr', '1', (set_value('is_active_attendance_qr') == 1) ? TRUE : FALSE); ?>>
+                                        <label for="enable_attendance_qr" class="label-success"></label>
+                                    </div>
+                                </div>
+                                <div class="form-group switch-inline">
                                     <label><?php echo $this->lang->line('design').' '.$this->lang->line('type'); ?></label>
                                     <div class="material-switch switchcheck">
                                         <input id="enable_vertical_card" name="enable_vertical_card" type="checkbox" class="chk" value="1" <?php echo set_checkbox('enable_vertical_card', '1', (set_value('enable_vertical_card') == 1) ? TRUE : FALSE); ?>>

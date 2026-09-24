@@ -15,17 +15,52 @@ if (!preg_match('/^Bearer\s+(.+)$/i', (string) ($_SERVER['HTTP_AUTHORIZATION'] ?
     respond(401, ['detail' => 'Invalid gateway token.']);
 }
 if ($method === 'GET' && $path === '/api/biometric/v2/health') {
-    respond(200, ['status' => 'ok', 'mode' => 'simulation']);
+    respond(200, [
+        'status' => 'ok',
+        'operating_mode' => 'shadow',
+        'accepts_gateway_events' => true,
+    ]);
+}
+
+if ($method === 'POST' && $path === '/api/biometric/v2/gateway/poll') {
+    $payload = requestJson();
+    $result = mutateState($statePath, static function (array &$state) use ($payload): array {
+        $state['polls'][] = $payload;
+        $canAccept = isset($payload['status']['can_accept_command'])
+            && $payload['status']['can_accept_command'] === true;
+        $command = null;
+        if ($canAccept && !empty($state['commands']) && is_array($state['commands'])) {
+            $command = array_shift($state['commands']);
+        }
+        return ['command' => $command];
+    });
+    respond(200, $result);
+}
+
+if ($method === 'POST' && $path === '/api/biometric/v2/gateway/result') {
+    $payload = requestJson();
+    mutateState($statePath, static function (array &$state) use ($payload): bool {
+        $state['command_results'][] = $payload;
+        return true;
+    });
+    respond(200, ['success' => true]);
 }
 
 if ($method !== 'POST' || $path !== '/api/biometric/v2/events') {
     respond(404, ['detail' => 'Not found.']);
 }
 
-$body = file_get_contents('php://input');
-$payload = json_decode($body === false ? '' : $body, true);
+$payload = requestJson();
 if (!is_array($payload) || !isset($payload['events']) || !is_array($payload['events'])) {
     respond(422, ['detail' => 'Invalid batch.']);
+}
+
+/** @return array<string, mixed> */
+function requestJson(): array
+{
+    $body = file_get_contents('php://input');
+    $payload = json_decode($body === false ? '' : $body, true);
+    return is_array($payload) ? $payload : [];
 }
 
 $result = mutateState($statePath, static function (array &$state) use ($payload): array {

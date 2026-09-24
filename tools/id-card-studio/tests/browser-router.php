@@ -47,7 +47,7 @@ if ($path === '/fixture/publish') {
     echo json_encode(array('status' => 'published', 'published_version_id' => $_SESSION['published_version_id'], 'draft_checksum' => $_SESSION['checksum']));
     exit;
 }
-if ($path !== '/' && $path !== '/fixture' && $path !== '/fixture/runtime') { http_response_code(404); exit; }
+if ($path !== '/' && $path !== '/fixture' && $path !== '/fixture/runtime' && $path !== '/fixture/legacy-qr') { http_response_code(404); exit; }
 function base_url($path) { return '/' . $path; }
 function site_url($path) {
     if (strpos($path, '/save/') !== false) { return '/fixture/save'; }
@@ -55,6 +55,13 @@ function site_url($path) {
     return '/fixture';
 }
 function html_escape($text) { return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8'); }
+if ($path === '/fixture/legacy-qr') {
+    $token = isset($_GET['missingqr']) ? '' : 'SLQR1.fixture.secure-local-token';
+    echo '<!doctype html><html><head><style>.legacy-qr-warning{padding:10px}.legacy-card-sheet{display:block}.legacy-attendance-qr{width:96px;height:96px;padding:6px;box-sizing:border-box}</style></head><body>';
+    echo '<div class="legacy-card-sheet"><div class="legacy-attendance-qr" data-attendance-qr="' . html_escape($token) . '"></div></div>';
+    echo '<script src="/backend/idcard-studio/vendor/qrcode-1.0.0.min.js"></script><script src="/backend/idcard-studio/idcard-legacy-qr.js?v=1.0.0"></script></body></html>';
+    exit;
+}
 $subject_type = isset($_GET['staff']) ? 'staff' : 'student';
 $_SESSION['subject'] = $subject_type;
 $defaults = $library->defaultDocuments($subject_type);
@@ -71,13 +78,18 @@ $design = (object) array('id' => 1, 'title' => 'Browser fixture', 'width_mm' => 
 $draft = (object) array('checksum' => isset($_SESSION['checksum']) ? $_SESSION['checksum'] : 'fixture', 'front_json' => json_encode($front), 'back_json' => json_encode($back), 'print_settings_json' => json_encode($defaults['printSettings']));
 $bindings = $library->bindingDefinitions($subject_type);
 $sample_data = array('school.name' => 'SchoolLift Academy', 'school.address' => 'Lagos, Nigeria', $subject_type . '.full_name' => 'Alexandra A Very Long Student Or Staff Full Name', 'attendance.credential' => 'FIXTURE-CREDENTIAL', 'student.admission_no' => '1001', 'staff.employee_id' => '1001');
+if (isset($_GET['missingqr'])) { $sample_data['attendance.credential'] = ''; }
 $sample_image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAIAAADwyuo0AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAGUlEQVQImWN8KCfCwMBgLHeWgYGBiQEJAAAuZQI1CnjMwAAAAABJRU5ErkJggg==';
 foreach (array('school.logo', 'school.signature', 'school.background', $subject_type . '.photo') as $binding) { $sample_data[$binding] = $sample_image; }
 $studio_csrf = 'fixture';
 if ($path === '/fixture/runtime') {
     $studio_assets = array();
     $studio_design = (object) array_merge((array) $design, (array) $draft);
-    $studio_cards = array(array('bindings' => $sample_data), array('bindings' => array_merge($sample_data, array($subject_type . '.full_name' => str_repeat('Long Name ', 25)))));
+    $qr_status = $sample_data['attendance.credential'] === '' ? 'not_issued' : 'ready';
+    $studio_cards = array(
+        array('attendanceQrStatus' => $qr_status, 'attendanceQrLabel' => 'Fixture Person One', 'bindings' => $sample_data),
+        array('attendanceQrStatus' => $qr_status, 'attendanceQrLabel' => 'Fixture Person Two', 'bindings' => array_merge($sample_data, array($subject_type . '.full_name' => str_repeat('Long Name ', 25))))
+    );
     echo '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Runtime fixture</title></head><body>';
     include $root . '/application/views/admin/idcardstudio/runtime_cards.php';
     echo '</body></html>';

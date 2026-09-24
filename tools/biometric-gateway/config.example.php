@@ -49,6 +49,8 @@ return [
         'bearer_token' => getenv('SCHOOLLIFT_BIOMETRIC_TOKEN') ?: '',
         'events_path' => '/api/biometric/v2/events',
         'health_path' => '/api/biometric/v2/health',
+        'control_poll_path' => '/api/biometric/v2/gateway/poll',
+        'control_result_path' => '/api/biometric/v2/gateway/result',
         'batch_size' => 100,
         'max_batches_per_run' => 10,
     ],
