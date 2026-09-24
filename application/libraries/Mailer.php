@@ -112,14 +112,14 @@ class Mailer {
             }
         }
         if (!empty($FILES)) {
-            if (isset($_FILES['files']) && !empty($_FILES['files'])) {
-                $no_files = count($_FILES["files"]['name']);
+            if (isset($FILES['files']) && !empty($FILES['files'])) {
+                $no_files = count($FILES["files"]['name']);
                 for ($i = 0; $i < $no_files; $i++) {
-                    if ($_FILES["files"]["error"][$i] > 0) {
-                        echo "Error: " . $_FILES["files"]["error"][$i] . "<br>";
+                    if ($FILES["files"]["error"][$i] > 0) {
+                        log_message('error', 'Mailer skipped an attachment with upload error code ' . (int) $FILES["files"]["error"][$i] . '.');
                     } else {
-                        $file_tmp = $_FILES["files"]["tmp_name"][$i];
-                        $file_name = $_FILES["files"]["name"][$i];
+                        $file_tmp = $FILES["files"]["tmp_name"][$i];
+                        $file_name = $FILES["files"]["name"][$i];
                         $mail->AddAttachment($file_tmp, $file_name);
                     }
                 }
@@ -152,7 +152,7 @@ class Mailer {
         if (empty($options['is_html'])) {
             $mail->AltBody = $body;
         }
-        $mail->AddAddress($toemail);
+        $mail->AddAddress($toemail, !empty($options['to_name']) ? $options['to_name'] : '');
         if ($mail->Send()) {
             if (method_exists($mail, 'getLastMessageID')) {
                 $this->last_message_id = $mail->getLastMessageID();

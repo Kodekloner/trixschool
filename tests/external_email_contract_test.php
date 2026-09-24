@@ -81,6 +81,7 @@ foreach (array(
     "name=\"external_name\"",
     "name=\"external_subject\"",
     "name=\"external_message\"",
+    "name=\"external_attachment[]\"",
 ) as $formContract) {
     external_email_contract_assert(
         strpos($composeView, $formContract) !== false,
@@ -89,29 +90,43 @@ foreach (array(
 }
 external_email_contract_assert(
     strpos($sendExternal, 'schoollift_support_normalize_email') !== false
-        && strpos($sendExternal, 'hash_equals($inboundAddress, $recipientEmail)') !== false
+        && strpos($sendExternal, 'schoollift_support_normalize_subject') !== false
         && strpos($sendExternal, '$this->security->xss_clean($rawBody)') !== false,
-    'The action must validate the address, reject an inbound-mail loop, and sanitize HTML.'
+    'The action must validate the address and subject and sanitize HTML.'
 );
 
 external_email_contract_assert(
-    strpos($sendExternal, 'createOutgoingConversation') !== false
-        && strpos($sendExternal, 'addOutgoingReply') !== false
-        && strpos($ticketModel, "'source'                   => 'external_email'") !== false,
-    'Every external send attempt must create an audited Support Ticket conversation and message.'
+    strpos($sendExternal, 'createOutgoingConversation') === false
+        && strpos($sendExternal, 'addOutgoingReply') === false
+        && strpos($sendExternal, 'schoollift_support_thread_subject') === false
+        && strpos($sendExternal, "'X-SchoolLift-Ticket'") === false
+        && strpos($sendExternal, "'reply_to_email'") === false,
+    'A regular external email must not create or masquerade as a Support Ticket.'
 );
-foreach (array("'delivery_status' => \$sent ? 'sent' : 'failed'", "'error_message' => \$sent ? null : \$error") as $deliveryContract) {
-    external_email_contract_assert(
-        strpos($sendExternal, $deliveryContract) !== false,
-        'Both successful and failed delivery attempts must be recorded: ' . $deliveryContract
-    );
-}
-
 external_email_contract_assert(
-    strpos($sendExternal, 'schoollift_support_thread_subject') !== false
-        && strpos($sendExternal, "['reply_to_email'] =") !== false
-        && strpos($sendExternal, "'X-SchoolLift-Ticket'") !== false,
-    'New external conversations must use a ticket subject marker, inbound Reply-To, and ticket header.'
+    strpos($composeView, 'enctype="multipart/form-data"') !== false
+        && strpos($composeView, 'id="external_file"') !== false
+        && strpos($composeView, 'multiple="multiple"') !== false
+        && strpos($sendExternal, 'prepareExternalEmailAttachments()') !== false
+        && strpos($sendExternal, "\$attachments['files']") !== false,
+    'The external form must accept multiple attachments and pass them to the mailer.'
+);
+$externalAttachments = external_email_contract_method($mailsms, 'private', 'prepareExternalEmailAttachments');
+external_email_contract_assert(
+    strpos($externalAttachments, "\$_FILES['external_attachment']") !== false
+        && strpos($externalAttachments, 'UPLOAD_ERR_OK') !== false
+        && strpos($externalAttachments, 'is_uploaded_file($tmpName)') !== false
+        && strpos($mailer, "isset(\$FILES['files'])") !== false
+        && strpos($mailer, "\$_FILES['files']") === false,
+    'External attachments must be verified and the mailer must consume its explicit file argument.'
+);
+external_email_contract_assert(
+    strpos($sendExternal, '$recipientEmail,') !== false
+        && strpos($sendExternal, '$subject,') !== false
+        && strpos($sendExternal, '$bodyHtml,') !== false
+        && strpos($sendExternal, "'to_name' => \$recipientName") !== false
+        && strpos($sendExternal, '$this->messages_model->add(array(') !== false,
+    'External delivery must use the original email fields and the normal communication log.'
 );
 $supportReply = external_email_contract_method($support, 'public', 'reply');
 external_email_contract_assert(
