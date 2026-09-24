@@ -127,8 +127,6 @@ class Mailsms extends Admin_Controller
         $data['birthDaysList'] = $birthDaysList;
         $data['sch_setting']   = $this->sch_setting_detail;
         $data['compose_notifications'] = $this->getComposeNotificationTemplates();
-        $this->load->helper('support_email');
-        $this->config->load('incoming_email', true);
         $requested_tab = strtolower(trim((string) $this->input->get('tab', true)));
         $data['can_standard_email'] = $can_standard_email;
         $data['can_external_email'] = $can_external_email;
@@ -138,22 +136,15 @@ class Mailsms extends Admin_Controller
         $data['external_email_csrf'] = (string) $this->session->userdata($this->externalEmailTokenSessionKey);
         $data['standard_email_csrf'] = (string) $this->session->userdata($this->standardEmailTokenSessionKey);
         $data['external_email_draft'] = (array) $this->session->flashdata('external_email_draft');
-        $data['inbound_email_address'] = schoollift_support_configured_inbound_address(
-            $this->config->item('ses_inbound_recipient_local_part', 'incoming_email'),
-            isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : ''
-        );
-        $data['external_email_ready'] = $this->db->table_exists('incoming_emails')
-            && $this->db->table_exists('support_tickets')
-            && $this->db->table_exists('support_messages')
-            && $data['inbound_email_address'] !== '';
+        $data['external_email_ready'] = !empty($this->mail_config);
         $this->load->view('layout/header');
         $this->load->view('admin/mailsms/compose', $data);
         $this->load->view('layout/footer');
     }
 
     /**
-     * Start an email conversation with a recipient who is not required to be
-     * a student, parent, or member of staff.
+     * Send a regular email to a recipient who is not required to be a
+     * student, parent, or member of staff.
      */
     public function send_external()
     {
@@ -163,36 +154,17 @@ class Mailsms extends Admin_Controller
         $this->requireExternalEmailPost();
 
         $this->load->helper('support_email');
-        $this->config->load('incoming_email', true);
-        $this->load->model('supportticket_model');
-        if (!$this->db->table_exists('incoming_emails')
-            || !$this->db->table_exists('support_tickets')
-            || !$this->db->table_exists('support_messages')) {
-            return $this->externalEmailRedirect(
-                'danger',
-                'External email storage is not ready. Import the all-school database migrations through version 134 first.'
-            );
-        }
-
         $recipientEmail = schoollift_support_normalize_email($this->input->post('external_email', true));
-        $recipientName = trim(strip_tags((string) $this->input->post('external_name', true)));
+        $recipientName = trim(preg_replace('/[\r\n]+/', ' ', strip_tags((string) $this->input->post('external_name', true))));
         $subject = schoollift_support_normalize_subject($this->input->post('external_subject', true));
         $rawBody = trim((string) $this->input->post('external_message', false));
         $bodyHtml = trim((string) $this->security->xss_clean($rawBody));
         $bodyText = schoollift_support_html_to_text($bodyHtml);
-        $inboundAddress = schoollift_support_configured_inbound_address(
-            $this->config->item('ses_inbound_recipient_local_part', 'incoming_email'),
-            isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : ''
-        );
+        $attachments = $this->prepareExternalEmailAttachments();
 
         $errors = array();
         if ($recipientEmail === '') {
             $errors[] = 'Enter a valid external recipient email address.';
-        } elseif ($inboundAddress !== '' && hash_equals($inboundAddress, $recipientEmail)) {
-            $errors[] = 'The recipient cannot be the school inbox address because that would create an email loop.';
-        }
-        if ($inboundAddress === '') {
-            $errors[] = 'The school inbound reply address could not be determined.';
         }
         if ($recipientName !== '' && strlen($recipientName) > 191) {
             $errors[] = 'Recipient name must not exceed 191 characters.';
@@ -205,69 +177,49 @@ class Mailsms extends Admin_Controller
         } elseif (strlen($rawBody) > 1000000) {
             $errors[] = 'Email message must not exceed 1 MB.';
         }
+        if ($attachments['error'] !== '') {
+            $errors[] = $attachments['error'];
+        }
         if (!empty($errors)) {
             return $this->externalEmailRedirect('danger', implode(' ', $errors));
         }
 
-        $staffId = (int) $this->customlib->getStaffID();
-        $ticket = $this->supportticket_model->createOutgoingConversation(array(
-            'requester_name'  => $recipientName,
-            'requester_email' => $recipientEmail,
-            'subject'         => $subject,
-            'sender_staff_id' => $staffId,
-        ));
-        if (empty($ticket)) {
-            return $this->externalEmailRedirect('danger', 'The email conversation could not be created. Please try again.');
-        }
-
-        $school = $this->setting_model->get();
-        $schoolEmail = !empty($school[0]['email']) ? schoollift_support_normalize_email($school[0]['email']) : '';
-        $staff = $staffId > 0 ? $this->staff_model->getAll($staffId) : array();
-        $staffName = !empty($staff) ? trim($staff['name'] . ' ' . $staff['surname']) : '';
-        $threadSubject = schoollift_support_thread_subject($subject, $ticket['ticket_number']);
-        $messageId = $this->supportticket_model->buildOutgoingMessageId(
-            $ticket['ticket_number'],
-            $schoolEmail !== '' ? $schoolEmail : $inboundAddress
-        );
-        $mailBody = schoollift_support_append_ticket_note($bodyHtml, $ticket['ticket_number'], $inboundAddress);
-
         $this->load->library('mailer');
         $mailOptions = array(
-            'message_id' => $messageId,
             'is_html' => true,
-            'custom_headers' => array(
-                'X-SchoolLift-Ticket' => $ticket['ticket_number'],
-            ),
+            'to_name' => $recipientName,
         );
-        if ($inboundAddress !== '') {
-            $mailOptions['reply_to_email'] = $inboundAddress;
-            $mailOptions['reply_to_name'] = !empty($school[0]['name']) ? $school[0]['name'] : 'School office';
-        }
 
-        $sent = $this->mailer->send_mail($recipientEmail, $threadSubject, $mailBody, array(), '', $mailOptions);
+        $sent = $this->mailer->send_mail(
+            $recipientEmail,
+            $subject,
+            $bodyHtml,
+            $attachments['files'],
+            '',
+            $mailOptions
+        );
         $error = $sent ? '' : $this->mailer->get_last_error();
-        $this->supportticket_model->addOutgoingReply($ticket['id'], array(
-            'sender_staff_id' => $staffId,
-            'sender_name' => $staffName,
-            'sender_email' => $schoolEmail !== '' ? $schoolEmail : $inboundAddress,
-            'recipients' => array($recipientEmail),
-            'subject' => $threadSubject,
-            'body_text' => $bodyText . "\n\n--\nTicket: " . $ticket['ticket_number'],
-            'body_html' => $mailBody,
-            'message_id' => $messageId,
-            'delivery_status' => $sent ? 'sent' : 'failed',
-            'error_message' => $sent ? null : $error,
-        ));
 
         if ($sent) {
-            $this->session->set_flashdata('msg', '<div class="alert alert-success">External email sent successfully. Conversation ' . html_escape($ticket['ticket_number']) . ' has been saved.</div>');
-            if ($this->rbac->hasPrivilege('support_ticket', 'can_view')) {
-                return redirect('admin/support/view/' . (int) $ticket['id']);
-            }
+            $this->messages_model->add(array(
+                'template_id'   => '',
+                'is_individual' => 1,
+                'title'         => $subject,
+                'message'       => $bodyHtml,
+                'send_mail'     => 1,
+                'send_sms'      => 0,
+                'user_list'     => json_encode(array(array(
+                    'category' => 'external',
+                    'name'     => $recipientName,
+                    'email'    => $recipientEmail,
+                ))),
+                'created_at'    => date('Y-m-d H:i:s'),
+            ));
+            $this->session->set_flashdata('msg', '<div class="alert alert-success">External email sent successfully.</div>');
             return redirect('admin/mailsms/compose?tab=external');
         }
 
-        $message = 'The external email could not be delivered, but the failed attempt was saved in ' . $ticket['ticket_number'] . '.';
+        $message = 'The external email could not be delivered.';
         if ($error !== '') {
             $message .= ' ' . $error;
         }
@@ -1648,6 +1600,62 @@ class Mailsms extends Admin_Controller
         }
 
         return $allowed;
+    }
+
+    /**
+     * Validate external-email uploads and adapt them to the attachment shape
+     * consumed by Mailer. Files stay in PHP's temporary upload directory and
+     * are never stored as support-ticket attachments.
+     */
+    private function prepareExternalEmailAttachments()
+    {
+        $result = array('files' => array(), 'error' => '');
+        if (empty($_FILES['external_attachment']) || !is_array($_FILES['external_attachment'])) {
+            return $result;
+        }
+
+        $upload = $_FILES['external_attachment'];
+        $names = isset($upload['name']) ? $upload['name'] : array();
+        if (!is_array($names)) {
+            $names = array($names);
+        }
+
+        $files = array(
+            'name' => array(),
+            'type' => array(),
+            'tmp_name' => array(),
+            'error' => array(),
+            'size' => array(),
+        );
+
+        foreach ($names as $index => $name) {
+            $error = isset($upload['error'][$index]) ? (int) $upload['error'][$index] : UPLOAD_ERR_NO_FILE;
+            if ($error === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+            if ($error !== UPLOAD_ERR_OK) {
+                $result['error'] = 'One or more attachments could not be uploaded. Check the file size and try again.';
+                return $result;
+            }
+
+            $tmpName = isset($upload['tmp_name'][$index]) ? (string) $upload['tmp_name'][$index] : '';
+            if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+                $result['error'] = 'One or more attachments could not be verified. Please select the files again.';
+                return $result;
+            }
+
+            $files['name'][] = basename((string) $name);
+            $files['type'][] = isset($upload['type'][$index]) ? (string) $upload['type'][$index] : '';
+            $files['tmp_name'][] = $tmpName;
+            $files['error'][] = UPLOAD_ERR_OK;
+            $files['size'][] = isset($upload['size'][$index]) ? (int) $upload['size'][$index] : 0;
+        }
+
+        if (!empty($files['name'])) {
+            $result['files']['files'] = $files;
+        }
+
+        return $result;
     }
 
     private function requireExternalEmailPost()

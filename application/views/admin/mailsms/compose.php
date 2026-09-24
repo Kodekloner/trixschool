@@ -27,7 +27,6 @@ $external_email_draft = isset($external_email_draft) && is_array($external_email
     }
     .external-email-footer__hint { min-width: 0; }
     .external-email-footer__submit { flex: 0 0 auto; }
-    .external-email-reply-address { overflow-wrap: anywhere; word-break: break-word; }
     @media (max-width: 767px) {
         .nav-tabs-custom > .nav-tabs.compose-email-tabs {
             display: flex;
@@ -283,13 +282,13 @@ $external_email_draft = isset($external_email_draft) && is_array($external_email
                         <?php } ?>
                         <?php if ($can_external_email) { ?>
                         <div class="tab-pane <?php echo $active_email_tab === 'external' ? 'active' : ''; ?>" id="tab_external">
-                            <form action="<?php echo site_url('admin/mailsms/send_external'); ?>" method="post" id="external_email_form">
+                            <form action="<?php echo site_url('admin/mailsms/send_external'); ?>" method="post" enctype="multipart/form-data" id="external_email_form">
                                 <input type="hidden" name="external_email_csrf" value="<?php echo html_escape($external_email_csrf); ?>">
                                 <div class="box-body">
                                     <?php if (!$external_email_ready) { ?>
                                         <div class="alert alert-danger">
                                             <i class="fa fa-warning"></i>
-                                            External email storage is not ready. Import the all-school database migrations through version 134 first.
+                                            Email sending is not ready. Configure and activate an email account in Email Settings first.
                                         </div>
                                     <?php } ?>
                                     <div class="row">
@@ -297,6 +296,11 @@ $external_email_draft = isset($external_email_draft) && is_array($external_email
                                             <div class="form-group">
                                                 <label for="external_subject">Subject</label><small class="req"> *</small>
                                                 <input type="text" class="form-control" id="external_subject" name="external_subject" maxlength="220" value="<?php echo html_escape(isset($external_email_draft['subject']) ? $external_email_draft['subject'] : ''); ?>" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="pr20" for="external_file"><?php echo $this->lang->line('attachment'); ?></label>
+                                                <input type="file" id="external_file" class="filestyle form-control" name="external_attachment[]" multiple="multiple">
+                                                <span class="help-block">You can select more than one file.</span>
                                             </div>
                                             <div class="form-group">
                                                 <label for="external_msg_text">Message</label><small class="req"> *</small>
@@ -315,11 +319,8 @@ $external_email_draft = isset($external_email_draft) && is_array($external_email
                                                 <input type="text" class="form-control" id="external_name" name="external_name" maxlength="191" autocomplete="name" value="<?php echo html_escape(isset($external_email_draft['name']) ? $external_email_draft['name'] : ''); ?>">
                                             </div>
                                             <div class="well well-sm">
-                                                <p><i class="fa fa-shield text-primary"></i> <strong>Tracked conversation</strong></p>
-                                                <p class="text-muted" style="margin-bottom:8px;">The delivery attempt is audited. Replies return to the same conversation in Support Tickets.</p>
-                                                <?php if (!empty($inbound_email_address)) { ?>
-                                                    <p class="external-email-reply-address" style="margin-bottom:0;"><small>Reply address: <strong><?php echo html_escape($inbound_email_address); ?></strong></small></p>
-                                                <?php } ?>
+                                                <p><i class="fa fa-envelope-o text-primary"></i> <strong>Standard outbound email</strong></p>
+                                                <p class="text-muted" style="margin-bottom:0;">This sends a regular email and does not create a Support Ticket. Replies use the school's normal sender address.</p>
                                             </div>
                                         </div>
                                     </div>

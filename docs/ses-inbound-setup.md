@@ -136,24 +136,26 @@ or CNAME records.
 Do not create another SNS topic or another webhook subscription for the new
 school.
 
-## External recipients and conversation threading
+## External recipients and support conversations
 
 Authorized staff can use **Communicate > Send Email > External** to enter an
 external address that is not attached to a student, guardian, or staff record.
 External recipients are sent through the same active Email Settings/SMTP
 configuration as directory recipients. Sending to an external address does not
-create that person as a SchoolLift user.
+create that person as a SchoolLift user or create a Support Ticket. The External
+form also accepts multiple file attachments. Its subject and body are sent as a
+regular outbound email without a ticket marker or Support-specific headers.
 
 The support inbox and the external composer serve different starting points:
 
-- Use external compose to start a new outbound conversation with any valid
-  address.
+- Use external compose to send a regular outbound email to any valid address.
 - Use **Support Tickets** to answer a message that arrived at the school's
   `admin@` address.
-- Replies addressed to `admin@SCHOOL-DOMAIN` are processed by SES and appear in
-  Support Tickets. Ticket reply headers and the ticket marker keep replies on
-  the existing thread; a reply with no recognizable thread reference opens a
-  new support ticket.
+- Replies to an External email use the school's normal sender address; the
+  External send itself is never added to Support Tickets.
+- Messages addressed to `admin@SCHOOL-DOMAIN` are processed by SES and appear
+  in Support Tickets. Replies sent from the Support Ticket page retain the
+  ticket headers and marker needed to stay on the existing thread.
 
 Do not create student, guardian, or staff records merely to send an email to an
 external recipient. The dedicated **Send External Email** permission is granted
@@ -257,8 +259,9 @@ code and migration remain tenant-safe for every other school.
    normalize the saved SMTP port to `587` (the audited snapshot contains
    leading whitespace).
 6. Open `https://apexstaracademy.com.ng/admin/support`, opt in the authorized
-   staff recipients, and test inbound receipt, device alert, reply threading,
-   and a new external compose message.
+   staff recipients, and test inbound receipt, device alert, and reply
+   threading. Separately test an External email with an attachment and confirm
+   it does not create a Support Ticket.
 7. Schedule
    `https://apexstaracademy.com.ng/cron/supportemailalerts/CRON_SECRET` once per
    minute using that tenant's configured cron secret.
@@ -276,8 +279,9 @@ code and migration remain tenant-safe for every other school.
    uses `apexacademyaso.com.ng`, which differs from
    `apexstaracademyaso.com.ng`; SES must verify the actual sender identity.
 6. Open `https://apexstaracademyaso.com.ng/admin/support`, opt in the authorized
-   staff recipients, and test inbound receipt, device alert, reply threading,
-   and a new external compose message.
+   staff recipients, and test inbound receipt, device alert, and reply
+   threading. Separately test an External email with an attachment and confirm
+   it does not create a Support Ticket.
 7. Schedule
    `https://apexstaracademyaso.com.ng/cron/supportemailalerts/CRON_SECRET` once
    per minute using that tenant's configured cron secret.
