@@ -12,6 +12,7 @@ class Webhooks extends CI_Controller {
         parent::__construct();
         $this->load->model('incomingemail_model');
         $this->load->model('supportticket_model');
+        $this->load->model('emailconversation_model');
         $this->load->helper('security');
     }
 
@@ -134,6 +135,7 @@ class Webhooks extends CI_Controller {
         $allowed_topic_arn  = trim((string) $this->config->item('ses_inbound_allowed_topic_arn', 'incoming_email'));
         $auto_confirm       = (bool) $this->config->item('ses_inbound_auto_confirm', 'incoming_email');
         $recipient_local_part = strtolower(trim((string) $this->config->item('ses_inbound_recipient_local_part', 'incoming_email')));
+        $mail_recipient_local_part = strtolower(trim((string) $this->config->item('ses_inbound_mail_local_part', 'incoming_email')));
         $provided_token     = trim((string) $this->input->get('token', true));
         $raw_payload        = file_get_contents('php://input');
         $decoded_payload    = json_decode($raw_payload, true);
@@ -209,12 +211,19 @@ class Webhooks extends CI_Controller {
             return $this->respond_json(array('status' => 'ignored', 'message' => 'Unsupported SNS message type'), 200);
         }
 
-        if ($recipient_local_part === '') {
-            log_message('error', 'SES inbound routing failed: recipient local part is not configured.');
-            return $this->respond_json(array('status' => 'error', 'message' => 'Inbound recipient is not configured'), 500);
+        if ($recipient_local_part === '' || $mail_recipient_local_part === '') {
+            log_message('error', 'SES inbound routing failed: support or shared-email recipient local part is not configured.');
+            return $this->respond_json(array('status' => 'error', 'message' => 'Inbound recipients are not configured'), 500);
+        }
+        if ($recipient_local_part === $mail_recipient_local_part) {
+            log_message('error', 'SES inbound routing failed: support and shared-email recipient local parts must be different.');
+            return $this->respond_json(array('status' => 'error', 'message' => 'Inbound recipients conflict'), 500);
         }
 
-        $school_route = $this->resolveSchoolRoute($message_data, $recipient_local_part);
+        $school_route = $this->resolveSchoolRoute($message_data, array(
+            'support' => $recipient_local_part,
+            'shared_email' => $mail_recipient_local_part,
+        ));
         if (empty($school_route)) {
             log_message('error', 'SES inbound notification ignored: no configured school database matched the envelope recipients.');
             return $this->respond_json(array('status' => 'ignored', 'message' => 'No school route matched'), 200);
@@ -225,17 +234,25 @@ class Webhooks extends CI_Controller {
             return $this->respond_json(array('status' => 'error', 'message' => 'School database unavailable'), 503);
         }
 
-        if (!$this->requiredInboundTablesExist()) {
-            log_message('error', 'SES inbound routing failed: support tables are missing for ' . $school_route['database_group']);
-            return $this->respond_json(array('status' => 'error', 'message' => 'School support tables are missing'), 503);
+        if (!$this->requiredInboundTablesExist($school_route['channel'])) {
+            log_message('error', 'SES inbound routing failed: ' . $school_route['channel'] . ' tables are missing for ' . $school_route['database_group']);
+            return $this->respond_json(array('status' => 'error', 'message' => 'School inbound email tables are missing'), 503);
         }
 
         $record            = $this->buildIncomingEmailRecord($sns_payload, $message_data, $raw_payload);
         $record_id         = $this->incomingemail_model->saveFromWebhook($record);
         $support_ticket_id = null;
+        $email_conversation_id = null;
 
         if (strtolower((string) $record['ses_notification_type']) === 'received') {
-            $support_ticket_id = $this->supportticket_model->processIncomingEmail($record_id);
+            if ($school_route['channel'] === 'shared_email') {
+                $email_conversation_id = $this->emailconversation_model->processIncomingEmail(
+                    $record_id,
+                    $school_route['recipient']
+                );
+            } else {
+                $support_ticket_id = $this->supportticket_model->processIncomingEmail($record_id);
+            }
         }
 
         if (!empty($support_ticket_id)) {
@@ -272,18 +289,20 @@ class Webhooks extends CI_Controller {
             }
         }
 
-        log_message('info', 'SES inbound webhook routed ' . $school_route['recipient'] . ' to ' . $school_route['database_group'] . ' and stored message #' . $record_id);
+        log_message('info', 'SES inbound webhook routed ' . $school_route['recipient'] . ' to ' . $school_route['database_group'] . ' as ' . $school_route['channel'] . ' and stored message #' . $record_id);
 
         return $this->respond_json(array(
             'status'            => 'ok',
             'school_domain'     => $school_route['database_group'],
             'recipient'         => $school_route['recipient'],
+            'channel'           => $school_route['channel'],
             'id'                => $record_id,
             'support_ticket_id' => $support_ticket_id,
+            'email_conversation_id' => $email_conversation_id,
         ), 200);
     }
 
-    protected function resolveSchoolRoute($message_data, $recipient_local_part)
+    protected function resolveSchoolRoute($message_data, $recipient_routes)
     {
         $mail    = (isset($message_data['mail']) && is_array($message_data['mail'])) ? $message_data['mail'] : array();
         $receipt = (isset($message_data['receipt']) && is_array($message_data['receipt'])) ? $message_data['receipt'] : array();
@@ -292,6 +311,16 @@ class Webhooks extends CI_Controller {
             isset($receipt['recipients']) && is_array($receipt['recipients']) ? $receipt['recipients'] : array()
         );
         $routes = array();
+        if (is_string($recipient_routes)) {
+            $recipient_routes = array('support' => $recipient_routes);
+        }
+        $localPartChannels = array();
+        foreach ((array) $recipient_routes as $channel => $localPart) {
+            $normalizedLocalPart = strtolower(trim((string) $localPart));
+            if ($normalizedLocalPart !== '') {
+                $localPartChannels[$normalizedLocalPart] = (string) $channel;
+            }
+        }
 
         foreach ($destinations as $destination) {
             if (!is_string($destination)) {
@@ -306,19 +335,21 @@ class Webhooks extends CI_Controller {
             list($local_part, $domain) = explode('@', $email, 2);
             $domain = preg_replace('/^www\./i', '', strtolower(trim($domain)));
 
-            if ($local_part !== $recipient_local_part || !$this->isConfiguredDatabaseGroup($domain)) {
+            if (!isset($localPartChannels[$local_part]) || !$this->isConfiguredDatabaseGroup($domain)) {
                 continue;
             }
 
-            $routes[$domain] = array(
+            $channel = $localPartChannels[$local_part];
+            $routes[$channel . '|' . $domain] = array(
                 'recipient'      => $email,
                 'database_group' => $domain,
+                'channel'        => $channel,
             );
         }
 
         if (count($routes) !== 1) {
             if (count($routes) > 1) {
-                log_message('error', 'SES inbound routing rejected a message addressed to more than one school admin address.');
+                log_message('error', 'SES inbound routing rejected a message addressed to more than one configured school inbox.');
             }
             return array();
         }
@@ -379,10 +410,18 @@ class Webhooks extends CI_Controller {
         return true;
     }
 
-    protected function requiredInboundTablesExist()
+    protected function requiredInboundTablesExist($channel = 'support')
     {
-        return $this->db->table_exists('incoming_emails')
-            && $this->db->table_exists('support_tickets')
+        if (!$this->db->table_exists('incoming_emails')) {
+            return false;
+        }
+
+        if ($channel === 'shared_email') {
+            return $this->db->table_exists('email_conversations')
+                && $this->db->table_exists('email_conversation_messages');
+        }
+
+        return $this->db->table_exists('support_tickets')
             && $this->db->table_exists('support_messages');
     }
 

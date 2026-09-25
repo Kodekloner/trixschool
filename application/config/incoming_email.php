@@ -53,3 +53,15 @@ $config['ses_inbound_auto_confirm'] = true;
 |
 */
 $config['ses_inbound_recipient_local_part'] = 'admin';
+
+/*
+|--------------------------------------------------------------------------
+| Shared correspondence address
+|--------------------------------------------------------------------------
+|
+| Ordinary external-email conversations use this separate address. Keeping
+| it distinct from admin@ prevents regular correspondence from becoming a
+| Support Ticket while still allowing SES to deliver replies to SchoolLift.
+|
+*/
+$config['ses_inbound_mail_local_part'] = 'mail';

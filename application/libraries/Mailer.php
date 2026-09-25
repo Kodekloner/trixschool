@@ -154,11 +154,7 @@ class Mailer {
         }
         $mail->AddAddress($toemail, !empty($options['to_name']) ? $options['to_name'] : '');
         if ($mail->Send()) {
-            if (method_exists($mail, 'getLastMessageID')) {
-                $this->last_message_id = $mail->getLastMessageID();
-            } elseif (!empty($mail->MessageID)) {
-                $this->last_message_id = $mail->MessageID;
-            }
+            $this->captureLastMessageId($mail);
             $this->last_error = '';
             $this->last_hint = '';
             log_message(
@@ -170,11 +166,7 @@ class Mailer {
             );
             return true;
         } else {
-            if (method_exists($mail, 'getLastMessageID')) {
-                $this->last_message_id = $mail->getLastMessageID();
-            } elseif (!empty($mail->MessageID)) {
-                $this->last_message_id = $mail->MessageID;
-            }
+            $this->captureLastMessageId($mail);
             $this->last_error = (string) $mail->ErrorInfo;
 
             if (stripos($this->last_error, 'Email address is not verified') !== false) {
@@ -208,6 +200,36 @@ class Mailer {
 
     public function get_last_message_id() {
         return $this->last_message_id;
+    }
+
+    /**
+     * SES replaces a submitted Message-ID. Its SMTP DATA response returns the
+     * replacement identifier, which recipients see as <ID@email.amazonses.com>.
+     */
+    private function captureLastMessageId($mail) {
+        $message_id = '';
+        if (method_exists($mail, 'getLastMessageID')) {
+            $message_id = (string) $mail->getLastMessageID();
+        } elseif (!empty($mail->MessageID)) {
+            $message_id = (string) $mail->MessageID;
+        }
+
+        $smtp_host = strtolower(trim((string) $this->CI->mail_config->smtp_server));
+        $is_ses_smtp = (bool) preg_match(
+            '/^email-smtp(?:-fips)?\.[a-z0-9.-]+\.amazonaws\.com(?:\.cn)?$/i',
+            $smtp_host
+        );
+        if ($is_ses_smtp && method_exists($mail, 'getSMTPInstance')) {
+            $smtp = $mail->getSMTPInstance();
+            if (is_object($smtp) && method_exists($smtp, 'getLastTransactionID')) {
+                $transaction_id = trim((string) $smtp->getLastTransactionID(), " <>\t\r\n");
+                if (preg_match('/^[a-z0-9._+\-]{1,220}$/i', $transaction_id)) {
+                    $message_id = '<' . strtolower($transaction_id) . '@email.amazonses.com>';
+                }
+            }
+        }
+
+        $this->last_message_id = $message_id;
     }
 
 }

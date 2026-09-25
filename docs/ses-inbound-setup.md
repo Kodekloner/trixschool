@@ -2,32 +2,36 @@
 
 SchoolLift uses one Amazon SES receiving setup, one SNS topic, and one HTTPS
 webhook subscription for every school. Each school publishes a friendly email
-address using its website domain:
+addresses using its website domain. `admin@` is reserved for Support Tickets;
+`mail@` is the ordinary shared correspondence inbox:
 
 - `admin@demo.schoollift.com.ng`
+- `mail@demo.schoollift.com.ng`
 - `admin@purplinsschool.com.ng`
-- `admin@apexstaracademy.com.ng`
-- `admin@apexstaracademyaso.com.ng`
+- `mail@purplinsschool.com.ng`
 
 The webhook reads the SES envelope recipient and uses its domain as the
-CodeIgniter database group. For example, `admin@purplinsschool.com.ng` is
-written to the `purplinsschool.com.ng` database group.
+CodeIgniter database group and uses the local part to select Support or Shared
+Email. For example, both addresses at `purplinsschool.com.ng` are written to
+that tenant database, but only mail sent to `admin@` becomes a Support Ticket.
 
 ## Application requirements
 
 1. Every school domain must have a database group with the exact same name in
    `application/config/database.php`.
 2. Every participating school database must have `incoming_emails`,
-   `support_tickets`, and `support_messages`. Schools using staff email alerts
-   must also have `support_email_notifications` and
-   `support_email_alert_deliveries`.
+   `support_tickets`, `support_messages`, `email_conversations`, and
+   `email_conversation_messages`. Schools using Support staff email alerts must
+   also have `support_email_notifications` and `support_email_alert_deliveries`.
    PHP must have the OpenSSL extension enabled, and the web server must be able
    to fetch HTTPS certificates from `sns.<region>.amazonaws.com` so SNS
    signatures can be verified.
-3. The public local part is configured once in `application/config/incoming_email.php`:
+3. The two public local parts are configured once in
+   `application/config/incoming_email.php` and must remain different:
 
 ```php
 $config['ses_inbound_recipient_local_part'] = 'admin';
+$config['ses_inbound_mail_local_part'] = 'mail';
 ```
 
 4. The central webhook endpoint is:
@@ -56,6 +60,7 @@ The project includes these migrations:
 - `126_add_incoming_emails.php`
 - `127_add_support_tickets.php`
 - `134_add_external_email_notifications.php`
+- `141_add_shared_email_inbox.php`
 
 For existing tenant databases, use the rerunnable SQL import described below.
 Only run CodeIgniter's `/migrate` endpoint when the tenant's migration ledger
@@ -63,17 +68,17 @@ has first been audited and correctly records its current version. In
 particular, do not use `/migrate` on the two Apex Star snapshots: their ledger
 tables are empty even though migrations 126 through 133 are already present.
 
-Migration 127 also creates the `support_ticket` permission and assigns it to
-Admin and Super Admin roles. Migration 134 adds the per-staff opt-in and alert
-delivery queue tables plus the dedicated `external_email` permission. Admin
-and Super Admin receive that permission by default; other roles can be granted
-**Send External Email** through **System Settings > Roles Permissions** when a
-school authorizes them. Migration 134 does not subscribe any staff member
-automatically.
+Migration 127 creates the `support_ticket` permission. Migration 134 adds the
+per-staff Support alert queue and the dedicated `external_email` permission.
+Migration 141 adds the shared conversation tables and `shared_email`
+permission. Admin, Super Admin, and Head Teacher receive view/reply access to
+Shared Email and permission to send External email by default. Other roles can
+be authorized through **System Settings > Roles Permissions**. No staff member
+is subscribed automatically to Support alerts.
 
 For a phpMyAdmin deployment, import
 `docs/all_school_database_migrations.sql` to apply the consolidated
-126-through-138 tenant migrations. The file is rerunnable and intentionally
+126-through-141 tenant migrations. The file is rerunnable and intentionally
 leaves the CodeIgniter `migrations` ledger unchanged.
 
 ## One-time AWS setup
@@ -127,8 +132,9 @@ or CNAME records.
 ### 3. Add the SES receipt rule
 
 1. Go to **Email receiving > Rule sets** and open the active rule set.
-2. Create a receipt rule for the exact recipient, such as
-   `admin@purplinsschool.com.ng`.
+2. Add both exact recipients to the receipt rule (or to two rules with the same
+   action), such as `admin@purplinsschool.com.ng` and
+   `mail@purplinsschool.com.ng`.
 3. Add an SNS action using the existing `schoollift-support-inbound` topic.
 4. Use Base64 encoding so the webhook can parse the original MIME content.
 5. Enable the rule and place it before any broad catch-all rule.
@@ -136,7 +142,7 @@ or CNAME records.
 Do not create another SNS topic or another webhook subscription for the new
 school.
 
-## External recipients and support conversations
+## External recipients and shared conversations
 
 Authorized staff can use **Communicate > Send Email > External** to enter an
 external address that is not attached to a student, guardian, or staff record.
@@ -145,32 +151,45 @@ configuration as directory recipients. Sending to an external address does not
 create that person as a SchoolLift user or create a Support Ticket. The External
 form also accepts multiple file attachments. Its subject and body are sent as a
 regular outbound email without a ticket marker or Support-specific headers.
+The send is saved under **Communicate > Shared Email > Sent**, and its Reply-To
+address is `mail@SCHOOL-DOMAIN`.
 
-The support inbox and the external composer serve different starting points:
+Shared Email and Support Tickets are deliberately separate:
 
-- Use external compose to send a regular outbound email to any valid address.
+- Use External compose to start regular correspondence with any valid address.
+- Admin, Super Admin, and Head Teacher can open **Shared Email**, see the sent
+  message, and reply from the same conversation. Replies received at `mail@`
+  appear in its Inbox/Unread views.
 - Use **Support Tickets** to answer a message that arrived at the school's
   `admin@` address.
-- Replies to an External email use the school's normal sender address; the
-  External send itself is never added to Support Tickets.
+- Reply threading uses the standard `Message-ID`, `In-Reply-To`, and
+  `References` headers and also verifies that the external sender matches the
+  conversation participant. It does not depend on a ticket marker. Amazon SES
+  [replaces submitted Message-ID headers](https://docs.aws.amazon.com/ses/latest/dg/header-fields.html),
+  so SchoolLift captures the ID returned in SES's successful `250 Ok` SMTP
+  response and stores the actual `ID@email.amazonses.com` value used by the
+  recipient's reply.
 - Messages addressed to `admin@SCHOOL-DOMAIN` are processed by SES and appear
   in Support Tickets. Replies sent from the Support Ticket page retain the
   ticket headers and marker needed to stay on the existing thread.
 
 Do not create student, guardian, or staff records merely to send an email to an
-external recipient. The dedicated **Send External Email** permission is granted
-to Admin and Super Admin by default. A school can explicitly authorize another
-staff role through Roles Permissions without changing the default grants.
-Support Tickets remains controlled by its separate staff permission.
+external recipient. The dedicated **Send External Email** and **Shared Email
+Inbox** permissions are granted to Admin, Super Admin, and Head Teacher by
+default. A school can explicitly authorize another staff role through Roles
+Permissions. Support Tickets remains controlled by its separate permission.
 
 ## Configure replies
 
-Amazon SES receiving is not a mailbox and does not provide webmail. The school
-uses `https://SCHOOL-DOMAIN/admin/support` as its inbox.
+Amazon SES receiving is not an IMAP mailbox and does not provide AWS webmail.
+SchoolLift supplies the web interfaces instead:
+
+- `https://SCHOOL-DOMAIN/admin/emailinbox` for ordinary `mail@` correspondence.
+- `https://SCHOOL-DOMAIN/admin/support` for `admin@` Support Tickets.
 
 Configure the school's existing Email Settings with SES SMTP credentials and a
-verified sender address so administrators can reply from the ticket page. Add
-SPF, DKIM, and DMARC DNS records for reliable outbound delivery.
+verified sender address so authorized staff can reply from either interface.
+Add SPF, DKIM, and DMARC DNS records for reliable outbound delivery.
 
 ## Staff alerts on phones and computers
 
@@ -184,9 +203,10 @@ Staff who need device notifications can opt in to support-email alerts using
 the email address saved on their staff profile. That address should be a work
 or personal mailbox they already receive on their phone or computer through
 Gmail, Outlook, Apple Mail, or a similar client. When SchoolLift receives an
-external email, it sends a short alert with a secure link to the new or updated
-support ticket. The alert is not a second mailbox and is not a forward of the
-complete original message.
+email at `admin@`, it sends a short alert with a secure link to the new or
+updated Support Ticket. This alert setting is Support-only; mail received at
+`mail@` is shown through the Shared Email Inbox/Unread view. The alert is not a
+second mailbox and is not a forward of the complete original message.
 
 Recommended setup for each recipient:
 
@@ -214,7 +234,22 @@ conversation and delivery history remain together. If a school requires a real
 device-synchronised `admin@` mailbox, it must deploy a hosted mailbox service
 and redesign the MX/SES routing; the alert feature does not provide IMAP.
 
-## End-to-end test
+## End-to-end tests
+
+### Shared Email (`mail@`)
+
+1. Sign in as an Admin, Super Admin, or Head Teacher and open
+   `https://SCHOOL-DOMAIN/admin/mailsms/compose?tab=external`.
+2. Send an External email with an attachment to an unrelated personal address.
+3. Confirm it opens under `https://SCHOOL-DOMAIN/admin/emailinbox` and appears
+   in Sent with the sender staff member recorded.
+4. In the personal mailbox, verify Reply-To is `mail@SCHOOL-DOMAIN` and reply.
+5. Refresh Shared Email, open Inbox or Unread, and confirm the reply is attached
+   to the original conversation rather than creating a Support Ticket.
+6. Reply from Shared Email and verify the personal mailbox receives it in the
+   same email thread.
+
+### Support Tickets (`admin@`)
 
 1. Sign in to `https://SCHOOL-DOMAIN/admin/support` and confirm the header shows
    `admin@SCHOOL-DOMAIN`.
@@ -227,11 +262,13 @@ and redesign the MX/SES routing; the alert feature does not provide IMAP.
 If no ticket appears, check in this order:
 
 1. The domain MX record resolves to the SES receiving endpoint.
-2. The SES receipt rule matched the exact `admin@` recipient.
+2. The SES receipt rule matched the exact `admin@` or `mail@` recipient being
+   tested.
 3. The SNS subscription is confirmed and reports successful delivery.
 4. The domain exactly matches a database group in `database.php`.
-5. The two migration-134 alert tables and their required columns exist. The
-   phpMyAdmin scripts intentionally do not alter the migration ledger.
+5. Migration 141 shared-email tables (and, for Support alerts, the two
+   migration-134 queue tables) exist. The phpMyAdmin scripts intentionally do
+   not alter the migration ledger.
 6. The `incoming_emails` table contains the notification and its status/error.
 
 If the ticket appears but a staff alert does not, confirm that the staff member
@@ -254,14 +291,17 @@ code and migration remain tenant-safe for every other school.
 3. Verify the SES domain identity and DKIM for `apexstaracademy.com.ng`.
 4. Confirm the domain MX record targets
    `inbound-smtp.us-east-2.amazonaws.com` and the active receipt rule matches
-   exactly `admin@apexstaracademy.com.ng`.
+   exactly `admin@apexstaracademy.com.ng` and
+   `mail@apexstaracademy.com.ng`.
 5. Confirm the school Email Settings sender is verified for outbound SMTP and
    normalize the saved SMTP port to `587` (the audited snapshot contains
    leading whitespace).
 6. Open `https://apexstaracademy.com.ng/admin/support`, opt in the authorized
-   staff recipients, and test inbound receipt, device alert, and reply
-   threading. Separately test an External email with an attachment and confirm
-   it does not create a Support Ticket.
+   staff recipients, and test `admin@` receipt, device alert, and Support reply
+   threading. Then send an External email with an attachment, open it at
+   `https://apexstaracademy.com.ng/admin/emailinbox`, reply to it from the
+   recipient mailbox, and confirm the response enters Shared Email through
+   `mail@` without creating a Support Ticket.
 7. Schedule
    `https://apexstaracademy.com.ng/cron/supportemailalerts/CRON_SECRET` once per
    minute using that tenant's configured cron secret.
@@ -274,21 +314,24 @@ code and migration remain tenant-safe for every other school.
 3. Verify the SES domain identity and DKIM for `apexstaracademyaso.com.ng`.
 4. Confirm the domain MX record targets
    `inbound-smtp.us-east-2.amazonaws.com` and the active receipt rule matches
-   exactly `admin@apexstaracademyaso.com.ng`.
+   exactly `admin@apexstaracademyaso.com.ng` and
+   `mail@apexstaracademyaso.com.ng`.
 5. Verify or correct the Email Settings sender domain. The audited snapshot
    uses `apexacademyaso.com.ng`, which differs from
    `apexstaracademyaso.com.ng`; SES must verify the actual sender identity.
 6. Open `https://apexstaracademyaso.com.ng/admin/support`, opt in the authorized
-   staff recipients, and test inbound receipt, device alert, and reply
-   threading. Separately test an External email with an attachment and confirm
-   it does not create a Support Ticket.
+   staff recipients, and test `admin@` receipt, device alert, and Support reply
+   threading. Then send an External email with an attachment, open it at
+   `https://apexstaracademyaso.com.ng/admin/emailinbox`, reply from the
+   recipient mailbox, and confirm the response enters Shared Email through
+   `mail@` without creating a Support Ticket.
 7. Schedule
    `https://apexstaracademyaso.com.ng/cron/supportemailalerts/CRON_SECRET` once
    per minute using that tenant's configured cron secret.
 
 The files under `database/migration-audit-dumps/` are raw audit snapshots and
 may contain tenant data. Do not edit or distribute them as deployment scripts.
-Apply migration 134 with the standalone or consolidated SQL above, then create
+Apply migrations 134 and 141 with the consolidated SQL above, then create
 a fresh sanitized audit snapshot only through the established audit process.
 If a snapshot containing SMTP credentials or an old webhook token has been
 shared outside the trusted deployment team, rotate those credentials and keep
@@ -299,4 +342,5 @@ their replacements in environment/deployment secrets rather than audit files.
 Website contact and complaint forms do not pass through AWS. After validation,
 they create support tickets directly in the current school's database and can
 send the configured WhatsApp notification. AWS SES/SNS is used only for actual
-emails sent to the school's `admin@` address.
+emails sent to the school's `admin@` Support address or `mail@` Shared Email
+address.

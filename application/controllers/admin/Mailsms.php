@@ -18,6 +18,9 @@ class Mailsms extends Admin_Controller
         $this->load->library('mailsmsconf');
         $this->load->model("classteacher_model");
         $this->load->model("notificationsetting_model");
+        $this->load->model('emailconversation_model');
+        $this->load->helper('support_email');
+        $this->config->load('incoming_email', true);
         $this->mailer;
         $this->sch_setting_detail = $this->setting_model->getSetting();
 
@@ -136,7 +139,10 @@ class Mailsms extends Admin_Controller
         $data['external_email_csrf'] = (string) $this->session->userdata($this->externalEmailTokenSessionKey);
         $data['standard_email_csrf'] = (string) $this->session->userdata($this->standardEmailTokenSessionKey);
         $data['external_email_draft'] = (array) $this->session->flashdata('external_email_draft');
-        $data['external_email_ready'] = !empty($this->mail_config);
+        $data['external_email_reply_address'] = $this->getSharedEmailAddress();
+        $data['external_email_ready'] = !empty($this->mail_config)
+            && $this->emailconversation_model->isReady()
+            && $data['external_email_reply_address'] !== '';
         $this->load->view('layout/header');
         $this->load->view('admin/mailsms/compose', $data);
         $this->load->view('layout/footer');
@@ -153,7 +159,6 @@ class Mailsms extends Admin_Controller
         }
         $this->requireExternalEmailPost();
 
-        $this->load->helper('support_email');
         $recipientEmail = schoollift_support_normalize_email($this->input->post('external_email', true));
         $recipientName = trim(preg_replace('/[\r\n]+/', ' ', strip_tags((string) $this->input->post('external_name', true))));
         $subject = schoollift_support_normalize_subject($this->input->post('external_subject', true));
@@ -163,7 +168,7 @@ class Mailsms extends Admin_Controller
         $attachments = $this->prepareExternalEmailAttachments();
 
         $errors = array();
-        if ($recipientEmail === '') {
+        if ($recipientEmail === '' || strlen($recipientEmail) > 191) {
             $errors[] = 'Enter a valid external recipient email address.';
         }
         if ($recipientName !== '' && strlen($recipientName) > 191) {
@@ -184,10 +189,49 @@ class Mailsms extends Admin_Controller
             return $this->externalEmailRedirect('danger', implode(' ', $errors));
         }
 
+        $inboundEmail = $this->getSharedEmailAddress();
+        if (empty($this->mail_config)) {
+            return $this->externalEmailRedirect('danger', 'Email sending is not configured. Activate an email account in Email Settings first.');
+        }
+        if (!$this->emailconversation_model->isReady()) {
+            return $this->externalEmailRedirect('danger', 'Shared email storage is not ready. Run migration 141 first.');
+        }
+        if ($inboundEmail === '') {
+            return $this->externalEmailRedirect('danger', 'The shared reply address could not be determined for this school domain.');
+        }
+
+        $staffId = (int) $this->customlib->getStaffID();
+        $staff = $staffId > 0 ? $this->staff_model->getAll($staffId) : array();
+        $staffName = !empty($staff) ? trim($staff['name'] . ' ' . $staff['surname']) : '';
+        $schoolName = !empty($this->sch_setting_detail->name)
+            ? trim((string) $this->sch_setting_detail->name)
+            : 'School office';
+        $schoolEmail = !empty($this->sch_setting_detail->email)
+            ? schoollift_support_normalize_email($this->sch_setting_detail->email)
+            : '';
+        $conversation = $this->emailconversation_model->createOutgoingConversation(array(
+            'participant_name' => $recipientName,
+            'participant_email' => $recipientEmail,
+            'subject' => $subject,
+            'inbound_address' => $inboundEmail,
+            'created_by_staff_id' => $staffId,
+        ));
+        if (empty($conversation)) {
+            return $this->externalEmailRedirect('danger', 'The shared email conversation could not be created. Please try again.');
+        }
+
+        $messageId = $this->emailconversation_model->buildOutgoingMessageId(
+            $conversation['conversation_number'],
+            $schoolEmail !== '' ? $schoolEmail : $inboundEmail
+        );
+
         $this->load->library('mailer');
         $mailOptions = array(
             'is_html' => true,
             'to_name' => $recipientName,
+            'message_id' => $messageId,
+            'reply_to_email' => $inboundEmail,
+            'reply_to_name' => $schoolName,
         );
 
         $sent = $this->mailer->send_mail(
@@ -199,6 +243,26 @@ class Mailsms extends Admin_Controller
             $mailOptions
         );
         $error = $sent ? '' : $this->mailer->get_last_error();
+        $deliveredMessageId = $sent ? $this->mailer->get_last_message_id() : '';
+        if ($deliveredMessageId === '') {
+            $deliveredMessageId = $messageId;
+        }
+        $messageRecordId = $this->emailconversation_model->addOutgoingMessage($conversation['id'], array(
+            'sender_staff_id' => $staffId,
+            'sender_name' => $staffName,
+            'sender_email' => $schoolEmail !== '' ? $schoolEmail : $inboundEmail,
+            'recipients' => array($recipientEmail),
+            'subject' => $subject,
+            'body_text' => $bodyText,
+            'body_html' => $bodyHtml,
+            'message_id' => $deliveredMessageId,
+            'attachment_names' => $attachments['names'],
+            'delivery_status' => $sent ? 'sent' : 'failed',
+            'error_message' => $sent ? null : $error,
+        ));
+        if ($messageRecordId === false) {
+            log_message('error', 'External email conversation #' . (int) $conversation['id'] . ' could not record its outgoing message.');
+        }
 
         if ($sent) {
             $this->messages_model->add(array(
@@ -215,7 +279,14 @@ class Mailsms extends Admin_Controller
                 ))),
                 'created_at'    => date('Y-m-d H:i:s'),
             ));
-            $this->session->set_flashdata('msg', '<div class="alert alert-success">External email sent successfully.</div>');
+            if ($messageRecordId === false) {
+                $this->session->set_flashdata('msg', '<div class="alert alert-warning">The external email was sent, but its Shared Email history could not be saved. Contact the system administrator before sending it again.</div>');
+            } else {
+                $this->session->set_flashdata('msg', '<div class="alert alert-success">External email sent and saved in Shared Email.</div>');
+            }
+            if ($messageRecordId !== false && $this->rbac->hasPrivilege('shared_email', 'can_view')) {
+                return redirect('admin/emailinbox/view/' . (int) $conversation['id']);
+            }
             return redirect('admin/mailsms/compose?tab=external');
         }
 
@@ -1609,7 +1680,7 @@ class Mailsms extends Admin_Controller
      */
     private function prepareExternalEmailAttachments()
     {
-        $result = array('files' => array(), 'error' => '');
+        $result = array('files' => array(), 'names' => array(), 'error' => '');
         if (empty($_FILES['external_attachment']) || !is_array($_FILES['external_attachment'])) {
             return $result;
         }
@@ -1644,11 +1715,13 @@ class Mailsms extends Admin_Controller
                 return $result;
             }
 
-            $files['name'][] = basename((string) $name);
+            $safeName = basename((string) $name);
+            $files['name'][] = $safeName;
             $files['type'][] = isset($upload['type'][$index]) ? (string) $upload['type'][$index] : '';
             $files['tmp_name'][] = $tmpName;
             $files['error'][] = UPLOAD_ERR_OK;
             $files['size'][] = isset($upload['size'][$index]) ? (int) $upload['size'][$index] : 0;
+            $result['names'][] = $safeName;
         }
 
         if (!empty($files['name'])) {
@@ -1656,6 +1729,14 @@ class Mailsms extends Admin_Controller
         }
 
         return $result;
+    }
+
+    private function getSharedEmailAddress()
+    {
+        return schoollift_support_configured_inbound_address(
+            $this->config->item('ses_inbound_mail_local_part', 'incoming_email'),
+            isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : ''
+        );
     }
 
     private function requireExternalEmailPost()

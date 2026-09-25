@@ -59,8 +59,11 @@ question_bank_assert(strpos($model, 'questions.session_id') !== false && strpos(
 question_bank_assert(strpos($migration, 'context_root_id') !== false
     && strpos($migration, 'remapSourceAssignments') !== false,
     'Migration 139 must preserve multi-context legacy source assignments.');
-question_bank_assert(strpos($migration_config, "\$config['migration_version'] = 139;") !== false,
-    'The application migration target must include migration 139.');
+question_bank_assert(
+    preg_match('/migration_version[\'\"]?\]\s*=\s*(\d+)\s*;/', $migration_config, $migration_match) === 1
+        && (int) $migration_match[1] >= 139,
+    'The application migration target must include migration 139 or a later migration.'
+);
 question_bank_assert(strpos($all_school_sql, 'SchoolLift Question Bank: session/term scope and assignment authorization') !== false
     && strpos($all_school_sql, 'question_academic_scope_idx') !== false,
     'The all-school SQL must include the idempotent migration 139 Question Bank changes.');

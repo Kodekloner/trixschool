@@ -81,6 +81,10 @@
 
                 <li role="presentation"><a style="color:#282828; font-family: 'Roboto-Bold';padding:6px 20px;" role="menuitem" tabindex="-1" href="<?php echo base_url(); ?>admin/support"><i class="fa fa-life-ring"></i> Support Tickets</a></li>
 
+            <?php } if ($this->rbac->hasPrivilege('shared_email', 'can_view')) { ?>
+
+                <li role="presentation"><a style="color:#282828; font-family: 'Roboto-Bold';padding:6px 20px;" role="menuitem" tabindex="-1" href="<?php echo base_url(); ?>admin/emailinbox"><i class="fa fa-envelope"></i> Shared Email</a></li>
+
             <?php } if ($this->rbac->hasPrivilege('upload_content', 'can_view')) { ?>
                 <li role="presentation"><a style="color:#282828; font-family: 'Roboto-Bold';padding:6px 20px;" role="menuitem" tabindex="-1" href="<?php echo base_url(); ?>admin/content"><i class="fa fa-download"></i><?php echo $this->lang->line('upload_content'); ?></a></li>
 
@@ -100,11 +104,11 @@
 
                 <?php
             }
-            if ($this->rbac->hasPrivilege('email_sms', 'can_view')) {
+            if ($this->rbac->hasPrivilege('email', 'can_view')) {
                 ?>
                 <li role="presentation"><a style="color:#282828; font-family: 'Roboto-Bold';padding:6px 20px;" role="menuitem" tabindex="-1" href="<?php echo base_url(); ?>admin/mailsms/compose"><i class="fa fa-envelope-o"></i><?php echo $this->lang->line('send_email_/_sms'); ?></a></li>
             <?php } ?>
-            <?php if ($this->rbac->hasPrivilege('external_email', 'can_add') && !$this->rbac->hasPrivilege('email_sms', 'can_view')) { ?>
+            <?php if ($this->rbac->hasPrivilege('external_email', 'can_add') && !$this->rbac->hasPrivilege('email', 'can_view')) { ?>
                 <li role="presentation"><a style="color:#282828; font-family: 'Roboto-Bold';padding:6px 20px;" role="menuitem" tabindex="-1" href="<?php echo base_url(); ?>admin/mailsms/compose?tab=external"><i class="fa fa-paper-plane"></i>Send External Email</a></li>
             <?php } ?>
         </ul>
