@@ -1,5 +1,5 @@
--- SchoolLift consolidated tenant-database migrations (126 through 140).
--- Updated for deployment to every school database on 2026-09-22.
+-- SchoolLift consolidated tenant-database migrations (126 through 141).
+-- Updated for deployment to every school database on 2026-09-25.
 --
 -- IMPORTANT:
 --   * Select exactly one school database before importing this file.
@@ -32,6 +32,7 @@
 --   138_onlineexam_single_subject_slots.php
 --   139_session_scope_question_bank.php
 --   140_harden_biometric_operations.php
+--   141_add_shared_email_inbox.php
 --
 -- Supported targets: MySQL 5.7+/8.0 and compatible MariaDB releases.
 -- This is a schema/permission migration bundle, not a full database dump.
@@ -3533,3 +3534,251 @@ LEFT JOIN INFORMATION_SCHEMA.COLUMNS c
 WHERE c.COLUMN_NAME IS NULL;
 
 SELECT 'OK: migration 140 biometric operational hardening is installed.' AS migration_status;
+
+-- ========================================================================
+-- Migration 141: shared non-support email inbox and conversation threads.
+-- Regular correspondence uses mail@<school-domain>; admin@ remains Support.
+-- ========================================================================
+
+CREATE TABLE IF NOT EXISTS `email_conversations` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `conversation_number` VARCHAR(50) NOT NULL,
+  `participant_name` VARCHAR(191) DEFAULT NULL,
+  `participant_email` VARCHAR(191) NOT NULL,
+  `subject` VARCHAR(255) NOT NULL,
+  `inbound_address` VARCHAR(191) DEFAULT NULL,
+  `created_by_staff_id` INT DEFAULT NULL,
+  `last_outgoing_message_id` VARCHAR(255) DEFAULT NULL,
+  `last_incoming_message_id` VARCHAR(255) DEFAULT NULL,
+  `last_message_direction` VARCHAR(20) NOT NULL DEFAULT 'outgoing',
+  `incoming_count` INT UNSIGNED NOT NULL DEFAULT 0,
+  `outgoing_count` INT UNSIGNED NOT NULL DEFAULT 0,
+  `unread_count` INT UNSIGNED NOT NULL DEFAULT 0,
+  `last_message_at` DATETIME DEFAULT NULL,
+  `last_incoming_at` DATETIME DEFAULT NULL,
+  `last_outgoing_at` DATETIME DEFAULT NULL,
+  `created_at` DATETIME NOT NULL,
+  `updated_at` DATETIME NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email_conversation_number_unique` (`conversation_number`),
+  KEY `email_conversation_participant_idx` (`participant_email`),
+  KEY `email_conversation_activity_idx` (`last_message_at`),
+  KEY `email_conversation_unread_idx` (`unread_count`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `email_conversation_messages` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `email_conversation_id` INT UNSIGNED NOT NULL,
+  `incoming_email_id` INT UNSIGNED DEFAULT NULL,
+  `direction` VARCHAR(20) NOT NULL,
+  `sender_staff_id` INT DEFAULT NULL,
+  `sender_name` VARCHAR(191) DEFAULT NULL,
+  `sender_email` VARCHAR(191) DEFAULT NULL,
+  `recipients_json` LONGTEXT,
+  `subject` VARCHAR(255) DEFAULT NULL,
+  `body_text` LONGTEXT,
+  `body_html` LONGTEXT,
+  `message_id` VARCHAR(255) DEFAULT NULL,
+  `in_reply_to` VARCHAR(255) DEFAULT NULL,
+  `references_header` TEXT,
+  `attachment_count` INT UNSIGNED NOT NULL DEFAULT 0,
+  `attachment_names_json` LONGTEXT,
+  `delivery_status` VARCHAR(50) NOT NULL DEFAULT 'received',
+  `error_message` TEXT,
+  `created_at` DATETIME NOT NULL,
+  `updated_at` DATETIME NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email_conversation_incoming_unique` (`incoming_email_id`),
+  KEY `email_conversation_message_thread_idx` (`email_conversation_id`),
+  KEY `email_conversation_message_id_idx` (`message_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Add the named indexes when this section encounters a manually created table.
+SET @mail_141_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='email_conversations' AND INDEX_NAME='email_conversation_number_unique'
+), 'SELECT 1 AS email_conversation_number_index_present',
+  'ALTER TABLE email_conversations ADD UNIQUE KEY email_conversation_number_unique (conversation_number)');
+PREPARE mail_141_stmt FROM @mail_141_sql; EXECUTE mail_141_stmt; DEALLOCATE PREPARE mail_141_stmt;
+
+SET @mail_141_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='email_conversations' AND INDEX_NAME='email_conversation_participant_idx'
+), 'SELECT 1 AS email_conversation_participant_index_present',
+  'ALTER TABLE email_conversations ADD KEY email_conversation_participant_idx (participant_email)');
+PREPARE mail_141_stmt FROM @mail_141_sql; EXECUTE mail_141_stmt; DEALLOCATE PREPARE mail_141_stmt;
+
+SET @mail_141_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='email_conversations' AND INDEX_NAME='email_conversation_activity_idx'
+), 'SELECT 1 AS email_conversation_activity_index_present',
+  'ALTER TABLE email_conversations ADD KEY email_conversation_activity_idx (last_message_at)');
+PREPARE mail_141_stmt FROM @mail_141_sql; EXECUTE mail_141_stmt; DEALLOCATE PREPARE mail_141_stmt;
+
+SET @mail_141_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='email_conversations' AND INDEX_NAME='email_conversation_unread_idx'
+), 'SELECT 1 AS email_conversation_unread_index_present',
+  'ALTER TABLE email_conversations ADD KEY email_conversation_unread_idx (unread_count)');
+PREPARE mail_141_stmt FROM @mail_141_sql; EXECUTE mail_141_stmt; DEALLOCATE PREPARE mail_141_stmt;
+
+SET @mail_141_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='email_conversation_messages' AND INDEX_NAME='email_conversation_incoming_unique'
+), 'SELECT 1 AS email_conversation_incoming_index_present',
+  'ALTER TABLE email_conversation_messages ADD UNIQUE KEY email_conversation_incoming_unique (incoming_email_id)');
+PREPARE mail_141_stmt FROM @mail_141_sql; EXECUTE mail_141_stmt; DEALLOCATE PREPARE mail_141_stmt;
+
+SET @mail_141_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='email_conversation_messages' AND INDEX_NAME='email_conversation_message_thread_idx'
+), 'SELECT 1 AS email_conversation_thread_index_present',
+  'ALTER TABLE email_conversation_messages ADD KEY email_conversation_message_thread_idx (email_conversation_id)');
+PREPARE mail_141_stmt FROM @mail_141_sql; EXECUTE mail_141_stmt; DEALLOCATE PREPARE mail_141_stmt;
+
+SET @mail_141_sql := IF(EXISTS (
+  SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
+    AND TABLE_NAME='email_conversation_messages' AND INDEX_NAME='email_conversation_message_id_idx'
+), 'SELECT 1 AS email_conversation_message_id_index_present',
+  'ALTER TABLE email_conversation_messages ADD KEY email_conversation_message_id_idx (message_id)');
+PREPARE mail_141_stmt FROM @mail_141_sql; EXECUTE mail_141_stmt; DEALLOCATE PREPARE mail_141_stmt;
+
+INSERT INTO `permission_group`
+  (`name`, `short_code`, `is_active`, `system`, `created_at`)
+SELECT 'Communicate', 'communicate', 1, 0, NOW()
+WHERE NOT EXISTS (
+  SELECT 1 FROM `permission_group` WHERE `short_code` = 'communicate'
+);
+
+SET @shared_email_communicate_group_id := (
+  SELECT `id` FROM `permission_group`
+  WHERE `short_code` = 'communicate' ORDER BY `id` LIMIT 1
+);
+
+INSERT INTO `permission_category`
+  (`perm_group_id`, `name`, `short_code`, `enable_view`, `enable_add`,
+   `enable_edit`, `enable_delete`, `created_at`)
+SELECT @shared_email_communicate_group_id, 'Shared Email Inbox',
+       'shared_email', 1, 1, 0, 0, NOW()
+WHERE NOT EXISTS (
+  SELECT 1 FROM `permission_category` WHERE `short_code` = 'shared_email'
+);
+
+UPDATE `permission_category`
+SET `perm_group_id` = @shared_email_communicate_group_id,
+    `name` = 'Shared Email Inbox',
+    `enable_view` = 1,
+    `enable_add` = 1,
+    `enable_edit` = 0,
+    `enable_delete` = 0
+WHERE `short_code` = 'shared_email';
+
+SET @shared_email_permission_id := (
+  SELECT `id` FROM `permission_category`
+  WHERE `short_code` = 'shared_email' ORDER BY `id` LIMIT 1
+);
+
+SET @external_email_permission_id := (
+  SELECT `id` FROM `permission_category`
+  WHERE `short_code` = 'external_email' ORDER BY `id` LIMIT 1
+);
+
+INSERT INTO `roles_permissions`
+  (`role_id`, `perm_cat_id`, `can_view`, `can_add`, `can_edit`,
+   `can_delete`, `created_at`)
+SELECT role_row.`id`, permission_row.`permission_id`, 1, 1, 0, 0, NOW()
+FROM `roles` AS role_row
+CROSS JOIN (
+  SELECT @shared_email_permission_id AS `permission_id`
+  UNION ALL SELECT @external_email_permission_id
+) AS permission_row
+WHERE role_row.`name` IN ('Admin', 'Super Admin', 'Head Teacher')
+  AND permission_row.`permission_id` IS NOT NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM `roles_permissions` AS existing_grant
+    WHERE existing_grant.`role_id` = role_row.`id`
+      AND existing_grant.`perm_cat_id` = permission_row.`permission_id`
+  );
+
+UPDATE `roles_permissions` AS role_grant
+INNER JOIN `roles` AS role_row ON role_row.`id` = role_grant.`role_id`
+SET role_grant.`can_view` = 1,
+    role_grant.`can_add` = 1,
+    role_grant.`can_edit` = 0,
+    role_grant.`can_delete` = 0
+WHERE role_row.`name` IN ('Admin', 'Super Admin', 'Head Teacher')
+  AND role_grant.`perm_cat_id` IN (@shared_email_permission_id, @external_email_permission_id);
+
+-- Migration 141 verification. Every result set below must be empty.
+SELECT required.`table_name`, required.`column_name` AS `missing_shared_email_column`
+FROM (
+  SELECT 'email_conversations' AS `table_name`, 'id' AS `column_name`
+  UNION ALL SELECT 'email_conversations', 'conversation_number'
+  UNION ALL SELECT 'email_conversations', 'participant_name'
+  UNION ALL SELECT 'email_conversations', 'participant_email'
+  UNION ALL SELECT 'email_conversations', 'subject'
+  UNION ALL SELECT 'email_conversations', 'inbound_address'
+  UNION ALL SELECT 'email_conversations', 'created_by_staff_id'
+  UNION ALL SELECT 'email_conversations', 'last_outgoing_message_id'
+  UNION ALL SELECT 'email_conversations', 'last_incoming_message_id'
+  UNION ALL SELECT 'email_conversations', 'last_message_direction'
+  UNION ALL SELECT 'email_conversations', 'incoming_count'
+  UNION ALL SELECT 'email_conversations', 'outgoing_count'
+  UNION ALL SELECT 'email_conversations', 'unread_count'
+  UNION ALL SELECT 'email_conversations', 'last_message_at'
+  UNION ALL SELECT 'email_conversations', 'last_incoming_at'
+  UNION ALL SELECT 'email_conversations', 'last_outgoing_at'
+  UNION ALL SELECT 'email_conversations', 'created_at'
+  UNION ALL SELECT 'email_conversations', 'updated_at'
+  UNION ALL SELECT 'email_conversation_messages', 'id'
+  UNION ALL SELECT 'email_conversation_messages', 'email_conversation_id'
+  UNION ALL SELECT 'email_conversation_messages', 'incoming_email_id'
+  UNION ALL SELECT 'email_conversation_messages', 'direction'
+  UNION ALL SELECT 'email_conversation_messages', 'sender_staff_id'
+  UNION ALL SELECT 'email_conversation_messages', 'sender_name'
+  UNION ALL SELECT 'email_conversation_messages', 'sender_email'
+  UNION ALL SELECT 'email_conversation_messages', 'recipients_json'
+  UNION ALL SELECT 'email_conversation_messages', 'subject'
+  UNION ALL SELECT 'email_conversation_messages', 'body_text'
+  UNION ALL SELECT 'email_conversation_messages', 'body_html'
+  UNION ALL SELECT 'email_conversation_messages', 'message_id'
+  UNION ALL SELECT 'email_conversation_messages', 'in_reply_to'
+  UNION ALL SELECT 'email_conversation_messages', 'references_header'
+  UNION ALL SELECT 'email_conversation_messages', 'attachment_count'
+  UNION ALL SELECT 'email_conversation_messages', 'attachment_names_json'
+  UNION ALL SELECT 'email_conversation_messages', 'delivery_status'
+  UNION ALL SELECT 'email_conversation_messages', 'error_message'
+  UNION ALL SELECT 'email_conversation_messages', 'created_at'
+  UNION ALL SELECT 'email_conversation_messages', 'updated_at'
+) AS required
+LEFT JOIN `INFORMATION_SCHEMA`.`COLUMNS` AS actual
+  ON actual.`TABLE_SCHEMA` = DATABASE()
+ AND actual.`TABLE_NAME` = required.`table_name`
+ AND actual.`COLUMN_NAME` = required.`column_name`
+WHERE actual.`COLUMN_NAME` IS NULL
+ORDER BY required.`table_name`, required.`column_name`;
+
+SELECT expected.`role_name`, expected.`permission_code`
+       AS `missing_default_shared_email_grant`
+FROM (
+  SELECT 'Admin' AS `role_name`, 'shared_email' AS `permission_code`
+  UNION ALL SELECT 'Super Admin', 'shared_email'
+  UNION ALL SELECT 'Head Teacher', 'shared_email'
+  UNION ALL SELECT 'Admin', 'external_email'
+  UNION ALL SELECT 'Super Admin', 'external_email'
+  UNION ALL SELECT 'Head Teacher', 'external_email'
+) AS expected
+INNER JOIN `roles` AS role_row ON role_row.`name` = expected.`role_name`
+INNER JOIN `permission_category` AS permission_row
+  ON permission_row.`short_code` = expected.`permission_code`
+LEFT JOIN `roles_permissions` AS role_grant
+  ON role_grant.`role_id` = role_row.`id`
+ AND role_grant.`perm_cat_id` = permission_row.`id`
+ AND role_grant.`can_view` = 1
+ AND role_grant.`can_add` = 1
+ AND role_grant.`can_edit` = 0
+ AND role_grant.`can_delete` = 0
+WHERE role_grant.`role_id` IS NULL
+ORDER BY expected.`role_name`, expected.`permission_code`;
+
+SELECT 'OK: migration 141 shared email inbox is installed.' AS migration_status;

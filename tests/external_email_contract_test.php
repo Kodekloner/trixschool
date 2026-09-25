@@ -96,12 +96,13 @@ external_email_contract_assert(
 );
 
 external_email_contract_assert(
-    strpos($sendExternal, 'createOutgoingConversation') === false
+    strpos($sendExternal, 'createOutgoingConversation') !== false
+        && strpos($sendExternal, 'addOutgoingMessage') !== false
         && strpos($sendExternal, 'addOutgoingReply') === false
         && strpos($sendExternal, 'schoollift_support_thread_subject') === false
         && strpos($sendExternal, "'X-SchoolLift-Ticket'") === false
-        && strpos($sendExternal, "'reply_to_email'") === false,
-    'A regular external email must not create or masquerade as a Support Ticket.'
+        && strpos($sendExternal, "'reply_to_email' => \$inboundEmail") !== false,
+    'A regular external email must enter Shared Email with its reply address without masquerading as a Support Ticket.'
 );
 external_email_contract_assert(
     strpos($composeView, 'enctype="multipart/form-data"') !== false

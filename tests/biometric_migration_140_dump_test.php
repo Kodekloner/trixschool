@@ -129,10 +129,14 @@ $generatedEndMarker = '-- END GENERATED MIGRATIONS 130-132';
 $generatedStart = strpos($bundle, $generatedStartMarker);
 $generatedEnd = strpos($bundle, $generatedEndMarker, $generatedStart === false ? 0 : $generatedStart);
 $hardeningStart = strpos($bundle, '-- Migration 140:');
-biometricDumpAssert($generatedStart !== false && $generatedEnd !== false && $hardeningStart !== false, 'Could not isolate migrations 130-132 and 140.');
+$hardeningEnd = strpos($bundle, '-- Migration 141:', $hardeningStart === false ? 0 : $hardeningStart);
+biometricDumpAssert(
+    $generatedStart !== false && $generatedEnd !== false && $hardeningStart !== false && $hardeningEnd !== false,
+    'Could not isolate migrations 130-132 and 140.'
+);
 $generatedEnd += strlen($generatedEndMarker);
 $biometricSql = substr($bundle, $generatedStart, $generatedEnd - $generatedStart)
-    . "\n\n" . substr($bundle, $hardeningStart);
+    . "\n\n" . substr($bundle, $hardeningStart, $hardeningEnd - $hardeningStart);
 
 $dumps = glob($dumpDirectory . '/*.sql');
 sort($dumps, SORT_NATURAL | SORT_FLAG_CASE);

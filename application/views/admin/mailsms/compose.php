@@ -10,6 +10,7 @@ $compose_notifications = isset($compose_notifications) ? $compose_notifications 
 );
 $active_email_tab = isset($active_email_tab) ? $active_email_tab : 'group';
 $external_email_ready = !empty($external_email_ready);
+$external_email_reply_address = isset($external_email_reply_address) ? (string) $external_email_reply_address : '';
 $can_standard_email = !empty($can_standard_email);
 $can_external_email = !empty($can_external_email);
 $standard_email_csrf = isset($standard_email_csrf) ? (string) $standard_email_csrf : '';
@@ -288,7 +289,7 @@ $external_email_draft = isset($external_email_draft) && is_array($external_email
                                     <?php if (!$external_email_ready) { ?>
                                         <div class="alert alert-danger">
                                             <i class="fa fa-warning"></i>
-                                            Email sending is not ready. Configure and activate an email account in Email Settings first.
+                                            External email is not ready. Activate an account in Email Settings, run migration 141, and configure this school's shared reply domain.
                                         </div>
                                     <?php } ?>
                                     <div class="row">
@@ -319,8 +320,11 @@ $external_email_draft = isset($external_email_draft) && is_array($external_email
                                                 <input type="text" class="form-control" id="external_name" name="external_name" maxlength="191" autocomplete="name" value="<?php echo html_escape(isset($external_email_draft['name']) ? $external_email_draft['name'] : ''); ?>">
                                             </div>
                                             <div class="well well-sm">
-                                                <p><i class="fa fa-envelope-o text-primary"></i> <strong>Standard outbound email</strong></p>
-                                                <p class="text-muted" style="margin-bottom:0;">This sends a regular email and does not create a Support Ticket. Replies use the school's normal sender address.</p>
+                                                <p><i class="fa fa-envelope-o text-primary"></i> <strong>Shared school email</strong></p>
+                                                <p class="text-muted">This sends a regular email and does not create a Support Ticket. The message and future replies are kept in Shared Email.</p>
+                                                <?php if ($external_email_reply_address !== '') { ?>
+                                                    <p style="margin-bottom:0;"><strong>Replies return to:</strong><br><?php echo html_escape($external_email_reply_address); ?></p>
+                                                <?php } ?>
                                             </div>
                                         </div>
                                     </div>

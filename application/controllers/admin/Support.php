@@ -212,6 +212,10 @@ class Support extends Admin_Controller
             '',
             $mail_options
         );
+        $delivered_message_id = $sent ? $this->mailer->get_last_message_id() : '';
+        if ($delivered_message_id === '') {
+            $delivered_message_id = $message_id;
+        }
 
         $this->supportticket_model->addOutgoingReply($ticket['id'], array(
             'sender_staff_id'   => $staff_id,
@@ -220,7 +224,7 @@ class Support extends Admin_Controller
             'recipients'        => array($ticket['requester_email']),
             'subject'           => $subject,
             'body_text'         => $body,
-            'message_id'        => $message_id,
+            'message_id'        => $delivered_message_id,
             'in_reply_to'       => $headers['in_reply_to'],
             'references_header' => $headers['references_header'],
             'delivery_status'   => $sent ? 'sent' : 'failed',
@@ -363,7 +367,7 @@ class Support extends Admin_Controller
     protected function requireSupportTables()
     {
         if (!$this->db->table_exists('support_tickets') || !$this->db->table_exists('support_messages')) {
-            show_error('Support ticket tables were not found. Run migration 127_add_support_tickets or docs/support_email_migration.sql first.', 500);
+            show_error('Support ticket tables were not found. Run migration 127_add_support_tickets or import docs/all_school_database_migrations.sql first.', 500);
         }
     }
 

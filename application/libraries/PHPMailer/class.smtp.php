@@ -159,8 +159,16 @@ class SMTP {
     protected $smtp_transaction_id_patterns = array(
         'exim' => '/[0-9]{3} OK id=(.*)/',
         'sendmail' => '/[0-9]{3} 2.0.0 (.*) Message/',
-        'postfix' => '/[0-9]{3} 2.0.0 Ok: queued as (.*)/'
+        'postfix' => '/[0-9]{3} 2.0.0 Ok: queued as (.*)/',
+        'Amazon_SES' => '/[0-9]{3} Ok (.*)/i'
     );
+
+    /**
+     * Queue/transaction ID captured immediately after the DATA response.
+     * Keeping it here prevents QUIT from replacing the last SMTP reply.
+     * @var string|bool|null
+     */
+    protected $last_smtp_transaction_id;
 
     /**
      * The socket for the server connection.
@@ -666,6 +674,7 @@ class SMTP {
         $savetimelimit = $this->Timelimit;
         $this->Timelimit = $this->Timelimit * 2;
         $result = $this->sendCommand('DATA END', '.', 250);
+        $this->recordLastTransactionID();
         //Restore timelimit
         $this->Timelimit = $savetimelimit;
         return $result;
@@ -1152,19 +1161,31 @@ class SMTP {
      * @return bool|null|string
      */
     public function getLastTransactionID() {
+        return $this->last_smtp_transaction_id;
+    }
+
+    /**
+     * Capture the queue/transaction ID before a later SMTP command replaces
+     * the DATA response stored by getLastReply().
+     * @return bool|null|string
+     */
+    protected function recordLastTransactionID() {
         $reply = $this->getLastReply();
 
         if (empty($reply)) {
-            return null;
+            $this->last_smtp_transaction_id = null;
+            return $this->last_smtp_transaction_id;
         }
 
+        $this->last_smtp_transaction_id = false;
         foreach ($this->smtp_transaction_id_patterns as $smtp_transaction_id_pattern) {
             if (preg_match($smtp_transaction_id_pattern, $reply, $matches)) {
-                return $matches[1];
+                $this->last_smtp_transaction_id = trim($matches[1]);
+                break;
             }
         }
 
-        return false;
+        return $this->last_smtp_transaction_id;
     }
 
 }
