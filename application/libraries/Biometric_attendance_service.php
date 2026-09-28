@@ -280,6 +280,32 @@ class Biometric_attendance_service
         return array('success' => true, 'errors' => array(), 'item' => $item);
     }
 
+    /** Delete an unused physical terminal registration; event history is never cascaded. */
+    public function deleteDevice($deviceId, $actorId = null)
+    {
+        $before = $this->model->getDevice((int) $deviceId);
+        if (!$before) {
+            return $this->failure('Device not found.');
+        }
+        if (!empty($before['is_virtual'])) {
+            return $this->failure('The built-in Test Terminal is part of the simulation workflow and cannot be deleted.');
+        }
+        if (!empty($before['is_active'])) {
+            return $this->failure('Disable this terminal before deleting its registration.');
+        }
+        if ($this->CI->db->where('device_id', (int) $before['id'])->count_all_results('biometric_events')
+            || $this->CI->db->where('device_id', (int) $before['id'])->count_all_results('biometric_scanner_stations')) {
+            return $this->failure('This terminal is still referenced by attendance history. Delete eligible test events first; Live history cannot be deleted.');
+        }
+        $this->CI->db->trans_start();
+        $this->CI->db->where('id', (int) $before['id'])->delete('biometric_devices');
+        $this->audit('device.deleted', 'device', $before['id'], $before, null, $actorId);
+        $this->CI->db->trans_complete();
+        return $this->CI->db->trans_status()
+            ? array('success' => true, 'errors' => array(), 'item' => null)
+            : $this->failure('The terminal registration could not be deleted.');
+    }
+
     public function listMappings(array $filters = array(), $page = 1, $perPage = 50)
     {
         $search = isset($filters['search']) ? $filters['search'] : '';
@@ -304,24 +330,62 @@ class Biometric_attendance_service
         $before = $id ? $this->model->getMapping($id) : null;
         $subjectType = strtolower(trim(isset($data['subject_type']) ? $data['subject_type'] : ''));
         $subjectId = isset($data['subject_id']) ? (int) $data['subject_id'] : 0;
-        $code = strtoupper(trim(isset($data['external_person_code']) ? $data['external_person_code'] : ''));
+        $code = '';
         $errors = array();
         if (!in_array($subjectType, array('student', 'staff'), true)) {
             $errors['subject_type'] = 'Subject type must be student or staff.';
         }
-        if ($subjectId < 1 || !$this->subjectExists($subjectType, $subjectId)) {
+        $subjectExists = $subjectId > 0
+            && in_array($subjectType, array('student', 'staff'), true)
+            && $this->subjectExists($subjectType, $subjectId);
+        if (!$subjectExists) {
             $errors['subject_id'] = $subjectType === 'student'
                 ? 'Choose a valid current student-session record.'
                 : 'Choose a valid active staff record.';
+        } else {
+            $summary = $this->subjectSummary($subjectType, $subjectId);
+            $code = $summary && isset($summary['code'])
+                ? strtoupper(trim((string) $summary['code'])) : '';
         }
         if ($code === '' || strlen($code) > 100 || preg_match('/[\x00-\x1F\x7F]/', $code)) {
-            $errors['external_person_code'] = 'Person code is required and must not exceed 100 characters.';
+            $errors['external_person_code'] = $subjectType === 'student'
+                ? 'This student needs a valid admission number before biometric mapping.'
+                : 'This staff member needs a valid employee ID before biometric mapping.';
+        } elseif ($this->identityCodeUsageCount($subjectType, $code) !== 1) {
+            $errors['external_person_code'] = $subjectType === 'student'
+                ? 'The admission number must be unique across active student Admission Numbers and staff Employee IDs before biometric mapping.'
+                : 'The employee ID must be unique across active staff Employee IDs and student Admission Numbers before biometric mapping.';
+        }
+
+        // Saving the same person again updates their existing mapping. This is
+        // important when an old free-form device code needs to be replaced by
+        // the authoritative admission number or employee ID.
+        if (!$id && $subjectExists) {
+            $subjectMapping = $this->CI->db->where('subject_type', $subjectType)
+                ->where('subject_id', $subjectId)
+                ->get('biometric_identity_mappings')->row_array();
+            if ($subjectMapping) {
+                $id = (int) $subjectMapping['id'];
+                $before = $subjectMapping;
+            } elseif ($subjectType === 'student' && $code !== '') {
+                $codeMapping = $this->CI->db->where('external_person_code', $code)
+                    ->where('subject_type', 'student')
+                    ->get('biometric_identity_mappings')->row_array();
+                if ($codeMapping) {
+                    // A student's current student_session.id changes after
+                    // promotion while the admission number remains stable.
+                    $id = (int) $codeMapping['id'];
+                    $before = $codeMapping;
+                }
+            }
+        } elseif ($id && !$before) {
+            $errors['mapping'] = 'Identity mapping not found.';
         }
         if ($code !== '') {
             $conflict = $this->CI->db->where('external_person_code', $code)
                 ->get('biometric_identity_mappings')->row_array();
             if ($conflict && (int) $conflict['id'] !== (int) $id) {
-                $errors['external_person_code'] = 'That person code is already mapped.';
+                $errors['external_person_code'] = 'That Admission No. or Employee ID is already mapped.';
             }
         }
         if ($subjectId > 0 && in_array($subjectType, array('student', 'staff'), true)) {
@@ -403,6 +467,25 @@ class Biometric_attendance_service
         return array('success' => true, 'errors' => array(), 'item' => $item);
     }
 
+    /** A mapping must be disabled first so deletion cannot interrupt scans silently. */
+    public function deleteMapping($mappingId, $actorId = null)
+    {
+        $before = $this->model->getMapping((int) $mappingId);
+        if (!$before) {
+            return $this->failure('Identity mapping not found.');
+        }
+        if (!empty($before['is_active'])) {
+            return $this->failure('Disable this identity mapping before deleting it.');
+        }
+        $this->CI->db->trans_start();
+        $this->CI->db->where('id', (int) $before['id'])->delete('biometric_identity_mappings');
+        $this->audit('mapping.deleted', 'mapping', $before['id'], $before, null, $actorId);
+        $this->CI->db->trans_complete();
+        return $this->CI->db->trans_status()
+            ? array('success' => true, 'errors' => array(), 'item' => null)
+            : $this->failure('The identity mapping could not be deleted.');
+    }
+
     public function previewBulkMappings($subjectType)
     {
         $subjectType = strtolower(trim($subjectType));
@@ -411,7 +494,7 @@ class Biometric_attendance_service
                 'success' => false,
                 'subject_type' => $subjectType,
                 'items' => array(),
-                'totals' => array('create' => 0, 'skip' => 0, 'conflict' => 0),
+                'totals' => array('create' => 0, 'update' => 0, 'skip' => 0, 'conflict' => 0),
                 'preview_hash' => null,
                 'errors' => array('subject_type' => 'Subject type must be student or staff.'),
             );
@@ -419,13 +502,16 @@ class Biometric_attendance_service
 
         if ($subjectType === 'student') {
             $setting = $this->CI->db->select('session_id')->limit(1)->get('sch_settings')->row_array();
-            $rows = $this->CI->db->select("student_session.id AS subject_id, students.admission_no AS external_person_code, CONCAT_WS(' ', students.firstname, students.middlename, students.lastname) AS subject_name", false)
+            $rows = $this->CI->db->select("student_session.id AS subject_id, students.admission_no AS external_person_code, CONCAT_WS(' ', students.firstname, students.middlename, students.lastname) AS subject_name, classes.class AS subject_class, sections.section AS subject_section", false)
                 ->from('student_session')->join('students', 'students.id = student_session.student_id')
+                ->join('classes', 'classes.id = student_session.class_id', 'left')
+                ->join('sections', 'sections.id = student_session.section_id', 'left')
                 ->where('student_session.session_id', isset($setting['session_id']) ? $setting['session_id'] : 0)
                 ->where('students.is_active', 'yes')->order_by('students.admission_no', 'ASC')->get()->result_array();
         } else {
-            $rows = $this->CI->db->select("staff.id AS subject_id, staff.employee_id AS external_person_code, CONCAT_WS(' ', staff.name, staff.surname) AS subject_name", false)
-                ->from('staff')->where('staff.is_active', 1)->order_by('staff.employee_id', 'ASC')->get()->result_array();
+            $rows = $this->CI->db->select("staff.id AS subject_id, staff.employee_id AS external_person_code, CONCAT_WS(' ', staff.name, staff.surname) AS subject_name, staff_designation.designation AS subject_role", false)
+                ->from('staff')->join('staff_designation', 'staff_designation.id = staff.designation', 'left')
+                ->where('staff.is_active', 1)->order_by('staff.employee_id', 'ASC')->get()->result_array();
         }
 
         $codeCounts = array();
@@ -435,9 +521,25 @@ class Biometric_attendance_service
                 $codeCounts[$code] = isset($codeCounts[$code]) ? $codeCounts[$code] + 1 : 1;
             }
         }
+        if ($subjectType === 'student') {
+            $otherRows = $this->CI->db->select('employee_id AS identity_code')
+                ->where('is_active', 1)->get('staff')->result_array();
+        } else {
+            $setting = $this->CI->db->select('session_id')->limit(1)->get('sch_settings')->row_array();
+            $otherRows = $this->CI->db->select('students.admission_no AS identity_code')
+                ->from('student_session')->join('students', 'students.id = student_session.student_id')
+                ->where('student_session.session_id', isset($setting['session_id']) ? $setting['session_id'] : 0)
+                ->where('students.is_active', 'yes')->get()->result_array();
+        }
+        foreach ($otherRows as $otherRow) {
+            $otherCode = strtoupper(trim((string) $otherRow['identity_code']));
+            if ($otherCode !== '') {
+                $codeCounts[$otherCode] = isset($codeCounts[$otherCode]) ? $codeCounts[$otherCode] + 1 : 1;
+            }
+        }
 
         $items = array();
-        $totals = array('create' => 0, 'skip' => 0, 'conflict' => 0);
+        $totals = array('create' => 0, 'update' => 0, 'skip' => 0, 'conflict' => 0);
         foreach ($rows as $row) {
             $subjectId = (int) $row['subject_id'];
             $code = strtoupper(trim((string) $row['external_person_code']));
@@ -445,6 +547,9 @@ class Biometric_attendance_service
                 'subject_type' => $subjectType,
                 'subject_id' => $subjectId,
                 'subject_name' => trim((string) $row['subject_name']),
+                'subject_class' => isset($row['subject_class']) ? trim((string) $row['subject_class']) : null,
+                'subject_section' => isset($row['subject_section']) ? trim((string) $row['subject_section']) : null,
+                'subject_role' => isset($row['subject_role']) ? trim((string) $row['subject_role']) : null,
                 'external_person_code' => $code,
                 'mapping_id' => null,
                 'action' => 'create',
@@ -458,7 +563,7 @@ class Biometric_attendance_service
                     : 'The staff member has no employee ID.';
             } elseif (!empty($codeCounts[$code]) && $codeCounts[$code] > 1) {
                 $item['action'] = 'conflict';
-                $item['reason'] = 'More than one active record uses this person code.';
+                $item['reason'] = 'This identity is duplicated among active student Admission Numbers or staff Employee IDs.';
             } else {
                 $byCode = $this->CI->db->where('external_person_code', $code)
                     ->get('biometric_identity_mappings')->row_array();
@@ -468,7 +573,7 @@ class Biometric_attendance_service
 
                 if ($byCode && $bySubject && (int) $byCode['id'] !== (int) $bySubject['id']) {
                     $item['action'] = 'conflict';
-                    $item['reason'] = 'The person code and subject are already linked to different mappings.';
+                    $item['reason'] = 'The identity and selected person are already linked to different mappings.';
                 } elseif ($byCode) {
                     $item['mapping_id'] = (int) $byCode['id'];
                     if ($byCode['subject_type'] === $subjectType && (int) $byCode['subject_id'] === $subjectId) {
@@ -476,13 +581,15 @@ class Biometric_attendance_service
                             $item['action'] = 'skip';
                             $item['reason'] = 'The identity is already mapped and active.';
                         } else {
+                            $item['action'] = 'update';
                             $item['reason'] = 'The existing identity mapping will be reactivated.';
                         }
                     } elseif ($subjectType === 'student' && $byCode['subject_type'] === 'student' && !$bySubject) {
+                        $item['action'] = 'update';
                         $item['reason'] = 'The admission number mapping will advance to the current student-session record.';
                     } else {
                         $item['action'] = 'conflict';
-                        $item['reason'] = 'The person code is already assigned to another identity.';
+                        $item['reason'] = 'The Admission No. or Employee ID is already assigned to another person.';
                     }
                 } elseif ($bySubject) {
                     $item['mapping_id'] = (int) $bySubject['id'];
@@ -491,11 +598,13 @@ class Biometric_attendance_service
                             $item['action'] = 'skip';
                             $item['reason'] = 'The identity is already mapped and active.';
                         } else {
+                            $item['action'] = 'update';
                             $item['reason'] = 'The existing identity mapping will be reactivated.';
                         }
                     } else {
-                        $item['action'] = 'conflict';
-                        $item['reason'] = 'This identity is already mapped to a different person code.';
+                        $item['action'] = 'update';
+                        $item['reason'] = 'The old manually entered mapping identity will be replaced with this '
+                            . ($subjectType === 'student' ? 'admission number.' : 'employee ID.');
                     }
                 }
             }
@@ -532,6 +641,7 @@ class Biometric_attendance_service
             return array(
                 'success' => false,
                 'created' => 0,
+                'updated' => 0,
                 'skipped' => 0,
                 'conflicts' => 0,
                 'preview_hash' => null,
@@ -543,6 +653,7 @@ class Biometric_attendance_service
             return array(
                 'success' => false,
                 'created' => 0,
+                'updated' => 0,
                 'skipped' => 0,
                 'conflicts' => $preview['totals']['conflict'],
                 'preview_hash' => $preview['preview_hash'],
@@ -551,11 +662,12 @@ class Biometric_attendance_service
         }
 
         $created = 0;
+        $updated = 0;
         $skipped = $preview['totals']['skip'];
         $conflicts = $preview['totals']['conflict'];
         $errors = array();
         foreach ($preview['items'] as $item) {
-            if ($item['action'] !== 'create') {
+            if (!in_array($item['action'], array('create', 'update'), true)) {
                 continue;
             }
             $mappingData = array(
@@ -569,7 +681,11 @@ class Biometric_attendance_service
             }
             $result = $this->saveMapping($mappingData, $actorId);
             if (!empty($result['success'])) {
-                $created++;
+                if ($item['action'] === 'update') {
+                    $updated++;
+                } else {
+                    $created++;
+                }
             } else {
                 $conflicts++;
                 if (count($errors) < 20) {
@@ -584,6 +700,7 @@ class Biometric_attendance_service
 
         $this->audit('mappings.bulk_seeded', 'identity_mapping', $subjectType, null, array(
             'created' => $created,
+            'updated' => $updated,
             'skipped' => $skipped,
             'conflicts' => $conflicts,
             'preview_hash' => $preview['preview_hash'],
@@ -592,6 +709,7 @@ class Biometric_attendance_service
         return array(
             'success' => true,
             'created' => $created,
+            'updated' => $updated,
             'skipped' => $skipped,
             'conflicts' => $conflicts,
             'preview_hash' => $preview['preview_hash'],
@@ -671,6 +789,59 @@ class Biometric_attendance_service
         $item = $this->publicIntegration($this->model->getIntegration($before['id']));
         $this->audit($enabled ? 'integration.enabled' : 'integration.disabled', 'integration', $before['id'], $this->publicIntegration($before), $item, $actorId);
         return array('success' => true, 'errors' => array(), 'item' => $item);
+    }
+
+    /**
+     * Delete an unused/retired connector credential and its control-plane
+     * records. Attendance events and registered devices must be dealt with
+     * explicitly first so this action can never erase attendance implicitly.
+     */
+    public function deleteIntegration($integrationId, $actorId = null)
+    {
+        $before = $this->model->getIntegration((int) $integrationId);
+        if (!$before) {
+            return $this->failure('Integration not found.');
+        }
+        if (!empty($before['is_active'])) {
+            return $this->failure('Disable this integration before deleting it.');
+        }
+        $settings = $this->getSettings();
+        if (is_array($settings) && $settings['mode'] === 'live') {
+            return $this->failure('Leave Live mode before deleting a connector integration.');
+        }
+        $deviceCount = (int) $this->CI->db->where('integration_id', (int) $before['id'])
+            ->count_all_results('biometric_devices');
+        $eventCount = (int) $this->CI->db->where('integration_id', (int) $before['id'])
+            ->count_all_results('biometric_events');
+        if ($deviceCount || $eventCount) {
+            return $this->failure(
+                'This integration still has ' . $deviceCount . ' registered device(s) and '
+                . $eventCount . ' event(s). Disable/delete eligible test records and the terminal first. Live records remain immutable.'
+            );
+        }
+
+        $counts = array(
+            'punch_states' => (int) $this->CI->db->where('integration_id', (int) $before['id'])
+                ->count_all_results('biometric_punch_state_mappings'),
+            'batches' => (int) $this->CI->db->where('integration_id', (int) $before['id'])
+                ->count_all_results('biometric_gateway_batches'),
+            'agents' => (int) $this->CI->db->where('integration_id', (int) $before['id'])
+                ->count_all_results('biometric_gateway_agents'),
+            'commands' => (int) $this->CI->db->where('integration_id', (int) $before['id'])
+                ->count_all_results('biometric_gateway_commands'),
+        );
+        $this->CI->db->trans_start();
+        $this->CI->db->where('integration_id', (int) $before['id'])->delete('biometric_gateway_commands');
+        $this->CI->db->where('integration_id', (int) $before['id'])->delete('biometric_gateway_agents');
+        $this->CI->db->where('integration_id', (int) $before['id'])->delete('biometric_gateway_cursors');
+        $this->CI->db->where('integration_id', (int) $before['id'])->delete('biometric_gateway_batches');
+        $this->CI->db->where('integration_id', (int) $before['id'])->delete('biometric_punch_state_mappings');
+        $this->CI->db->where('id', (int) $before['id'])->delete('biometric_integrations');
+        $this->audit('integration.deleted', 'integration', $before['id'], $this->publicIntegration($before), $counts, $actorId);
+        $this->CI->db->trans_complete();
+        return $this->CI->db->trans_status()
+            ? array('success' => true, 'errors' => array(), 'item' => null, 'counts' => $counts)
+            : $this->failure('The integration could not be deleted.');
     }
 
     public function rotateIntegrationToken($integrationId, $actorId = null)
@@ -961,6 +1132,33 @@ class Biometric_attendance_service
             $page, $perPage, 'id');
     }
 
+    /** Only terminal command-history rows may be removed; queued work is preserved. */
+    public function deleteGatewayCommand($commandId, $actorId = null)
+    {
+        if (!$this->gatewayControlReady()) {
+            return $this->failure('Gateway control storage is not ready.');
+        }
+        $before = $this->CI->db->where('id', (int) $commandId)
+            ->get('biometric_gateway_commands')->row_array();
+        if (!$before) {
+            return $this->failure('Connector action not found.');
+        }
+        if (!in_array($before['status'], array('succeeded', 'failed', 'expired'), true)) {
+            return $this->failure('A waiting or running connector action cannot be deleted.');
+        }
+        $auditBefore = $before;
+        if (!empty($auditBefore['result_json'])) {
+            $auditBefore['result_json'] = '[removed with command history]';
+        }
+        $this->CI->db->trans_start();
+        $this->CI->db->where('id', (int) $before['id'])->delete('biometric_gateway_commands');
+        $this->audit('gateway.command_deleted', 'gateway_command', $before['command_uuid'], $auditBefore, null, $actorId);
+        $this->CI->db->trans_complete();
+        return $this->CI->db->trans_status()
+            ? array('success' => true, 'errors' => array(), 'item' => null)
+            : $this->failure('The connector action could not be deleted.');
+    }
+
     /**
      * Ingest one durable gateway batch. $context['integration'] must contain
      * the record returned by authenticateToken().
@@ -1193,7 +1391,7 @@ class Biometric_attendance_service
         }
         if ($failureCode === null && !$mapping) {
             $failureCode = 'UNKNOWN_PERSON';
-            $failureMessage = 'The device person code is not mapped to a student or staff member.';
+            $failureMessage = 'The Admission No. or Employee ID received from ZKBio is not mapped to a student or staff member.';
         }
         if ($failureCode === null && !$this->subjectExists($mapping['subject_type'], (int) $mapping['subject_id'])) {
             $failureCode = 'INACTIVE_SUBJECT';
@@ -1357,6 +1555,154 @@ class Biometric_attendance_service
         return $this->decorateSubjects($result);
     }
 
+    /**
+     * Remove one Simulation/Shadow event for test cleanup. Live events are an
+     * immutable audit ledger and must instead be reconciled or retained.
+     */
+    public function deleteEvent($eventId, $actorId = null, $confirmation = null)
+    {
+        if (!is_string($confirmation) || !hash_equals('DELETE_TEST_EVENT', $confirmation)) {
+            return $this->failure('Confirm the deletion from the event row.');
+        }
+        $before = $this->model->getEvent((int) $eventId);
+        if (!$before) {
+            return $this->failure('Biometric event not found.');
+        }
+        if ($before['operating_mode'] === 'live') {
+            return $this->failure('Live events are permanent audit evidence and cannot be deleted. Resolve any problem through Reconciliation.');
+        }
+        $day = !empty($before['attendance_day_id'])
+            ? $this->model->getDay((int) $before['attendance_day_id']) : null;
+        if ($day && ($day['record_scope'] === 'live' || $this->attendanceDayHasOfficialLinks($day))) {
+            return $this->failure('This event is linked to official attendance and cannot be deleted.');
+        }
+
+        $eventExceptionRows = $this->CI->db->select('id')->where('event_id', (int) $before['id'])
+            ->get('biometric_exceptions')->result_array();
+        $eventExceptionIds = array_map('intval', array_column($eventExceptionRows, 'id'));
+        $auditBefore = array(
+            'id' => (int) $before['id'],
+            'external_event_id' => $before['external_event_id'],
+            'person_code' => $before['person_code'],
+            'device_serial' => $before['device_serial'],
+            'operating_mode' => $before['operating_mode'],
+            'processing_status' => $before['processing_status'],
+            'attendance_day_id' => $before['attendance_day_id'],
+        );
+        $counts = array(
+            'events' => 1,
+            'notifications' => (int) $this->CI->db->where('event_id', (int) $before['id'])
+                ->count_all_results('biometric_notification_queue'),
+            'exceptions' => count($eventExceptionIds),
+            'reconciliation_actions' => $eventExceptionIds
+                ? (int) $this->CI->db->where_in('exception_id', $eventExceptionIds)
+                    ->count_all_results('biometric_reconciliation_actions') : 0,
+            'days' => 0,
+        );
+
+        $this->CI->db->trans_begin();
+        if ($eventExceptionIds) {
+            $this->CI->db->where_in('exception_id', $eventExceptionIds)->delete('biometric_reconciliation_actions');
+            $this->CI->db->where_in('id', $eventExceptionIds)->delete('biometric_exceptions');
+        }
+        $this->CI->db->where('event_id', (int) $before['id'])->delete('biometric_notification_queue');
+        $this->CI->db->where('id', (int) $before['id'])->delete('biometric_events');
+
+        if ($day) {
+            $remaining = (int) $this->CI->db->where('attendance_day_id', (int) $day['id'])
+                ->count_all_results('biometric_events');
+            if ($remaining === 0) {
+                $dayExceptionRows = $this->CI->db->select('id')->where('attendance_day_id', (int) $day['id'])
+                    ->get('biometric_exceptions')->result_array();
+                $dayExceptionIds = array_map('intval', array_column($dayExceptionRows, 'id'));
+                if ($dayExceptionIds) {
+                    $counts['exceptions'] += count($dayExceptionIds);
+                    $counts['reconciliation_actions'] += (int) $this->CI->db
+                        ->where_in('exception_id', $dayExceptionIds)
+                        ->count_all_results('biometric_reconciliation_actions');
+                    $this->CI->db->where_in('exception_id', $dayExceptionIds)->delete('biometric_reconciliation_actions');
+                    $this->CI->db->where_in('id', $dayExceptionIds)->delete('biometric_exceptions');
+                }
+                $this->CI->db->where('id', (int) $day['id'])->delete('biometric_attendance_days');
+                $counts['days'] = 1;
+            } else {
+                $this->recomputeDay(
+                    $day['subject_type'],
+                    (int) $day['subject_id'],
+                    $day['attendance_date'],
+                    $day['record_scope'],
+                    $this->getSettings()
+                );
+            }
+        }
+        $this->audit('event.test_deleted', 'event', $before['id'], $auditBefore, $counts, $actorId);
+        if (!$this->CI->db->trans_status()) {
+            $this->CI->db->trans_rollback();
+            return $this->failure('The test event could not be deleted safely.');
+        }
+        $this->CI->db->trans_commit();
+        return array('success' => true, 'errors' => array(), 'item' => null, 'counts' => $counts);
+    }
+
+    /** Delete one non-Live daily test session and its linked test events. */
+    public function deleteAttendanceDay($dayId, $actorId = null, $confirmation = null)
+    {
+        if (!is_string($confirmation) || !hash_equals('DELETE_TEST_SESSION', $confirmation)) {
+            return $this->failure('Confirm the deletion from the daily-session row.');
+        }
+        $before = $this->model->getDay((int) $dayId);
+        if (!$before) {
+            return $this->failure('Daily attendance session not found.');
+        }
+        if ($before['record_scope'] === 'live' || $this->attendanceDayHasOfficialLinks($before)) {
+            return $this->failure('Live or official attendance sessions are permanent records and cannot be deleted.');
+        }
+        $eventRows = $this->CI->db->select('id')->where('attendance_day_id', (int) $before['id'])
+            ->get('biometric_events')->result_array();
+        $eventIds = array_map('intval', array_column($eventRows, 'id'));
+
+        $this->CI->db->select('id')->from('biometric_exceptions')->where('attendance_day_id', (int) $before['id']);
+        if ($eventIds) {
+            $this->CI->db->or_where_in('event_id', $eventIds);
+        }
+        $exceptionRows = $this->CI->db->get()->result_array();
+        $exceptionIds = array_values(array_unique(array_map('intval', array_column($exceptionRows, 'id'))));
+        $counts = array(
+            'events' => count($eventIds),
+            'notifications' => $eventIds
+                ? (int) $this->CI->db->where_in('event_id', $eventIds)
+                    ->count_all_results('biometric_notification_queue') : 0,
+            'exceptions' => count($exceptionIds),
+            'reconciliation_actions' => $exceptionIds
+                ? (int) $this->CI->db->where_in('exception_id', $exceptionIds)
+                    ->count_all_results('biometric_reconciliation_actions') : 0,
+            'days' => 1,
+        );
+
+        $this->CI->db->trans_start();
+        if ($exceptionIds) {
+            $this->CI->db->where_in('exception_id', $exceptionIds)->delete('biometric_reconciliation_actions');
+            $this->CI->db->where_in('id', $exceptionIds)->delete('biometric_exceptions');
+        }
+        if ($eventIds) {
+            $this->CI->db->where_in('event_id', $eventIds)->delete('biometric_notification_queue');
+            $this->CI->db->where_in('id', $eventIds)->delete('biometric_events');
+        }
+        $this->CI->db->where('id', (int) $before['id'])->delete('biometric_attendance_days');
+        $auditBefore = array(
+            'id' => (int) $before['id'],
+            'subject_type' => $before['subject_type'],
+            'subject_id' => (int) $before['subject_id'],
+            'attendance_date' => $before['attendance_date'],
+            'record_scope' => $before['record_scope'],
+        );
+        $this->audit('attendance_day.test_deleted', 'attendance_day', $before['id'], $auditBefore, $counts, $actorId);
+        $this->CI->db->trans_complete();
+        return $this->CI->db->trans_status()
+            ? array('success' => true, 'errors' => array(), 'item' => null, 'counts' => $counts)
+            : $this->failure('The test attendance session could not be deleted safely.');
+    }
+
     public function listExceptions(array $filters = array(), $page = 1, $perPage = 50)
     {
         $search = isset($filters['search']) ? $filters['search'] : '';
@@ -1446,6 +1792,27 @@ class Biometric_attendance_service
         if ($action === 'map_and_retry') {
             if (empty($resolution['mapping']) || !is_array($resolution['mapping'])) {
                 return array('success' => false, 'item' => $exception, 'event_result' => null, 'errors' => array('mapping' => 'A mapping is required.'));
+            }
+            $event = !empty($exception['event_id'])
+                ? $this->model->getEvent((int) $exception['event_id']) : null;
+            $mappingType = strtolower(trim(isset($resolution['mapping']['subject_type'])
+                ? $resolution['mapping']['subject_type'] : ''));
+            $mappingSubjectId = isset($resolution['mapping']['subject_id'])
+                ? (int) $resolution['mapping']['subject_id'] : 0;
+            $summary = in_array($mappingType, array('student', 'staff'), true) && $mappingSubjectId > 0
+                ? $this->subjectSummary($mappingType, $mappingSubjectId) : null;
+            $canonicalCode = $summary && isset($summary['code'])
+                ? strtoupper(trim((string) $summary['code'])) : '';
+            $eventCode = $event ? strtoupper(trim((string) $event['person_code'])) : '';
+            if ($event && ($canonicalCode === '' || !hash_equals($canonicalCode, $eventCode))) {
+                return array(
+                    'success' => false,
+                    'item' => $exception,
+                    'event_result' => null,
+                    'errors' => array('mapping' => 'ZKBio sent identity "' . $eventCode
+                        . '", but the selected SchoolLift record uses "' . $canonicalCode
+                        . '". Change the person ID in ZKBio to the SchoolLift admission number or employee ID, synchronize again, then retry or delete this non-Live test event.'),
+                );
             }
             $mapping = $this->saveMapping($resolution['mapping'], $actorId);
             if (empty($mapping['success'])) {
@@ -1584,6 +1951,35 @@ class Biometric_attendance_service
         $item = $this->model->getScannerStation($before['id']);
         $this->audit($enabled ? 'scanner.enabled' : 'scanner.disabled', 'scanner_station', $before['id'], $before, $item, $actorId);
         return array('success' => true, 'errors' => array(), 'item' => $item);
+    }
+
+    public function deleteScannerStation($stationId, $actorId = null)
+    {
+        $before = $this->model->getScannerStation((int) $stationId);
+        if (!$before) {
+            return $this->failure('Scanner station not found.');
+        }
+        if (!empty($before['is_active'])) {
+            return $this->failure('Revoke this scanner station before deleting it.');
+        }
+        $deviceId = !empty($before['device_id']) ? (int) $before['device_id'] : 0;
+        if ($deviceId && $this->CI->db->where('device_id', $deviceId)->count_all_results('biometric_events')) {
+            return $this->failure('This scanner is referenced by attendance history. Delete eligible test events first; Live history cannot be deleted.');
+        }
+        $otherStationCount = $deviceId
+            ? (int) $this->CI->db->where('device_id', $deviceId)->where('id !=', (int) $before['id'])
+                ->count_all_results('biometric_scanner_stations') : 0;
+        $this->CI->db->trans_start();
+        $this->CI->db->where('id', (int) $before['id'])->delete('biometric_scanner_stations');
+        if ($deviceId && $otherStationCount === 0) {
+            $this->CI->db->where('id', $deviceId)->delete('biometric_devices');
+        }
+        $this->audit('scanner.deleted', 'scanner_station', $before['id'], $before,
+            array('linked_device_deleted' => $deviceId && $otherStationCount === 0), $actorId);
+        $this->CI->db->trans_complete();
+        return $this->CI->db->trans_status()
+            ? array('success' => true, 'errors' => array(), 'item' => null)
+            : $this->failure('The scanner station could not be deleted.');
     }
 
     public function issueQrCredential($subjectType, $subjectId, $actorId = null, array $options = array())
@@ -1733,6 +2129,39 @@ class Biometric_attendance_service
         unset($item['token_hash'], $item['token_ciphertext']);
         $this->audit('qr.revoked', 'qr_credential', $before['id'], null, $item, $actorId);
         return array('success' => true, 'errors' => array(), 'item' => $item);
+    }
+
+    /** Delete only a credential that has already been revoked. */
+    public function deleteQrCredential($credentialId, $actorId = null)
+    {
+        if (is_string($credentialId) && preg_match('/^[a-f0-9]{32}$/', $credentialId)) {
+            $this->CI->db->where('credential_uuid', $credentialId);
+        } else {
+            $this->CI->db->where('id', (int) $credentialId);
+        }
+        $before = $this->CI->db->get('biometric_qr_credentials')->row_array();
+        if (!$before) {
+            return $this->failure('QR credential not found.');
+        }
+        if (!empty($before['is_active'])) {
+            return $this->failure('Revoke this QR credential before deleting it.');
+        }
+        $auditBefore = array(
+            'id' => (int) $before['id'],
+            'credential_uuid' => $before['credential_uuid'],
+            'subject_type' => $before['subject_type'],
+            'subject_id' => (int) $before['subject_id'],
+            'issued_at' => $before['issued_at'],
+            'revoked_at' => $before['revoked_at'],
+            'last_used_at' => $before['last_used_at'],
+        );
+        $this->CI->db->trans_start();
+        $this->CI->db->where('id', (int) $before['id'])->delete('biometric_qr_credentials');
+        $this->audit('qr_credential.deleted', 'qr_credential', $before['credential_uuid'], $auditBefore, null, $actorId);
+        $this->CI->db->trans_complete();
+        return $this->CI->db->trans_status()
+            ? array('success' => true, 'errors' => array(), 'item' => null)
+            : $this->failure('The revoked QR credential could not be deleted.');
     }
 
     public function lookupQrCredential($token)
@@ -2326,7 +2755,7 @@ class Biometric_attendance_service
         }
         $mapping = $this->model->findMappingByCode($event['person_code'], $event['attendance_date']);
         if (!$mapping || !$this->subjectExists($mapping['subject_type'], $mapping['subject_id'])) {
-            return array('success' => false, 'message' => 'The person code is still not mapped to an active record.');
+            return array('success' => false, 'message' => 'The Admission No. or Employee ID is still not mapped to an active record.');
         }
         $direction = $this->policy->directionFromState($event['raw_punch_state'], $this->punchStateMap($event['integration_id']));
         if ($direction === null) {
@@ -2492,6 +2921,51 @@ class Biometric_attendance_service
         return false;
     }
 
+    /** Count active/current people using the normalized attendance identity. */
+    protected function identityCodeUsageCount($subjectType, $code)
+    {
+        $code = strtoupper(trim((string) $code));
+        if ($code === '' || !in_array($subjectType, array('student', 'staff'), true)) {
+            return 0;
+        }
+        $setting = $this->CI->db->select('session_id')->limit(1)->get('sch_settings')->row_array();
+        $studentRow = $this->CI->db->query(
+            "SELECT COUNT(*) AS `total`
+             FROM `student_session`
+             INNER JOIN `students` ON `students`.`id` = `student_session`.`student_id`
+             WHERE `student_session`.`session_id` = ?
+               AND `students`.`is_active` = 'yes'
+               AND UPPER(TRIM(`students`.`admission_no`)) = ?",
+            array(isset($setting['session_id']) ? (int) $setting['session_id'] : 0, $code)
+        )->row_array();
+        $staffRow = $this->CI->db->query(
+            "SELECT COUNT(*) AS `total`
+             FROM `staff`
+             WHERE `staff`.`is_active` = 1
+               AND UPPER(TRIM(`staff`.`employee_id`)) = ?",
+            array($code)
+        )->row_array();
+        return (isset($studentRow['total']) ? (int) $studentRow['total'] : 0)
+            + (isset($staffRow['total']) ? (int) $staffRow['total'] : 0);
+    }
+
+    /** Protect both explicit and legacy-table links before any test cleanup. */
+    protected function attendanceDayHasOfficialLinks(array $day)
+    {
+        if (!empty($day['official_attendance_id']) || !empty($day['official_table'])
+            || !empty($day['manual_locked'])) {
+            return true;
+        }
+        $dayId = isset($day['id']) ? (int) $day['id'] : 0;
+        if ($dayId < 1) {
+            return false;
+        }
+        return (bool) $this->CI->db->where('biometric_day_id', $dayId)
+            ->count_all_results('student_attendences')
+            || (bool) $this->CI->db->where('biometric_day_id', $dayId)
+                ->count_all_results('staff_attendance');
+    }
+
     protected function attendanceTypeExists($table, $typeId)
     {
         if (!in_array($table, array('attendence_type', 'staff_attendance_type'), true)
@@ -2636,6 +3110,7 @@ class Biometric_attendance_service
             $item['subject_code'] = $summary ? $summary['code'] : null;
             $item['subject_class'] = $summary && isset($summary['class']) ? $summary['class'] : null;
             $item['subject_section'] = $summary && isset($summary['section']) ? $summary['section'] : null;
+            $item['subject_role'] = $summary && isset($summary['role']) ? $summary['role'] : null;
         }
         unset($item);
         return $result;
@@ -2650,8 +3125,9 @@ class Biometric_attendance_service
                 ->join('sections', 'sections.id = student_session.section_id', 'left')
                 ->where('student_session.id', (int) $subjectId)->get()->row_array();
         }
-        return $this->CI->db->select("staff.id AS subject_id, 'staff' AS subject_type, staff.employee_id AS code, CONCAT_WS(' ', staff.name, staff.surname) AS name, staff.image", false)
-            ->from('staff')->where('staff.id', (int) $subjectId)->get()->row_array();
+        return $this->CI->db->select("staff.id AS subject_id, 'staff' AS subject_type, staff.employee_id AS code, CONCAT_WS(' ', staff.name, staff.surname) AS name, staff.image, staff_designation.designation AS role", false)
+            ->from('staff')->join('staff_designation', 'staff_designation.id = staff.designation', 'left')
+            ->where('staff.id', (int) $subjectId)->get()->row_array();
     }
 
     protected function newIntegrationToken()

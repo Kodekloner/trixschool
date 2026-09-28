@@ -13,19 +13,19 @@ function biometric_contract_assert($condition, $message)
 
 $service = new ReflectionClass('Biometric_attendance_service');
 $required = array(
-    'getSettings', 'updateSettings', 'dashboard', 'listDevices', 'saveDevice', 'setDeviceActive',
-    'listMappings', 'saveMapping', 'setMappingActive', 'setMappingPilot', 'previewBulkMappings', 'bulkSeedMappings', 'listIntegrations',
-    'createIntegrationToken', 'rotateIntegrationToken', 'setIntegrationActive', 'getPunchStateMappings',
+    'getSettings', 'updateSettings', 'dashboard', 'listDevices', 'saveDevice', 'setDeviceActive', 'deleteDevice',
+    'listMappings', 'saveMapping', 'setMappingActive', 'setMappingPilot', 'deleteMapping', 'previewBulkMappings', 'bulkSeedMappings', 'listIntegrations',
+    'createIntegrationToken', 'rotateIntegrationToken', 'setIntegrationActive', 'deleteIntegration', 'getPunchStateMappings',
     'savePunchStateMappings', 'authenticateToken', 'ingestBatch', 'ingestEvent',
-    'listEvents', 'listDays', 'listExceptions', 'resolveException', 'listAudit',
-    'listScannerStations', 'saveScannerStation', 'setScannerStationActive', 'listQrCredentials',
+    'listEvents', 'deleteEvent', 'listDays', 'deleteAttendanceDay', 'listExceptions', 'resolveException', 'listAudit',
+    'listScannerStations', 'saveScannerStation', 'setScannerStationActive', 'deleteScannerStation', 'listQrCredentials',
     'issueQrCredential', 'qrEncryptionReady', 'getActiveQrCredential', 'getQrCredentialToken',
-    'revokeQrCredential', 'lookupQrCredential', 'scanQrCredential',
+    'revokeQrCredential', 'deleteQrCredential', 'lookupQrCredential', 'scanQrCredential',
     'markManualOverride', 'purgeSimulationData', 'runRetentionCleanup',
     'notificationQueueSummary', 'listNotificationQueue', 'processNotificationQueue',
     'retryFailedNotifications', 'recentEventsAfter',
     'pollGateway', 'completeGatewayCommand', 'getGatewayStatus',
-    'listGatewayAgents', 'queueGatewayCommand', 'listGatewayCommands'
+    'listGatewayAgents', 'queueGatewayCommand', 'listGatewayCommands', 'deleteGatewayCommand'
 );
 foreach ($required as $method) {
     biometric_contract_assert($service->hasMethod($method) && $service->getMethod($method)->isPublic(), 'Missing public service method: ' . $method);
@@ -101,19 +101,26 @@ biometric_contract_assert($mappingSelectPosition !== false && $mappingSelectPosi
 biometric_contract_assert($credentialSelectPosition !== false && $credentialSelectPosition > $readyPosition && $credentialSelectPosition < $readyClosePosition, 'QR credential Select2 must initialize inside DOM ready.');
 biometric_contract_assert($hashTabPosition !== false && $hashTabPosition > $readyPosition && $hashTabPosition < $readyClosePosition, 'Biometric hash tab activation must wait for Bootstrap inside DOM ready.');
 foreach (array(
-    'Raw state', 'Live refresh every 5 seconds', 'Map this code and retry',
+    'Raw state', 'Live refresh every 5 seconds', 'Map matching identity and retry',
     'Process notification queue now', 'Run retention cleanup', 'Add pilot',
-    'CSV'
+    'Admission No.', 'Close mapping preview', 'DELETE_TEST_EVENT',
+    'DELETE_TEST_SESSION', '<th>Class</th><th>Arm</th>', 'bio-mapping-toolbar', 'CSV'
 ) as $operationalControl) {
     biometric_contract_assert(strpos($adminView, $operationalControl) !== false, 'Biometric operations UI is missing: ' . $operationalControl);
 }
+biometric_contract_assert(
+    strpos($adminView, 'name="external_person_code"') === false,
+    'Identity Mapping must derive Admission No./Employee ID instead of accepting a manually typed device code.'
+);
 
 $adminController = file_get_contents(__DIR__ . '/../application/controllers/admin/Biometricattendance.php');
 foreach (array(
     'hasCompletedShadowSession', "ein.source = 'gateway'", "eout.source = 'gateway'",
     'student_pilot_ready', 'staff_pilot_ready', 'live_scope_authorized',
     'eventfeed', 'runretention', 'processnotifications', 'retrynotifications', 'togglestation',
-    'csvSafeValue',
+    'deleteevent', 'deleteday', 'deletemapping', 'deletedevice', 'deleteintegration',
+    'deletegatewaycommand', 'deletestation', 'deletecredential', 'closemappingpreview',
+    "'class_name'", "'arm_name'", 'csvSafeValue',
 ) as $operationalRule) {
     biometric_contract_assert(strpos($adminController, $operationalRule) !== false, 'Biometric operations controller is missing: ' . $operationalRule);
 }
@@ -131,6 +138,29 @@ biometric_contract_assert(strpos($serviceSource, 'runRetentionCleanup') !== fals
 biometric_contract_assert(strpos($serviceSource, 'live_scope_authorized') !== false, 'Widening Live projection must require a fresh authorization.');
 biometric_contract_assert(strpos($serviceSource, 'biometric_notification_queue') !== false, 'Live guardian alerts must use a durable queue.');
 biometric_contract_assert(strpos($serviceSource, 'map_and_retry') !== false, 'Unknown people must support an auditable mapping-and-retry reconciliation.');
+biometric_contract_assert(strpos($serviceSource, 'identityCodeUsageCount') !== false, 'Identity mappings must derive a unique admission number or employee ID.');
+biometric_contract_assert(strpos($serviceSource, "operating_mode'] === 'live'") !== false, 'Live event deletion must be blocked.');
+
+$gisGoLiveSql = file_get_contents(__DIR__ . '/../docs/gis-biometric-go-live-2026-09-28.sql');
+foreach (array(
+    "DATABASE() <> 'trixschool_gis'", "`mode` = 'live'", '`project_staff` = 0',
+    '`live_pilot_enabled` = 0', "`external_person_code` = 'GIS369'",
+    "'exception.ignore'", '`biometric_reconciliation_actions`', 'START TRANSACTION', 'COMMIT;'
+) as $gisGoLiveRule) {
+    biometric_contract_assert(
+        strpos($gisGoLiveSql, $gisGoLiveRule) !== false,
+        'GIS go-live SQL is missing safety rule: ' . $gisGoLiveRule
+    );
+}
+biometric_contract_assert(
+    stripos($gisGoLiveSql, 'DELETE FROM') === false && stripos($gisGoLiveSql, 'TRUNCATE TABLE') === false,
+    'GIS go-live SQL must preserve commissioning events, sessions, exceptions, and audit history.'
+);
+biometric_contract_assert(
+    strpos($gisGoLiveSql, 'UPDATE `migrations`') === false
+        && strpos($gisGoLiveSql, 'INSERT INTO `migrations`') === false,
+    'The GIS operational go-live must not change the numbered migration ledger.'
+);
 
 $studentAttendanceModel = file_get_contents(__DIR__ . '/../application/models/Stuattendence_model.php');
 $staffAttendanceModel = file_get_contents(__DIR__ . '/../application/models/Staffattendancemodel.php');

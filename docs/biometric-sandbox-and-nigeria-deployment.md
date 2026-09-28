@@ -172,19 +172,19 @@ If the purchased version calls the person field something else or does not make 
 
 #### How does `emp_code` become a SchoolLift mapping?
 
-When a person is enrolled in the verified ZKBio setup, the school assigns a unique code such as `STU-2024-017`. Under the proven format, ZKBio includes that value as `emp_code` whenever the person punches. The Windows gateway carries that person's code to SchoolLift as `person_code`. On the **Identity Mapping** page, SchoolLift calls it the **Device person code** and links it to the selected student or staff record.
+When a person is enrolled in the verified ZKBio setup, use the student's existing SchoolLift **Admission No.** or the staff member's existing **Employee ID**. For example, use `STU-2024-017`. Under the proven format, ZKBio includes that value as `emp_code` whenever the person punches. The Windows gateway carries the unchanged value to SchoolLift as `person_code`. On **Identity Mapping**, the operator selects the person and SchoolLift obtains the Admission No. or Employee ID automatically; there is no second device-code box to fill.
 
 For example:
 
 ```text
 ZKBio calls it:                 emp_code          = STU-2024-017
 The Windows gateway sends it:   person_code       = STU-2024-017
-The Mapping page calls it:      Device person code = STU-2024-017
+The Mapping page displays it:   Admission No.      = STU-2024-017
 ```
 
 Configure these three values identically. SchoolLift removes spaces at the beginning or end and treats ordinary Latin uppercase/lowercase letters as the same, but the installer should not rely on that correction. The code is only a machine label; it is not a password, fingerprint, face template, attendance event ID, or terminal serial number.
 
-In `simulation` mode there is no physical ZKTeco device. The website Test Terminal supplies a made-up code such as `DEMO-STUDENT-001`, but SchoolLift resolves that code through the same mapping process used for a real terminal.
+In `simulation` mode there is no physical ZKTeco device. In the website Test Terminal, enter the selected student's real Admission No. or the selected staff member's real Employee ID. SchoolLift resolves it through the same mapping process used for a real terminal.
 
 #### What is a “SchoolLift identity”?
 
@@ -243,44 +243,44 @@ Next academic session, Ada may keep permanent profile `418` and admission number
 
 #### Complete staff example
 
-Suppose Bola Musa has active SchoolLift staff record `staff.id = 37` and employee ID `TCH-0037`. Enrol him in ZKBio with `emp_code = TCH-0037`, then map device code `TCH-0037` to the selected SchoolLift staff member. If his displayed name is later corrected, the code and staff record still identify the same person.
+Suppose Bola Musa has active SchoolLift staff record `staff.id = 37` and employee ID `TCH-0037`. Enrol him in ZKBio with `emp_code = TCH-0037`, then select Bola on Identity Mapping. SchoolLift reads `TCH-0037` from his staff record automatically. If his displayed name is later corrected, the employee ID and staff record still identify the same person.
 
 #### Do not confuse these values
 
 | Value | Answers which question? | Example |
 | --- | --- | --- |
 | Terminal serial | Which physical device sent the transaction? | `SCHOOL-GATE-001` |
-| Device/ZKBio person code | Whom did that device recognize? | `STU-2024-017` |
+| ZKBio person identity | Which Admission No. or Employee ID did the device recognize? | `STU-2024-017` |
 | Punch state | Did the person select IN or OUT? | `0` for IN, `1` for OUT after installation proof |
 | External event ID | Which one individual punch is this? | `zkbio:SCHOOL-GATE-001:889144` |
 | Integration token | Is this gateway authorized to call the SchoolLift API? | Secret value, never used as a person code |
 | SchoolLift identity | Which exact active attendance record receives the punch? | Student enrolment `9102` or staff record `37` |
 
-One terminal serial is shared by everyone using that terminal. Each person has a different person code. Every punch has its own event ID.
+One terminal serial is shared by everyone using that terminal. Each person has a different Admission No. or Employee ID. Every punch has its own event ID.
 
-#### Choose safe person codes
+#### Prepare safe Admission Numbers and Employee IDs
 
-- Prefer the school's admission number for a student and employee ID for staff, provided each value is stable, unique across the whole school, and never reassigned.
-- The student and staff code space is shared. If a student and staff member can both be `001`, use clear prefixes such as `STU-001` and `STF-001`.
-- Configure the exact same code in ZKBio and SchoolLift. SchoolLift trims surrounding spaces and compares codes in uppercase, but punctuation, internal spaces, and leading zeroes still matter.
+- SchoolLift uses the school's Admission No. for a student and Employee ID for staff. Each value must be present, stable, unique across the active school roster, and never reassigned.
+- The student and staff identity space is shared. If a student and staff member can both be `001`, correct the school records to use clear unique formats such as `STU-001` and `STF-001` before mapping.
+- Configure the exact Admission No. or Employee ID in ZKBio. SchoolLift reads it from its own person record, trims surrounding spaces, and compares in uppercase; punctuation, internal spaces, and leading zeroes still matter.
 - Treat a code as text. For example, keep `STU-001` as text and never send a leading-zero code as a JSON number.
 - Do not use a name, phone number, NIN, class position, or another changeable/reusable value.
 - Do not reuse a former student's or staff member's code for somebody else.
 
-Creating a mapping in SchoolLift does **not** create the person or enrol their face/fingerprint in ZKBio. Creating the person in ZKBio also does **not** create a SchoolLift mapping. They are two separate setup steps joined by the same person code.
+Creating a mapping in SchoolLift does **not** create the person or enrol their face/fingerprint in ZKBio. Creating the person in ZKBio also does **not** create a SchoolLift mapping. They are two separate setup steps joined by the same Admission No. or Employee ID.
 
-A mapping only explains **what the person code means**. It does not prove a face/fingerprint match and does not authenticate the Windows gateway. Device recognition and the gateway's secret integration token are separate safety checks.
+A mapping only explains **which SchoolLift record owns the Admission No. or Employee ID received from ZKBio**. It does not prove a face/fingerprint match and does not authenticate the Windows gateway. Device recognition and the gateway's secret integration token are separate safety checks.
 
-The link is one-to-one within one school's database: one device person code can point to only one student **or** one staff member, and that selected SchoolLift record can have only one device-code mapping. A disabled mapping still reserves its code so it cannot quietly be reassigned to somebody else.
+The link is one-to-one within one school's database: one Admission No. or Employee ID can point to only one student **or** one staff member, and the selected SchoolLift record can have only one mapping. A disabled mapping still reserves its identity until an authorized operator deliberately deletes the disabled mapping.
 
-This identity mapping is for biometric/Test Terminal person codes. A trusted SchoolLift QR card uses its own random, revocable credential that already points to its student or staff record; the QR token must not be copied into the device person-code field.
+This identity mapping is for biometric/Test Terminal identities. A trusted SchoolLift QR card uses its own random, revocable credential that already points to its student or staff record; a QR token must never be entered as an Admission No. or Employee ID.
 
 #### What happens when the mapping is missing or wrong?
 
 - If the device, punch state, timestamp, and other earlier checks pass but no active, date-valid mapping matches the code, SchoolLift stores the safe event as **quarantined** with an `UNKNOWN_PERSON` exception. It does not create a daily session or official attendance for a guessed person.
 - If the mapping points to a student enrolment or staff record that is no longer active/current, the event is quarantined as `INACTIVE_SUBJECT`.
-- After an administrator creates a missing mapping or safely reactivates the correct existing mapping, the quarantined event can be retried from Reconciliation in its original operating mode.
-- The current page does not provide a safe reassignment editor for an already-wrong mapping. Stop event intake, keep the event quarantined, and have an authorized application/database maintainer correct the link through a controlled, backed-up procedure; do not delete/reuse rows casually.
+- After an administrator creates a missing mapping or safely reactivates the correct existing mapping, a quarantined event can be retried only when the identity received from ZKBio is exactly that person's Admission No. or Employee ID.
+- If ZKBio sent an old or invented code, correct the person's ID in ZKBio and synchronize a new punch. Do not force the old code onto another person. An authorized operator may delete the old non-Live test event; Live events remain immutable.
 - A wrong active mapping is dangerous because it can attribute attendance to the wrong person. Always test mappings in `simulation`, then verify real terminal transactions in `shadow`, before enabling `live`.
 - Changing a mapping affects future events and deliberately retried quarantined events. It does not silently move previously accepted historical events to another person.
 
@@ -289,9 +289,9 @@ This identity mapping is for biometric/Test Terminal person codes. A trusted Sch
 1. Open **Identity Mapping**.
 2. In the first field, choose **Student** or **Staff**.
 3. In the searchable person field, type part of the name, admission number, or employee ID. A student appears only when the student is active **and enrolled in the academic session currently configured for the school**; staff must be active. Select the exact result and the website stores the required internal ID automatically.
-4. In **Device person code**, enter `DEMO-STUDENT-001` for the selected demonstration student or `DEMO-STAFF-001` for the selected demonstration staff member.
-5. Save and confirm that the mapping is active.
-6. In **Test Terminal**, enter the same demonstration code. SchoolLift ignores surrounding spaces and letter case, but different characters, punctuation, internal spaces, or leading zeroes make it a different code.
+4. Check the read-only identity shown by SchoolLift. It must be the student's Admission No. or staff member's Employee ID. If it is blank or duplicated, correct the normal person record first.
+5. Save and confirm that the mapping is active. The student table also shows class and arm to help you identify the correct child.
+6. In **Test Terminal**, enter that same Admission No. or Employee ID. SchoolLift ignores surrounding spaces and letter case, but different characters, punctuation, internal spaces, or leading zeroes make it a different identity.
 
 For many people, **Preview roster codes** proposes mappings from active students' admission numbers or active staff employee IDs. Preview first: blank codes, duplicates, reused codes, and conflicting links are shown for correction. Confirmation creates only unambiguous mappings, and SchoolLift refuses confirmation if the roster changed after the preview.
 
@@ -301,7 +301,7 @@ If an active student produces **No results found**, first check the school's cur
 
 1. Open the **Test Terminal** tab.
 2. Confirm the selected virtual device is `SIM-GATE-001`.
-3. Enter the mapped code `DEMO-STUDENT-001`.
+3. Enter the selected student's mapped Admission No.
 4. Select **Check In**.
 5. Select a simulated method such as **Face**.
 6. Click the single-event submit button once.
@@ -313,7 +313,7 @@ If an active student produces **No results found**, first check the school's cur
 ### Submit the separate checkout
 
 1. Stay on or reopen **Test Terminal**.
-2. Select the same virtual terminal and person code.
+2. Enter the same Admission No. or Employee ID.
 3. Select **Check Out** explicitly.
 4. Choose the verification method and submit exactly one event.
 5. Verify the result is `accepted`.
@@ -413,11 +413,11 @@ Terminal B injects a school day from one terminal:
 cd tools/biometric-sandbox
 php bin/simulate.php \
   --scenario=normal \
-  --employee=DEMO-STUDENT-001 \
+  --employee=STU-2024-017 \
   --terminal-serial=SIM-GATE-001
 ```
 
-The mock creates both events for `SIM-GATE-001`; direction comes from `punch_state`.
+The mock creates both events for `SIM-GATE-001`; direction comes from `punch_state`. Replace `STU-2024-017` with an Admission No. that is mapped in the target test school.
 
 ### Configure the gateway for the mock
 
@@ -544,11 +544,11 @@ Do not use time windows such as “before noon means IN.” Do not toggle each p
 
 ### Enroll and map students/staff
 
-1. Read **Understand identity mapping before creating one** above and approve a school-wide person-code format. Use admission number/employee ID only when it is stable, unique across students and staff, and never reused; otherwise use prefixed dedicated codes.
+1. Read **Understand identity mapping before creating one** above. Confirm that every active student has a unique Admission No. and every active staff member has a unique Employee ID, with no student/staff collision. Correct the normal SchoolLift records before continuing.
 2. Obtain the approved guardian/student/staff notices and process before collecting biometrics.
-3. In ZKBio, create/enrol the person and assign the approved value as the exact ZKBio `emp_code`.
+3. In ZKBio, create/enrol the person and assign the exact SchoolLift Admission No. or Employee ID as the ZKBio `emp_code`.
 4. Capture face/fingerprint under realistic conditions only in the ZKTeco/ZKBio environment.
-5. In SchoolLift **Identity Mapping**, choose Student or Staff, search for and select the active person, enter that exact ZKBio code as **Device person code**, and save.
+5. In SchoolLift **Identity Mapping**, choose Student or Staff, search for and select the active person, verify the automatically displayed Admission No. or Employee ID, class and arm where applicable, and save. There is no separate device-code entry.
 6. For a bulk setup, preview active-roster mappings first and resolve blank, duplicate, reused, or conflicting admission/employee codes before confirmation.
 7. Provide a supervised QR, RFID, PIN, or manual path where appropriate.
 8. Test one explicit IN and OUT from the same serial for each pilot person while in `shadow`, and confirm the displayed person before live use.
