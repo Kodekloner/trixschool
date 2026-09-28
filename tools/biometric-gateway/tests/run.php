@@ -502,7 +502,17 @@ function startServer(int $port, string $documentRoot, string $router, array $env
 {
     $command = [PHP_BINARY, '-S', '127.0.0.1:' . $port, '-t', $documentRoot, $router];
     $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
-    $process = proc_open($command, $descriptors, $pipes, dirname($router), array_merge($_ENV, $environment));
+    // variables_order may omit E (notably in Windows/WAMP), leaving $_ENV
+    // empty. Keep the actual parent environment available to the child PHP
+    // server, then overlay only the fixture-specific values.
+    $parentEnvironment = getenv();
+    $process = proc_open(
+        $command,
+        $descriptors,
+        $pipes,
+        dirname($router),
+        array_merge(is_array($parentEnvironment) ? $parentEnvironment : $_ENV, $environment)
+    );
     if (!is_resource($process)) {
         throw new RuntimeException('Unable to start gateway integration test server.');
     }

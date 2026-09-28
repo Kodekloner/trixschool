@@ -96,6 +96,7 @@ class Biometricattendance extends Admin_Controller
             'staff_attendance_types' => $this->db->order_by('id', 'ASC')->get('staff_attendance_type')->result_array(),
             'can_add_biometric' => $this->rbac->hasPrivilege('biometric_attendance', 'can_add'),
             'can_edit_biometric' => $this->rbac->hasPrivilege('biometric_attendance', 'can_edit'),
+            'can_delete_biometric' => $this->rbac->hasPrivilege('biometric_attendance', 'can_delete'),
             'last_simulation' => $this->session->userdata('biometric_last_simulation'),
             'terminal_result' => $this->session->flashdata('biometric_terminal_result'),
             'scan_result' => $this->session->flashdata('biometric_scan_result'),
@@ -225,6 +226,16 @@ class Biometricattendance extends Admin_Controller
         return $this->resultRedirect($result, $active ? 'Integration enabled.' : 'Integration disabled.', '#bio-setup');
     }
 
+    public function deleteintegration()
+    {
+        $this->requireMutation('can_delete');
+        $result = $this->biometric_attendance_service->deleteIntegration(
+            (int) $this->input->post('integration_id'),
+            $this->actorId()
+        );
+        return $this->resultRedirect($result, 'The unused integration and its connector-control history were deleted. Audit history was retained.', '#bio-setup');
+    }
+
     /**
      * Queue one fixed connector action. The web server never executes a local
      * process: the authenticated Windows connector collects this request on
@@ -265,6 +276,16 @@ class Biometricattendance extends Admin_Controller
             $labels[$type] = 'That connector action is already waiting or running; another copy was not created.';
         }
         return $this->resultRedirect($result, $labels[$type], '#bio-connector');
+    }
+
+    public function deletegatewaycommand()
+    {
+        $this->requireMutation('can_delete');
+        $result = $this->biometric_attendance_service->deleteGatewayCommand(
+            (int) $this->input->post('command_id'),
+            $this->actorId()
+        );
+        return $this->resultRedirect($result, 'The completed connector action was deleted. Audit history was retained.', '#bio-connector');
     }
 
     public function punchstates()
@@ -315,13 +336,22 @@ class Biometricattendance extends Admin_Controller
         return $this->resultRedirect($result, $active ? 'Device enabled.' : 'Device disabled.', '#bio-setup');
     }
 
+    public function deletedevice()
+    {
+        $this->requireMutation('can_delete');
+        $result = $this->biometric_attendance_service->deleteDevice(
+            (int) $this->input->post('device_id'),
+            $this->actorId()
+        );
+        return $this->resultRedirect($result, 'The unused terminal registration was deleted. Audit history was retained.', '#bio-setup');
+    }
+
     public function mapping()
     {
         $this->requireMutation('can_edit');
         $result = $this->biometric_attendance_service->saveMapping(array(
             'subject_type' => trim((string) $this->input->post('subject_type', true)),
             'subject_id' => (int) $this->input->post('subject_id'),
-            'external_person_code' => trim((string) $this->input->post('external_person_code', true)),
             'live_pilot' => (int) $this->input->post('live_pilot'),
             'is_active' => 1,
         ), $this->actorId());
@@ -352,6 +382,16 @@ class Biometricattendance extends Admin_Controller
         return $this->resultRedirect($result, $enabled ? 'Person added to the Live pilot.' : 'Person removed from the Live pilot.', '#bio-mappings');
     }
 
+    public function deletemapping()
+    {
+        $this->requireMutation('can_delete');
+        $result = $this->biometric_attendance_service->deleteMapping(
+            (int) $this->input->post('mapping_id'),
+            $this->actorId()
+        );
+        return $this->resultRedirect($result, 'The disabled identity mapping was deleted. Its audit entry was retained.', '#bio-mappings');
+    }
+
     public function bulkseed()
     {
         $this->requireMutation('can_edit');
@@ -366,7 +406,7 @@ class Biometricattendance extends Admin_Controller
             array('preview_hash' => $previewHash)
         );
         $this->session->unset_userdata('biometric_mapping_preview');
-        return $this->resultRedirect($summary, 'Unambiguous active roster mappings were imported.', '#bio-mappings');
+        return $this->resultRedirect($summary, 'Unambiguous roster mappings were created or updated from SchoolLift identities.', '#bio-mappings');
     }
 
     public function bulkpreview()
@@ -381,8 +421,15 @@ class Biometricattendance extends Admin_Controller
             return $this->resultRedirect($preview, '', '#bio-mappings');
         }
         $this->session->set_userdata('biometric_mapping_preview', $preview);
-        $this->session->set_flashdata('biometric_message', '<div class="alert alert-info">Review the roster preview below, then confirm only the unambiguous Create rows.</div>');
+        $this->session->set_flashdata('biometric_message', '<div class="alert alert-info">Review the roster preview below, then confirm the unambiguous Create and Update rows.</div>');
         redirect(site_url('admin/biometricattendance') . '#bio-mappings');
+    }
+
+    public function closemappingpreview()
+    {
+        $this->requireMutation('can_edit');
+        $this->session->unset_userdata('biometric_mapping_preview');
+        return $this->resultRedirect(array('success' => true, 'errors' => array()), 'Mapping preview closed.', '#bio-mappings');
     }
 
     public function simulate()
@@ -452,6 +499,28 @@ class Biometricattendance extends Admin_Controller
         );
     }
 
+    public function deleteevent()
+    {
+        $this->requireMutation('can_delete');
+        $result = $this->biometric_attendance_service->deleteEvent(
+            (int) $this->input->post('event_id'),
+            $this->actorId(),
+            trim((string) $this->input->post('confirmation', true))
+        );
+        return $this->resultRedirect($result, 'The non-Live test event was deleted and its daily session was recalculated. Audit history was retained.', '#bio-events');
+    }
+
+    public function deleteday()
+    {
+        $this->requireMutation('can_delete');
+        $result = $this->biometric_attendance_service->deleteAttendanceDay(
+            (int) $this->input->post('day_id'),
+            $this->actorId(),
+            trim((string) $this->input->post('confirmation', true))
+        );
+        return $this->resultRedirect($result, 'The non-Live test session and its linked events were deleted. Audit history was retained.', '#bio-days');
+    }
+
     public function resolveexception()
     {
         $this->requireMutation('can_edit');
@@ -463,7 +532,6 @@ class Biometricattendance extends Admin_Controller
                 'mapping' => array(
                     'subject_type' => trim((string) $this->input->post('subject_type', true)),
                     'subject_id' => (int) $this->input->post('subject_id'),
-                    'external_person_code' => trim((string) $this->input->post('external_person_code', true)),
                     'live_pilot' => (int) $this->input->post('live_pilot'),
                     'is_active' => 1,
                 ),
@@ -516,6 +584,19 @@ class Biometricattendance extends Admin_Controller
         return $this->resultRedirect($result, $active ? 'Scanner station enabled.' : 'Scanner station disabled and its device revoked.', '#bio-scanner');
     }
 
+    public function deletestation()
+    {
+        $this->requireMutation('can_delete');
+        $stationId = (int) $this->input->post('station_id');
+        $station = $this->biometric_attendance_model->getScannerStation($stationId);
+        $result = $this->biometric_attendance_service->deleteScannerStation($stationId, $this->actorId());
+        if (!empty($result['success']) && $station
+            && hash_equals((string) $station['station_uuid'], (string) $this->session->userdata('biometric_scanner_station_uuid'))) {
+            $this->session->unset_userdata('biometric_scanner_station_uuid');
+        }
+        return $this->resultRedirect($result, 'The revoked, unused scanner station was deleted. Audit history was retained.', '#bio-scanner');
+    }
+
     public function issuecredential()
     {
         $this->requireMutation('can_edit');
@@ -539,6 +620,16 @@ class Biometricattendance extends Admin_Controller
             trim((string) $this->input->post('reason', true))
         );
         return $this->resultRedirect($result, 'Credential revoked.', '#bio-scanner');
+    }
+
+    public function deletecredential()
+    {
+        $this->requireMutation('can_delete');
+        $result = $this->biometric_attendance_service->deleteQrCredential(
+            trim((string) $this->input->post('credential_uuid', true)),
+            $this->actorId()
+        );
+        return $this->resultRedirect($result, 'The revoked QR credential was deleted. Audit history was retained.', '#bio-scanner');
     }
 
     public function scan()
@@ -652,7 +743,7 @@ class Biometricattendance extends Admin_Controller
                 'method' => 'listEvents', 'filters' => $filters['events'],
                 'columns' => array(
                     'id' => 'Event ID', 'occurred_at_local' => 'Local time', 'subject_name' => 'Person',
-                    'subject_code' => 'School code', 'person_code' => 'Device person code',
+                    'subject_code' => 'Admission No. / Employee ID', 'person_code' => 'Received identity',
                     'device_serial' => 'Terminal serial', 'raw_punch_state' => 'Raw punch state',
                     'direction' => 'Direction', 'verification_method' => 'Method', 'source' => 'Source',
                     'operating_mode' => 'Mode', 'processing_status' => 'Event status',
@@ -663,7 +754,7 @@ class Biometricattendance extends Admin_Controller
                 'method' => 'listDays', 'filters' => $filters['days'],
                 'columns' => array(
                     'attendance_date' => 'Date', 'subject_type' => 'Type', 'subject_name' => 'Person',
-                    'subject_code' => 'School code', 'record_scope' => 'Mode', 'first_in_at' => 'First IN',
+                    'subject_code' => 'Admission No. / Employee ID', 'record_scope' => 'Mode', 'first_in_at' => 'First IN',
                     'last_out_at' => 'Last OUT', 'duration_minutes' => 'Duration minutes',
                     'attendance_status' => 'Attendance status', 'missing_checkout' => 'Missing checkout',
                     'manual_locked' => 'Manual lock', 'projection_status' => 'Projection',
@@ -673,16 +764,18 @@ class Biometricattendance extends Admin_Controller
                 'method' => 'listExceptions', 'filters' => $filters['exceptions'],
                 'columns' => array(
                     'id' => 'Exception ID', 'created_at' => 'Created', 'exception_code' => 'Code',
-                    'message' => 'Message', 'subject_name' => 'Person', 'subject_code' => 'School code',
-                    'person_code' => 'Device person code', 'raw_punch_state' => 'Raw punch state',
+                    'message' => 'Message', 'subject_name' => 'Person', 'subject_code' => 'Admission No. / Employee ID',
+                    'person_code' => 'Received identity', 'raw_punch_state' => 'Raw punch state',
                     'status' => 'Status', 'resolution_action' => 'Resolution', 'resolution_note' => 'Note',
                 ),
             ),
             'mappings' => array(
                 'method' => 'listMappings', 'filters' => $filters['mappings'],
                 'columns' => array(
-                    'subject_type' => 'Type', 'subject_name' => 'Person', 'subject_code' => 'School code',
-                    'external_person_code' => 'Device person code', 'live_pilot' => 'Live pilot',
+                    'subject_type' => 'Type', 'subject_name' => 'Person',
+                    'external_person_code' => 'Admission No. / Employee ID',
+                    'subject_class' => 'Class', 'subject_section' => 'Arm', 'subject_role' => 'Staff designation',
+                    'live_pilot' => 'Live pilot',
                     'is_active' => 'Active', 'valid_from' => 'Valid from', 'valid_until' => 'Valid until',
                 ),
             ),
@@ -756,11 +849,15 @@ class Biometricattendance extends Admin_Controller
                 $results[] = array(
                     'id' => (int) $row['id'],
                     'text' => trim($row['admission_no'] . ' — ' . $row['full_name'] . ' (' . $row['class'] . ' ' . $row['section'] . ')'),
+                    'identity_code' => strtoupper(trim((string) $row['admission_no'])),
+                    'class_name' => trim((string) $row['class']),
+                    'arm_name' => trim((string) $row['section']),
                 );
             }
         } else {
-            $this->db->select("staff.id, staff.employee_id, CONCAT_WS(' ', staff.name, staff.surname) AS full_name", false)
-                ->from('staff')->where('staff.is_active', 1);
+            $this->db->select("staff.id, staff.employee_id, CONCAT_WS(' ', staff.name, staff.surname) AS full_name, staff_designation.designation", false)
+                ->from('staff')->join('staff_designation', 'staff_designation.id = staff.designation', 'left')
+                ->where('staff.is_active', 1);
             if ($query !== '') {
                 $this->db->group_start()->like('staff.employee_id', $query)
                     ->or_like('staff.name', $query)->or_like('staff.surname', $query)->group_end();
@@ -768,7 +865,13 @@ class Biometricattendance extends Admin_Controller
             $rows = $this->db->order_by('staff.name', 'ASC')->limit(30)->get()->result_array();
             $results = array();
             foreach ($rows as $row) {
-                $results[] = array('id' => (int) $row['id'], 'text' => trim($row['employee_id'] . ' — ' . $row['full_name']));
+                $role = trim((string) $row['designation']);
+                $results[] = array(
+                    'id' => (int) $row['id'],
+                    'text' => trim($row['employee_id'] . ' — ' . $row['full_name'] . ($role !== '' ? ' (' . $role . ')' : '')),
+                    'identity_code' => strtoupper(trim((string) $row['employee_id'])),
+                    'role_name' => $role,
+                );
             }
         }
         return $this->json(array('results' => $results));

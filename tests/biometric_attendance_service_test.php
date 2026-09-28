@@ -101,7 +101,12 @@ class TestableBiometricAttendanceService extends Biometric_attendance_service
 
     protected function subjectSummary($type, $id)
     {
-        return array('subject_type' => $type, 'subject_id' => (int) $id, 'name' => $type === 'student' ? 'Test Student' : 'Test Staff');
+        return array(
+            'subject_type' => $type,
+            'subject_id' => (int) $id,
+            'name' => $type === 'student' ? 'Test Student' : 'Test Staff',
+            'code' => $type === 'student' ? 'STU-001' : 'STF-001',
+        );
     }
 
     protected function punchStateMap($integrationId)

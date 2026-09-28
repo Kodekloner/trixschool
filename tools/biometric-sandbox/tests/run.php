@@ -212,7 +212,11 @@ function runHttpIntegrationTests(): void
         1 => ['pipe', 'w'],
         2 => ['pipe', 'w'],
     ];
-    $environment = array_merge($_ENV, [
+    // variables_order may omit E (notably in Windows/WAMP), leaving $_ENV
+    // empty. Preserve the real parent environment so the child PHP process
+    // can load its runtime and network libraries before adding test secrets.
+    $parentEnvironment = getenv();
+    $environment = array_merge(is_array($parentEnvironment) ? $parentEnvironment : $_ENV, [
         'BIOMETRIC_SANDBOX_STATE' => $stateFile,
         'BIOMETRIC_SANDBOX_USERNAME' => 'integration-user',
         'BIOMETRIC_SANDBOX_PASSWORD' => 'integration-password',

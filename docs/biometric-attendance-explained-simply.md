@@ -316,9 +316,9 @@ The Test Terminal uses it automatically. For the browser demonstration, staff do
 ### A safe Simulation exercise
 
 1. Set mode to **Simulation**.
-2. Map a demo student code, such as `DEMO-STUDENT-001`.
+2. In **Identity Mapping**, select a real active student. SchoolLift automatically uses that student's Admission No.
 3. Open **Test Terminal**.
-4. Enter the mapped code.
+4. Enter the same Admission No. shown in Identity Mapping.
 5. Select **Check In**.
 6. Select Face, Fingerprint, Card, PIN, or QR as the test method.
 7. Submit one punch.
@@ -395,7 +395,7 @@ This keeps the physical pilot evidence separate from browser practice.
 
 Shadow saves real events and calculates real daily sessions. Staff can inspect:
 
-- recognized person codes;
+- recognized Admission Numbers and Employee IDs;
 - terminal serials;
 - IN and OUT selections;
 - timestamps;
@@ -680,7 +680,7 @@ Is the terminal registered, enabled, and correctly assigned?
 Does the punch state mean IN or OUT?
           |
           v
-Does the person code map to an active student or staff member?
+Does the received Admission No. or Employee ID map to an active student or staff member?
           |
           v
 Has this exact event ID already been received?
@@ -851,16 +851,16 @@ SchoolLift deliberately refused to overwrite something unsafe, such as an existi
 
 ## Identity mapping
 
-The terminal knows a label. SchoolLift knows a person.
+ZKBio sends an identity. SchoolLift knows the exact school record that identity belongs to.
 
 For example:
 
 ```text
-Terminal label: STU-001
+Identity received from ZKBio: STU-001 (the student's Admission No.)
 SchoolLift person: Amina's current student-session record
 ```
 
-The mapping is the name tag joining those two identities.
+The mapping is the name tag joining those two identities. Staff do not invent another “device code” in SchoolLift: a student always uses the Admission No. already stored on the student's SchoolLift record, and a staff member always uses the Employee ID already stored on the staff record. That exact same value must be used as the person's employee/person identity in ZKBio Time.
 
 ### Student mapping
 
@@ -872,15 +872,15 @@ A staff mapping points to the active staff record.
 
 ### Safe mapping rules
 
-- Use a documented admission number, employee ID, or dedicated immutable code.
+- Use the student's SchoolLift Admission No. or the staff member's SchoolLift Employee ID.
 - Never map by a person's name alone.
-- One external code must not belong to two people.
+- One Admission No. or Employee ID must not belong to two people.
 - One person must not have conflicting active mappings.
 - Preview bulk mappings before confirming them.
 - Resolve conflicts instead of guessing.
 - Disable mappings for leavers or invalid records.
 
-An unknown code is quarantined. SchoolLift never silently creates a new student or chooses the person with the closest name.
+An unknown identity is quarantined. SchoolLift never silently creates a new student or chooses the person with the closest name.
 
 ## Exceptions and reconciliation
 
@@ -1064,7 +1064,7 @@ The same page shows the guardian-alert queue. It tells the administrator which s
 
 ### Identity Mapping
 
-This connects terminal person codes to active student-session or staff records. Bulk creation always begins with a preview.
+This connects the identity received from the terminal to an active student-session or staff record. SchoolLift now takes a student's Admission No. or a staff member's Employee ID directly from the selected person record; the operator does not invent or type a second device code. Student search results and mapping rows show class and arm, and bulk creation always begins with a closable preview.
 
 ### Events
 
@@ -1238,7 +1238,7 @@ Examples include:
 
 - stable external event ID;
 - terminal serial;
-- external person code;
+- Admission No. or Employee ID received as the person's external identity;
 - mapped SchoolLift person;
 - IN or OUT;
 - verification method name;

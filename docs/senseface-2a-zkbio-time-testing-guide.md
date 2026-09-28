@@ -237,13 +237,9 @@ If the terminal is not present or online, stop here and resolve the terminal-to-
 
 ## Step 10: Create one adult test person
 
-Use a simple device person code such as:
+First choose the exact active test person in SchoolLift. Copy that student's **Admission No.** or that staff member's **Employee ID**. Use the copied value in ZKBio; do not invent a second number such as `900001` unless `900001` is already that person's real SchoolLift Admission No. or Employee ID.
 
-```text
-900001
-```
-
-The device person code is the identifier ZKBio puts on every transaction. It is not the person's name and it is not a school subject such as English or Mathematics.
+This identity is what ZKBio puts on every transaction. It is not the person's name and it is not a school subject such as English or Mathematics.
 
 Create the person in ZKBio Time and send the record to the device, or enroll the person directly on the terminal according to the supported ZKBio workflow. In either case, confirm that ZKBio Time and the terminal show the same code.
 
@@ -256,14 +252,14 @@ Enroll only one method for the first proof:
 ## Step 11: Produce two transactions
 
 1. Deliberately select **Check In**.
-2. Authenticate as device person `900001`.
+2. Authenticate as the test person whose ZKBio ID is the copied Admission No. or Employee ID.
 3. Wait briefly.
 4. Deliberately select **Check Out**.
-5. Authenticate again as `900001`.
+5. Authenticate again as the same person.
 
 Open the transaction/attendance-record page in ZKBio Time. Confirm that both rows contain:
 
-- device person code `900001`;
+- the exact SchoolLift Admission No. or Employee ID used during enrolment;
 - the same SenseFace serial number;
 - correct times;
 - two different punch states;
@@ -347,13 +343,13 @@ Open **Identity Mapping**:
 1. Choose **Student** or **Staff**.
 2. Search for the test person's active SchoolLift record.
 3. Select the exact person.
-4. Enter `900001` in **Device person code**.
-5. Save the mapping.
+4. Confirm that SchoolLift automatically displays the expected **Admission No.** or **Employee ID**. For a student, also verify the displayed class and arm.
+5. Save the mapping. There is no separate device-person-code field.
 
 The mapping means:
 
 ```text
-ZKBio person 900001 = this exact SchoolLift student or staff record
+ZKBio identity (Admission No. or Employee ID) = this exact SchoolLift student or staff record
 ```
 
 Creating the mapping does not enroll a face or fingerprint. Biometric enrollment remains inside the terminal/ZKBio environment.
@@ -552,7 +548,7 @@ Copy the serial shown on the ZKBio transaction and compare it with the enabled S
 
 ## SchoolLift reports an unknown person
 
-Compare the transaction's device person code with the active SchoolLift mapping. The values must match exactly. Then retry the quarantined event through the documented exception workflow.
+Compare the identity on the ZKBio transaction with the selected student's Admission No. or staff member's Employee ID in SchoolLift. The values must match exactly. If ZKBio used an old or invented value, correct the person in ZKBio and synchronize a new punch; do not force the wrong code onto the SchoolLift person. Retry only an event whose identity now matches, or delete the old non-Live test event.
 
 ## Both actions become IN, or both become OUT
 
@@ -578,7 +574,7 @@ The initial physical test is successful only when every applicable item is check
 - [ ] ZKBio Time shows one real IN and one real OUT.
 - [ ] Their raw punch states are different and recorded.
 - [ ] The physical serial is registered exactly once in SchoolLift.
-- [ ] The device person code maps to the correct SchoolLift person.
+- [ ] The ZKBio identity exactly matches the correct SchoolLift Admission No. or Employee ID mapping.
 - [ ] The Windows gateway passes both connection checks.
 - [ ] The automatic once-per-minute synchronization is installed.
 - [ ] SchoolLift receives both accepted events in Shadow.
@@ -632,7 +628,7 @@ While the mode is still **Shadow**:
 1. Make a physical IN and a separate physical OUT on the same SenseFace serial for a pilot student if Student projection is enabled.
 2. Repeat for a pilot staff member if Staff projection is enabled.
 3. Confirm **Events** shows `source = gateway`, `mode = shadow`, `status = accepted`, the expected raw punch states, and the correct direction.
-4. Confirm **Daily Sessions** shows the person's name, school code, earliest IN, latest OUT, and a completed checkout.
+4. Confirm **Daily Sessions** shows the person's name, Admission No. or Employee ID, earliest IN, latest OUT, and a completed checkout.
 5. Confirm **School Computer Connector** is online, ZKBio is reachable, the last sync succeeded, and Waiting, Retry, and Failed are all zero.
 6. Resolve every open exception.
 
