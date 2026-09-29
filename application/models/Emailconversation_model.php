@@ -103,6 +103,76 @@ class Emailconversation_model extends CI_Model
         return $this->db->affected_rows() >= 0;
     }
 
+    /**
+     * Permanently remove one or more Shared Email conversations and their
+     * message history. The incoming_emails delivery journal is retained for
+     * webhook replay protection and operational auditing.
+     *
+     * @return int|false Number of conversations deleted, or false on failure.
+     */
+    public function deleteConversations($conversationIds)
+    {
+        $conversationIds = is_array($conversationIds) ? $conversationIds : array($conversationIds);
+        $ids = array();
+        foreach ($conversationIds as $conversationId) {
+            $conversationId = (int) $conversationId;
+            if ($conversationId > 0) {
+                $ids[$conversationId] = $conversationId;
+            }
+        }
+        $ids = array_values($ids);
+        if (empty($ids)) {
+            return 0;
+        }
+
+        $existingRows = $this->db->select('id')
+            ->from($this->conversationTable)
+            ->where_in('id', $ids)
+            ->get()
+            ->result_array();
+        $existingIds = array();
+        foreach ($existingRows as $row) {
+            $existingIds[] = (int) $row['id'];
+        }
+        if (empty($existingIds)) {
+            return 0;
+        }
+
+        $incomingRows = $this->db->select('incoming_email_id')
+            ->from($this->messageTable)
+            ->where_in('email_conversation_id', $existingIds)
+            ->where('incoming_email_id IS NOT NULL', null, false)
+            ->get()
+            ->result_array();
+        $incomingEmailIds = array();
+        foreach ($incomingRows as $row) {
+            $incomingEmailId = (int) $row['incoming_email_id'];
+            if ($incomingEmailId > 0) {
+                $incomingEmailIds[$incomingEmailId] = $incomingEmailId;
+            }
+        }
+        $incomingEmailIds = array_values($incomingEmailIds);
+
+        $this->db->trans_begin();
+        $this->db->where_in('email_conversation_id', $existingIds)->delete($this->messageTable);
+        $this->db->where_in('id', $existingIds)->delete($this->conversationTable);
+        if (!empty($incomingEmailIds)) {
+            $this->db->where_in('id', $incomingEmailIds)->update('incoming_emails', array(
+                'status' => 'deleted',
+                'error_message' => null,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ));
+        }
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            return false;
+        }
+
+        $this->db->trans_commit();
+        return count($existingIds);
+    }
+
     public function createOutgoingConversation($data)
     {
         $participantEmail = $this->normalizeEmail(isset($data['participant_email']) ? $data['participant_email'] : '');
@@ -209,6 +279,9 @@ class Emailconversation_model extends CI_Model
         $incomingEmailId = (int) $incomingEmailId;
         $incoming = $this->getIncomingEmail($incomingEmailId);
         if (empty($incoming)) {
+            return false;
+        }
+        if (strtolower(trim((string) $incoming['status'])) === 'deleted') {
             return false;
         }
 

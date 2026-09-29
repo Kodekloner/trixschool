@@ -26,7 +26,9 @@ $root = dirname(__DIR__);
 $migrationConfig = shared_email_read($root . '/application/config/migration.php');
 $incomingConfig = shared_email_read($root . '/application/config/incoming_email.php');
 $migration = shared_email_read($root . '/application/migrations/141_add_shared_email_inbox.php');
+$deletionMigration = shared_email_read($root . '/application/migrations/142_enable_shared_email_deletion.php');
 $model = shared_email_read($root . '/application/models/Emailconversation_model.php');
+$incomingModel = shared_email_read($root . '/application/models/Incomingemail_model.php');
 $controller = shared_email_read($root . '/application/controllers/admin/Emailinbox.php');
 $mailsms = shared_email_read($root . '/application/controllers/admin/Mailsms.php');
 $webhooks = shared_email_read($root . '/application/controllers/Webhooks.php');
@@ -41,8 +43,8 @@ $sql = shared_email_read($root . '/docs/all_school_database_migrations.sql');
 $docs = shared_email_read($root . '/docs/ses-inbound-setup.md');
 
 shared_email_assert(
-    preg_match('/migration_version[\'\"]?\]\s*=\s*141\s*;/', $migrationConfig) === 1,
-    'The configured migration target must be 141.'
+    preg_match('/migration_version[\'\"]?\]\s*=\s*142\s*;/', $migrationConfig) === 1,
+    'The configured migration target must be 142.'
 );
 foreach (array(
     'email_conversations',
@@ -60,6 +62,14 @@ shared_email_assert(
         && strpos($incomingConfig, "ses_inbound_mail_local_part'] = 'mail'") !== false,
     'Support and shared correspondence must use distinct configured local parts.'
 );
+foreach (array(
+    "where('short_code', 'shared_email')",
+    "'enable_delete' => (int) \$enabled",
+    "array('Admin', 'Super Admin', 'Head Teacher')",
+    "'can_delete' => (int) \$enabled",
+) as $contract) {
+    shared_email_assert(strpos($deletionMigration, $contract) !== false, 'Migration 142 is missing: ' . $contract);
+}
 
 foreach (array(
     'createOutgoingConversation',
@@ -72,9 +82,18 @@ foreach (array(
     "getHeader(\$headers, 'in-reply-to')",
     "getHeader(\$headers, 'references')",
     "'unread_count', 'unread_count + 1'",
+    'deleteConversations',
+    "where_in('email_conversation_id', \$existingIds)->delete(\$this->messageTable)",
+    "where_in('id', \$existingIds)->delete(\$this->conversationTable)",
+    "'status' => 'deleted'",
+    "strtolower(trim((string) \$incoming['status'])) === 'deleted'",
 ) as $contract) {
     shared_email_assert(strpos($model, $contract) !== false, 'Shared conversation model is missing: ' . $contract);
 }
+shared_email_assert(
+    substr_count($incomingModel, "\$payload['status'] = 'deleted'") === 2,
+    'Duplicate SNS or SES notifications must preserve deleted delivery markers.'
+);
 shared_email_assert(
     strpos($model, 'hash_equals($expected, $actual)') !== false
         && strpos($model, "'status' => 'correspondence'") === false
@@ -93,6 +112,10 @@ foreach (array(
     "'attachment_names' => \$attachments['names']",
     'get_last_message_id()',
     '$deliveredMessageId',
+    "hasPrivilege('shared_email', 'can_delete')",
+    'public function delete($id)',
+    'public function delete_selected()',
+    'deleteConversations(',
 ) as $contract) {
     shared_email_assert(strpos($controller, $contract) !== false, 'Shared inbox controller is missing: ' . $contract);
 }
@@ -145,7 +168,18 @@ shared_email_assert(
     'SNS signatures must be verified before shared-email tenant routing.'
 );
 
-foreach (array('All', 'Inbox', 'Sent', 'Unread', 'New External Email', 'html_escape') as $contract) {
+foreach (array(
+    'All',
+    'Inbox',
+    'Sent',
+    'Unread',
+    'New External Email',
+    'html_escape',
+    'name="conversation_ids[]"',
+    'shared-email-select-all',
+    'Delete Selected',
+    "admin/emailinbox/delete/",
+) as $contract) {
     shared_email_assert(strpos($indexView, $contract) !== false, 'Shared inbox view is missing: ' . $contract);
 }
 foreach (array(
@@ -171,13 +205,16 @@ shared_email_assert(
 );
 
 foreach (array(
-    '126 through 141',
+    '126 through 142',
     '141_add_shared_email_inbox.php',
+    '142_enable_shared_email_deletion.php',
     'CREATE TABLE IF NOT EXISTS `email_conversations`',
     'CREATE TABLE IF NOT EXISTS `email_conversation_messages`',
     "'shared_email'",
     "UNION ALL SELECT 'Head Teacher', 'shared_email'",
     "UNION ALL SELECT 'Head Teacher', 'external_email'",
+    "SET `enable_delete` = 1",
+    "role_grant.`can_delete` = 1",
 ) as $contract) {
     shared_email_assert(strpos($sql, $contract) !== false, 'Consolidated SQL is missing: ' . $contract);
 }

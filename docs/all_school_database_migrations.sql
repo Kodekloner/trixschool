@@ -1,5 +1,5 @@
--- SchoolLift consolidated tenant-database migrations (126 through 141).
--- Updated for deployment to every school database on 2026-09-25.
+-- SchoolLift consolidated tenant-database migrations (126 through 142).
+-- Updated for deployment to every school database on 2026-09-29.
 --
 -- IMPORTANT:
 --   * Select exactly one school database before importing this file.
@@ -33,6 +33,7 @@
 --   139_session_scope_question_bank.php
 --   140_harden_biometric_operations.php
 --   141_add_shared_email_inbox.php
+--   142_enable_shared_email_deletion.php
 --
 -- Supported targets: MySQL 5.7+/8.0 and compatible MariaDB releases.
 -- This is a schema/permission migration bundle, not a full database dump.
@@ -3782,3 +3783,52 @@ WHERE role_grant.`role_id` IS NULL
 ORDER BY expected.`role_name`, expected.`permission_code`;
 
 SELECT 'OK: migration 141 shared email inbox is installed.' AS migration_status;
+
+-- ========================================================================
+-- Migration 142: enable permanent Shared Email conversation deletion.
+-- ========================================================================
+
+SET @shared_email_permission_id := (
+  SELECT `id` FROM `permission_category`
+  WHERE `short_code` = 'shared_email' ORDER BY `id` LIMIT 1
+);
+
+UPDATE `permission_category`
+SET `enable_delete` = 1
+WHERE `id` = @shared_email_permission_id;
+
+INSERT INTO `roles_permissions`
+  (`role_id`, `perm_cat_id`, `can_view`, `can_add`, `can_edit`,
+   `can_delete`, `created_at`)
+SELECT role_row.`id`, @shared_email_permission_id, 1, 1, 0, 1, NOW()
+FROM `roles` AS role_row
+WHERE role_row.`name` IN ('Admin', 'Super Admin', 'Head Teacher')
+  AND @shared_email_permission_id IS NOT NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM `roles_permissions` AS existing_grant
+    WHERE existing_grant.`role_id` = role_row.`id`
+      AND existing_grant.`perm_cat_id` = @shared_email_permission_id
+  );
+
+UPDATE `roles_permissions` AS role_grant
+INNER JOIN `roles` AS role_row ON role_row.`id` = role_grant.`role_id`
+SET role_grant.`can_delete` = 1
+WHERE role_row.`name` IN ('Admin', 'Super Admin', 'Head Teacher')
+  AND role_grant.`perm_cat_id` = @shared_email_permission_id;
+
+-- Migration 142 verification. This result set must be empty.
+SELECT expected.`role_name` AS `missing_shared_email_delete_grant`
+FROM (
+  SELECT 'Admin' AS `role_name`
+  UNION ALL SELECT 'Super Admin'
+  UNION ALL SELECT 'Head Teacher'
+) AS expected
+INNER JOIN `roles` AS role_row ON role_row.`name` = expected.`role_name`
+LEFT JOIN `roles_permissions` AS role_grant
+  ON role_grant.`role_id` = role_row.`id`
+ AND role_grant.`perm_cat_id` = @shared_email_permission_id
+ AND role_grant.`can_delete` = 1
+WHERE role_grant.`role_id` IS NULL
+ORDER BY expected.`role_name`;
+
+SELECT 'OK: migration 142 Shared Email deletion is enabled.' AS migration_status;

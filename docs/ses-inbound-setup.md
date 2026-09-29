@@ -61,6 +61,7 @@ The project includes these migrations:
 - `127_add_support_tickets.php`
 - `134_add_external_email_notifications.php`
 - `141_add_shared_email_inbox.php`
+- `142_enable_shared_email_deletion.php`
 
 For existing tenant databases, use the rerunnable SQL import described below.
 Only run CodeIgniter's `/migrate` endpoint when the tenant's migration ledger
@@ -76,9 +77,15 @@ Shared Email and permission to send External email by default. Other roles can
 be authorized through **System Settings > Roles Permissions**. No staff member
 is subscribed automatically to Support alerts.
 
+Migration 142 enables permanent Shared Email conversation deletion for Admin,
+Super Admin, and Head Teacher. Other roles need the Shared Email delete
+permission explicitly. Deleting a conversation removes it and its message
+history from Shared Email while retaining the lower-level SES delivery journal
+with a deleted marker for webhook replay protection and operational auditing.
+
 For a phpMyAdmin deployment, import
 `docs/all_school_database_migrations.sql` to apply the consolidated
-126-through-141 tenant migrations. The file is rerunnable and intentionally
+126-through-142 tenant migrations. The file is rerunnable and intentionally
 leaves the CodeIgniter `migrations` ledger unchanged.
 
 ## One-time AWS setup
