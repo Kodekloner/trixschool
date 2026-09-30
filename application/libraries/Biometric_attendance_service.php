@@ -280,7 +280,12 @@ class Biometric_attendance_service
         return array('success' => true, 'errors' => array(), 'item' => $item);
     }
 
-    /** Delete an unused physical terminal registration; event history is never cascaded. */
+    /**
+     * Delete a disabled physical terminal registration without deleting history.
+     * Events retain their immutable device_serial evidence after device_id is
+     * detached. Any scanner station pointing at the device is disabled and
+     * detached so it cannot continue accepting scans with stale configuration.
+     */
     public function deleteDevice($deviceId, $actorId = null)
     {
         $before = $this->model->getDevice((int) $deviceId);
@@ -293,11 +298,19 @@ class Biometric_attendance_service
         if (!empty($before['is_active'])) {
             return $this->failure('Disable this terminal before deleting its registration.');
         }
-        if ($this->CI->db->where('device_id', (int) $before['id'])->count_all_results('biometric_events')
-            || $this->CI->db->where('device_id', (int) $before['id'])->count_all_results('biometric_scanner_stations')) {
-            return $this->failure('This terminal is still referenced by attendance history. Delete eligible test events first; Live history cannot be deleted.');
-        }
+
+        $now = $this->now();
+        $actorId = $this->actorId($actorId);
         $this->CI->db->trans_start();
+        $this->CI->db->where('device_id', (int) $before['id'])
+            ->update('biometric_events', array('device_id' => null));
+        $this->CI->db->where('device_id', (int) $before['id'])
+            ->update('biometric_scanner_stations', array(
+                'device_id' => null,
+                'is_active' => 0,
+                'updated_by' => $actorId,
+                'updated_at' => $now,
+            ));
         $this->CI->db->where('id', (int) $before['id'])->delete('biometric_devices');
         $this->audit('device.deleted', 'device', $before['id'], $before, null, $actorId);
         $this->CI->db->trans_complete();

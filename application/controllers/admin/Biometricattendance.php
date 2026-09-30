@@ -343,7 +343,7 @@ class Biometricattendance extends Admin_Controller
             (int) $this->input->post('device_id'),
             $this->actorId()
         );
-        return $this->resultRedirect($result, 'The unused terminal registration was deleted. Audit history was retained.', '#bio-setup');
+        return $this->resultRedirect($result, 'The disabled terminal registration was deleted. Attendance and audit history were retained.', '#bio-setup');
     }
 
     public function mapping()

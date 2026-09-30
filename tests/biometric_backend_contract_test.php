@@ -140,6 +140,14 @@ biometric_contract_assert(strpos($serviceSource, 'biometric_notification_queue')
 biometric_contract_assert(strpos($serviceSource, 'map_and_retry') !== false, 'Unknown people must support an auditable mapping-and-retry reconciliation.');
 biometric_contract_assert(strpos($serviceSource, 'identityCodeUsageCount') !== false, 'Identity mappings must derive a unique admission number or employee ID.');
 biometric_contract_assert(strpos($serviceSource, "operating_mode'] === 'live'") !== false, 'Live event deletion must be blocked.');
+biometric_contract_assert(
+    strpos($serviceSource, "update('biometric_events', array('device_id' => null))") !== false,
+    'Deleting a disabled terminal must retain events while detaching their device row reference.'
+);
+biometric_contract_assert(
+    strpos($serviceSource, "update('biometric_scanner_stations', array(") !== false,
+    'Deleting a disabled terminal must disable and detach linked scanner configuration.'
+);
 
 $gisGoLiveSql = file_get_contents(__DIR__ . '/../docs/gis-biometric-go-live-2026-09-28.sql');
 foreach (array(

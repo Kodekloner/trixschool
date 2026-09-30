@@ -13,12 +13,19 @@ require_once __DIR__ . '/../application/libraries/Biometric_attendance_service.p
 
 class BiometricServiceFakeDb
 {
+    public $updates = array();
+    public $deletes = array();
+    public $whereClauses = array();
     public function trans_begin() { return true; }
     public function trans_commit() { return true; }
     public function trans_rollback() { return true; }
+    public function trans_start() { return true; }
+    public function trans_complete() { return true; }
     public function trans_status() { return true; }
-    public function where($field, $value = null, $escape = null) { return $this; }
-    public function update($table, $data) { return true; }
+    public function where($field, $value = null, $escape = null) { $this->whereClauses[$field] = $value; return $this; }
+    public function update($table, $data) { $this->updates[] = array('table' => $table, 'where' => $this->whereClauses, 'data' => $data); $this->whereClauses = array(); return true; }
+    public function delete($table) { $this->deletes[] = array('table' => $table, 'where' => $this->whereClauses); $this->whereClauses = array(); return true; }
+    public function table_exists($table) { return false; }
 }
 
 class BiometricServiceFakeCi
@@ -221,6 +228,35 @@ $qr = $service->scanQrCredential('valid-qr', 'station-1', 'OUT', 1);
 service_assert($qr['success'] === true && $qr['direction'] === 'OUT' && $qr['subject']['subject_type'] === 'staff', 'Trusted QR must enter the same manual-direction event workflow.');
 $badQr = $service->scanQrCredential('invalid', 'station-1', 'IN', 1);
 service_assert($badQr['success'] === false, 'Invalid QR token must be rejected.');
+
+$activeDelete = $service->deleteDevice(2, 1);
+service_assert($activeDelete['success'] === false, 'An enabled physical terminal must not be deleted.');
+$service->devices['PHYSICAL-001']['is_active'] = 0;
+$disabledDelete = $service->deleteDevice(2, 1);
+service_assert($disabledDelete['success'] === true, 'A privileged workflow must be able to delete a disabled physical terminal.');
+$deviceDeleteUpdates = array_slice($GLOBALS['biometric_service_ci']->db->updates, -2);
+service_assert(
+    $deviceDeleteUpdates[0]['table'] === 'biometric_events'
+        && array_key_exists('device_id', $deviceDeleteUpdates[0]['data'])
+        && $deviceDeleteUpdates[0]['data']['device_id'] === null,
+    'Deleting a terminal must detach event device IDs without deleting attendance history.'
+);
+service_assert(
+    $deviceDeleteUpdates[1]['table'] === 'biometric_scanner_stations'
+        && $deviceDeleteUpdates[1]['data']['device_id'] === null
+        && $deviceDeleteUpdates[1]['data']['is_active'] === 0,
+    'Deleting a terminal must disable and detach any linked scanner station.'
+);
+$deviceDeletes = $GLOBALS['biometric_service_ci']->db->deletes;
+$deviceDelete = end($deviceDeletes);
+service_assert(
+    $deviceDelete['table'] === 'biometric_devices'
+        && isset($deviceDelete['where']['id'])
+        && (int) $deviceDelete['where']['id'] === 2,
+    'Only the selected disabled terminal registration should be deleted.'
+);
+$virtualDelete = $service->deleteDevice(1, 1);
+service_assert($virtualDelete['success'] === false, 'The built-in virtual Test Terminal must remain protected from deletion.');
 
 $previousQrKey = getenv('BIOMETRIC_QR_ENCRYPTION_KEY');
 putenv('BIOMETRIC_QR_ENCRYPTION_KEY=too-short');
