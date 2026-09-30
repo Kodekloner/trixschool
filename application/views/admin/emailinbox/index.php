@@ -12,6 +12,8 @@ $folder_labels = array(
     'sent' => 'Sent',
     'unread' => 'Unread',
 );
+$can_delete = !empty($can_delete);
+$table_column_count = $can_delete ? 8 : 7;
 ?>
 <style>
     .shared-email-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
@@ -19,6 +21,8 @@ $folder_labels = array(
     .shared-email-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:15px; }
     .shared-email-unread td { font-weight:600; }
     .shared-email-contact { overflow-wrap:anywhere; word-break:break-word; }
+    .shared-email-bulk-actions { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .shared-email-select { width:36px; text-align:center; }
     @media (max-width:767px) {
         .shared-email-heading, .shared-email-toolbar { align-items:stretch; flex-direction:column; }
         .shared-email-heading__address { text-align:left; }
@@ -74,10 +78,27 @@ $folder_labels = array(
                             </form>
                         </div>
 
+                        <?php if ($can_delete) { ?>
+                            <form id="shared-email-delete-form" method="post" action="<?php echo site_url('admin/emailinbox/delete_selected'); ?>">
+                                <input type="hidden" name="shared_email_action_csrf" value="<?php echo html_escape($shared_email_action_csrf); ?>">
+                                <input type="hidden" name="return_folder" value="<?php echo html_escape($filters['folder']); ?>">
+                                <input type="hidden" name="return_q" value="<?php echo html_escape($filters['q']); ?>">
+                                <div class="shared-email-bulk-actions">
+                                    <button type="submit" id="shared-email-delete-selected" class="btn btn-danger btn-sm"<?php echo empty($conversations) ? ' disabled="disabled"' : ''; ?>>
+                                        <i class="fa fa-trash"></i> Delete Selected
+                                    </button>
+                                    <span class="text-muted">Deleted conversations cannot be restored.</span>
+                                </div>
+                        <?php } ?>
                         <div class="table-responsive mailbox-messages">
                             <table class="table table-hover table-striped table-bordered">
                                 <thead>
                                     <tr>
+                                        <?php if ($can_delete) { ?>
+                                            <th class="shared-email-select">
+                                                <input type="checkbox" id="shared-email-select-all" aria-label="Select all email conversations">
+                                            </th>
+                                        <?php } ?>
                                         <th>Conversation</th>
                                         <th>External Contact</th>
                                         <th>Subject</th>
@@ -89,10 +110,15 @@ $folder_labels = array(
                                 </thead>
                                 <tbody>
                                     <?php if (empty($conversations)) { ?>
-                                        <tr><td colspan="7" class="text-center text-muted">No email conversations found.</td></tr>
+                                        <tr><td colspan="<?php echo (int) $table_column_count; ?>" class="text-center text-muted">No email conversations found.</td></tr>
                                     <?php } ?>
                                     <?php foreach ($conversations as $conversation) { ?>
                                         <tr class="<?php echo (int) $conversation['unread_count'] > 0 ? 'shared-email-unread' : ''; ?>">
+                                            <?php if ($can_delete) { ?>
+                                                <td class="shared-email-select">
+                                                    <input type="checkbox" class="shared-email-conversation-checkbox" name="conversation_ids[]" value="<?php echo (int) $conversation['id']; ?>" aria-label="Select <?php echo html_escape($conversation['conversation_number']); ?>">
+                                                </td>
+                                            <?php } ?>
                                             <td>
                                                 <?php echo html_escape($conversation['conversation_number']); ?>
                                                 <?php if ((int) $conversation['unread_count'] > 0) { ?>
@@ -121,15 +147,60 @@ $folder_labels = array(
                                                 <a href="<?php echo site_url('admin/emailinbox/view/' . (int) $conversation['id']); ?>" class="btn btn-default btn-xs" title="Open conversation">
                                                     <i class="fa fa-reorder"></i> Open
                                                 </a>
+                                                <?php if ($can_delete) { ?>
+                                                    <button type="submit" class="btn btn-danger btn-xs" formaction="<?php echo site_url('admin/emailinbox/delete/' . (int) $conversation['id']); ?>" formmethod="post" title="Delete conversation" onclick="return confirm('Permanently delete this email conversation and its message history?');">
+                                                        <i class="fa fa-trash"></i> Delete
+                                                    </button>
+                                                <?php } ?>
                                             </td>
                                         </tr>
                                     <?php } ?>
                                 </tbody>
                             </table>
                         </div>
+                        <?php if ($can_delete) { ?>
+                            </form>
+                        <?php } ?>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 </div>
+
+<?php if ($can_delete) { ?>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var selectAll = document.getElementById('shared-email-select-all');
+    var deleteSelected = document.getElementById('shared-email-delete-selected');
+    var checkboxes = document.querySelectorAll('.shared-email-conversation-checkbox');
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            for (var i = 0; i < checkboxes.length; i++) {
+                checkboxes[i].checked = selectAll.checked;
+            }
+        });
+    }
+
+    if (deleteSelected) {
+        deleteSelected.addEventListener('click', function (event) {
+            var selected = 0;
+            for (var i = 0; i < checkboxes.length; i++) {
+                if (checkboxes[i].checked) {
+                    selected++;
+                }
+            }
+            if (selected === 0) {
+                event.preventDefault();
+                alert('Select at least one email conversation to delete.');
+                return;
+            }
+            if (!confirm('Permanently delete ' + selected + ' selected email conversation' + (selected === 1 ? '' : 's') + ' and their message history?')) {
+                event.preventDefault();
+            }
+        });
+    }
+});
+</script>
+<?php } ?>

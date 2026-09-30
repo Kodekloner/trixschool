@@ -8,7 +8,8 @@
 --
 -- Outcome:
 --   * retain the accepted physical student Shadow IN/OUT evidence;
---   * correct the one active legacy free-form identity to Admission No. GIS369;
+--   * replace the legacy free-form identity with the canonical Admission No.
+--     GIS369, recreating that mapping when the legacy row was already deleted;
 --   * ignore the three known, non-Live commissioning exceptions with an audit;
 --   * enable Live student projection with notifications off;
 --   * keep staff projection off because the dump has no staff mappings or
@@ -25,6 +26,8 @@ BEGIN
     DECLARE v_count BIGINT DEFAULT 0;
     DECLARE v_actor_id INT DEFAULT 1;
     DECLARE v_now DATETIME;
+    DECLARE v_gis369_subject_id INT DEFAULT NULL;
+    DECLARE v_mapping_id INT DEFAULT NULL;
     DECLARE v_mapping_before VARCHAR(100) DEFAULT NULL;
     DECLARE v_settings_before LONGTEXT DEFAULT NULL;
     DECLARE v_settings_after LONGTEXT DEFAULT NULL;
@@ -148,27 +151,35 @@ BEGIN
             SET MESSAGE_TEXT = 'STOP: the Shadow proof is unexpectedly linked to official student attendance.';
     END IF;
 
-    SELECT COUNT(*) INTO v_count
+    SELECT COUNT(*), MIN(ss.`id`) INTO v_count, v_gis369_subject_id
     FROM `student_session` AS ss
     INNER JOIN `students` AS s ON s.`id` = ss.`student_id`
-    INNER JOIN `biometric_identity_mappings` AS m
-        ON m.`subject_type` = 'student' AND m.`subject_id` = ss.`id`
-    WHERE ss.`id` = 75
-      AND s.`admission_no` = 'GIS369'
-      AND m.`id` = 2
-      AND m.`external_person_code` IN ('1', 'GIS369')
-      AND m.`is_active` = 1;
+    INNER JOIN `sch_settings` AS school ON school.`session_id` = ss.`session_id`
+    WHERE UPPER(TRIM(s.`admission_no`)) = 'GIS369'
+      AND s.`is_active` = 'yes';
     IF v_count <> 1 THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'STOP: the reviewed legacy GIS369 mapping no longer matches the supplied snapshot.';
+            SET MESSAGE_TEXT = 'STOP: GIS369 is not one unique active student in the current school session.';
     END IF;
 
     SELECT COUNT(*) INTO v_count
     FROM `biometric_identity_mappings`
-    WHERE `id` <> 2 AND UPPER(TRIM(`external_person_code`)) = 'GIS369';
+    WHERE UPPER(TRIM(`external_person_code`)) = 'GIS369'
+      AND NOT (`subject_type` = 'student' AND `subject_id` = v_gis369_subject_id);
     IF v_count <> 0 THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'STOP: GIS369 is already reserved by another biometric mapping.';
+    END IF;
+
+    SELECT COUNT(*) INTO v_count
+    FROM `biometric_identity_mappings`
+    WHERE `subject_type` = 'student'
+      AND `subject_id` = v_gis369_subject_id
+      AND (`is_active` <> 1
+        OR UPPER(TRIM(`external_person_code`)) NOT IN ('1', 'GIS369'));
+    IF v_count <> 0 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'STOP: GIS369 has a disabled or unexpected biometric mapping that requires review.';
     END IF;
 
     SELECT COUNT(*) INTO v_count
@@ -179,11 +190,26 @@ BEGIN
         ON m.`subject_type` = 'student'
        AND m.`subject_id` = ss.`id`
        AND m.`is_active` = 1
-    WHERE m.`id` <> 2
+    WHERE NOT (m.`subject_type` = 'student' AND m.`subject_id` = v_gis369_subject_id)
       AND UPPER(TRIM(m.`external_person_code`)) <> UPPER(TRIM(s.`admission_no`));
     IF v_count <> 0 THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'STOP: another active student mapping differs from its Admission No.';
+    END IF;
+
+    SELECT COUNT(*) INTO v_count
+    FROM `student_session` AS ss
+    INNER JOIN `students` AS s ON s.`id` = ss.`student_id`
+    INNER JOIN `sch_settings` AS school ON school.`session_id` = ss.`session_id`
+    INNER JOIN `biometric_identity_mappings` AS m
+        ON m.`subject_type` = 'student'
+       AND m.`subject_id` = ss.`id`
+       AND m.`is_active` = 1
+    WHERE ss.`id` <> v_gis369_subject_id
+      AND UPPER(TRIM(m.`external_person_code`)) = UPPER(TRIM(s.`admission_no`));
+    IF v_count <> 77 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'STOP: the other 77 reviewed active student mappings no longer match the snapshot.';
     END IF;
 
     SELECT COUNT(*) INTO v_count
@@ -213,20 +239,47 @@ BEGIN
     SET v_now = UTC_TIMESTAMP();
     START TRANSACTION;
 
-    SELECT `external_person_code` INTO v_mapping_before
+    SET v_mapping_id = NULL;
+    SET v_mapping_before = NULL;
+    SELECT `id`, `external_person_code` INTO v_mapping_id, v_mapping_before
     FROM `biometric_identity_mappings`
-    WHERE `id` = 2
+    WHERE `subject_type` = 'student'
+      AND `subject_id` = v_gis369_subject_id
+    LIMIT 1
     FOR UPDATE;
 
-    IF v_mapping_before = '1' THEN
+    IF v_mapping_id IS NULL THEN
+        INSERT INTO `biometric_identity_mappings`
+            (`subject_type`, `subject_id`, `external_person_code`, `valid_from`,
+             `valid_until`, `is_active`, `created_by`, `updated_by`,
+             `created_at`, `updated_at`, `live_pilot`)
+        VALUES
+            ('student', v_gis369_subject_id, 'GIS369', NULL, NULL, 1,
+             v_actor_id, v_actor_id, v_now, v_now, 0);
+
+        SET v_mapping_id = LAST_INSERT_ID();
+
         INSERT INTO `biometric_audit_logs`
             (`actor_id`, `action`, `entity_type`, `entity_id`, `before_json`,
              `after_json`, `ip_address`, `created_at`)
         VALUES
-            (v_actor_id, 'mapping.updated', 'mapping', '2',
-             JSON_OBJECT('id', 2, 'subject_type', 'student', 'subject_id', 75,
+            (v_actor_id, 'mapping.created', 'mapping', CAST(v_mapping_id AS CHAR),
+             NULL,
+             JSON_OBJECT('id', v_mapping_id, 'subject_type', 'student',
+                         'subject_id', v_gis369_subject_id,
+                         'external_person_code', 'GIS369', 'is_active', 1),
+             NULL, v_now);
+    ELSEIF UPPER(TRIM(v_mapping_before)) = '1' THEN
+        INSERT INTO `biometric_audit_logs`
+            (`actor_id`, `action`, `entity_type`, `entity_id`, `before_json`,
+             `after_json`, `ip_address`, `created_at`)
+        VALUES
+            (v_actor_id, 'mapping.updated', 'mapping', CAST(v_mapping_id AS CHAR),
+             JSON_OBJECT('id', v_mapping_id, 'subject_type', 'student',
+                         'subject_id', v_gis369_subject_id,
                          'external_person_code', v_mapping_before, 'is_active', 1),
-             JSON_OBJECT('id', 2, 'subject_type', 'student', 'subject_id', 75,
+             JSON_OBJECT('id', v_mapping_id, 'subject_type', 'student',
+                         'subject_id', v_gis369_subject_id,
                          'external_person_code', 'GIS369', 'is_active', 1),
              NULL, v_now);
 
@@ -234,7 +287,7 @@ BEGIN
         SET `external_person_code` = 'GIS369',
             `updated_by` = v_actor_id,
             `updated_at` = v_now
-        WHERE `id` = 2 AND `external_person_code` = '1';
+        WHERE `id` = v_mapping_id;
     END IF;
 
     INSERT INTO `biometric_reconciliation_actions`
@@ -377,7 +430,14 @@ SELECT
     (SELECT COUNT(*) FROM `biometric_identity_mappings`
       WHERE `subject_type` = 'staff' AND `is_active` = 1)
         AS `active_staff_mappings`,
-    (SELECT `external_person_code` FROM `biometric_identity_mappings` WHERE `id` = 2)
+    (SELECT m.`external_person_code`
+       FROM `biometric_identity_mappings` AS m
+       INNER JOIN `student_session` AS ss
+         ON m.`subject_type` = 'student' AND m.`subject_id` = ss.`id`
+       INNER JOIN `students` AS s ON s.`id` = ss.`student_id`
+      WHERE UPPER(TRIM(s.`admission_no`)) = 'GIS369'
+        AND m.`is_active` = 1
+      LIMIT 1)
         AS `canonical_mapping`,
     (SELECT COUNT(*) FROM `biometric_events`
       WHERE `operating_mode` = 'shadow' AND `processing_status` = 'accepted')

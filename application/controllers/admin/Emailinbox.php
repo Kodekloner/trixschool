@@ -47,6 +47,8 @@ class Emailinbox extends Admin_Controller
         $data['filters'] = $filters;
         $data['inbound_email_address'] = $this->getInboundEmailAddress();
         $data['can_send'] = $this->rbac->hasPrivilege('external_email', 'can_add');
+        $data['can_delete'] = $this->rbac->hasPrivilege('shared_email', 'can_delete');
+        $data['shared_email_action_csrf'] = (string) $this->session->userdata($this->actionTokenSessionKey);
 
         $this->load->view('layout/header');
         $this->load->view('admin/emailinbox/index', $data);
@@ -196,6 +198,52 @@ class Emailinbox extends Admin_Controller
         return redirect('admin/emailinbox/view/' . (int) $id);
     }
 
+    public function delete($id)
+    {
+        $this->requireDeletePrivilege();
+        $this->requireActionPost();
+        $this->requireTables();
+
+        $conversation = $this->emailconversation_model->get($id);
+        if (empty($conversation)) {
+            show_404();
+        }
+
+        $deleted = $this->emailconversation_model->deleteConversations(array((int) $id));
+        if ($deleted === false) {
+            $this->session->set_flashdata('msg', '<div class="alert alert-danger">The email conversation could not be deleted. Please try again.</div>');
+        } else {
+            $this->session->set_flashdata('msg', '<div class="alert alert-success">Email conversation deleted.</div>');
+        }
+
+        return $this->redirectToInbox();
+    }
+
+    public function delete_selected()
+    {
+        $this->requireDeletePrivilege();
+        $this->requireActionPost();
+        $this->requireTables();
+
+        $conversationIds = $this->input->post('conversation_ids');
+        if (!is_array($conversationIds) || empty($conversationIds)) {
+            $this->session->set_flashdata('msg', '<div class="alert alert-warning">Select at least one email conversation to delete.</div>');
+            return $this->redirectToInbox();
+        }
+
+        $deleted = $this->emailconversation_model->deleteConversations($conversationIds);
+        if ($deleted === false) {
+            $this->session->set_flashdata('msg', '<div class="alert alert-danger">The selected email conversations could not be deleted. Please try again.</div>');
+        } elseif ($deleted === 0) {
+            $this->session->set_flashdata('msg', '<div class="alert alert-warning">No matching email conversations were found.</div>');
+        } else {
+            $label = $deleted === 1 ? 'conversation' : 'conversations';
+            $this->session->set_flashdata('msg', '<div class="alert alert-success">' . (int) $deleted . ' email ' . $label . ' deleted.</div>');
+        }
+
+        return $this->redirectToInbox();
+    }
+
     protected function getInboundEmailAddress()
     {
         return schoollift_support_configured_inbound_address(
@@ -209,6 +257,29 @@ class Emailinbox extends Admin_Controller
         if (!$this->emailconversation_model->isReady()) {
             show_error('Shared email tables were not found. Run migration 141 or import docs/all_school_database_migrations.sql first.', 500);
         }
+    }
+
+    protected function requireDeletePrivilege()
+    {
+        if (!$this->rbac->hasPrivilege('shared_email', 'can_view')
+            || !$this->rbac->hasPrivilege('shared_email', 'can_delete')) {
+            access_denied();
+        }
+    }
+
+    protected function redirectToInbox()
+    {
+        $folder = strtolower(trim((string) $this->input->post('return_folder', true)));
+        if (!in_array($folder, array('all', 'inbox', 'sent', 'unread'), true)) {
+            $folder = 'all';
+        }
+        $query = array('folder' => $folder);
+        $search = trim((string) $this->input->post('return_q', true));
+        if ($search !== '') {
+            $query['q'] = $search;
+        }
+
+        return redirect('admin/emailinbox?' . http_build_query($query));
     }
 
     protected function requireActionPost()

@@ -59,6 +59,9 @@ class Incomingemail_model extends CI_Model
         if ($sns_message_id !== '') {
             $existing = $this->getBySnsMessageId($sns_message_id);
             if (!empty($existing)) {
+                if (strtolower(trim((string) $existing['status'])) === 'deleted') {
+                    $payload['status'] = 'deleted';
+                }
                 $this->db->where('id', $existing['id'])->update($this->table, $payload);
                 return (int) $existing['id'];
             }
@@ -67,6 +70,9 @@ class Incomingemail_model extends CI_Model
         if ($ses_message_id !== '') {
             $existing = $this->getBySesMessageId($ses_message_id);
             if (!empty($existing)) {
+                if (strtolower(trim((string) $existing['status'])) === 'deleted') {
+                    $payload['status'] = 'deleted';
+                }
                 $this->db->where('id', $existing['id'])->update($this->table, $payload);
                 return (int) $existing['id'];
             }
