@@ -14,7 +14,8 @@ class Biometric_attendance_model extends MY_Model
             'biometric_exceptions', 'biometric_reconciliation_actions',
             'biometric_scanner_stations', 'biometric_qr_credentials',
             'biometric_audit_logs', 'biometric_gateway_agents',
-            'biometric_gateway_commands', 'biometric_notification_queue'
+            'biometric_gateway_commands', 'biometric_notification_queue',
+            'notification_setting'
         ) as $table) {
             if (!$this->db->table_exists($table)) {
                 return false;
@@ -40,11 +41,16 @@ class Biometric_attendance_model extends MY_Model
             return false;
         }
         foreach (array(
-            'id', 'event_id', 'channel', 'status', 'attempt_count',
+            'id', 'event_id', 'notification_type', 'channel', 'status', 'attempt_count',
             'next_attempt_at', 'last_error', 'created_at', 'updated_at',
             'delivered_at'
         ) as $field) {
             if (!$this->db->field_exists($field, 'biometric_notification_queue')) {
+                return false;
+            }
+        }
+        foreach (array('is_whatsapp', 'display_whatsapp') as $field) {
+            if (!$this->db->field_exists($field, 'notification_setting')) {
                 return false;
             }
         }

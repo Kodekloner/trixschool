@@ -74,20 +74,32 @@ foreach (array('connection_test', 'sync_now', 'retry_failed') as $command) {
 $migrationConfig = file_get_contents(__DIR__ . '/../application/config/migration.php');
 biometric_contract_assert(
     preg_match('/migration_version[\'\"]?\]\s*=\s*(\d+)\s*;/', $migrationConfig, $migrationMatch) === 1
-        && (int) $migrationMatch[1] >= 140,
-    'Migration target must include 140 or a later migration.'
+        && (int) $migrationMatch[1] >= 143,
+    'Migration target must include biometric notification migration 143 or later.'
 );
 
 $controller = file_get_contents(__DIR__ . '/../application/controllers/api/Biometric_v2.php');
 biometric_contract_assert(strpos($controller, "'results' => array()") !== false, 'API errors must retain the results[] contract.');
 biometric_contract_assert(strpos($controller, 'authenticateToken') !== false, 'V2 API must authenticate bearer tokens.');
 biometric_contract_assert(strpos($controller, 'gatewayJsonRequest') !== false, 'Gateway control endpoints must share authenticated bounded JSON handling.');
-biometric_contract_assert(strpos($controller, 'migrations through 140') !== false, 'API readiness errors must identify the current biometric migration level.');
+biometric_contract_assert(strpos($controller, 'migrations through 143') !== false, 'API readiness errors must identify the current biometric migration level.');
 
 $modelSource = file_get_contents(__DIR__ . '/../application/models/Biometric_attendance_model.php');
 biometric_contract_assert(strpos($modelSource, "'biometric_gateway_agents'") !== false, 'Biometric readiness must require the gateway agent table.');
 biometric_contract_assert(strpos($modelSource, "'biometric_gateway_commands'") !== false, 'Biometric readiness must require the gateway command table.');
 biometric_contract_assert(strpos($modelSource, "'biometric_notification_queue'") !== false, 'Biometric readiness must require the notification queue table.');
+biometric_contract_assert(strpos($modelSource, "'notification_type'") !== false, 'Biometric readiness must require typed notification queue rows.');
+biometric_contract_assert(strpos($modelSource, "'is_whatsapp'") !== false, 'Biometric readiness must require per-template WhatsApp switches.');
+
+$notificationMigration = file_get_contents(__DIR__ . '/../application/migrations/143_add_biometric_notification_templates.php');
+foreach (array(
+    'biometric_attendance_in', 'biometric_attendance_out', 'biometric_fees_due',
+    'notification_type', 'is_whatsapp', 'display_whatsapp',
+    'uq_biometric_notification_event_type_channel',
+) as $notificationRule) {
+    biometric_contract_assert(strpos($notificationMigration, $notificationRule) !== false, 'Migration 143 is missing: ' . $notificationRule);
+    biometric_contract_assert(strpos($consolidatedSql, $notificationRule) !== false, 'Consolidated SQL is missing migration 143 item: ' . $notificationRule);
+}
 
 $adminView = file_get_contents(__DIR__ . '/../application/views/admin/biometricattendance/index.php');
 $readyPosition = strpos($adminView, '$(function () {');
@@ -137,6 +149,9 @@ biometric_contract_assert(strpos($serviceSource, 'pilot_excluded') !== false, 'L
 biometric_contract_assert(strpos($serviceSource, 'runRetentionCleanup') !== false, 'Configured retention must have an executable cleanup service.');
 biometric_contract_assert(strpos($serviceSource, 'live_scope_authorized') !== false, 'Widening Live projection must require a fresh authorization.');
 biometric_contract_assert(strpos($serviceSource, 'biometric_notification_queue') !== false, 'Live guardian alerts must use a durable queue.');
+biometric_contract_assert(strpos($serviceSource, 'studentFeeBalance') !== false, 'Biometric fee reminders must read the Fees module balance.');
+biometric_contract_assert(strpos($serviceSource, 'biometric_fees_due') !== false, 'Biometric fee reminders must be a separate notification type.');
+biometric_contract_assert(strpos($serviceSource, 'notificationTemplate') !== false, 'Biometric guardian messages must use editable notification templates.');
 biometric_contract_assert(strpos($serviceSource, 'map_and_retry') !== false, 'Unknown people must support an auditable mapping-and-retry reconciliation.');
 biometric_contract_assert(strpos($serviceSource, 'identityCodeUsageCount') !== false, 'Identity mappings must derive a unique admission number or employee ID.');
 biometric_contract_assert(strpos($serviceSource, "operating_mode'] === 'live'") !== false, 'Live event deletion must be blocked.');

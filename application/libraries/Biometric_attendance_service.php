@@ -47,7 +47,7 @@ class Biometric_attendance_service
     public function updateSettings(array $data, $actorId = null, array $options = array())
     {
         if (!$this->isReady()) {
-            return $this->failure('Biometric migrations through 140 have not been applied.');
+            return $this->failure('Biometric migrations through 143 have not been applied.');
         }
 
         $before = $this->getSettings();
@@ -2320,7 +2320,7 @@ class Biometric_attendance_service
             if ($this->CI->db->affected_rows() !== 1) {
                 continue;
             }
-            $delivery = $this->deliverAttendanceNotification($row);
+            $delivery = $this->deliverGuardianNotification($row);
             $attempts = (int) $row['attempt_count'] + 1;
             if (!empty($delivery['success'])) {
                 $this->CI->db->where('id', $row['id'])->update('biometric_notification_queue', array(
@@ -2995,11 +2995,7 @@ class Biometric_attendance_service
     protected function enqueueAttendanceNotifications($eventId, $direction, array $settings)
     {
         $direction = strtoupper((string) $direction);
-        if (($direction === 'IN' && empty($settings['notify_student_in']))
-            || ($direction === 'OUT' && empty($settings['notify_student_out']))) {
-            return;
-        }
-        $channels = array(
+        $masterChannels = array(
             'email' => !empty($settings['notify_email']),
             'sms' => !empty($settings['notify_sms']),
             'whatsapp' => !empty($settings['notify_whatsapp']),
@@ -3008,19 +3004,44 @@ class Biometric_attendance_service
         if (!$event || empty($event['attendance_day_id'])) {
             return;
         }
+
+        $attendanceEnabled = ($direction === 'IN' && !empty($settings['notify_student_in']))
+            || ($direction === 'OUT' && !empty($settings['notify_student_out']));
+        if ($attendanceEnabled) {
+            $attendanceType = $direction === 'OUT' ? 'biometric_attendance_out' : 'biometric_attendance_in';
+            $template = $this->notificationTemplate($attendanceType);
+            $this->enqueueGuardianNotification(
+                $event,
+                $attendanceType,
+                $this->enabledTemplateChannels($template, $masterChannels)
+            );
+        }
+
+        // Fee reminders have their own template and switches. They may be
+        // enabled even when the ordinary IN/OUT message is disabled.
+        $feeTemplate = $this->notificationTemplate('biometric_fees_due');
+        $feeChannels = $this->enabledTemplateChannels($feeTemplate, $masterChannels);
+        if (in_array(true, $feeChannels, true)) {
+            $feeSummary = $this->studentFeeBalance((int) $event['subject_id']);
+            if ($feeSummary['outstanding'] > 0) {
+                $this->enqueueGuardianNotification($event, 'biometric_fees_due', $feeChannels);
+            }
+        }
+    }
+
+    /** Queue one message type per student attendance day and paid channel. */
+    protected function enqueueGuardianNotification(array $event, $notificationType, array $channels)
+    {
         $now = $this->now();
         foreach ($channels as $channel => $enabled) {
             if (!$enabled) {
                 continue;
             }
-            // One guardian alert per daily session, direction, and channel.
-            // Repeated scans may refine earliest IN/latest OUT, but must not
-            // create repeated paid messages for the same school day.
             $alreadyQueued = $this->CI->db->select('biometric_notification_queue.id')
                 ->from('biometric_notification_queue')
                 ->join('biometric_events', 'biometric_events.id = biometric_notification_queue.event_id')
                 ->where('biometric_events.attendance_day_id', (int) $event['attendance_day_id'])
-                ->where('biometric_events.direction', $direction)
+                ->where('biometric_notification_queue.notification_type', $notificationType)
                 ->where('biometric_notification_queue.channel', $channel)
                 ->limit(1)->get()->row_array();
             if ($alreadyQueued) {
@@ -3028,14 +3049,14 @@ class Biometric_attendance_service
             }
             $this->CI->db->query(
                 "INSERT IGNORE INTO `biometric_notification_queue`
-                 (`event_id`, `channel`, `status`, `attempt_count`, `created_at`, `updated_at`)
-                 VALUES (?, ?, 'pending', 0, ?, ?)",
-                array((int) $eventId, $channel, $now, $now)
+                 (`event_id`, `notification_type`, `channel`, `status`, `attempt_count`, `created_at`, `updated_at`)
+                 VALUES (?, ?, ?, 'pending', 0, ?, ?)",
+                array((int) $event['id'], $notificationType, $channel, $now, $now)
             );
         }
     }
 
-    protected function deliverAttendanceNotification(array $queueRow)
+    protected function deliverGuardianNotification(array $queueRow)
     {
         $event = $this->model->getEvent((int) $queueRow['event_id']);
         if (!$event || $event['operating_mode'] !== 'live' || $event['processing_status'] !== 'accepted'
@@ -3046,14 +3067,32 @@ class Biometric_attendance_service
         $channel = strtolower((string) $queueRow['channel']);
         $channelSetting = array('email' => 'notify_email', 'sms' => 'notify_sms', 'whatsapp' => 'notify_whatsapp');
         if (!isset($channelSetting[$channel]) || empty($settings[$channelSetting[$channel]])) {
-            return array('success' => false, 'skip' => true, 'message' => 'This notification channel is disabled.');
-        }
-        if (($event['direction'] === 'IN' && empty($settings['notify_student_in']))
-            || ($event['direction'] === 'OUT' && empty($settings['notify_student_out']))) {
-            return array('success' => false, 'skip' => true, 'message' => 'Notifications for this attendance direction are disabled.');
+            return array('success' => false, 'skip' => true, 'message' => 'This biometric notification channel is disabled.');
         }
 
-        $student = $this->CI->db->select("students.guardian_email, students.guardian_phone, students.firstname, students.middlename, students.lastname, students.admission_no, CONCAT_WS(' ', students.firstname, students.middlename, students.lastname) AS student_name", false)
+        $notificationType = isset($queueRow['notification_type'])
+            ? (string) $queueRow['notification_type']
+            : ($event['direction'] === 'OUT' ? 'biometric_attendance_out' : 'biometric_attendance_in');
+        if (!in_array($notificationType, array(
+            'biometric_attendance_in', 'biometric_attendance_out', 'biometric_fees_due',
+        ), true)) {
+            return array('success' => false, 'skip' => true, 'message' => 'The notification type is not supported.');
+        }
+        if ($notificationType === 'biometric_attendance_in'
+            && ($event['direction'] !== 'IN' || empty($settings['notify_student_in']))) {
+            return array('success' => false, 'skip' => true, 'message' => 'Student Check In notifications are disabled or do not match the event.');
+        }
+        if ($notificationType === 'biometric_attendance_out'
+            && ($event['direction'] !== 'OUT' || empty($settings['notify_student_out']))) {
+            return array('success' => false, 'skip' => true, 'message' => 'Student Check Out notifications are disabled or do not match the event.');
+        }
+
+        $template = $this->notificationTemplate($notificationType);
+        if (!$template || !$this->templateChannelEnabled($template, $channel)) {
+            return array('success' => false, 'skip' => true, 'message' => 'This channel is disabled for the notification template.');
+        }
+
+        $student = $this->CI->db->select("students.guardian_name, students.guardian_email, students.guardian_phone, students.firstname, students.middlename, students.lastname, students.admission_no, CONCAT_WS(' ', students.firstname, students.middlename, students.lastname) AS student_name", false)
             ->from('student_session')->join('students', 'students.id = student_session.student_id')
             ->where('student_session.id', (int) $event['subject_id'])->get()->row_array();
         if (!$student) {
@@ -3062,12 +3101,32 @@ class Biometric_attendance_service
         $this->CI->load->model('setting_model');
         $school = $this->CI->setting_model->getSetting();
         $schoolName = is_object($school) && !empty($school->name) ? $school->name : 'SchoolLift school';
-        $verb = $event['direction'] === 'IN' ? 'checked in' : 'checked out';
-        $time = date('g:i A', strtotime($event['occurred_at_local']));
-        $date = date('j M Y', strtotime($event['occurred_at_local']));
-        $message = trim($student['student_name']) . ' (' . $student['admission_no'] . ') ' . $verb
-            . ' at ' . $time . ' on ' . $date . ' at ' . $schoolName . '.';
-        $subject = 'Student ' . ($event['direction'] === 'IN' ? 'check-in' : 'checkout') . ' — ' . $schoolName;
+        $variables = array(
+            'guardian_name' => trim((string) $student['guardian_name']) !== '' ? trim($student['guardian_name']) : 'Parent/Guardian',
+            'student_name' => trim((string) $student['student_name']),
+            'admission_no' => (string) $student['admission_no'],
+            'attendance_direction' => (string) $event['direction'],
+            'attendance_action' => $event['direction'] === 'IN' ? 'checked in' : 'checked out',
+            'attendance_time' => date('g:i A', strtotime($event['occurred_at_local'])),
+            'attendance_date' => date('j M Y', strtotime($event['occurred_at_local'])),
+            'school_name' => $schoolName,
+        );
+
+        if ($notificationType === 'biometric_fees_due') {
+            // A payment made after queueing must cancel the reminder instead
+            // of sending a stale balance.
+            $feeSummary = $this->studentFeeBalance((int) $event['subject_id']);
+            if ($feeSummary['outstanding'] <= 0) {
+                return array('success' => false, 'skip' => true, 'message' => 'No unpaid fee balance remains for this student.');
+            }
+            $variables['outstanding_amount'] = number_format($feeSummary['outstanding'], 2, '.', ',');
+            $variables['currency_symbol'] = is_object($school) && isset($school->currency_symbol)
+                ? (string) $school->currency_symbol : '';
+            $variables['fee_item_count'] = (string) $feeSummary['item_count'];
+            $variables['session_name'] = $this->CI->setting_model->getCurrentSessionName();
+        }
+        $message = $this->renderNotificationTemplate($template['template'], $variables);
+        $subject = $this->renderNotificationTemplate($template['subject'], $variables);
 
         try {
             if ($channel === 'email') {
@@ -3079,7 +3138,7 @@ class Biometric_attendance_service
                 $sent = $this->CI->mailer->send_mail(
                     $recipient,
                     $subject,
-                    nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8'))
+                    nl2br($message)
                 );
             } elseif ($channel === 'sms') {
                 $recipient = trim((string) $student['guardian_phone']);
@@ -3087,7 +3146,7 @@ class Biometric_attendance_service
                     return array('success' => false, 'skip' => true, 'message' => 'No guardian phone number is recorded.');
                 }
                 $this->CI->load->library('smsgateway');
-                $sent = $this->CI->smsgateway->sendSMS($recipient, $message);
+                $sent = $this->CI->smsgateway->sendSMS($recipient, $message, $template['template_id']);
             } else {
                 $recipient = trim((string) $student['guardian_phone']);
                 if ($recipient === '') {
@@ -3102,6 +3161,76 @@ class Biometric_attendance_service
         return $sent === false
             ? array('success' => false, 'skip' => false, 'message' => 'The configured ' . $channel . ' gateway rejected the message.')
             : array('success' => true, 'skip' => false, 'message' => 'Delivered.');
+    }
+
+    protected function notificationTemplate($type)
+    {
+        if (!$this->CI->db->table_exists('notification_setting')) {
+            return null;
+        }
+        return $this->CI->db->where('type', $type)->limit(1)
+            ->get('notification_setting')->row_array();
+    }
+
+    protected function enabledTemplateChannels($template, array $masterChannels)
+    {
+        foreach ($masterChannels as $channel => $enabled) {
+            $masterChannels[$channel] = $enabled
+                && $template
+                && $this->templateChannelEnabled($template, $channel);
+        }
+        return $masterChannels;
+    }
+
+    protected function templateChannelEnabled(array $template, $channel)
+    {
+        $field = array('email' => 'is_mail', 'sms' => 'is_sms', 'whatsapp' => 'is_whatsapp');
+        return isset($field[$channel]) && !empty($template[$field[$channel]]);
+    }
+
+    protected function renderNotificationTemplate($template, array $variables)
+    {
+        $search = array();
+        $replace = array();
+        foreach ($variables as $name => $value) {
+            $search[] = '{{' . $name . '}}';
+            $replace[] = (string) $value;
+        }
+        return str_replace($search, $replace, (string) $template);
+    }
+
+    /** Current-session balance using the Fees module's established rule. */
+    protected function studentFeeBalance($studentSessionId)
+    {
+        $this->CI->load->model('studentfeemaster_model');
+        $feeMasters = $this->CI->studentfeemaster_model->getStudentFees((int) $studentSessionId);
+        $outstanding = 0.0;
+        $itemCount = 0;
+        foreach ($feeMasters as $feeMaster) {
+            if (empty($feeMaster->fees)) {
+                continue;
+            }
+            foreach ($feeMaster->fees as $fee) {
+                $paid = 0.0;
+                $discount = 0.0;
+                $amountDetails = json_decode((string) $fee->amount_detail);
+                if (is_object($amountDetails) || is_array($amountDetails)) {
+                    foreach ($amountDetails as $payment) {
+                        if (!is_object($payment)) {
+                            continue;
+                        }
+                        $paid += isset($payment->amount) ? (float) $payment->amount : 0.0;
+                        $discount += isset($payment->amount_discount) ? (float) $payment->amount_discount : 0.0;
+                    }
+                }
+                $balance = max(0, (float) $fee->amount - $paid - $discount);
+                if ($balance > 0.00001) {
+                    $outstanding += $balance;
+                    $itemCount++;
+                }
+            }
+        }
+        return array('outstanding' => round($outstanding, 2), 'item_count' => $itemCount);
     }
 
     protected function decorateSubjects(array $result)

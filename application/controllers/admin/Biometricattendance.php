@@ -895,7 +895,7 @@ class Biometricattendance extends Admin_Controller
     private function requireReady()
     {
         if (!$this->biometric_attendance_service->isReady()) {
-            show_error('Biometric attendance migrations through 140 have not been installed for this school database.', 503);
+            show_error('Biometric attendance migrations through 143 have not been installed for this school database.', 503);
         }
     }
 
