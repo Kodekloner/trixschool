@@ -88,37 +88,70 @@ final class ZkBioClient
     /** @param array<string, mixed> $payload @return array<string, mixed> */
     public function createDepartment(array $payload, int $timeoutSeconds): array
     {
-        return $this->writeJson('POST', (string) $this->config['departments_path'], $payload, $timeoutSeconds);
+        $path = (string) $this->config['departments_path'];
+        $response = $this->writeJson('POST', $path, $payload, $timeoutSeconds);
+        return $this->resolveCreatedResource(
+            $response,
+            $path,
+            'dept_code',
+            (string) ($payload['dept_code'] ?? ''),
+            $timeoutSeconds
+        );
     }
 
     /** @param array<string, mixed> $payload @return array<string, mixed> */
     public function updateDepartment(string $id, array $payload, int $timeoutSeconds): array
     {
-        return $this->writeJson('PUT', $this->itemPath((string) $this->config['departments_path'], $id), $payload, $timeoutSeconds);
+        return $this->withResourceId(
+            $this->writeJson('PUT', $this->itemPath((string) $this->config['departments_path'], $id), $payload, $timeoutSeconds),
+            $id
+        );
     }
 
     /** @param array<string, mixed> $payload @return array<string, mixed> */
     public function createPosition(array $payload, int $timeoutSeconds): array
     {
-        return $this->writeJson('POST', (string) $this->config['positions_path'], $payload, $timeoutSeconds);
+        $path = (string) $this->config['positions_path'];
+        $response = $this->writeJson('POST', $path, $payload, $timeoutSeconds);
+        return $this->resolveCreatedResource(
+            $response,
+            $path,
+            'position_code',
+            (string) ($payload['position_code'] ?? ''),
+            $timeoutSeconds
+        );
     }
 
     /** @param array<string, mixed> $payload @return array<string, mixed> */
     public function updatePosition(string $id, array $payload, int $timeoutSeconds): array
     {
-        return $this->writeJson('PUT', $this->itemPath((string) $this->config['positions_path'], $id), $payload, $timeoutSeconds);
+        return $this->withResourceId(
+            $this->writeJson('PUT', $this->itemPath((string) $this->config['positions_path'], $id), $payload, $timeoutSeconds),
+            $id
+        );
     }
 
     /** @param array<string, mixed> $payload @return array<string, mixed> */
     public function createEmployee(array $payload, int $timeoutSeconds): array
     {
-        return $this->writeJson('POST', (string) $this->config['employees_path'], $payload, $timeoutSeconds);
+        $path = (string) $this->config['employees_path'];
+        $response = $this->writeJson('POST', $path, $payload, $timeoutSeconds);
+        return $this->resolveCreatedResource(
+            $response,
+            $path,
+            'emp_code',
+            (string) ($payload['emp_code'] ?? ''),
+            $timeoutSeconds
+        );
     }
 
     /** @param array<string, mixed> $payload @return array<string, mixed> */
     public function updateEmployee(string $id, array $payload, int $timeoutSeconds): array
     {
-        return $this->writeJson('PUT', $this->itemPath((string) $this->config['employees_path'], $id), $payload, $timeoutSeconds);
+        return $this->withResourceId(
+            $this->writeJson('PUT', $this->itemPath((string) $this->config['employees_path'], $id), $payload, $timeoutSeconds),
+            $id
+        );
     }
 
     public function deleteEmployee(string $id, int $timeoutSeconds): void
@@ -239,6 +272,57 @@ final class ZkBioClient
             throw $this->failure('ZKBio directory write failed', $response);
         }
         return $response['json'];
+    }
+
+    /**
+     * ZKBio Time 9.0.6 can accept a create request while echoing only the
+     * submitted fields, without the generated primary key. Resolve that key
+     * through the resource's unique SchoolLift-owned code before continuing.
+     *
+     * @param array<string, mixed> $response
+     * @return array<string, mixed>
+     */
+    private function resolveCreatedResource(
+        array $response,
+        string $collectionPath,
+        string $codeField,
+        string $code,
+        int $timeoutSeconds
+    ): array {
+        if ($this->resourceId($response) !== null) {
+            return $response;
+        }
+        if ($code === '') {
+            throw new UpstreamException('ZKBio create response omitted its resource ID and unique code.');
+        }
+        $matches = [];
+        foreach ($this->fetchCollection($collectionPath, [$codeField => $code], $timeoutSeconds) as $resource) {
+            if (trim((string) ($resource[$codeField] ?? '')) === $code) {
+                $matches[] = $resource;
+            }
+        }
+        if (count($matches) !== 1 || $this->resourceId($matches[0]) === null) {
+            throw new UpstreamException('ZKBio accepted a create request but its generated resource ID could not be resolved uniquely.');
+        }
+        return $matches[0];
+    }
+
+    /** @param array<string, mixed> $response @return array<string, mixed> */
+    private function withResourceId(array $response, string $knownId): array
+    {
+        if ($this->resourceId($response) === null) {
+            $response['id'] = $knownId;
+        }
+        return $response;
+    }
+
+    /** @param array<string, mixed> $resource */
+    private function resourceId(array $resource): ?string
+    {
+        $id = $resource['id'] ?? ($resource['data']['id'] ?? null);
+        return $id !== null && preg_match('/^[A-Za-z0-9._-]{1,64}$/', (string) $id)
+            ? (string) $id
+            : null;
     }
 
     private function itemPath(string $collectionPath, string $id): string

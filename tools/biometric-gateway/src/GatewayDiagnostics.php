@@ -107,20 +107,23 @@ final class GatewayDiagnostics
             $reachable = $health['status'] >= 200 && $health['status'] <= 299;
             $acceptsGateway = is_array($health['json'])
                 && ($health['json']['accepts_gateway_events'] ?? null) === true;
+            $directoryMode = null;
+            if (is_array($health['json'])) {
+                $directoryMode = $health['json']['directory_sync_mode']
+                    ?? ($health['json']['integration']['directory_sync_mode'] ?? null);
+            }
             $checks['schoollift'] = [
                 'ok' => $reachable && $acceptsGateway,
                 'http_status' => $health['status'],
                 'operating_mode' => is_array($health['json'])
                     ? ($health['json']['operating_mode'] ?? null) : null,
                 'accepts_gateway_events' => $acceptsGateway,
-                'directory_sync_mode' => is_array($health['json'])
-                    ? ($health['json']['directory_sync_mode'] ?? null) : null,
+                'directory_sync_mode' => $directoryMode,
             ];
             if ($reachable && !$acceptsGateway) {
                 $checks['schoollift']['message'] = 'Use Shadow or Live mode before starting gateway synchronization.';
             }
-            if ($reachable && is_array($health['json'])
-                && ($health['json']['directory_sync_mode'] ?? null) === 'active'
+            if ($reachable && $directoryMode === 'active'
                 && $configuredAreaIds === []) {
                 $checks['provider_directory']['ok'] = false;
                 $checks['provider_directory']['message'] = 'Active roster mode requires at least one configured ZKBio area ID.';
