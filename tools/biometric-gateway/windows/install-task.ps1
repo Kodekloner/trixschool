@@ -57,7 +57,7 @@ if ($UseLocalService) {
         -Trigger $Trigger `
         -Settings $Settings `
         -Principal $Principal `
-        -Description "Polls one bidirectional ZKBio terminal and sends attendance events to SchoolLift." `
+        -Description "Synchronizes the SchoolLift roster and one bidirectional ZKBio terminal." `
         -Force | Out-Null
 } else {
     if ($null -eq $Credential) {
@@ -74,7 +74,7 @@ if ($UseLocalService) {
         -User $TaskUser `
         -Password $TaskPassword `
         -RunLevel Limited `
-        -Description "Polls one bidirectional ZKBio terminal and sends attendance events to SchoolLift." `
+        -Description "Synchronizes the SchoolLift roster and one bidirectional ZKBio terminal." `
         -Force | Out-Null
 }
 

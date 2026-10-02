@@ -68,8 +68,15 @@ final class Config
                 'token_field' => 'token',
                 'authorization_scheme' => 'Token',
                 'transactions_path' => '/iclock/api/transactions/',
+                'employees_path' => '/personnel/api/employees/',
+                'departments_path' => '/personnel/api/departments/',
+                'positions_path' => '/personnel/api/positions/',
+                'areas_path' => '/personnel/api/areas/',
+                'resync_path' => '/personnel/api/employees/resync_to_device/',
                 'data_field' => 'data',
                 'terminal_serial' => '',
+                'area_ids' => [],
+                'resync_to_device' => true,
                 'page_size' => 100,
                 'max_pages' => 50,
                 'overlap_seconds' => 172800,
@@ -89,6 +96,8 @@ final class Config
                 'health_path' => '/api/biometric/v2/health',
                 'control_poll_path' => '/api/biometric/v2/gateway/poll',
                 'control_result_path' => '/api/biometric/v2/gateway/result',
+                'directory_path' => '/api/biometric/v2/directory',
+                'directory_result_path' => '/api/biometric/v2/directory/result',
                 'batch_size' => 100,
                 'max_batches_per_run' => 10,
             ],
@@ -98,6 +107,11 @@ final class Config
                 'maximum_attempts' => 12,
                 'provider_base_seconds' => 15,
                 'provider_maximum_seconds' => 900,
+            ],
+            'directory' => [
+                'default_interval_seconds' => 300,
+                'maximum_delete_count' => 10,
+                'maximum_delete_percent' => 10,
             ],
             'delivered_retention_days' => 30,
         ];
@@ -150,6 +164,12 @@ final class Config
         if (!preg_match('/^(?:Token|Bearer|JWT)$/', (string) $config['provider']['authorization_scheme'])) {
             throw new RuntimeException('provider.authorization_scheme must be Token, Bearer or JWT.');
         }
+        foreach (['auth_path', 'transactions_path', 'employees_path', 'departments_path', 'positions_path', 'areas_path', 'resync_path'] as $pathKey) {
+            $path = (string) ($config['provider'][$pathKey] ?? '');
+            if (!preg_match('#^/[A-Za-z0-9/_-]{1,190}/?$#', $path)) {
+                throw new RuntimeException('provider.' . $pathKey . ' must be a local absolute API path.');
+            }
+        }
         if (!preg_match('/^[A-Za-z0-9._:-]{1,100}$/', (string) $config['provider']['terminal_serial'])) {
             throw new RuntimeException('provider.terminal_serial contains unsupported characters or exceeds 100 characters.');
         }
@@ -157,7 +177,7 @@ final class Config
             || preg_match('/[\x00-\x1F\x7F]/', (string) $config['schoollift']['bearer_token'])) {
             throw new RuntimeException('schoollift.bearer_token must be a high-entropy token without control characters.');
         }
-        foreach (['events_path', 'health_path', 'control_poll_path', 'control_result_path'] as $pathKey) {
+        foreach (['events_path', 'health_path', 'control_poll_path', 'control_result_path', 'directory_path', 'directory_result_path'] as $pathKey) {
             $path = (string) ($config['schoollift'][$pathKey] ?? '');
             if (!preg_match('#^/[A-Za-z0-9/_-]{1,190}$#', $path)) {
                 throw new RuntimeException('schoollift.' . $pathKey . ' must be a local absolute API path.');
@@ -169,6 +189,17 @@ final class Config
         }
         if (!is_array($config['provider']['verification_method_map'])) {
             throw new RuntimeException('provider.verification_method_map must be an array.');
+        }
+        if (!is_array($config['provider']['area_ids'])) {
+            throw new RuntimeException('provider.area_ids must be an array of positive ZKBio area IDs.');
+        }
+        foreach ($config['provider']['area_ids'] as $areaId) {
+            if (!is_int($areaId) || $areaId < 1) {
+                throw new RuntimeException('Every provider.area_ids value must be a positive integer.');
+            }
+        }
+        if (!is_bool($config['provider']['resync_to_device'])) {
+            throw new RuntimeException('provider.resync_to_device must be true or false.');
         }
         foreach ([
             'provider.page_size' => [$config['provider']['page_size'], 1, 1000],
@@ -183,6 +214,9 @@ final class Config
             'retry.maximum_attempts' => [$config['retry']['maximum_attempts'], 1, 100],
             'retry.provider_base_seconds' => [$config['retry']['provider_base_seconds'], 1, 3600],
             'retry.provider_maximum_seconds' => [$config['retry']['provider_maximum_seconds'], 1, 86400],
+            'directory.default_interval_seconds' => [$config['directory']['default_interval_seconds'], 60, 3600],
+            'directory.maximum_delete_count' => [$config['directory']['maximum_delete_count'], 1, 10000],
+            'directory.maximum_delete_percent' => [$config['directory']['maximum_delete_percent'], 1, 100],
         ] as $name => [$value, $minimum, $maximum]) {
             if (!is_int($value) || $value < $minimum || $value > $maximum) {
                 throw new RuntimeException($name . ' must be between ' . $minimum . ' and ' . $maximum . '.');

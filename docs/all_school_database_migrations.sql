@@ -1,5 +1,5 @@
--- SchoolLift consolidated tenant-database migrations (126 through 142).
--- Updated for deployment to every school database on 2026-09-29.
+-- SchoolLift consolidated tenant-database migrations (126 through 144).
+-- Updated for deployment to every school database on 2026-10-02.
 --
 -- IMPORTANT:
 --   * Select exactly one school database before importing this file.
@@ -34,6 +34,8 @@
 --   140_harden_biometric_operations.php
 --   141_add_shared_email_inbox.php
 --   142_enable_shared_email_deletion.php
+--   143_add_biometric_notification_templates.php
+--   144_add_biometric_directory_sync.php
 --
 -- Supported targets: MySQL 5.7+/8.0 and compatible MariaDB releases.
 -- This is a schema/permission migration bundle, not a full database dump.
@@ -3832,3 +3834,295 @@ WHERE role_grant.`role_id` IS NULL
 ORDER BY expected.`role_name`;
 
 SELECT 'OK: migration 142 Shared Email deletion is enabled.' AS migration_status;
+
+-- ========================================================================
+-- Migration 143: editable biometric attendance and fee notifications.
+-- ========================================================================
+
+SET @has_column := (
+  SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.`COLUMNS`
+  WHERE `TABLE_SCHEMA` = DATABASE()
+    AND `TABLE_NAME` = 'notification_setting'
+    AND `COLUMN_NAME` = 'is_whatsapp'
+);
+SET @ddl := IF(@has_column = 0,
+  'ALTER TABLE `notification_setting` ADD COLUMN `is_whatsapp` VARCHAR(10) NOT NULL DEFAULT ''0'' AFTER `is_sms`',
+  'SELECT 1 AS notification_setting_is_whatsapp_present');
+PREPARE migration_statement FROM @ddl;
+EXECUTE migration_statement;
+DEALLOCATE PREPARE migration_statement;
+
+SET @has_column := (
+  SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.`COLUMNS`
+  WHERE `TABLE_SCHEMA` = DATABASE()
+    AND `TABLE_NAME` = 'notification_setting'
+    AND `COLUMN_NAME` = 'display_whatsapp'
+);
+SET @ddl := IF(@has_column = 0,
+  'ALTER TABLE `notification_setting` ADD COLUMN `display_whatsapp` INT NOT NULL DEFAULT 0 AFTER `display_sms`',
+  'SELECT 1 AS notification_setting_display_whatsapp_present');
+PREPARE migration_statement FROM @ddl;
+EXECUTE migration_statement;
+DEALLOCATE PREPARE migration_statement;
+
+SET @has_column := (
+  SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.`COLUMNS`
+  WHERE `TABLE_SCHEMA` = DATABASE()
+    AND `TABLE_NAME` = 'biometric_notification_queue'
+    AND `COLUMN_NAME` = 'notification_type'
+);
+SET @ddl := IF(@has_column = 0,
+  'ALTER TABLE `biometric_notification_queue` ADD COLUMN `notification_type` VARCHAR(40) NOT NULL DEFAULT ''attendance_in'' AFTER `event_id`',
+  'SELECT 1 AS biometric_notification_type_present');
+PREPARE migration_statement FROM @ddl;
+EXECUTE migration_statement;
+DEALLOCATE PREPARE migration_statement;
+
+UPDATE `biometric_notification_queue` AS queue_row
+INNER JOIN `biometric_events` AS event_row ON event_row.`id` = queue_row.`event_id`
+SET queue_row.`notification_type` = CASE
+  WHEN event_row.`direction` = 'OUT' THEN 'biometric_attendance_out'
+  ELSE 'biometric_attendance_in'
+END
+WHERE queue_row.`notification_type` IN ('', 'attendance_in', 'attendance_out');
+
+SET @has_index := (
+  SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.`STATISTICS`
+  WHERE `TABLE_SCHEMA` = DATABASE()
+    AND `TABLE_NAME` = 'biometric_notification_queue'
+    AND `INDEX_NAME` = 'uq_biometric_notification_event_channel'
+);
+SET @ddl := IF(@has_index > 0,
+  'ALTER TABLE `biometric_notification_queue` DROP INDEX `uq_biometric_notification_event_channel`',
+  'SELECT 1 AS old_biometric_notification_index_absent');
+PREPARE migration_statement FROM @ddl;
+EXECUTE migration_statement;
+DEALLOCATE PREPARE migration_statement;
+
+SET @has_index := (
+  SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.`STATISTICS`
+  WHERE `TABLE_SCHEMA` = DATABASE()
+    AND `TABLE_NAME` = 'biometric_notification_queue'
+    AND `INDEX_NAME` = 'uq_biometric_notification_event_type_channel'
+);
+SET @ddl := IF(@has_index = 0,
+  'ALTER TABLE `biometric_notification_queue` ADD UNIQUE KEY `uq_biometric_notification_event_type_channel` (`event_id`, `notification_type`, `channel`)',
+  'SELECT 1 AS biometric_notification_type_index_present');
+PREPARE migration_statement FROM @ddl;
+EXECUTE migration_statement;
+DEALLOCATE PREPARE migration_statement;
+
+INSERT INTO `notification_setting`
+  (`type`, `is_mail`, `is_sms`, `is_whatsapp`, `is_notification`,
+   `display_notification`, `display_sms`, `display_whatsapp`, `subject`,
+   `template_id`, `template`, `variables`)
+SELECT
+  'biometric_attendance_in', CAST(defaults.`notify_email` AS CHAR),
+  CAST(defaults.`notify_sms` AS CHAR), CAST(defaults.`notify_whatsapp` AS CHAR),
+  0, 0, 1, 1, 'Student check-in - {{school_name}}', '',
+  'Dear {{guardian_name}}, {{student_name}} ({{admission_no}}) checked in at {{attendance_time}} on {{attendance_date}} at {{school_name}}.',
+  '{{guardian_name}} {{student_name}} {{admission_no}} {{attendance_direction}} {{attendance_action}} {{attendance_time}} {{attendance_date}} {{school_name}}'
+FROM (
+  SELECT COALESCE(MAX(`notify_email`), 0) AS `notify_email`,
+         COALESCE(MAX(`notify_sms`), 0) AS `notify_sms`,
+         COALESCE(MAX(`notify_whatsapp`), 0) AS `notify_whatsapp`
+  FROM `biometric_settings`
+) AS defaults
+WHERE NOT EXISTS (
+  SELECT 1 FROM `notification_setting` WHERE `type` = 'biometric_attendance_in'
+);
+
+INSERT INTO `notification_setting`
+  (`type`, `is_mail`, `is_sms`, `is_whatsapp`, `is_notification`,
+   `display_notification`, `display_sms`, `display_whatsapp`, `subject`,
+   `template_id`, `template`, `variables`)
+SELECT
+  'biometric_attendance_out', CAST(defaults.`notify_email` AS CHAR),
+  CAST(defaults.`notify_sms` AS CHAR), CAST(defaults.`notify_whatsapp` AS CHAR),
+  0, 0, 1, 1, 'Student checkout - {{school_name}}', '',
+  'Dear {{guardian_name}}, {{student_name}} ({{admission_no}}) checked out at {{attendance_time}} on {{attendance_date}} at {{school_name}}.',
+  '{{guardian_name}} {{student_name}} {{admission_no}} {{attendance_direction}} {{attendance_action}} {{attendance_time}} {{attendance_date}} {{school_name}}'
+FROM (
+  SELECT COALESCE(MAX(`notify_email`), 0) AS `notify_email`,
+         COALESCE(MAX(`notify_sms`), 0) AS `notify_sms`,
+         COALESCE(MAX(`notify_whatsapp`), 0) AS `notify_whatsapp`
+  FROM `biometric_settings`
+) AS defaults
+WHERE NOT EXISTS (
+  SELECT 1 FROM `notification_setting` WHERE `type` = 'biometric_attendance_out'
+);
+
+INSERT INTO `notification_setting`
+  (`type`, `is_mail`, `is_sms`, `is_whatsapp`, `is_notification`,
+   `display_notification`, `display_sms`, `display_whatsapp`, `subject`,
+   `template_id`, `template`, `variables`)
+SELECT
+  'biometric_fees_due', '0', '0', '0', 0, 0, 1, 1,
+  'Outstanding fees for {{student_name}} - {{school_name}}', '',
+  'Dear {{guardian_name}}, our fees record shows an outstanding balance of {{currency_symbol}}{{outstanding_amount}} across {{fee_item_count}} fee item(s) for {{student_name}} ({{admission_no}}) in {{session_name}}. Please ignore this message if payment has just been made or contact {{school_name}} for clarification.',
+  '{{guardian_name}} {{student_name}} {{admission_no}} {{outstanding_amount}} {{currency_symbol}} {{fee_item_count}} {{session_name}} {{school_name}}'
+WHERE NOT EXISTS (
+  SELECT 1 FROM `notification_setting` WHERE `type` = 'biometric_fees_due'
+);
+
+-- Migration 143 verification. Both result sets must be empty.
+SELECT required.`table_name`, required.`column_name` AS `missing_column`
+FROM (
+  SELECT 'notification_setting' AS `table_name`, 'is_whatsapp' AS `column_name`
+  UNION ALL SELECT 'notification_setting', 'display_whatsapp'
+  UNION ALL SELECT 'biometric_notification_queue', 'notification_type'
+) AS required
+LEFT JOIN `INFORMATION_SCHEMA`.`COLUMNS` AS actual
+  ON actual.`TABLE_SCHEMA` = DATABASE()
+ AND actual.`TABLE_NAME` = required.`table_name`
+ AND actual.`COLUMN_NAME` = required.`column_name`
+WHERE actual.`COLUMN_NAME` IS NULL;
+
+SELECT required.`type` AS `missing_notification_template`
+FROM (
+  SELECT 'biometric_attendance_in' AS `type`
+  UNION ALL SELECT 'biometric_attendance_out'
+  UNION ALL SELECT 'biometric_fees_due'
+) AS required
+LEFT JOIN `notification_setting` AS actual ON actual.`type` = required.`type`
+WHERE actual.`id` IS NULL;
+
+SELECT 'OK: migration 143 biometric notification templates are installed.' AS migration_status;
+
+-- ============================================================================
+-- Migration 144: SchoolLift-to-ZKBio directory synchronization
+-- ============================================================================
+
+SET @has_column := (SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.`COLUMNS`
+  WHERE `TABLE_SCHEMA` = DATABASE() AND `TABLE_NAME` = 'biometric_integrations'
+    AND `COLUMN_NAME` = 'directory_sync_mode');
+SET @ddl := IF(@has_column = 0,
+  'ALTER TABLE `biometric_integrations` ADD COLUMN `directory_sync_mode` VARCHAR(12) NOT NULL DEFAULT ''off'' AFTER `last_error`',
+  'SELECT 1 AS directory_sync_mode_present');
+PREPARE migration_statement FROM @ddl; EXECUTE migration_statement; DEALLOCATE PREPARE migration_statement;
+
+SET @has_column := (SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.`COLUMNS`
+  WHERE `TABLE_SCHEMA` = DATABASE() AND `TABLE_NAME` = 'biometric_integrations'
+    AND `COLUMN_NAME` = 'directory_sync_interval_seconds');
+SET @ddl := IF(@has_column = 0,
+  'ALTER TABLE `biometric_integrations` ADD COLUMN `directory_sync_interval_seconds` SMALLINT UNSIGNED NOT NULL DEFAULT 300 AFTER `directory_sync_mode`',
+  'SELECT 1 AS directory_sync_interval_present');
+PREPARE migration_statement FROM @ddl; EXECUTE migration_statement; DEALLOCATE PREPARE migration_statement;
+
+SET @has_column := (SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.`COLUMNS`
+  WHERE `TABLE_SCHEMA` = DATABASE() AND `TABLE_NAME` = 'biometric_integrations'
+    AND `COLUMN_NAME` = 'directory_delete_approval_hash');
+SET @ddl := IF(@has_column = 0,
+  'ALTER TABLE `biometric_integrations` ADD COLUMN `directory_delete_approval_hash` CHAR(64) NULL AFTER `directory_sync_interval_seconds`',
+  'SELECT 1 AS directory_delete_approval_hash_present');
+PREPARE migration_statement FROM @ddl; EXECUTE migration_statement; DEALLOCATE PREPARE migration_statement;
+
+SET @has_column := (SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.`COLUMNS`
+  WHERE `TABLE_SCHEMA` = DATABASE() AND `TABLE_NAME` = 'biometric_integrations'
+    AND `COLUMN_NAME` = 'directory_delete_approved_at');
+SET @ddl := IF(@has_column = 0,
+  'ALTER TABLE `biometric_integrations` ADD COLUMN `directory_delete_approved_at` DATETIME NULL AFTER `directory_delete_approval_hash`',
+  'SELECT 1 AS directory_delete_approved_at_present');
+PREPARE migration_statement FROM @ddl; EXECUTE migration_statement; DEALLOCATE PREPARE migration_statement;
+
+SET @has_column := (SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.`COLUMNS`
+  WHERE `TABLE_SCHEMA` = DATABASE() AND `TABLE_NAME` = 'biometric_integrations'
+    AND `COLUMN_NAME` = 'last_directory_sync_at');
+SET @ddl := IF(@has_column = 0,
+  'ALTER TABLE `biometric_integrations` ADD COLUMN `last_directory_sync_at` DATETIME NULL AFTER `directory_delete_approved_at`',
+  'SELECT 1 AS last_directory_sync_at_present');
+PREPARE migration_statement FROM @ddl; EXECUTE migration_statement; DEALLOCATE PREPARE migration_statement;
+
+SET @has_column := (SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.`COLUMNS`
+  WHERE `TABLE_SCHEMA` = DATABASE() AND `TABLE_NAME` = 'biometric_integrations'
+    AND `COLUMN_NAME` = 'last_directory_sync_status');
+SET @ddl := IF(@has_column = 0,
+  'ALTER TABLE `biometric_integrations` ADD COLUMN `last_directory_sync_status` VARCHAR(24) NULL AFTER `last_directory_sync_at`',
+  'SELECT 1 AS last_directory_sync_status_present');
+PREPARE migration_statement FROM @ddl; EXECUTE migration_statement; DEALLOCATE PREPARE migration_statement;
+
+SET @has_column := (SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.`COLUMNS`
+  WHERE `TABLE_SCHEMA` = DATABASE() AND `TABLE_NAME` = 'biometric_integrations'
+    AND `COLUMN_NAME` = 'last_directory_sync_error');
+SET @ddl := IF(@has_column = 0,
+  'ALTER TABLE `biometric_integrations` ADD COLUMN `last_directory_sync_error` VARCHAR(500) NULL AFTER `last_directory_sync_status`',
+  'SELECT 1 AS last_directory_sync_error_present');
+PREPARE migration_statement FROM @ddl; EXECUTE migration_statement; DEALLOCATE PREPARE migration_statement;
+
+CREATE TABLE IF NOT EXISTS `biometric_directory_links` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `integration_id` INT UNSIGNED NOT NULL,
+  `subject_type` VARCHAR(12) NOT NULL,
+  `subject_key` INT NOT NULL,
+  `subject_id` INT DEFAULT NULL,
+  `external_person_code` VARCHAR(100) NOT NULL,
+  `provider_person_id` VARCHAR(64) DEFAULT NULL,
+  `desired_hash` CHAR(64) DEFAULT NULL,
+  `applied_hash` CHAR(64) DEFAULT NULL,
+  `sync_status` VARCHAR(24) NOT NULL DEFAULT 'pending',
+  `last_error` VARCHAR(500) DEFAULT NULL,
+  `last_seen_snapshot` CHAR(64) DEFAULT NULL,
+  `last_synced_at` DATETIME DEFAULT NULL,
+  `deleted_at` DATETIME DEFAULT NULL,
+  `created_at` DATETIME NOT NULL,
+  `updated_at` DATETIME NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_biometric_directory_subject` (`integration_id`, `subject_type`, `subject_key`),
+  UNIQUE KEY `uq_biometric_directory_code` (`integration_id`, `external_person_code`),
+  KEY `idx_biometric_directory_status` (`integration_id`, `sync_status`),
+  KEY `idx_biometric_directory_provider` (`integration_id`, `provider_person_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `biometric_directory_runs` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `integration_id` INT UNSIGNED NOT NULL,
+  `gateway_id` VARCHAR(128) NOT NULL,
+  `snapshot_id` CHAR(32) NOT NULL,
+  `snapshot_hash` CHAR(64) NOT NULL,
+  `mode` VARCHAR(12) NOT NULL,
+  `status` VARCHAR(24) NOT NULL,
+  `desired_count` INT UNSIGNED NOT NULL DEFAULT 0,
+  `created_count` INT UNSIGNED NOT NULL DEFAULT 0,
+  `adopted_count` INT UNSIGNED NOT NULL DEFAULT 0,
+  `updated_count` INT UNSIGNED NOT NULL DEFAULT 0,
+  `deleted_count` INT UNSIGNED NOT NULL DEFAULT 0,
+  `unchanged_count` INT UNSIGNED NOT NULL DEFAULT 0,
+  `conflict_count` INT UNSIGNED NOT NULL DEFAULT 0,
+  `failed_count` INT UNSIGNED NOT NULL DEFAULT 0,
+  `delete_count` INT UNSIGNED NOT NULL DEFAULT 0,
+  `requires_delete_approval` TINYINT(1) NOT NULL DEFAULT 0,
+  `error_summary` VARCHAR(500) DEFAULT NULL,
+  `started_at` DATETIME NOT NULL,
+  `completed_at` DATETIME NOT NULL,
+  `created_at` DATETIME NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_biometric_directory_run` (`integration_id`, `gateway_id`, `snapshot_id`),
+  KEY `idx_biometric_directory_run_status` (`integration_id`, `status`, `completed_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Migration 144 verification. This result set must be empty.
+SELECT required.`object_type`, required.`object_name` AS `missing_object`
+FROM (
+  SELECT 'column' AS `object_type`, 'directory_sync_mode' AS `object_name`
+  UNION ALL SELECT 'column', 'directory_sync_interval_seconds'
+  UNION ALL SELECT 'column', 'directory_delete_approval_hash'
+  UNION ALL SELECT 'column', 'directory_delete_approved_at'
+  UNION ALL SELECT 'column', 'last_directory_sync_at'
+  UNION ALL SELECT 'column', 'last_directory_sync_status'
+  UNION ALL SELECT 'column', 'last_directory_sync_error'
+  UNION ALL SELECT 'table', 'biometric_directory_links'
+  UNION ALL SELECT 'table', 'biometric_directory_runs'
+) AS required
+LEFT JOIN `INFORMATION_SCHEMA`.`COLUMNS` AS column_object
+  ON required.`object_type` = 'column'
+ AND column_object.`TABLE_SCHEMA` = DATABASE()
+ AND column_object.`TABLE_NAME` = 'biometric_integrations'
+ AND column_object.`COLUMN_NAME` = required.`object_name`
+LEFT JOIN `INFORMATION_SCHEMA`.`TABLES` AS table_object
+  ON required.`object_type` = 'table'
+ AND table_object.`TABLE_SCHEMA` = DATABASE()
+ AND table_object.`TABLE_NAME` = required.`object_name`
+WHERE (required.`object_type` = 'column' AND column_object.`COLUMN_NAME` IS NULL)
+   OR (required.`object_type` = 'table' AND table_object.`TABLE_NAME` IS NULL);
+
+SELECT 'OK: migration 144 biometric directory synchronization is installed.' AS migration_status;

@@ -12,7 +12,7 @@ channel can accept only named, argument-free gateway requests.
 3. On the protected computer running ZKBio Time, double-click
    `SchoolLift-Gateway-Manager.cmd`.
 4. Approve the Windows administrator prompt.
-5. Complete the five connection fields and save.
+5. Complete the connection fields, including the ZKBio area IDs used by the terminal, and save.
 6. Use **Test connections**.
 7. Use **Install / repair automatic sync**.
 8. Make one Check In and one Check Out punch on the same physical terminal and
@@ -34,8 +34,12 @@ is reinstalled and no command is run on Windows.
   `localhost`, or `::1`; a LAN or internet address must use HTTPS.
 - **One terminal serial number:** the exact serial registered in SchoolLift.
   One bidirectional device supplies both IN and OUT punch states.
-- **ZKBio read-only API username/password:** a least-privileged account that can
-  read attendance transactions but cannot manage templates or devices.
+- **ZKBio API username/password:** a least-privileged licensed account that can
+  read attendance transactions/areas and use employee, department, position,
+  employee-delete, and device-resync APIs. It must not export templates or
+  administer unrelated devices.
+- **ZKBio area IDs:** comma-separated positive area IDs assigned to synchronized
+  people. Preview can run without an area, but Active roster mode fails closed.
 - **SchoolLift integration token:** the high-entropy token shown once by the
   SchoolLift setup page. The token is masked and is never placed in task
   arguments.
@@ -100,9 +104,9 @@ installer should bundle the approved runtime so discovery is deterministic.
 
 ## Web requests and hard safety boundaries
 
-The website may request `connection_test`, `sync_now`, or a separately
-confirmed `retry_failed`. Those are short-lived database records, not shell
-commands. The gateway claims at most one through outbound authenticated HTTPS,
+The website may request `connection_test`, `sync_now`, `directory_sync`, or a
+separately confirmed `retry_failed`. Those are short-lived database records,
+not shell commands. The gateway claims at most one through outbound authenticated HTTPS,
 checks its exact allowlist, saves the claim/result durably, runs fixed internal
 code, and returns a capped/redacted result. It does not accept request arguments.
 
@@ -118,7 +122,7 @@ The following must never become a web button or command payload:
 
 The public website may create/revoke an integration credential, show received
 events and gateway heartbeat information, control the protected operating mode,
-and enqueue the three fixed requests above. Local installation, configuration,
+and enqueue the four fixed requests above. Local installation, configuration,
 and scheduled-task ownership remain Windows responsibilities.
 
 ## Production packaging requirement

@@ -27,6 +27,15 @@ return [
         'token_field' => 'token',
         'authorization_scheme' => 'Token',
         'transactions_path' => '/iclock/api/transactions/',
+        'employees_path' => '/personnel/api/employees/',
+        'departments_path' => '/personnel/api/departments/',
+        'positions_path' => '/personnel/api/positions/',
+        'areas_path' => '/personnel/api/areas/',
+        'resync_path' => '/personnel/api/employees/resync_to_device/',
+        // Use the ZKBio area that owns the school's terminal. Leave empty only
+        // while running Preview; Active synchronization requires at least one.
+        'area_ids' => [1],
+        'resync_to_device' => true,
 
         // One physical terminal handles both directions. Direction comes only
         // from the explicit punch state selected by the user on that terminal.
@@ -51,6 +60,8 @@ return [
         'health_path' => '/api/biometric/v2/health',
         'control_poll_path' => '/api/biometric/v2/gateway/poll',
         'control_result_path' => '/api/biometric/v2/gateway/result',
+        'directory_path' => '/api/biometric/v2/directory',
+        'directory_result_path' => '/api/biometric/v2/directory/result',
         'batch_size' => 100,
         'max_batches_per_run' => 10,
     ],
@@ -61,6 +72,11 @@ return [
         'maximum_attempts' => 12,
         'provider_base_seconds' => 15,
         'provider_maximum_seconds' => 900,
+    ],
+    'directory' => [
+        'default_interval_seconds' => 300,
+        'maximum_delete_count' => 10,
+        'maximum_delete_percent' => 10,
     ],
     'delivered_retention_days' => 30,
 ];

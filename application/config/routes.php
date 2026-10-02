@@ -20,6 +20,8 @@ $route['api/biometric/v2/events'] = 'api/biometric_v2/events';
 $route['api/biometric/v2/health'] = 'api/biometric_v2/health';
 $route['api/biometric/v2/gateway/poll'] = 'api/biometric_v2/gateway_poll';
 $route['api/biometric/v2/gateway/result'] = 'api/biometric_v2/gateway_result';
+$route['api/biometric/v2/directory'] = 'api/biometric_v2/directory';
+$route['api/biometric/v2/directory/result'] = 'api/biometric_v2/directory_result';
 
 //======= front url rewriting==========
 $route['page/(:any)'] = 'welcome/page/$1';

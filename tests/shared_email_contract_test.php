@@ -43,8 +43,9 @@ $sql = shared_email_read($root . '/docs/all_school_database_migrations.sql');
 $docs = shared_email_read($root . '/docs/ses-inbound-setup.md');
 
 shared_email_assert(
-    preg_match('/migration_version[\'\"]?\]\s*=\s*142\s*;/', $migrationConfig) === 1,
-    'The configured migration target must be 142.'
+    preg_match('/migration_version[\'\"]?\]\s*=\s*(\d+)\s*;/', $migrationConfig, $migrationMatch) === 1
+        && (int) $migrationMatch[1] >= 142,
+    'The configured migration target must include shared email migration 142 or later.'
 );
 foreach (array(
     'email_conversations',
@@ -205,7 +206,7 @@ shared_email_assert(
 );
 
 foreach (array(
-    '126 through 142',
+    '126 through 144',
     '141_add_shared_email_inbox.php',
     '142_enable_shared_email_deletion.php',
     'CREATE TABLE IF NOT EXISTS `email_conversations`',

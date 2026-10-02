@@ -234,7 +234,7 @@ Authorized administrators can still prepare the system while intake is Disabled.
 
 Use Disabled:
 
-- immediately after installing the biometric migrations through 140;
+- immediately after installing the biometric migrations through 144;
 - before the school has tested anything;
 - during major maintenance;
 - if the integration token may be stolen;
@@ -1112,7 +1112,7 @@ Disabled -> Simulation -> Shadow -> Live
 ### Stage 1: Disabled
 
 1. Back up the tenant database.
-2. Apply the database migrations through 140.
+2. Apply the database migrations through 144.
 3. Confirm mode is Disabled.
 4. Configure timezone, attendance types, and late cutoffs.
 5. Create the integration and securely store its one-time token.
@@ -1385,7 +1385,7 @@ Keep evidence, restore power/network safely, check gateway and ZKBio queues, all
 
 Before approving Live, the owner should be able to answer **Yes** to every question:
 
-- Has the database been backed up and the migrations through 140 verified?
+- Has the database been backed up and the migrations through 144 verified?
 - Is one physical terminal configured for explicit IN and OUT?
 - Did the supplier prove the actual punch-state values?
 - Is the terminal registered with the correct serial and integration?

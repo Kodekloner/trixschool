@@ -10,12 +10,12 @@ use RuntimeException;
 /**
  * Outbound-only control channel for the school website.
  *
- * This class accepts only three named operations. It never evaluates command
+ * This class accepts only four named operations. It never evaluates command
  * text, starts a process, opens a shell, or accepts command arguments.
  */
 final class GatewayControl
 {
-    private const ALLOWED_COMMANDS = ['connection_test', 'sync_now', 'retry_failed'];
+    private const ALLOWED_COMMANDS = ['connection_test', 'sync_now', 'retry_failed', 'directory_sync'];
 
     private GatewayStore $store;
     private SchoolLiftClient $schoolLift;
@@ -134,7 +134,7 @@ final class GatewayControl
     /** @param array<string, mixed> $result @return array<string, mixed> */
     private function safeResult(array $result): array
     {
-        $allowed = ['summary', 'provider', 'schoollift', 'queue', 'retried', 'message'];
+        $allowed = ['summary', 'provider', 'provider_directory', 'schoollift', 'queue', 'retried', 'message'];
         $safe = [];
         foreach ($allowed as $key) {
             if (array_key_exists($key, $result)) {

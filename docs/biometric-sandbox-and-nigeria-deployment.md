@@ -1,6 +1,6 @@
 # Production biometric attendance and Nigeria deployment guide
 
-Last reviewed: 12 August 2026 (Africa/Lagos)
+Last reviewed: 2 October 2026 (Africa/Lagos)
 
 This guide explains how to demonstrate, test, procure, install, and operate SchoolLift biometric attendance with **one physical terminal per school**. The same terminal handles IN and OUT. Before identifying, the student or staff member deliberately selects the appropriate state on the terminal; ZKBio Time exposes that choice as `punch_state`.
 
@@ -57,7 +57,7 @@ It is not an automatic animation. The operator must choose a person/code, choose
 
 ### 3. Windows gateway
 
-`tools/biometric-gateway` is the actual outbound synchronizer intended for the school PC. It has a durable SQLite queue/cursor, safe overlap polling, event allowlisting, authenticated batching, retry/backoff, a process lock, diagnostics, and Windows Task Scheduler scripts.
+`tools/biometric-gateway` is the actual outbound synchronizer intended for the school PC. It has a durable SQLite queue/cursor, safe overlap polling, event allowlisting, authenticated batching, automatic SchoolLift-to-ZKBio roster reconciliation, retry/backoff, a process lock, diagnostics, and Windows Task Scheduler scripts.
 
 Use the website Test Terminal to explain the school workflow. Use the mock plus gateway to prove the machine-to-machine integration. Neither replaces the physical recognition, liveness, capacity, lighting, power, or firmware pilot.
 
@@ -68,7 +68,7 @@ Ordinary school staff do **not** need a command line for Simulation, Shadow, or 
 - A staff member demonstrates without hardware from **Attendance > Biometric Attendance > Test Terminal**.
 - An administrator chooses `shadow` or `live` on the protected SchoolLift page.
 - The same Windows connector works in both Shadow and Live. Windows starts it automatically once every minute after the one-time installation.
-- The **School computer connector** page shows its latest heartbeat, queue, last synchronization, and safe error summary. An authorized administrator can request **Check connections**, **Synchronize now**, or a carefully confirmed **Retry failed items** action there.
+- The **School computer connector** page shows its latest heartbeat, queue, attendance synchronization, automatic roster runs, and safe error summaries. An authorized administrator can request **Check connections**, **Synchronize now**, **Sync roster now**, or a carefully confirmed **Retry failed items** action there.
 - The connector collects a website request on its next scheduled contact, performs only that fixed action on the school computer, and returns a redacted result. A request normally starts within one minute; it cannot wake a computer that is switched off or whose connector is stopped.
 
 The website does not run PowerShell, PHP commands, arbitrary programs, or user-supplied command text on the school computer. The hosted SchoolLift server is outside the school network and cannot safely reach `127.0.0.1`, ZKBio Time, or Windows Task Scheduler on that computer. Giving a public web page that power would create a remote-command security weakness.
@@ -84,6 +84,7 @@ The `tests/run.php`, sandbox `serve.php`, and sandbox `simulate.php` commands sh
 | Manually edit a gateway configuration file | One-time Windows Gateway Setup/Manager form | ZKBio credentials stay on the protected school computer and are never sent back to the website |
 | Gateway `doctor` | **Check connections** on the website or Windows Manager | Runs only the fixed connection checks and returns a redacted result |
 | Gateway `once` | Automatic once-per-minute synchronization; optional **Synchronize now** website request | The same automatic process is used in Shadow and Live |
+| Manual student/staff creation in ZKBio | Automatic roster **Preview**, then **Active** mode and **Sync roster now** | SchoolLift owns names, codes, classes, arms, departments, designations, active/disabled state, and generated identity mappings |
 | Gateway `status` | **School computer connector** status panel or Windows Manager | Heartbeat and safe queue counts are reported automatically |
 | Gateway `retry-dead` | **Retry failed items**, shown only to an authorized administrator with confirmation | Replaying permanently failed data without correcting its cause can create repeated failures |
 
@@ -104,7 +105,7 @@ Keep a separate disposable school/tenant for sales demonstrations where possible
 
 ### Prerequisites
 
-1. Deploy the application code and database migrations through **140** to a disposable or backed-up school database. Migration 140 adds enforced IN/OUT go-live proof, pilot selection, retention execution, operational reporting, and queued guardian alerts.
+1. Deploy the application code and database migrations through **144** to a disposable or backed-up school database. Migration 140 adds enforced IN/OUT go-live proof and operational safeguards, migration 143 adds editable multi-channel guardian templates, and migration 144 adds guarded automatic ZKBio roster synchronization.
 2. Sign in as a staff user whose role has the biometric attendance permissions needed for setup, mapping, test-terminal operation, and event viewing.
 3. Open **Attendance > Biometric Attendance**.
 4. Set the mode to `simulation`. Do not use `live` for a demonstration.
@@ -534,7 +535,7 @@ Do not use time windows such as “before noon means IN.” Do not toggle each p
 2. Use a dedicated database/service identity and change all defaults.
 3. Restrict ZKBio administration to LAN/VPN; never port-forward it publicly.
 4. Add the one terminal and verify its serial exactly.
-5. Create a least-privileged API identity able to read users/transactions but not templates/device administration.
+5. Create a least-privileged API identity able to read transactions/areas and use the supported employee, department, position, employee-delete, and device-resync APIs. It does not need permission to export templates or administer unrelated devices.
 6. Install PHP 8.2 CLI and enable `curl`, `json`, `openssl`, `pdo_sqlite`, and `sqlite3`.
 7. Place the gateway configuration/runtime outside the website tree and protect it with Windows ACLs.
 8. Create the SchoolLift integration token, record it once, and store only its hash in SchoolLift.
@@ -542,18 +543,32 @@ Do not use time windows such as “before noon means IN.” Do not toggle each p
 10. In the same Manager, install and verify the once-per-minute restricted-account task. A production deployment should package and code-sign this setup as an MSI/EXE; the repository script may still trigger a Windows warning until it is signed.
 11. Reboot and confirm ZKBio, gateway task, cursor, queue, and SchoolLift health recover.
 
-### Enroll and map students/staff
+### Synchronize and enroll students/staff
 
-1. Read **Understand identity mapping before creating one** above. Confirm that every active student has a unique Admission No. and every active staff member has a unique Employee ID, with no student/staff collision. Correct the normal SchoolLift records before continuing.
-2. Obtain the approved guardian/student/staff notices and process before collecting biometrics.
-3. In ZKBio, create/enrol the person and assign the exact SchoolLift Admission No. or Employee ID as the ZKBio `emp_code`.
-4. Capture face/fingerprint under realistic conditions only in the ZKTeco/ZKBio environment.
-5. In SchoolLift **Identity Mapping**, choose Student or Staff, search for and select the active person, verify the automatically displayed Admission No. or Employee ID, class and arm where applicable, and save. There is no separate device-code entry.
-6. For a bulk setup, preview active-roster mappings first and resolve blank, duplicate, reused, or conflicting admission/employee codes before confirmation.
-7. Provide a supervised QR, RFID, PIN, or manual path where appropriate.
-8. Test one explicit IN and OUT from the same serial for each pilot person while in `shadow`, and confirm the displayed person before live use.
-9. At every new academic session, preview student mappings so each admission code points to the new current student-enrolment record.
-10. Disable mappings and ZKBio enrolments promptly for leavers. Revoke lost-card QR credentials and never reuse an old person's code.
+1. Apply migration 144. For direct tenant import use `docs/biometric-directory-sync-migration-144.sql`; its verification query must return no missing object.
+2. Confirm that every active current-session student has a unique Admission No. and every active staff member has a unique Employee ID, with no cross-roster collision. Missing and duplicate codes are reported as conflicts and are never guessed by name.
+3. Configure the applicable ZKBio area IDs in the protected gateway configuration. Active mode fails closed if no area is configured.
+4. Set the integration roster mode to **Preview only**, request **Sync roster now**, and review the proposed create/adopt/update/delete/conflict counts.
+5. Resolve conflicts in normal SchoolLift student/staff records. A unique existing ZKBio `emp_code` may be adopted; SchoolLift overwrites only its managed identity and organization fields.
+6. Set roster mode to **Active** and synchronize again. Students become ZKBio employees with Admission No. as employee code, class as department, and class arm as position. Staff use Employee ID, staff department, and designation. Parents/guardians and staff assigned the Super Admin role are excluded.
+7. Confirm SchoolLift generated/updated the biometric identity mappings. Student mappings automatically advance to the current `student_session.id` after promotion.
+8. Obtain the approved guardian/student/staff notices and process before collecting biometrics. New identities still require one supervised face/fingerprint enrollment in the ZKTeco terminal/ZKBio environment; roster sync does not manufacture or transfer biometric templates.
+9. Test one explicit IN and OUT from the same serial for each pilot person while in `shadow`, and confirm the displayed person before live use.
+10. Provide a supervised QR, RFID, PIN, or manual path where appropriate.
+
+SchoolLift is authoritative for roster identity and organization; ZKBio remains
+authoritative for biometric templates and raw punches. Name, class/arm,
+department, designation, enabled/disabled status, and current-session changes
+are reconciled every five minutes and on request. An unchanged second run makes
+no ZKBio personnel writes.
+
+A person previously synchronized by this integration is hard-deleted from
+ZKBio after becoming disabled, deleted, excluded, or no longer current. That
+also removes their ZKBio biometric enrollment. If one complete snapshot would
+delete more than 10 people or more than 10% of the managed roster, no deletion
+in that batch runs until a user with biometric delete privilege approves that
+exact snapshot. A changed snapshot invalidates the approval. An incomplete,
+unreachable, or checksum-invalid snapshot can never trigger deletion.
 
 ## Trusted QR fallback
 
@@ -729,7 +744,7 @@ At minimum:
 ### Stage 1: disabled
 
 - Back up every tenant database and gateway/ZKBio configuration.
-- Apply migrations through **140** and verify the new tables/permissions before opening Biometric Attendance.
+- Apply migrations through **144** and verify the new tables/permissions before opening Biometric Attendance.
 - Create integration/device/mappings while ingestion remains disabled.
 
 ### Stage 2: simulation
@@ -779,6 +794,10 @@ Functional:
 - Trusted QR requires authenticated gate staff, direction selection, and visual identity confirmation.
 - QR issuance is disabled without a strong server encryption key, and key backup/recovery is proven.
 - Manual corrections record actor, reason, old/new state, and do not silently lose data.
+- Preview lists the complete student/staff roster diff; Super Admin and parents never appear.
+- Active roster sync creates/adopts identities, a second unchanged run is a no-op, and class arm/staff designation changes move the ZKBio person.
+- Disabling one test person hard-deletes that SchoolLift-owned ZKBio person, while a batch over 10 people or 10% pauses for delete-privileged approval.
+- Identity updates preserve existing biometric templates, and new people remain visibly unenrolled until supervised enrollment.
 
 Reliability/security:
 
@@ -806,6 +825,9 @@ Commissioning evidence should include invoice/quote, model/serial, firmware/soft
 | Queue pending grows | SchoolLift/network errors or backoff | Read JSON log/status, repair endpoint, allow safe replay |
 | Queue dead grows | Permanent body/API error or exhausted attempts | Preserve rows, fix root cause, then deliberately `retry-dead` |
 | Student/staff unknown | Missing/inactive/duplicate mapping | Reconcile explicitly; never guess by name |
+| Roster run reports conflict | Blank/duplicate Admission No. or Employee ID, or duplicate ZKBio code | Correct the authoritative SchoolLift code or remove the ZKBio duplicate; never merge by name |
+| Roster run is awaiting approval | Proposed hard deletes exceed 10 people or 10% | Verify the current SchoolLift roster and exact snapshot, then use delete-privileged approval or correct the roster |
+| Roster API returns 401/403/licence error | ZKBio trial/licence lacks personnel CRUD/delete/resync entitlement | Stop Active rollout and obtain the vendor entitlement; never write ZKBio tables directly or use UI automation |
 | OUT without IN | User selected wrong state or IN absent/delayed | Keep exception; wait/reconcile with evidence, never invent IN |
 | Duplicate after retry | Server external-ID uniqueness missing/broken | Stop live projection and repair idempotency |
 | Wrong displayed time | Timezone/NTP mismatch | Align terminal, ZKBio, Windows, gateway, and school to `Africa/Lagos` |

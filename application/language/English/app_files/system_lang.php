@@ -1432,6 +1432,9 @@ $lang['editable'] = "Editable";
 $lang['form'] = "Form";
 $lang['allowed_edit_form_fields_on_student_profile'] = "Allowed edit form fields on student profile";
 $lang['whatsapp_url'] = "WhatsApp URL";
+$lang['biometric_attendance_in'] = "Biometric Student Check In";
+$lang['biometric_attendance_out'] = "Biometric Student Check Out";
+$lang['biometric_fees_due'] = "Biometric Outstanding Fees Reminder";
 
 #version 6.2.0
 

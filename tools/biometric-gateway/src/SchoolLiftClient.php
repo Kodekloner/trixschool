@@ -8,7 +8,7 @@ use RuntimeException;
 
 final class SchoolLiftClient
 {
-    public const GATEWAY_VERSION = '1.1.0';
+    public const GATEWAY_VERSION = '1.2.0';
 
     private HttpTransport $http;
     /** @var array<string, mixed> */
@@ -57,6 +57,31 @@ final class SchoolLiftClient
             'Authorization: Bearer ' . (string) $this->config['bearer_token'],
             'X-SchoolLift-Gateway: ' . $this->gatewayId,
         ], null, $timeoutSeconds);
+    }
+
+    /** @return array<string, mixed> */
+    public function fetchDirectory(int $timeoutSeconds): array
+    {
+        $response = $this->http->request('GET', $this->url((string) $this->config['directory_path']), [
+            'Accept: application/json',
+            'Authorization: Bearer ' . (string) $this->config['bearer_token'],
+            'X-SchoolLift-Gateway: ' . $this->gatewayId,
+        ], null, $timeoutSeconds);
+        if ($response['status'] < 200 || $response['status'] > 299 || !is_array($response['json'])) {
+            $message = is_array($response['json'])
+                ? (string) ($response['json']['message'] ?? $response['json']['detail'] ?? '') : '';
+            throw new UpstreamException('SchoolLift directory request failed (HTTP ' . $response['status'] . ')'
+                . ($message !== '' ? ': ' . $message : ''), $response['status']);
+        }
+        return $response['json'];
+    }
+
+    /** @param array<string, mixed> $payload
+     *  @return array{status:int,headers:array<string,string>,body:string,json:mixed}
+     */
+    public function reportDirectory(array $payload, int $timeoutSeconds): array
+    {
+        return $this->postJson((string) $this->config['directory_result_path'], $payload, $timeoutSeconds);
     }
 
     /** @param array<string, mixed> $status

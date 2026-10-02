@@ -16,6 +16,7 @@ final class GatewayRunner
     private EventNormalizer $normalizer;
     private Clock $clock;
     private JsonLogger $logger;
+    private ?DirectorySynchronizer $directorySynchronizer;
     /** @var array<string, mixed> */
     private array $config;
 
@@ -27,7 +28,8 @@ final class GatewayRunner
         EventNormalizer $normalizer,
         Clock $clock,
         JsonLogger $logger,
-        array $config
+        array $config,
+        ?DirectorySynchronizer $directorySynchronizer = null
     ) {
         $this->store = $store;
         $this->provider = $provider;
@@ -36,10 +38,11 @@ final class GatewayRunner
         $this->clock = $clock;
         $this->logger = $logger;
         $this->config = $config;
+        $this->directorySynchronizer = $directorySynchronizer;
     }
 
     /** @return array<string, mixed> */
-    public function runOnce(): array
+    public function runOnce(bool $forceDirectory = false): array
     {
         $started = $this->clock->now();
         $summary = [
@@ -47,12 +50,20 @@ final class GatewayRunner
             'started_at' => $started->format(DATE_ATOM),
             'provider' => ['polled' => false, 'received' => 0, 'inserted' => 0, 'duplicates' => 0],
             'delivery' => ['delivered' => 0, 'deferred' => 0, 'dead' => 0],
+            'directory' => ['ran' => false, 'status' => 'disabled'],
         ];
 
         $firstDelivery = $this->flushQueue();
         $summary['delivery'] = $this->mergeCounts($summary['delivery'], $firstDelivery);
         if ($firstDelivery['error'] !== null) {
             $summary['ok'] = false;
+        }
+
+        if ($this->directorySynchronizer !== null) {
+            $summary['directory'] = $this->directorySynchronizer->run($forceDirectory);
+            if (($summary['directory']['status'] ?? '') === 'failed') {
+                $summary['ok'] = false;
+            }
         }
 
         $now = $this->clock->now();

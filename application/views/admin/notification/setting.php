@@ -39,6 +39,10 @@
                                         $last_key = count($notificationlist);
                                         foreach ($notificationlist as $note_key => $note_value) {
                                             $hr = "";
+                                            $event_label = $this->lang->line($note_value->type);
+                                            if (empty($event_label)) {
+                                                $event_label = ucwords(str_replace('_', ' ', $note_value->type));
+                                            }
  
                                             if ($i != $last_key) {
                                                 $hr = "<hr>";
@@ -48,7 +52,7 @@
                                             <tr>
                                                 <td width="15%">
                                                     <input type="hidden" name="ids[]" value="<?php echo $note_value->id; ?>">
-                                                    <?php echo $this->lang->line($note_value->type); ?>
+                                                    <?php echo html_escape($event_label); ?>
                                                 </td>
                                                 <td width="25%">
                                                     <label class="checkbox-inline">
@@ -60,6 +64,15 @@
                                                         <label class="checkbox-inline">
                                                             <input type="checkbox" name="sms_<?php echo $note_value->id; ?>" value="1" <?php echo set_checkbox('sms_' . $note_value->id, 1, set_value('sms_' . $note_value->id, $note_value->is_sms) ? true : false); ?>>
                                                             <?php echo $this->lang->line('sms'); ?>
+                                                        </label>
+                                                        <?php
+                                                    }
+
+                                                    if (!empty($note_value->display_whatsapp)) {
+                                                        ?>
+                                                        <label class="checkbox-inline">
+                                                            <input type="checkbox" name="whatsapp_<?php echo $note_value->id; ?>" value="1" <?php echo set_checkbox('whatsapp_' . $note_value->id, 1, set_value('whatsapp_' . $note_value->id, $note_value->is_whatsapp) ? true : false); ?>>
+                                                            WhatsApp
                                                         </label>
                                                         <?php
                                                     }

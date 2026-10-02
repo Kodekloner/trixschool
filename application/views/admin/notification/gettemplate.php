@@ -18,7 +18,8 @@
 
 <div class="row">
     <div class="col-md-12">
-        <p class="lead_template"><?php echo $this->lang->line($record->type); ?></p>
+        <?php $event_label = $this->lang->line($record->type); ?>
+        <p class="lead_template"><?php echo html_escape($event_label ?: ucwords(str_replace('_', ' ', $record->type))); ?></p>
         <input type="hidden" name="temp_id" value="<?php echo $record->id; ?>">
         <div class="form-group">
             <label for="form_message"><?php echo $this->lang->line('subject'); ?></label><small class="req"> *</small>

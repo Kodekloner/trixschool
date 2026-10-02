@@ -98,7 +98,144 @@ final class GatewayStore
             'CREATE INDEX IF NOT EXISTS idx_gateway_commands_state
              ON gateway_commands (state, created_at)'
         );
-        $this->setMetadata('schema_version', '3', new DateTimeImmutable('now'));
+        $this->database->exec(
+            'CREATE TABLE IF NOT EXISTS directory_groups (
+                group_type TEXT NOT NULL,
+                group_code TEXT NOT NULL,
+                provider_id TEXT NOT NULL,
+                desired_hash TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (group_type, group_code)
+            )'
+        );
+        $this->database->exec(
+            'CREATE TABLE IF NOT EXISTS directory_people (
+                person_key TEXT PRIMARY KEY,
+                subject_type TEXT NOT NULL,
+                subject_key INTEGER NOT NULL,
+                subject_id INTEGER NULL,
+                emp_code TEXT NOT NULL,
+                provider_person_id TEXT NULL,
+                desired_hash TEXT NULL,
+                applied_hash TEXT NULL,
+                state TEXT NOT NULL,
+                last_seen_snapshot TEXT NULL,
+                last_error TEXT NULL,
+                updated_at TEXT NOT NULL
+            )'
+        );
+        $this->database->exec(
+            'CREATE UNIQUE INDEX IF NOT EXISTS idx_directory_people_code
+             ON directory_people (emp_code)'
+        );
+        $this->setMetadata('schema_version', '4', new DateTimeImmutable('now'));
+    }
+
+    public function directorySyncDue(DateTimeImmutable $now, int $intervalSeconds): bool
+    {
+        $last = $this->metadata('last_directory_sync_at');
+        if ($last === null || $last === '') {
+            return true;
+        }
+        try {
+            return new DateTimeImmutable($last) <= $now->modify('-' . max(60, $intervalSeconds) . ' seconds');
+        } catch (Throwable $error) {
+            return true;
+        }
+    }
+
+    /** @return array<string, mixed>|null */
+    public function directoryGroup(string $type, string $code): ?array
+    {
+        $statement = $this->database->prepare(
+            'SELECT * FROM directory_groups WHERE group_type = :group_type AND group_code = :group_code'
+        );
+        $statement->execute([':group_type' => $type, ':group_code' => $code]);
+        $row = $statement->fetch();
+        return is_array($row) ? $row : null;
+    }
+
+    public function saveDirectoryGroup(
+        string $type,
+        string $code,
+        string $providerId,
+        string $desiredHash,
+        DateTimeImmutable $now
+    ): void {
+        $statement = $this->database->prepare(
+            'INSERT INTO directory_groups (group_type, group_code, provider_id, desired_hash, updated_at)
+             VALUES (:group_type, :group_code, :provider_id, :desired_hash, :updated_at)
+             ON CONFLICT(group_type, group_code) DO UPDATE SET
+                provider_id = excluded.provider_id,
+                desired_hash = excluded.desired_hash,
+                updated_at = excluded.updated_at'
+        );
+        $statement->execute([
+            ':group_type' => $type,
+            ':group_code' => $code,
+            ':provider_id' => $providerId,
+            ':desired_hash' => $desiredHash,
+            ':updated_at' => $now->format(DATE_ATOM),
+        ]);
+    }
+
+    /** @return array<string, mixed>|null */
+    public function directoryPerson(string $personKey): ?array
+    {
+        $statement = $this->database->prepare('SELECT * FROM directory_people WHERE person_key = :person_key');
+        $statement->execute([':person_key' => $personKey]);
+        $row = $statement->fetch();
+        return is_array($row) ? $row : null;
+    }
+
+    /** @param array<string, mixed> $person */
+    public function saveDirectoryPerson(array $person, DateTimeImmutable $now): void
+    {
+        $statement = $this->database->prepare(
+            'INSERT INTO directory_people
+             (person_key, subject_type, subject_key, subject_id, emp_code, provider_person_id,
+              desired_hash, applied_hash, state, last_seen_snapshot, last_error, updated_at)
+             VALUES (:person_key, :subject_type, :subject_key, :subject_id, :emp_code, :provider_person_id,
+              :desired_hash, :applied_hash, :state, :last_seen_snapshot, :last_error, :updated_at)
+             ON CONFLICT(person_key) DO UPDATE SET
+              subject_type = excluded.subject_type, subject_key = excluded.subject_key,
+              subject_id = excluded.subject_id, emp_code = excluded.emp_code,
+              provider_person_id = excluded.provider_person_id, desired_hash = excluded.desired_hash,
+              applied_hash = excluded.applied_hash, state = excluded.state,
+              last_seen_snapshot = excluded.last_seen_snapshot, last_error = excluded.last_error,
+              updated_at = excluded.updated_at'
+        );
+        $statement->execute([
+            ':person_key' => (string) $person['person_key'],
+            ':subject_type' => (string) $person['subject_type'],
+            ':subject_key' => (int) $person['subject_key'],
+            ':subject_id' => $person['subject_id'] ?? null,
+            ':emp_code' => (string) $person['emp_code'],
+            ':provider_person_id' => $person['provider_person_id'] ?? null,
+            ':desired_hash' => $person['desired_hash'] ?? null,
+            ':applied_hash' => $person['applied_hash'] ?? null,
+            ':state' => (string) $person['state'],
+            ':last_seen_snapshot' => $person['last_seen_snapshot'] ?? null,
+            ':last_error' => $this->bounded(isset($person['last_error']) ? (string) $person['last_error'] : null),
+            ':updated_at' => $now->format(DATE_ATOM),
+        ]);
+    }
+
+    public function recordDirectorySync(string $status, ?string $error, DateTimeImmutable $now): void
+    {
+        $this->setMetadata('last_directory_sync_at', $now->format(DATE_ATOM), $now);
+        $this->setMetadata('last_directory_sync_status', $status, $now);
+        $this->setMetadata('last_directory_sync_error', $this->bounded($error) ?? '', $now);
+    }
+
+    /** @return array<string, string|null> */
+    public function directoryStatus(): array
+    {
+        return [
+            'last_sync_at' => $this->metadata('last_directory_sync_at'),
+            'status' => $this->metadata('last_directory_sync_status'),
+            'error' => $this->metadata('last_directory_sync_error'),
+        ];
     }
 
     /**

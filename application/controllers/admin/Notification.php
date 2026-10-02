@@ -239,22 +239,30 @@ class Notification extends Admin_Controller
         $data['notificationlist'] = $notificationlist;
         $this->form_validation->set_rules('email_type', $this->lang->line('email_type'), 'required');
         if ($this->input->server('REQUEST_METHOD') == "POST") {
+            if (!$this->rbac->hasPrivilege('notification_setting', 'can_edit')) {
+                access_denied();
+            }
             $ids          = $this->input->post('ids');
             $update_array = array();
             foreach ($ids as $id_key => $id_value) {
                 $array = array(
-                    'id'      => $id_value,
-                    'is_mail' => 0,
-                    'is_sms'  => 0,
+                    'id'          => $id_value,
+                    'is_mail'     => 0,
+                    'is_sms'      => 0,
+                    'is_whatsapp' => 0,
                 );
                 $mail         = $this->input->post('mail_' . $id_value);
                 $sms          = $this->input->post('sms_' . $id_value);
+                $whatsapp     = $this->input->post('whatsapp_' . $id_value);
                 $notification = $this->input->post('notification_' . $id_value);
                 if (isset($mail)) {
                     $array['is_mail'] = $mail;
                 }
                 if (isset($sms)) {
                     $array['is_sms'] = $sms;
+                }
+                if (isset($whatsapp)) {
+                    $array['is_whatsapp'] = $whatsapp;
                 }
                 if (isset($notification)) {
                     $array['is_notification'] = $notification;
@@ -291,6 +299,9 @@ class Notification extends Admin_Controller
 
     public function gettemplate()
     {
+        if (!$this->rbac->hasPrivilege('notification_setting', 'can_view')) {
+            access_denied();
+        }
 
         $id             = $this->input->post('id');
         $data['record'] = $this->notificationsetting_model->get($id);
@@ -305,6 +316,9 @@ class Notification extends Admin_Controller
 
     public function savetemplate()
     {
+        if (!$this->rbac->hasPrivilege('notification_setting', 'can_edit')) {
+            access_denied();
+        }
         $response = array();
         $this->form_validation->set_rules('temp_id', $this->lang->line('template_id'), 'required|trim|xss_clean');
         $this->form_validation->set_rules('template_message', $this->lang->line('template_message'), 'required|trim|xss_clean');

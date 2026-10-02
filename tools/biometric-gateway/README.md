@@ -11,13 +11,15 @@ Each `once` run performs this sequence:
 1. Acquire a non-blocking file lock so overlapping Task Scheduler runs cannot race.
 2. Send a safe status heartbeat and claim at most one website-requested action.
 3. Deliver any previously queued events.
-4. Authenticate to ZKBio Time and poll the configured terminal with an overlap window.
-5. Copy only the stable event ID, person code, occurrence time, terminal serial, punch state, and verification-method code.
-6. Atomically save new events and the polling cursor in SQLite.
-7. POST batches to `/api/biometric/v2/events` with the SchoolLift bearer token.
-8. Mark `accepted`, `duplicate`, `quarantined`, and `rejected` outcomes as durably acknowledged.
-9. Save and report the requested action's safe result, then send a final heartbeat.
-10. Defer network errors, `401`, `403`, `408`, `429`, and `5xx` responses with bounded exponential backoff.
+4. Every five minutes, or on a privileged website request, download and validate a complete SchoolLift directory snapshot before making any ZKBio change.
+5. Reconcile SchoolLift-owned departments, positions, active current-session students, and active non-Super-Admin staff through supported ZKBio APIs.
+6. Authenticate to ZKBio Time and poll the configured terminal with an overlap window.
+7. Copy only the stable event ID, person code, occurrence time, terminal serial, punch state, and verification-method code.
+8. Atomically save new events and the polling cursor in SQLite.
+9. POST batches to `/api/biometric/v2/events` with the SchoolLift bearer token.
+10. Mark `accepted`, `duplicate`, `quarantined`, and `rejected` outcomes as durably acknowledged.
+11. Save and report safe directory/attendance results, then send a final heartbeat.
+12. Defer network errors, `401`, `403`, `408`, `429`, and `5xx` responses with bounded exponential backoff.
 
 If the process crashes after SchoolLift accepts a batch but before SQLite is updated, the next run repeats the same external event IDs. SchoolLift's event-level idempotency returns `duplicate`; it must not create another attendance event.
 
@@ -25,7 +27,7 @@ If the process crashes after SchoolLift accepts a batch but before SQLite is upd
 
 - Windows 10/11 or Windows Server supported by the school's ZKBio Time release.
 - 64-bit PHP 8.2 CLI with `curl`, `json`, `openssl`, `pdo_sqlite`, and `sqlite3` enabled.
-- ZKBio Time/BioTime API credentials with read-only transaction access.
+- ZKBio Time/BioTime API credentials licensed for transaction reads plus employee, department, position, area, employee-delete, and device-resync APIs.
 - A SchoolLift integration token created by **Attendance > Biometric Attendance > Setup**.
 - HTTPS with a valid certificate for SchoolLift. Prefer HTTPS for ZKBio; when the vendor exposes only local HTTP, bind/use `127.0.0.1` on the same protected PC and enable only the narrow loopback exception.
 - Correct `Africa/Lagos` time, NTP, and a terminal configured to let the user explicitly choose IN or OUT.
@@ -52,7 +54,7 @@ protected Windows computer that runs ZKBio Time:
 4. Double-click
    `windows\SchoolLift-Gateway-Manager.cmd` and approve the Windows UAC prompt.
 5. Enter the SchoolLift HTTPS address, local ZKBio address, one terminal serial,
-   read-only ZKBio API credentials, and the one-time SchoolLift integration
+   least-privileged ZKBio API credentials, the area IDs, and the one-time SchoolLift integration
    token.
 6. Select **Save protected configuration**, then **Test connections**.
 7. Select **Install / repair automatic sync**. The manager installs the existing
@@ -79,7 +81,8 @@ The manager provides only these fixed local controls:
 
 It has no command box, file picker, configurable program path, inbound listener,
 or remote shell. The hosted website may enqueue only the gateway's named,
-short-lived `connection_test`, `sync_now`, or confirmed `retry_failed` request.
+short-lived `connection_test`, `sync_now`, `directory_sync`, or confirmed
+`retry_failed` request.
 The already-running gateway asks for one such request over its authenticated
 outbound HTTPS connection and maps it to fixed internal code; it never receives
 command text, arguments, executable names, or filesystem paths.
@@ -115,10 +118,15 @@ configuration files remain supported. The important settings are:
 - `gateway_id`: stable name for this installation; do not change it casually.
 - `provider.base_url`: local ZKBio Time URL.
 - `provider.terminal_serial`: the **one** approved physical device serial.
+- `provider.area_ids`: ZKBio area IDs assigned to synchronized people; Active roster mode refuses to run when this is empty.
+- `provider.employees_path`, `departments_path`, `positions_path`, `areas_path`, and `resync_path`: supported endpoints for the installed licensed release. Never replace these with database access.
+- `provider.resync_to_device`: asks ZKBio to deliver created/updated personnel to configured device areas. It does not create biometric templates.
 - SchoolLift's integration setup owns the authoritative punch-state map (initially `0 => IN`, `1 => OUT`). Confirm it using the licensed release/firmware before shadow/live mode. The gateway deliberately forwards the raw state unchanged so unknown values reach reconciliation instead of being guessed or discarded locally.
 - `provider.overlap_seconds`: default two-day replay window. Make it longer than the longest expected terminal/ZKBio outage.
 - `schoollift.base_url`: exact HTTPS tenant hostname; the tenant is resolved from this host, never from payload data.
 - `schoollift.bearer_token`: high-entropy token shown once by SchoolLift.
+- `directory.default_interval_seconds`: local fallback interval, normally 300 seconds.
+- `directory.maximum_delete_count` and `maximum_delete_percent`: safety thresholds. A batch exceeding either one is held until a user with biometric delete privilege approves that exact snapshot.
 
 The committed example uses local `http://127.0.0.1` for ZKBio because many on-prem editions expose their API only on the same Windows host; `allow_insecure_localhost` cannot authorize an HTTP LAN/public host. If the licensed edition supports HTTPS, use it and turn the exception off. SchoolLift must always use HTTPS outside a fully local disposable test.
 
@@ -169,6 +177,34 @@ stores its safe result before reporting it. If Windows, the internet, or PHP
 stops between those steps, the same identifier can be replayed safely. Failure
 of this control channel is logged but does not stop the normal durable attendance
 synchronization.
+
+### Automatic roster ownership
+
+SchoolLift is authoritative for identity and organization; ZKBio remains
+authoritative for face/fingerprint templates and raw punches. Roster mode is
+configured per integration:
+
+- `off`: no directory reads or writes;
+- `preview`: calculate and report create/adopt/update/delete/conflict results without writing ZKBio;
+- `active`: apply the complete desired state through the ZKBio API.
+
+Students use Admission No. as `emp_code`, class as department, and class arm as
+position. Position codes contain both class and arm IDs, so repeated names such
+as “A” remain unique. Staff use Employee ID, staff department, and designation.
+Parents/guardians and staff with the Super Admin role are excluded.
+
+A unique existing `emp_code` is adopted and SchoolLift-managed identity fields
+are overwritten. Duplicate or missing codes are conflicts and are never guessed
+by name. Updates preserve ZKBio-owned biometric data because the gateway sends
+only identity/organization fields. A new person still needs one supervised
+face/fingerprint enrollment in ZKBio or on the terminal.
+
+After a complete valid snapshot, a previously owned person who is disabled,
+deleted, excluded, or no longer current is hard-deleted from ZKBio. More than
+10 deletions or more than 10% of the managed roster pauses the whole deletion
+set. The Biometric Attendance setup page shows the exact snapshot and requires
+biometric delete privilege to approve it. An incomplete, unreachable, or
+checksum-invalid snapshot never causes deletion.
 
 ## Manual scheduled-task fallback
 
@@ -295,6 +331,13 @@ SchoolLift replies with one outcome for every event:
 
 Recognized outcomes are `accepted`, `duplicate`, `quarantined`, and `rejected`. A successful response that omits an event outcome is treated as incomplete and safely retried.
 
+Directory reconciliation uses `GET /api/biometric/v2/directory` and reports one
+bounded, idempotent run to `POST /api/biometric/v2/directory/result`. The full
+snapshot includes stable SchoolLift keys, desired hashes, groups, people,
+tombstones, conflicts, totals, and a checksum. Successful Active results create
+or refresh SchoolLift identity mappings automatically, including moving a
+promoted student mapping to the current `student_session.id`.
+
 ## Retry and recovery behavior
 
 - The SQLite cursor advances only in the same committed transaction that queues every fetched event.
@@ -315,10 +358,11 @@ From the repository root:
 php tools/biometric-gateway/tests/run.php
 ```
 
-The suite starts loopback mock servers and verifies one-serial IN/OUT, template stripping, durable cursor/queue restart, overlap deduplication, `429`, `503`, provider outage, authentication repair, and safe replay. It does not require MySQL, CodeIgniter, a physical device, or internet access.
+The suite starts loopback mock servers and verifies one-serial IN/OUT, template stripping, durable cursor/queue restart, overlap deduplication, `429`, `503`, provider outage, authentication repair, safe replay, directory create/adopt/update/no-op/delete behavior, enrollment preservation, and mass-deletion approval. It does not require MySQL, CodeIgniter, a physical device, or internet access.
 
 ## Production limitations
 
 - ZKBio Time editions differ. Confirm authentication, pagination, timestamp, stable ID, `punch_state`, and verification codes against the purchased licence and firmware.
+- Before Active roster mode, prove the licence permits employee, department, position, area, delete, and resync operations. A `401`, `403`, or licence denial is a vendor-entitlement blocker; do not manipulate ZKBio's database or automate its UI as a fallback.
 - The default two-day overlap cannot recover an event whose punch time is older than the window after ZKBio only exposes it later. Increase it beyond the maximum expected outage, and test a real buffered-terminal recovery.
 - A green gateway test does not prove face/fingerprint accuracy, liveness, user capacity, weather performance, queue speed, power recovery, or the user's correct IN/OUT selection. These require the documented physical shadow pilot.

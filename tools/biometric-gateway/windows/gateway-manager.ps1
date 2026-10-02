@@ -260,6 +260,7 @@ function Save-ManagerConfiguration {
     $Serial = $script:SerialText.Text.Trim()
     $ProviderUsername = $script:UsernameText.Text.Trim()
     $ProviderPassword = $script:PasswordText.Text
+    $AreaIdsValue = $script:AreaIdsText.Text.Trim()
     $BearerToken = $script:TokenText.Text.Trim()
 
     $SchoolLiftUri = Test-AbsoluteUrl $SchoolLiftValue "SchoolLift address"
@@ -271,7 +272,19 @@ function Save-ManagerConfiguration {
         throw "Use one bidirectional terminal serial, not a separate IN or OUT serial."
     }
     if ([string]::IsNullOrWhiteSpace($ProviderUsername) -or [string]::IsNullOrEmpty($ProviderPassword)) {
-        throw "Enter the read-only ZKBio API username and password."
+        throw "Enter the ZKBio API username and password."
+    }
+    $AreaIds = @()
+    if (-not [string]::IsNullOrWhiteSpace($AreaIdsValue)) {
+        foreach ($AreaPart in ($AreaIdsValue -split '[,;\s]+')) {
+            if ($AreaPart -notmatch '^\d+$' -or [int64]$AreaPart -lt 1 -or [int64]$AreaPart -gt [int]::MaxValue) {
+                throw "ZKBio area IDs must be positive numbers separated by commas."
+            }
+            $AreaId = [int]$AreaPart
+            if ($AreaIds -notcontains $AreaId) {
+                $AreaIds += $AreaId
+            }
+        }
     }
     if ($BearerToken.Length -lt 32 -or $BearerToken -match '[\x00-\x1F\x7F]') {
         throw "Paste the high-entropy integration token shown once by SchoolLift."
@@ -301,8 +314,15 @@ function Save-ManagerConfiguration {
             token_field = "token"
             authorization_scheme = "Token"
             transactions_path = "/iclock/api/transactions/"
+            employees_path = "/personnel/api/employees/"
+            departments_path = "/personnel/api/departments/"
+            positions_path = "/personnel/api/positions/"
+            areas_path = "/personnel/api/areas/"
+            resync_path = "/personnel/api/employees/resync_to_device/"
             data_field = "data"
             terminal_serial = $Serial
+            area_ids = @($AreaIds)
+            resync_to_device = $true
             verification_method_map = [ordered]@{
                 "0" = "pin"
                 "1" = "fingerprint"
@@ -322,6 +342,8 @@ function Save-ManagerConfiguration {
             health_path = "/api/biometric/v2/health"
             control_poll_path = "/api/biometric/v2/gateway/poll"
             control_result_path = "/api/biometric/v2/gateway/result"
+            directory_path = "/api/biometric/v2/directory"
+            directory_result_path = "/api/biometric/v2/directory/result"
             batch_size = 100
             max_batches_per_run = 10
         }
@@ -331,6 +353,11 @@ function Save-ManagerConfiguration {
             maximum_attempts = 12
             provider_base_seconds = 15
             provider_maximum_seconds = 900
+        }
+        directory = [ordered]@{
+            default_interval_seconds = 300
+            maximum_delete_count = 10
+            maximum_delete_percent = 10
         }
         delivered_retention_days = 30
     }
@@ -483,8 +510,8 @@ try {
 $Form = New-Object System.Windows.Forms.Form
 $Form.Text = "SchoolLift Biometric Gateway Manager"
 $Form.StartPosition = "CenterScreen"
-$Form.Size = New-Object System.Drawing.Size(930, 790)
-$Form.MinimumSize = New-Object System.Drawing.Size(820, 720)
+$Form.Size = New-Object System.Drawing.Size(930, 830)
+$Form.MinimumSize = New-Object System.Drawing.Size(820, 760)
 $Form.Font = New-Object System.Drawing.Font("Segoe UI", 9)
 $Form.AutoScaleMode = [System.Windows.Forms.AutoScaleMode]::Dpi
 
@@ -504,30 +531,31 @@ $Form.Controls.Add($NoticeLabel)
 $ConfigGroup = New-Object System.Windows.Forms.GroupBox
 $ConfigGroup.Text = "1. Connection settings"
 $ConfigGroup.Location = New-Object System.Drawing.Point(20, 82)
-$ConfigGroup.Size = New-Object System.Drawing.Size(875, 335)
+$ConfigGroup.Size = New-Object System.Drawing.Size(875, 375)
 $ConfigGroup.Anchor = [System.Windows.Forms.AnchorStyles]"Top, Left, Right"
 $Form.Controls.Add($ConfigGroup)
 
 $script:SchoolLiftText = Add-InputField $ConfigGroup "SchoolLift school website (HTTPS)" 30
 $script:ProviderText = Add-InputField $ConfigGroup "ZKBio API on this computer" 70
 $script:SerialText = Add-InputField $ConfigGroup "One terminal serial number" 110
-$script:UsernameText = Add-InputField $ConfigGroup "ZKBio read-only API username" 150
+$script:UsernameText = Add-InputField $ConfigGroup "ZKBio API username" 150
 $script:PasswordText = Add-InputField $ConfigGroup "ZKBio API password" 190 -Password
-$script:TokenText = Add-InputField $ConfigGroup "SchoolLift integration token" 230 -Password
+$script:AreaIdsText = Add-InputField $ConfigGroup "ZKBio area IDs (comma separated)" 230
+$script:TokenText = Add-InputField $ConfigGroup "SchoolLift integration token" 270 -Password
 
 $PhpCaption = New-Object System.Windows.Forms.Label
 $PhpCaption.Text = "Detected PHP:"
-$PhpCaption.Location = New-Object System.Drawing.Point(18, 270)
+$PhpCaption.Location = New-Object System.Drawing.Point(18, 310)
 $PhpCaption.Size = New-Object System.Drawing.Size(205, 22)
 $ConfigGroup.Controls.Add($PhpCaption)
 $PhpValue = New-Object System.Windows.Forms.Label
 $PhpValue.Text = $(if ($null -eq $script:PhpPath) { "Not found - install/bundle PHP 8.2 before testing" } else { $script:PhpPath })
-$PhpValue.Location = New-Object System.Drawing.Point(228, 270)
+$PhpValue.Location = New-Object System.Drawing.Point(228, 310)
 $PhpValue.Size = New-Object System.Drawing.Size(610, 40)
 $PhpValue.Anchor = [System.Windows.Forms.AnchorStyles]"Top, Left, Right"
 $ConfigGroup.Controls.Add($PhpValue)
 
-$ButtonTop = 301
+$ButtonTop = 341
 $SaveButton = New-Object System.Windows.Forms.Button
 $SaveButton.Text = "Save protected configuration"
 $SaveButton.Location = New-Object System.Drawing.Point(228, $ButtonTop)
@@ -550,7 +578,7 @@ $ConfigGroup.Controls.Add($InstallButton)
 
 $OperationsGroup = New-Object System.Windows.Forms.GroupBox
 $OperationsGroup.Text = "2. Local gateway controls"
-$OperationsGroup.Location = New-Object System.Drawing.Point(20, 430)
+$OperationsGroup.Location = New-Object System.Drawing.Point(20, 470)
 $OperationsGroup.Size = New-Object System.Drawing.Size(875, 112)
 $OperationsGroup.Anchor = [System.Windows.Forms.AnchorStyles]"Top, Left, Right"
 $Form.Controls.Add($OperationsGroup)
@@ -597,12 +625,12 @@ $OperationsGroup.Controls.Add($script:TaskStateLabel)
 
 $ActivityLabel = New-Object System.Windows.Forms.Label
 $ActivityLabel.Text = "Activity and diagnostic results"
-$ActivityLabel.Location = New-Object System.Drawing.Point(20, 552)
+$ActivityLabel.Location = New-Object System.Drawing.Point(20, 592)
 $ActivityLabel.Size = New-Object System.Drawing.Size(300, 22)
 $Form.Controls.Add($ActivityLabel)
 
 $script:ActivityText = New-Object System.Windows.Forms.TextBox
-$script:ActivityText.Location = New-Object System.Drawing.Point(20, 576)
+$script:ActivityText.Location = New-Object System.Drawing.Point(20, 616)
 $script:ActivityText.Size = New-Object System.Drawing.Size(875, 125)
 $script:ActivityText.Anchor = [System.Windows.Forms.AnchorStyles]"Top, Bottom, Left, Right"
 $script:ActivityText.Multiline = $true
@@ -614,7 +642,7 @@ $Form.Controls.Add($script:ActivityText)
 $FooterLabel = New-Object System.Windows.Forms.Label
 $FooterLabel.Text = "Security note: this repository launcher is unsigned. Distribute a code-signed MSI/EXE with bundled PHP for production schools."
 $FooterLabel.ForeColor = [System.Drawing.Color]::DarkRed
-$FooterLabel.Location = New-Object System.Drawing.Point(20, 712)
+$FooterLabel.Location = New-Object System.Drawing.Point(20, 752)
 $FooterLabel.Size = New-Object System.Drawing.Size(875, 34)
 $FooterLabel.Anchor = [System.Windows.Forms.AnchorStyles]"Bottom, Left, Right"
 $Form.Controls.Add($FooterLabel)
@@ -775,6 +803,8 @@ try {
         $script:SerialText.Text = [string](Get-JsonProperty $Provider "terminal_serial")
         $script:UsernameText.Text = [string](Get-JsonProperty $Provider "username")
         $script:PasswordText.Text = [string](Get-JsonProperty $Provider "password")
+        $LoadedAreas = @(Get-JsonProperty $Provider "area_ids" @())
+        $script:AreaIdsText.Text = ($LoadedAreas -join ",")
         $script:TokenText.Text = [string](Get-JsonProperty $SchoolLift "bearer_token")
         Write-Activity "Configuration loaded" "Loaded the protected local JSON configuration. Passwords remain masked on screen."
     } else {

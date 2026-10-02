@@ -33,6 +33,7 @@ class Biometricattendance extends Admin_Controller
         $integrationItems = isset($integrations['items']) ? $integrations['items'] : array();
         $gatewayAgents = $this->biometric_attendance_service->listGatewayAgents(array(), 1, 100);
         $gatewayCommands = $this->biometric_attendance_service->listGatewayCommands(array(), 1, 50);
+        $directoryRuns = $this->biometric_attendance_service->listDirectoryRuns(array(), 1, 25);
         $devices = $this->biometric_attendance_service->listDevices(array(), 1, 100);
         $punchStateMappings = array();
         foreach ($integrationItems as $integration) {
@@ -79,6 +80,7 @@ class Biometricattendance extends Admin_Controller
             'integrations' => $integrations,
             'gateway_agents' => $gatewayAgents,
             'gateway_commands' => $gatewayCommands,
+            'directory_runs' => $directoryRuns,
             'punch_state_mappings' => $punchStateMappings,
             'events' => $this->biometric_attendance_service->listEvents($filters['events'], $this->queryPage('event_page'), $perPage),
             'days' => $this->biometric_attendance_service->listDays($filters['days'], $this->queryPage('day_page'), $perPage),
@@ -226,6 +228,36 @@ class Biometricattendance extends Admin_Controller
         return $this->resultRedirect($result, $active ? 'Integration enabled.' : 'Integration disabled.', '#bio-setup');
     }
 
+    public function directorymode()
+    {
+        $this->requireMutation('can_edit');
+        $result = $this->biometric_attendance_service->setDirectorySyncMode(
+            (int) $this->input->post('integration_id'),
+            trim((string) $this->input->post('directory_sync_mode', true)),
+            $this->actorId()
+        );
+        return $this->resultRedirect($result, 'Automatic ZKBio roster mode updated.', '#bio-setup');
+    }
+
+    public function approvedirectorydeletion()
+    {
+        $this->requireMutation('can_delete');
+        if (!hash_equals('APPROVE_DIRECTORY_DELETE', trim((string) $this->input->post('confirmation', true)))) {
+            return $this->failRedirect('Type APPROVE_DIRECTORY_DELETE exactly.', '#bio-setup');
+        }
+        $result = $this->biometric_attendance_service->approveDirectoryDeletion(
+            (int) $this->input->post('integration_id'),
+            trim((string) $this->input->post('snapshot_hash', true)),
+            $this->actorId()
+        );
+        if (!empty($result['success'])) {
+            $this->biometric_attendance_service->queueGatewayCommand(
+                'directory_sync', (int) $this->input->post('integration_id'), $this->actorId(), 300
+            );
+        }
+        return $this->resultRedirect($result, 'The exact reviewed deletion batch was approved and a roster sync was queued.', '#bio-setup');
+    }
+
     public function deleteintegration()
     {
         $this->requireMutation('can_delete');
@@ -246,12 +278,12 @@ class Biometricattendance extends Admin_Controller
         $this->requireMutation('can_edit');
         $type = strtolower(trim((string) $this->input->post('command_type', true)));
         $integrationId = (int) $this->input->post('integration_id');
-        if (!in_array($type, array('connection_test', 'sync_now', 'retry_failed'), true)) {
+        if (!in_array($type, array('connection_test', 'sync_now', 'directory_sync', 'retry_failed'), true)) {
             return $this->failRedirect('Choose a supported school-computer connector action.', '#bio-connector');
         }
 
         $settings = $this->biometric_attendance_service->getSettings();
-        if (!is_array($settings) || !in_array($settings['mode'], array('shadow', 'live'), true)) {
+        if ($type !== 'directory_sync' && (!is_array($settings) || !in_array($settings['mode'], array('shadow', 'live'), true))) {
             return $this->failRedirect('School-computer connector actions are available only in Shadow or Live mode.', '#bio-connector');
         }
         if ($type === 'retry_failed') {
@@ -270,6 +302,7 @@ class Biometricattendance extends Admin_Controller
         $labels = array(
             'connection_test' => 'Connection check requested. The school computer should collect it within one minute.',
             'sync_now' => 'Synchronization requested. The school computer should collect it within one minute.',
+            'directory_sync' => 'Roster synchronization requested. The school computer should collect it within one minute.',
             'retry_failed' => 'Retry requested. The school computer should collect it within one minute.',
         );
         if (!empty($result['duplicate'])) {
@@ -343,7 +376,7 @@ class Biometricattendance extends Admin_Controller
             (int) $this->input->post('device_id'),
             $this->actorId()
         );
-        return $this->resultRedirect($result, 'The unused terminal registration was deleted. Audit history was retained.', '#bio-setup');
+        return $this->resultRedirect($result, 'The disabled terminal registration was deleted. Attendance and audit history were retained.', '#bio-setup');
     }
 
     public function mapping()
@@ -895,7 +928,7 @@ class Biometricattendance extends Admin_Controller
     private function requireReady()
     {
         if (!$this->biometric_attendance_service->isReady()) {
-            show_error('Biometric attendance migrations through 140 have not been installed for this school database.', 503);
+            show_error('Biometric attendance migrations through 144 have not been installed for this school database.', 503);
         }
     }
 

@@ -597,7 +597,7 @@ Use this section only after every applicable item in the successful-test checkli
 
 ## Step 26: Install the operational database update
 
-The school database must include migrations through **140**. Migration 140 adds the Live pilot switch, per-person pilot selection, guardian notification queue, automated retention evidence, and the stronger Live readiness checks.
+The school database must include migrations through **144**. Migration 140 adds the Live pilot switch, per-person pilot selection, guardian notification queue, automated retention evidence, and stronger Live readiness checks; migration 143 adds editable guardian notification templates; migration 144 adds guarded automatic ZKBio roster synchronization.
 
 For a server maintained with the consolidated SQL, back up the selected GIS school database and import:
 
