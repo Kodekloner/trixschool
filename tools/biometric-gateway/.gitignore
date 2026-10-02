@@ -1,5 +1,7 @@
 /config.php
+/runtime/
 *.local.php
+*.local.json
 var/*.sqlite
 var/*.sqlite-*
 var/*.log

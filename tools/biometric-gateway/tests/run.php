@@ -110,21 +110,27 @@ final class DirectoryFakeTransport implements HttpTransport
             $payload['fingerprint_count'] = 0;
             $this->employees[] = $payload;
             $this->writes['employee_post']++;
-            return $this->response(201, $payload);
+            $response = $payload;
+            unset($response['id']);
+            return $this->response(201, $response);
         }
         if ($method === 'POST' && $path === '/personnel/api/departments/') {
             $payload = $this->payload($body);
             $payload['id'] = $this->nextDepartmentId++;
             $this->departments[] = $payload;
             $this->writes['department_post']++;
-            return $this->response(201, $payload);
+            $response = $payload;
+            unset($response['id']);
+            return $this->response(201, $response);
         }
         if ($method === 'POST' && $path === '/personnel/api/positions/') {
             $payload = $this->payload($body);
             $payload['id'] = $this->nextPositionId++;
             $this->positions[] = $payload;
             $this->writes['position_post']++;
-            return $this->response(201, $payload);
+            $response = $payload;
+            unset($response['id']);
+            return $this->response(201, $response);
         }
         if ($method === 'PUT' && preg_match('#^/personnel/api/employees/(\d+)/$#', $path, $match)) {
             $id = (int) $match[1];
