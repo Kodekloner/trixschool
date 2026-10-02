@@ -5,10 +5,12 @@ declare(strict_types=1);
 use SchoolLift\BiometricGateway\Clock;
 use SchoolLift\BiometricGateway\Config;
 use SchoolLift\BiometricGateway\CurlHttpTransport;
+use SchoolLift\BiometricGateway\DirectorySynchronizer;
 use SchoolLift\BiometricGateway\EventNormalizer;
 use SchoolLift\BiometricGateway\GatewayControl;
 use SchoolLift\BiometricGateway\GatewayRunner;
 use SchoolLift\BiometricGateway\GatewayStore;
+use SchoolLift\BiometricGateway\HttpTransport;
 use SchoolLift\BiometricGateway\JsonLogger;
 use SchoolLift\BiometricGateway\SchoolLiftClient;
 use SchoolLift\BiometricGateway\ZkBioClient;
@@ -37,6 +39,135 @@ final class MutableClock implements Clock
     }
 }
 
+final class DirectoryFakeTransport implements HttpTransport
+{
+    /** @var array<string, mixed> */
+    public array $snapshot = [];
+    /** @var array<int, array<string, mixed>> */
+    public array $reports = [];
+    /** @var array<int, array<string, mixed>> */
+    public array $departments = [
+        ['id' => 1, 'dept_code' => 'SL-ROOT', 'dept_name' => 'Demo School', 'parent_dept' => null],
+        ['id' => 2, 'dept_code' => 'SL-STUDENTS', 'dept_name' => 'Students', 'parent_dept' => 1],
+        ['id' => 3, 'dept_code' => 'SL-STU-C-1', 'dept_name' => 'Primary 1', 'parent_dept' => 2],
+    ];
+    /** @var array<int, array<string, mixed>> */
+    public array $positions = [
+        ['id' => 1, 'position_code' => 'SL-STU-C-1-S-1', 'position_name' => 'A', 'parent_position' => null],
+    ];
+    /** @var array<int, array<string, mixed>> */
+    public array $employees = [];
+    /** @var array<string, int> */
+    public array $writes = [
+        'employee_post' => 0, 'employee_put' => 0, 'employee_delete' => 0,
+        'department_post' => 0, 'position_post' => 0, 'resync' => 0,
+    ];
+    private int $nextEmployeeId = 100;
+    private int $nextDepartmentId = 10;
+    private int $nextPositionId = 10;
+
+    /** @param array<int, string> $headers
+     *  @return array{status:int,headers:array<string,string>,body:string,json:mixed}
+     */
+    public function request(
+        string $method,
+        string $url,
+        array $headers = [],
+        ?string $body = null,
+        int $timeoutSeconds = 20
+    ): array {
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        if ($method === 'POST' && $path === '/api-token-auth/') {
+            return $this->response(200, ['token' => 'test-token']);
+        }
+        if ($method === 'GET' && $path === '/api/biometric/v2/directory') {
+            return $this->response(200, $this->snapshot);
+        }
+        if ($method === 'POST' && $path === '/api/biometric/v2/directory/result') {
+            $payload = json_decode((string) $body, true);
+            if (!is_array($payload)) {
+                return $this->response(400, ['success' => false]);
+            }
+            $this->reports[] = $payload;
+            return $this->response(200, ['success' => true]);
+        }
+        if ($method === 'GET' && $path === '/personnel/api/departments/') {
+            return $this->response(200, ['data' => array_values($this->departments), 'next' => null]);
+        }
+        if ($method === 'GET' && $path === '/personnel/api/positions/') {
+            return $this->response(200, ['data' => array_values($this->positions), 'next' => null]);
+        }
+        if ($method === 'GET' && $path === '/personnel/api/employees/') {
+            return $this->response(200, ['data' => array_values($this->employees), 'next' => null]);
+        }
+        if ($method === 'POST' && $path === '/personnel/api/employees/resync_to_device/') {
+            $this->writes['resync']++;
+            return $this->response(200, ['success' => true]);
+        }
+        if ($method === 'POST' && $path === '/personnel/api/employees/') {
+            $payload = $this->payload($body);
+            $payload['id'] = $this->nextEmployeeId++;
+            $payload['fingerprint_count'] = 0;
+            $this->employees[] = $payload;
+            $this->writes['employee_post']++;
+            return $this->response(201, $payload);
+        }
+        if ($method === 'POST' && $path === '/personnel/api/departments/') {
+            $payload = $this->payload($body);
+            $payload['id'] = $this->nextDepartmentId++;
+            $this->departments[] = $payload;
+            $this->writes['department_post']++;
+            return $this->response(201, $payload);
+        }
+        if ($method === 'POST' && $path === '/personnel/api/positions/') {
+            $payload = $this->payload($body);
+            $payload['id'] = $this->nextPositionId++;
+            $this->positions[] = $payload;
+            $this->writes['position_post']++;
+            return $this->response(201, $payload);
+        }
+        if ($method === 'PUT' && preg_match('#^/personnel/api/employees/(\d+)/$#', $path, $match)) {
+            $id = (int) $match[1];
+            $payload = $this->payload($body);
+            foreach ($this->employees as &$employee) {
+                if ((int) $employee['id'] === $id) {
+                    // Provider-managed biometric data survives identity updates.
+                    $employee = array_merge($employee, $payload, ['id' => $id]);
+                    $this->writes['employee_put']++;
+                    return $this->response(200, $employee);
+                }
+            }
+            unset($employee);
+            return $this->response(404, ['detail' => 'not found']);
+        }
+        if ($method === 'DELETE' && preg_match('#^/personnel/api/employees/(\d+)/$#', $path, $match)) {
+            $id = (int) $match[1];
+            foreach ($this->employees as $index => $employee) {
+                if ((int) $employee['id'] === $id) {
+                    unset($this->employees[$index]);
+                    $this->writes['employee_delete']++;
+                    return $this->response(204, []);
+                }
+            }
+            return $this->response(404, ['detail' => 'not found']);
+        }
+        return $this->response(404, ['detail' => $method . ' ' . $path]);
+    }
+
+    /** @return array<string, mixed> */
+    private function payload(?string $body): array
+    {
+        $payload = json_decode((string) $body, true);
+        return is_array($payload) ? $payload : [];
+    }
+
+    /** @param mixed $json @return array{status:int,headers:array<string,string>,body:string,json:mixed} */
+    private function response(int $status, $json): array
+    {
+        return ['status' => $status, 'headers' => [], 'body' => json_encode($json), 'json' => $json];
+    }
+}
+
 $assertions = 0;
 $processes = [];
 $temporaryDirectory = sys_get_temp_dir() . '/schoollift_biometric_gateway_' . bin2hex(random_bytes(6));
@@ -44,6 +175,7 @@ mkdir($temporaryDirectory, 0770, true);
 
 try {
     unitTests();
+    directorySyncTests();
     integrationTests();
     echo 'Biometric gateway tests passed (' . $assertions . ' assertions).' . PHP_EOL;
 } catch (Throwable $error) {
@@ -54,6 +186,263 @@ try {
         stopServer($process);
     }
     removeTree($temporaryDirectory);
+}
+
+function directorySyncTests(): void
+{
+    global $temporaryDirectory;
+    $previewHttp = new DirectoryFakeTransport();
+    $previewHttp->departments = [];
+    $previewHttp->positions = [];
+    $previewHttp->snapshot = directorySnapshot(directoryPeople(1), [], [], false, 'preview');
+    $previewConfig = directoryConfig($temporaryDirectory);
+    $previewClock = new MutableClock(new DateTimeImmutable('2026-10-02T07:00:00Z'));
+    $previewSync = new DirectorySynchronizer(
+        new GatewayStore($temporaryDirectory . '/directory-preview.sqlite'),
+        new ZkBioClient($previewHttp, $previewConfig['provider']),
+        new SchoolLiftClient($previewHttp, $previewConfig['schoollift'], $previewConfig['gateway_id']),
+        $previewClock,
+        new JsonLogger($temporaryDirectory . '/directory-preview.log', false),
+        $previewConfig
+    );
+    $preview = $previewSync->run(true);
+    assertSame('preview', $preview['status'], 'Preview should calculate a diff even when SchoolLift groups do not exist yet.');
+    assertSame(1, $preview['summary']['created'], 'Preview should report the proposed personnel creation.');
+    assertSame(0, count($previewHttp->employees), 'Preview must never write ZKBio personnel.');
+
+    $http = new DirectoryFakeTransport();
+    $people = directoryPeople(20);
+    $http->employees[] = array_merge(directoryEmployeePayload($people[1]), [
+        'id' => 90,
+        'fingerprint_count' => 2,
+    ]);
+    $http->snapshot = directorySnapshot($people);
+    $clock = new MutableClock(new DateTimeImmutable('2026-10-02T08:00:00Z'));
+    $store = new GatewayStore($temporaryDirectory . '/directory.sqlite');
+    $config = directoryConfig($temporaryDirectory);
+    $provider = new ZkBioClient($http, $config['provider']);
+    $schoolLift = new SchoolLiftClient($http, $config['schoollift'], $config['gateway_id']);
+    $logger = new JsonLogger($temporaryDirectory . '/directory.log', false);
+    $sync = new DirectorySynchronizer($store, $provider, $schoolLift, $clock, $logger, $config);
+
+    $first = $sync->run(true);
+    assertSame('success', $first['status'], 'A complete active snapshot should synchronize successfully.');
+    assertSame(19, $first['summary']['created'], 'New SchoolLift people should be created in ZKBio.');
+    assertSame(1, $first['summary']['adopted'], 'One unique existing employee code should be adopted.');
+    assertSame(20, count($http->employees), 'Directory reconciliation should produce one ZKBio employee per person.');
+    assertSame(2, $http->employees[0]['fingerprint_count'], 'Adoption must preserve existing biometric metadata.');
+
+    $writeCount = $http->writes['employee_post'] + $http->writes['employee_put'];
+    $second = $sync->run(true);
+    assertSame(20, $second['summary']['unchanged'], 'An unchanged second snapshot should be a no-op.');
+    assertSame($writeCount, $http->writes['employee_post'] + $http->writes['employee_put'], 'No-op sync must not write personnel.');
+
+    $duplicate = directoryEmployeeByCode($http->employees, 'GIS003');
+    $duplicate['id'] = 999;
+    $http->employees[] = $duplicate;
+    $conflicted = $sync->run(true);
+    assertSame(1, $conflicted['summary']['conflicts'], 'Duplicate provider employee codes must be reported instead of guessed.');
+    $http->employees = array_values(array_filter($http->employees, static fn (array $row): bool => (int) $row['id'] !== 999));
+
+    $people[0]['department_code'] = 'SL-STU-C-2';
+    $people[0]['position_code'] = 'SL-STU-C-2-S-2';
+    $people[0]['desired_hash'] = directoryDesiredHash($people[0]);
+    $http->snapshot = directorySnapshot($people);
+    $moved = $sync->run(true);
+    assertSame(1, $moved['summary']['updated'], 'Changing a class and arm should move the ZKBio person.');
+    assertSame(1, $http->writes['department_post'], 'The new class department should be created once.');
+    assertSame(1, $http->writes['position_post'], 'The new class-arm position should be created once.');
+
+    $people[0]['first_name'] = 'Updated';
+    $people[0]['desired_hash'] = directoryDesiredHash($people[0]);
+    foreach ($http->employees as &$employee) {
+        if ($employee['emp_code'] === 'GIS001') {
+            $employee['fingerprint_count'] = 3;
+        }
+    }
+    unset($employee);
+    $http->snapshot = directorySnapshot($people);
+    $updated = $sync->run(true);
+    assertSame(1, $updated['summary']['updated'], 'A SchoolLift name change should update one ZKBio identity.');
+    $employee = directoryEmployeeByCode($http->employees, 'GIS001');
+    assertSame(3, $employee['fingerprint_count'], 'Ordinary updates must preserve biometric enrollment metadata.');
+
+    $singleDeleted = array_pop($people);
+    $http->snapshot = directorySnapshot($people, [directoryTombstone($singleDeleted, $http->employees)]);
+    $single = $sync->run(true);
+    assertSame(1, $single['summary']['deleted'], 'A single deletion below both safeguards should be immediate.');
+    assertSame(1, $http->writes['employee_delete'], 'The disabled person should be hard-deleted through the API.');
+
+    $massDeleted = array_splice($people, 8, 11);
+    $tombstones = [];
+    foreach ($massDeleted as $person) {
+        $tombstones[] = directoryTombstone($person, $http->employees);
+    }
+    $invalidSnapshot = directorySnapshot($people, $tombstones);
+    $invalidSnapshot['complete'] = false;
+    $http->snapshot = $invalidSnapshot;
+    $beforeDeletes = $http->writes['employee_delete'];
+    $invalid = $sync->run(true);
+    assertSame('failed', $invalid['status'], 'An incomplete snapshot must fail closed.');
+    assertSame($beforeDeletes, $http->writes['employee_delete'], 'An incomplete snapshot must never delete personnel.');
+
+    $http->snapshot = directorySnapshot($people, $tombstones);
+    $paused = $sync->run(true);
+    assertSame('awaiting_approval', $paused['status'], 'More than ten deletions must pause for privileged approval.');
+    assertSame($beforeDeletes, $http->writes['employee_delete'], 'A paused deletion batch must not change ZKBio.');
+
+    $http->snapshot = directorySnapshot($people, $tombstones, [], true);
+    $approved = $sync->run(true);
+    assertSame('success', $approved['status'], 'The exact approved snapshot should resume destructive reconciliation.');
+    assertSame(11, $approved['summary']['deleted'], 'The approved batch should delete every tombstone.');
+    assertSame($beforeDeletes + 11, $http->writes['employee_delete'], 'Approved hard deletes must use the employee API.');
+}
+
+/** @return array<int, array<string, mixed>> */
+function directoryPeople(int $count): array
+{
+    $people = [];
+    for ($index = 1; $index <= $count; $index++) {
+        $person = [
+            'person_key' => 'student:' . $index,
+            'subject_type' => 'student',
+            'subject_key' => $index,
+            'subject_id' => 1000 + $index,
+            'provider_person_id' => null,
+            'applied_hash' => null,
+            'emp_code' => 'GIS' . str_pad((string) $index, 3, '0', STR_PAD_LEFT),
+            'first_name' => 'Student' . $index,
+            'last_name' => 'Demo',
+            'gender' => 'M',
+            'mobile' => '08000000000',
+            'email' => 'student' . $index . '@example.test',
+            'hire_date' => '2026-09-01',
+            'department_code' => 'SL-STU-C-1',
+            'position_code' => 'SL-STU-C-1-S-1',
+        ];
+        $person['desired_hash'] = directoryDesiredHash($person);
+        $people[] = $person;
+    }
+    return $people;
+}
+
+/** @param array<string, mixed> $person */
+function directoryDesiredHash(array $person): string
+{
+    $managed = [];
+    foreach (['emp_code', 'first_name', 'last_name', 'gender', 'mobile', 'email', 'hire_date', 'department_code', 'position_code'] as $field) {
+        $managed[$field] = $person[$field];
+    }
+    return hash('sha256', json_encode($managed, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+}
+
+/** @param array<string, mixed> $person @return array<string, mixed> */
+function directoryEmployeePayload(array $person): array
+{
+    return [
+        'emp_code' => $person['emp_code'], 'first_name' => $person['first_name'],
+        'last_name' => $person['last_name'], 'gender' => 'M', 'mobile' => $person['mobile'],
+        'email' => $person['email'], 'department' => 3, 'position' => 1,
+        'area' => [1], 'enable_att' => true, 'app_status' => 1, 'hire_date' => $person['hire_date'],
+    ];
+}
+
+/** @param array<int, array<string, mixed>> $people @param array<int, array<string, mixed>> $tombstones
+ *  @param array<int, array<string, mixed>> $conflicts @return array<string, mixed>
+ */
+function directorySnapshot(
+    array $people,
+    array $tombstones = [],
+    array $conflicts = [],
+    bool $approved = false,
+    string $mode = 'active'
+): array
+{
+    $departments = [
+        ['code' => 'SL-ROOT', 'name' => 'Demo School', 'parent_code' => null, 'depth' => 0],
+        ['code' => 'SL-STUDENTS', 'name' => 'Students', 'parent_code' => 'SL-ROOT', 'depth' => 1],
+        ['code' => 'SL-STU-C-1', 'name' => 'Primary 1', 'parent_code' => 'SL-STUDENTS', 'depth' => 2],
+    ];
+    $positions = [
+        ['code' => 'SL-STU-C-1-S-1', 'name' => 'A', 'parent_code' => null],
+    ];
+    foreach ($people as $person) {
+        if (($person['department_code'] ?? null) === 'SL-STU-C-2'
+            && !in_array('SL-STU-C-2', array_column($departments, 'code'), true)) {
+            $departments[] = ['code' => 'SL-STU-C-2', 'name' => 'Primary 2', 'parent_code' => 'SL-STUDENTS', 'depth' => 2];
+        }
+        if (($person['position_code'] ?? null) === 'SL-STU-C-2-S-2'
+            && !in_array('SL-STU-C-2-S-2', array_column($positions, 'code'), true)) {
+            $positions[] = ['code' => 'SL-STU-C-2-S-2', 'name' => 'B', 'parent_code' => null];
+        }
+    }
+    $content = [
+        'departments' => $departments,
+        'positions' => $positions,
+        'people' => array_values($people),
+        'tombstones' => array_values($tombstones),
+        'conflicts' => array_values($conflicts),
+    ];
+    $hash = hash('sha256', json_encode($content, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    return array_merge([
+        'success' => true, 'complete' => true, 'mode' => $mode,
+        'snapshot_id' => substr($hash, 0, 32), 'snapshot_hash' => $hash,
+        'generated_at' => '2026-10-02T08:00:00+00:00', 'delete_approved' => $approved,
+        'interval_seconds' => 300,
+        'counts' => [
+            'people' => count($people), 'tombstones' => count($tombstones),
+            'conflicts' => count($conflicts), 'departments' => count($content['departments']),
+            'positions' => count($content['positions']),
+        ],
+    ], $content);
+}
+
+/** @param array<string, mixed> $person @param array<int, array<string, mixed>> $employees
+ *  @return array<string, mixed>
+ */
+function directoryTombstone(array $person, array $employees): array
+{
+    $employee = directoryEmployeeByCode($employees, (string) $person['emp_code']);
+    return [
+        'person_key' => $person['person_key'], 'subject_type' => $person['subject_type'],
+        'subject_key' => $person['subject_key'], 'subject_id' => $person['subject_id'],
+        'emp_code' => $person['emp_code'], 'provider_person_id' => (string) $employee['id'],
+        'reason' => 'disabled',
+    ];
+}
+
+/** @param array<int, array<string, mixed>> $employees @return array<string, mixed> */
+function directoryEmployeeByCode(array $employees, string $code): array
+{
+    foreach ($employees as $employee) {
+        if (($employee['emp_code'] ?? null) === $code) {
+            return $employee;
+        }
+    }
+    throw new RuntimeException('Missing fake employee ' . $code);
+}
+
+/** @return array<string, mixed> */
+function directoryConfig(string $temporaryDirectory): array
+{
+    return [
+        'gateway_id' => 'directory-test-gateway', 'request_timeout_seconds' => 5,
+        'provider' => [
+            'base_url' => 'http://127.0.0.1:8787', 'username' => 'test', 'password' => 'test',
+            'auth_path' => '/api-token-auth/', 'auth_body_format' => 'json', 'token_field' => 'token',
+            'authorization_scheme' => 'Token', 'employees_path' => '/personnel/api/employees/',
+            'departments_path' => '/personnel/api/departments/', 'positions_path' => '/personnel/api/positions/',
+            'areas_path' => '/personnel/api/areas/', 'resync_path' => '/personnel/api/employees/resync_to_device/',
+            'data_field' => 'data', 'page_size' => 100, 'max_pages' => 10,
+            'area_ids' => [1], 'resync_to_device' => true,
+        ],
+        'schoollift' => [
+            'base_url' => 'http://127.0.0.1:8080', 'bearer_token' => str_repeat('a', 48),
+            'directory_path' => '/api/biometric/v2/directory',
+            'directory_result_path' => '/api/biometric/v2/directory/result',
+        ],
+        'directory' => ['default_interval_seconds' => 300, 'maximum_delete_count' => 10, 'maximum_delete_percent' => 10],
+    ];
 }
 
 function unitTests(): void

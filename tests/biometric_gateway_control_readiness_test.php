@@ -62,6 +62,14 @@ $model->db->fields['biometric_notification_queue'] = array(
     'last_error', 'created_at', 'updated_at', 'delivered_at',
 );
 $model->db->fields['notification_setting'] = array('is_whatsapp', 'display_whatsapp');
-gateway_readiness_assert($model->isReady(), 'A complete schema through migration 143 must report ready.');
+gateway_readiness_assert(!$model->isReady(), 'Migration 144 directory tables are required.');
+$model->db->tables[] = 'biometric_directory_links';
+$model->db->tables[] = 'biometric_directory_runs';
+$model->db->fields['biometric_integrations'] = array(
+    'directory_sync_mode', 'directory_sync_interval_seconds',
+    'directory_delete_approval_hash', 'directory_delete_approved_at',
+    'last_directory_sync_at', 'last_directory_sync_status', 'last_directory_sync_error',
+);
+gateway_readiness_assert($model->isReady(), 'A complete schema through migration 144 must report ready.');
 
 echo "biometric gateway control readiness tests passed\n";

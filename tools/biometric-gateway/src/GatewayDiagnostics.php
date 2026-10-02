@@ -59,6 +59,49 @@ final class GatewayDiagnostics
             $checks['provider'] = ['ok' => false, 'error' => $this->bounded($error->getMessage())];
         }
 
+        $configuredAreaIds = array_values($this->config['provider']['area_ids']);
+        if ($configuredAreaIds === []) {
+            $checks['provider_directory'] = [
+                'ok' => true,
+                'read_api_checked' => false,
+                'configured_area_count' => 0,
+                'message' => 'Roster Preview is available, but Active mode requires at least one ZKBio area ID.',
+            ];
+        } else {
+            try {
+                $capabilities = $this->provider->directoryCapabilities((int) $this->config['request_timeout_seconds']);
+                $areas = $this->provider->listAreas((int) $this->config['request_timeout_seconds']);
+                $availableAreaIds = [];
+                foreach ($areas as $area) {
+                    if (isset($area['id'])) {
+                        $availableAreaIds[] = (int) $area['id'];
+                    }
+                }
+                $missingAreaIds = array_values(array_diff($configuredAreaIds, $availableAreaIds));
+                $checks['provider_directory'] = [
+                    'ok' => $missingAreaIds === [],
+                    'read_api_checked' => true,
+                    'employee_api_reachable' => array_key_exists('employees', $capabilities),
+                    'department_api_reachable' => array_key_exists('departments', $capabilities),
+                    'position_api_reachable' => array_key_exists('positions', $capabilities),
+                    'area_api_reachable' => array_key_exists('areas', $capabilities),
+                    'configured_area_count' => count($configuredAreaIds),
+                    'missing_area_count' => count($missingAreaIds),
+                ];
+                if ($missingAreaIds !== []) {
+                    $checks['provider_directory']['message'] = 'One or more configured ZKBio area IDs do not exist.';
+                }
+                $ok = $ok && $checks['provider_directory']['ok'];
+            } catch (Throwable $error) {
+                $ok = false;
+                $checks['provider_directory'] = [
+                    'ok' => false,
+                    'read_api_checked' => true,
+                    'error' => $this->bounded($error->getMessage()),
+                ];
+            }
+        }
+
         try {
             $health = $this->schoolLift->health((int) $this->config['request_timeout_seconds']);
             $reachable = $health['status'] >= 200 && $health['status'] <= 299;
@@ -70,9 +113,18 @@ final class GatewayDiagnostics
                 'operating_mode' => is_array($health['json'])
                     ? ($health['json']['operating_mode'] ?? null) : null,
                 'accepts_gateway_events' => $acceptsGateway,
+                'directory_sync_mode' => is_array($health['json'])
+                    ? ($health['json']['directory_sync_mode'] ?? null) : null,
             ];
             if ($reachable && !$acceptsGateway) {
                 $checks['schoollift']['message'] = 'Use Shadow or Live mode before starting gateway synchronization.';
+            }
+            if ($reachable && is_array($health['json'])
+                && ($health['json']['directory_sync_mode'] ?? null) === 'active'
+                && $configuredAreaIds === []) {
+                $checks['provider_directory']['ok'] = false;
+                $checks['provider_directory']['message'] = 'Active roster mode requires at least one configured ZKBio area ID.';
+                $ok = false;
             }
             $ok = $ok && $checks['schoollift']['ok'];
         } catch (Throwable $error) {
@@ -95,6 +147,7 @@ final class GatewayDiagnostics
                     ? (string) $diagnostics['checked_at'] : (new DateTimeImmutable('now'))->format(DATE_ATOM),
             ],
             'provider' => $this->safeSection($checks['provider'] ?? []),
+            'provider_directory' => $this->safeSection($checks['provider_directory'] ?? []),
             'schoollift' => $this->safeSection($checks['schoollift'] ?? []),
             'queue' => $this->safeSection($this->store->status()),
             'message' => ($diagnostics['ok'] ?? false) === true

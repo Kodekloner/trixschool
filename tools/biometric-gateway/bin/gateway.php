@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use SchoolLift\BiometricGateway\Config;
 use SchoolLift\BiometricGateway\CurlHttpTransport;
+use SchoolLift\BiometricGateway\DirectorySynchronizer;
 use SchoolLift\BiometricGateway\EventNormalizer;
 use SchoolLift\BiometricGateway\FileLock;
 use SchoolLift\BiometricGateway\GatewayControl;
@@ -76,7 +77,17 @@ try {
     }
 
     $normalizer = new EventNormalizer((string) $config['timezone'], $config['provider']['verification_method_map']);
-    $runner = new GatewayRunner($store, $provider, $schoolLift, $normalizer, $clock, $logger, $config);
+    $directorySynchronizer = new DirectorySynchronizer($store, $provider, $schoolLift, $clock, $logger, $config);
+    $runner = new GatewayRunner(
+        $store,
+        $provider,
+        $schoolLift,
+        $normalizer,
+        $clock,
+        $logger,
+        $config,
+        $directorySynchronizer
+    );
     $control = new GatewayControl($store, $schoolLift, $clock, (int) $config['request_timeout_seconds']);
     $controlSummary = ['claimed' => null, 'reported' => false, 'warnings' => []];
 
@@ -107,7 +118,7 @@ try {
         $retried = $store->retryDead($clock->now());
     }
 
-    $result = $runner->runOnce();
+    $result = $runner->runOnce($commandType === 'directory_sync');
     $store->recordSyncResult($result, $clock->now());
 
     if (is_array($claimed)) {
@@ -133,6 +144,16 @@ try {
                 'message' => $succeeded
                     ? 'Failed queue records were released and synchronization completed.'
                     : 'Failed queue records were released, but synchronization still needs attention.',
+            ];
+        } elseif ($commandType === 'directory_sync') {
+            $directory = isset($result['directory']) && is_array($result['directory'])
+                ? $result['directory'] : [];
+            $succeeded = !in_array((string) ($directory['status'] ?? ''), ['failed'], true);
+            $websiteResult = [
+                'summary' => $safeRun,
+                'message' => $succeeded
+                    ? 'Automatic roster synchronization completed.'
+                    : 'Automatic roster synchronization failed; review the roster run details.',
             ];
         } else {
             // This branch is defensive; GatewayControl never accepts another
@@ -185,6 +206,8 @@ function safeRunSummary(array $result, array $queue): array
 {
     $provider = isset($result['provider']) && is_array($result['provider']) ? $result['provider'] : [];
     $delivery = isset($result['delivery']) && is_array($result['delivery']) ? $result['delivery'] : [];
+    $directory = isset($result['directory']) && is_array($result['directory']) ? $result['directory'] : [];
+    $directoryCounts = isset($directory['summary']) && is_array($directory['summary']) ? $directory['summary'] : [];
     return [
         'ok' => ($result['ok'] ?? false) === true,
         'started_at' => isset($result['started_at']) ? (string) $result['started_at'] : null,
@@ -198,6 +221,14 @@ function safeRunSummary(array $result, array $queue): array
         'dead_this_run' => (int) ($delivery['dead'] ?? 0),
         'pending_after_run' => (int) ($queue['pending'] ?? 0),
         'dead_after_run' => (int) ($queue['dead'] ?? 0),
+        'directory_status' => isset($directory['status']) ? (string) $directory['status'] : null,
+        'directory_created' => (int) ($directoryCounts['created'] ?? 0),
+        'directory_adopted' => (int) ($directoryCounts['adopted'] ?? 0),
+        'directory_updated' => (int) ($directoryCounts['updated'] ?? 0),
+        'directory_deleted' => (int) ($directoryCounts['deleted'] ?? 0),
+        'directory_conflicts' => (int) ($directoryCounts['conflicts'] ?? 0),
+        'directory_error' => isset($directory['error']) && $directory['error'] !== null
+            ? boundedMessage((string) $directory['error']) : null,
         'error' => isset($delivery['error']) && $delivery['error'] !== null
             ? boundedMessage((string) $delivery['error'])
             : (isset($provider['error']) ? boundedMessage((string) $provider['error']) : null),

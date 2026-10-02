@@ -47,7 +47,7 @@ class Biometric_attendance_service
     public function updateSettings(array $data, $actorId = null, array $options = array())
     {
         if (!$this->isReady()) {
-            return $this->failure('Biometric migrations through 143 have not been applied.');
+            return $this->failure('Biometric migrations through 144 have not been applied.');
         }
 
         $before = $this->getSettings();
@@ -746,6 +746,264 @@ class Biometric_attendance_service
         return $result;
     }
 
+    public function listDirectoryRuns(array $filters = array(), $page = 1, $perPage = 25)
+    {
+        if (!$this->directorySyncReady()) {
+            return array('items' => array(), 'total' => 0, 'page' => 1, 'per_page' => (int) $perPage, 'pages' => 0);
+        }
+        return $this->model->paginate(
+            'biometric_directory_runs',
+            $this->filter($filters, array('id', 'integration_id', 'gateway_id', 'mode', 'status', 'requires_delete_approval')),
+            $page,
+            $perPage,
+            'id'
+        );
+    }
+
+    public function setDirectorySyncMode($integrationId, $mode, $actorId = null)
+    {
+        if (!$this->directorySyncReady()) {
+            return $this->failure('Biometric directory migration 144 has not been applied.');
+        }
+        $mode = strtolower(trim((string) $mode));
+        if (!in_array($mode, array('off', 'preview', 'active'), true)) {
+            return $this->failure('Directory mode must be off, preview or active.');
+        }
+        $before = $this->model->getIntegration((int) $integrationId);
+        if (!$before) {
+            return $this->failure('Integration not found.');
+        }
+        $this->CI->db->where('id', (int) $before['id'])->update('biometric_integrations', array(
+            'directory_sync_mode' => $mode,
+            'directory_delete_approval_hash' => null,
+            'directory_delete_approved_at' => null,
+            'updated_by' => $this->actorId($actorId),
+            'updated_at' => $this->now(),
+        ));
+        $item = $this->publicIntegration($this->model->getIntegration((int) $before['id']));
+        $this->audit('directory.mode_updated', 'integration', $before['id'],
+            array('directory_sync_mode' => isset($before['directory_sync_mode']) ? $before['directory_sync_mode'] : 'off'),
+            array('directory_sync_mode' => $mode), $actorId);
+        return array('success' => true, 'errors' => array(), 'item' => $item);
+    }
+
+    public function approveDirectoryDeletion($integrationId, $snapshotHash, $actorId = null)
+    {
+        if (!$this->directorySyncReady()) {
+            return $this->failure('Biometric directory migration 144 has not been applied.');
+        }
+        $snapshotHash = strtolower(trim((string) $snapshotHash));
+        if (!preg_match('/^[a-f0-9]{64}$/', $snapshotHash)) {
+            return $this->failure('A valid pending directory snapshot is required.');
+        }
+        $integration = $this->model->getIntegration((int) $integrationId);
+        if (!$integration || empty($integration['is_active']) || $integration['directory_sync_mode'] !== 'active') {
+            return $this->failure('Choose an active integration with Active roster synchronization.');
+        }
+        $run = $this->CI->db->where('integration_id', (int) $integrationId)
+            ->where('snapshot_hash', $snapshotHash)->where('requires_delete_approval', 1)
+            ->where('status', 'awaiting_approval')->order_by('id', 'DESC')->limit(1)
+            ->get('biometric_directory_runs')->row_array();
+        if (!$run || (int) $run['delete_count'] < 1) {
+            return $this->failure('The deletion batch is no longer awaiting approval. Run a new preview if the roster changed.');
+        }
+        $now = $this->now();
+        $this->CI->db->where('id', (int) $integrationId)->update('biometric_integrations', array(
+            'directory_delete_approval_hash' => $snapshotHash,
+            'directory_delete_approved_at' => $now,
+            'updated_by' => $this->actorId($actorId),
+            'updated_at' => $now,
+        ));
+        $this->audit('directory.deletion_approved', 'integration', $integrationId, null, array(
+            'snapshot_hash' => $snapshotHash,
+            'delete_count' => (int) $run['delete_count'],
+        ), $actorId);
+        return array('success' => true, 'errors' => array(), 'item' => array(
+            'snapshot_hash' => $snapshotHash,
+            'delete_count' => (int) $run['delete_count'],
+        ));
+    }
+
+    /**
+     * Return one complete, deterministic desired-state document. Deletions are
+     * represented only by durable links previously claimed by this integration.
+     */
+    public function directorySnapshot(array $integration)
+    {
+        if (!$this->directorySyncReady()) {
+            return $this->gatewayFailure('Biometric directory migration 144 has not been applied.', 503);
+        }
+        if (empty($integration['id']) || empty($integration['is_active'])) {
+            return $this->gatewayFailure('Invalid integration credential.', 401);
+        }
+        $integration = $this->model->getIntegration((int) $integration['id']);
+        $mode = isset($integration['directory_sync_mode']) ? (string) $integration['directory_sync_mode'] : 'off';
+        $generatedAt = gmdate(DateTime::ATOM);
+        $content = array('departments' => array(), 'positions' => array(), 'people' => array(), 'tombstones' => array(), 'conflicts' => array());
+
+        if ($mode !== 'off') {
+            $content = $this->buildDirectoryContent((int) $integration['id']);
+        }
+        $checksum = hash('sha256', json_encode($content, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        $snapshotId = substr($checksum, 0, 32);
+        $deleteApproved = !empty($integration['directory_delete_approval_hash'])
+            && hash_equals((string) $integration['directory_delete_approval_hash'], $checksum);
+
+        return array(
+            'success' => true,
+            'http_status' => 200,
+            'complete' => true,
+            'mode' => $mode,
+            'snapshot_id' => $snapshotId,
+            'snapshot_hash' => $checksum,
+            'generated_at' => $generatedAt,
+            'delete_approved' => $deleteApproved,
+            'interval_seconds' => max(60, min(3600, (int) $integration['directory_sync_interval_seconds'])),
+            'counts' => array(
+                'people' => count($content['people']),
+                'tombstones' => count($content['tombstones']),
+                'conflicts' => count($content['conflicts']),
+                'departments' => count($content['departments']),
+                'positions' => count($content['positions']),
+            ),
+            'departments' => $content['departments'],
+            'positions' => $content['positions'],
+            'people' => $content['people'],
+            'tombstones' => $content['tombstones'],
+            'conflicts' => $content['conflicts'],
+        );
+    }
+
+    /** Records a bounded, idempotent directory result and refreshes mappings. */
+    public function recordDirectoryResult(array $integration, array $payload)
+    {
+        if (!$this->directorySyncReady()) {
+            return $this->gatewayFailure('Biometric directory migration 144 has not been applied.', 503);
+        }
+        $allowed = array('gateway_id', 'snapshot_id', 'snapshot_hash', 'mode', 'status', 'started_at', 'completed_at', 'summary', 'items', 'error_summary');
+        if (array_diff(array_keys($payload), $allowed)) {
+            return $this->gatewayFailure('Directory result contains unsupported fields.', 422);
+        }
+        $gatewayId = trim(isset($payload['gateway_id']) ? (string) $payload['gateway_id'] : '');
+        $snapshotId = strtolower(trim(isset($payload['snapshot_id']) ? (string) $payload['snapshot_id'] : ''));
+        $snapshotHash = strtolower(trim(isset($payload['snapshot_hash']) ? (string) $payload['snapshot_hash'] : ''));
+        $mode = strtolower(trim(isset($payload['mode']) ? (string) $payload['mode'] : ''));
+        $status = strtolower(trim(isset($payload['status']) ? (string) $payload['status'] : ''));
+        $summary = isset($payload['summary']) && is_array($payload['summary']) ? $payload['summary'] : null;
+        $items = isset($payload['items']) && is_array($payload['items']) ? $payload['items'] : null;
+        if (!$this->validGatewayId($gatewayId) || !preg_match('/^[a-f0-9]{32}$/', $snapshotId)
+            || !preg_match('/^[a-f0-9]{64}$/', $snapshotHash)
+            || !in_array($mode, array('off', 'preview', 'active'), true)
+            || !in_array($status, array('off', 'preview', 'success', 'partial', 'failed', 'awaiting_approval'), true)
+            || $summary === null || $items === null || count($items) > 10000) {
+            return $this->gatewayFailure('Directory result does not match the required schema.', 422);
+        }
+        $countFields = array('desired', 'created', 'adopted', 'updated', 'deleted', 'unchanged', 'conflicts', 'failed', 'delete_candidates');
+        foreach ($countFields as $field) {
+            if (!array_key_exists($field, $summary) || !is_int($summary[$field])
+                || $summary[$field] < 0 || $summary[$field] > 1000000) {
+                return $this->gatewayFailure('Directory result summary contains invalid counts.', 422);
+            }
+        }
+        if (!isset($summary['requires_delete_approval']) || !is_bool($summary['requires_delete_approval'])) {
+            return $this->gatewayFailure('Directory result approval state is invalid.', 422);
+        }
+        $startedAt = $this->atomDateToDatabase(isset($payload['started_at']) ? $payload['started_at'] : null);
+        $completedAt = $this->atomDateToDatabase(isset($payload['completed_at']) ? $payload['completed_at'] : null);
+        if ($startedAt === null || $completedAt === null) {
+            return $this->gatewayFailure('Directory result timestamps must be UTC ISO-8601 values.', 422);
+        }
+        $errorSummary = $this->nullableString(isset($payload['error_summary']) ? $this->redactGatewayText($payload['error_summary']) : null, 500);
+        $integrationId = (int) $integration['id'];
+        $currentIntegration = $this->model->getIntegration($integrationId);
+        if (!$currentIntegration || empty($currentIntegration['is_active'])) {
+            return $this->gatewayFailure('The biometric integration is no longer active.', 401);
+        }
+        $currentMode = isset($currentIntegration['directory_sync_mode'])
+            ? (string) $currentIntegration['directory_sync_mode'] : 'off';
+        if ($mode !== $currentMode) {
+            return $this->gatewayFailure('Roster mode changed after this snapshot was downloaded; run synchronization again.', 409);
+        }
+        $integration = $currentIntegration;
+        $now = $this->now();
+
+        $safeItems = array();
+        foreach ($items as $item) {
+            $safe = $this->sanitizeDirectoryResultItem($item);
+            if ($safe === null) {
+                return $this->gatewayFailure('A directory result item is invalid.', 422);
+            }
+            $safeItems[] = $safe;
+        }
+
+        $this->CI->db->trans_begin();
+        if ($mode === 'active') {
+            foreach ($safeItems as $item) {
+                $this->applyDirectoryResultItem($integrationId, $snapshotHash, $item, $now);
+            }
+        }
+        $runRow = array(
+            'integration_id' => $integrationId,
+            'gateway_id' => $gatewayId,
+            'snapshot_id' => $snapshotId,
+            'snapshot_hash' => $snapshotHash,
+            'mode' => $mode,
+            'status' => $status,
+            'desired_count' => $summary['desired'],
+            'created_count' => $summary['created'],
+            'adopted_count' => $summary['adopted'],
+            'updated_count' => $summary['updated'],
+            'deleted_count' => $summary['deleted'],
+            'unchanged_count' => $summary['unchanged'],
+            'conflict_count' => $summary['conflicts'],
+            'failed_count' => $summary['failed'],
+            'delete_count' => $summary['delete_candidates'],
+            'requires_delete_approval' => $summary['requires_delete_approval'] ? 1 : 0,
+            'error_summary' => $errorSummary,
+            'started_at' => $startedAt,
+            'completed_at' => $completedAt,
+            'created_at' => $now,
+        );
+        $existingRun = $this->CI->db->where('integration_id', $integrationId)
+            ->where('gateway_id', $gatewayId)->where('snapshot_id', $snapshotId)
+            ->get('biometric_directory_runs')->row_array();
+        if ($existingRun) {
+            unset($runRow['created_at']);
+            $this->CI->db->where('id', (int) $existingRun['id'])->update('biometric_directory_runs', $runRow);
+            $runId = (int) $existingRun['id'];
+        } else {
+            $this->CI->db->insert('biometric_directory_runs', $runRow);
+            $runId = (int) $this->CI->db->insert_id();
+        }
+        $integrationUpdate = array(
+            'last_directory_sync_at' => $completedAt,
+            'last_directory_sync_status' => $status,
+            'last_directory_sync_error' => $errorSummary,
+            'updated_at' => $now,
+        );
+        if ($mode === 'active' && in_array($status, array('success', 'partial'), true)
+            && !empty($integration['directory_delete_approval_hash'])
+            && hash_equals((string) $integration['directory_delete_approval_hash'], $snapshotHash)) {
+            $integrationUpdate['directory_delete_approval_hash'] = null;
+            $integrationUpdate['directory_delete_approved_at'] = null;
+        }
+        $this->CI->db->where('id', $integrationId)->update('biometric_integrations', $integrationUpdate);
+        $this->audit('directory.result_recorded', 'directory_run', $runId, null, array(
+            'integration_id' => $integrationId,
+            'gateway_id' => $gatewayId,
+            'snapshot_hash' => $snapshotHash,
+            'mode' => $mode,
+            'status' => $status,
+            'summary' => $summary,
+        ));
+        if ($this->CI->db->trans_status() === false) {
+            $this->CI->db->trans_rollback();
+            return $this->gatewayFailure('The directory result could not be saved.', 500);
+        }
+        $this->CI->db->trans_commit();
+        return array('success' => true, 'http_status' => 200, 'run_id' => $runId);
+    }
+
     public function createIntegrationToken(array $data, $actorId = null)
     {
         $name = trim(isset($data['name']) ? $data['name'] : 'ZKBio Time Gateway');
@@ -842,8 +1100,16 @@ class Biometric_attendance_service
                 ->count_all_results('biometric_gateway_agents'),
             'commands' => (int) $this->CI->db->where('integration_id', (int) $before['id'])
                 ->count_all_results('biometric_gateway_commands'),
+            'directory_links' => $this->directorySyncReady() ? (int) $this->CI->db
+                ->where('integration_id', (int) $before['id'])->count_all_results('biometric_directory_links') : 0,
+            'directory_runs' => $this->directorySyncReady() ? (int) $this->CI->db
+                ->where('integration_id', (int) $before['id'])->count_all_results('biometric_directory_runs') : 0,
         );
         $this->CI->db->trans_start();
+        if ($this->directorySyncReady()) {
+            $this->CI->db->where('integration_id', (int) $before['id'])->delete('biometric_directory_runs');
+            $this->CI->db->where('integration_id', (int) $before['id'])->delete('biometric_directory_links');
+        }
         $this->CI->db->where('integration_id', (int) $before['id'])->delete('biometric_gateway_commands');
         $this->CI->db->where('integration_id', (int) $before['id'])->delete('biometric_gateway_agents');
         $this->CI->db->where('integration_id', (int) $before['id'])->delete('biometric_gateway_cursors');
@@ -1096,7 +1362,7 @@ class Biometric_attendance_service
             return $this->failure('Gateway control migration 132 has not been applied.');
         }
         $type = strtolower(trim((string) $type));
-        if (!in_array($type, array('connection_test', 'sync_now', 'retry_failed'), true)) {
+        if (!in_array($type, array('connection_test', 'sync_now', 'directory_sync', 'retry_failed'), true)) {
             return $this->failure('Unsupported gateway command.');
         }
         $integration = $this->model->getIntegration((int) $integrationId);
@@ -3324,6 +3590,343 @@ class Biometric_attendance_service
         return $row;
     }
 
+    protected function directorySyncReady()
+    {
+        return $this->CI->db->table_exists('biometric_directory_links')
+            && $this->CI->db->table_exists('biometric_directory_runs')
+            && $this->CI->db->field_exists('directory_sync_mode', 'biometric_integrations');
+    }
+
+    protected function buildDirectoryContent($integrationId)
+    {
+        $school = $this->CI->db->select('session_id, name')->limit(1)->get('sch_settings')->row_array();
+        $sessionId = $school ? (int) $school['session_id'] : 0;
+        $schoolName = $school && trim((string) $school['name']) !== '' ? trim((string) $school['name']) : 'SchoolLift School';
+
+        $students = $this->CI->db->select(
+            "student_session.id AS subject_id, students.id AS subject_key, students.admission_no AS emp_code, "
+            . "students.firstname AS first_name, CONCAT_WS(' ', students.middlename, students.lastname) AS last_name, "
+            . "students.gender, students.mobileno AS mobile, students.email, students.admission_date AS hire_date, "
+            . "classes.id AS class_id, classes.class AS class_name, sections.id AS section_id, sections.section AS section_name",
+            false
+        )->from('student_session')
+            ->join('students', 'students.id = student_session.student_id')
+            ->join('classes', 'classes.id = student_session.class_id', 'left')
+            ->join('sections', 'sections.id = student_session.section_id', 'left')
+            ->where('student_session.session_id', $sessionId)
+            ->where('students.is_active', 'yes')
+            ->order_by('students.id', 'ASC')->get()->result_array();
+
+        $staff = $this->CI->db->select(
+            "staff.id AS subject_id, staff.id AS subject_key, staff.employee_id AS emp_code, "
+            . "staff.name AS first_name, staff.surname AS last_name, staff.gender, staff.contact_no AS mobile, "
+            . "staff.email, staff.date_of_joining AS hire_date, department.id AS department_id, "
+            . "department.department_name, staff_designation.id AS designation_id, staff_designation.designation AS designation_name",
+            false
+        )->from('staff')
+            ->join('department', 'department.id = staff.department', 'left')
+            ->join('staff_designation', 'staff_designation.id = staff.designation', 'left')
+            ->where('staff.is_active', 1)
+            ->where("NOT EXISTS (SELECT 1 FROM staff_roles directory_staff_role INNER JOIN roles directory_role ON directory_role.id = directory_staff_role.role_id WHERE directory_staff_role.staff_id = staff.id AND (directory_role.is_superadmin = 1 OR LOWER(TRIM(directory_role.name)) = 'super admin'))", null, false)
+            ->order_by('staff.id', 'ASC')->get()->result_array();
+
+        $rawPeople = array();
+        foreach ($students as $row) {
+            $rawPeople[] = array_merge($row, array('subject_type' => 'student'));
+        }
+        foreach ($staff as $row) {
+            $rawPeople[] = array_merge($row, array('subject_type' => 'staff'));
+        }
+        $codeCounts = array();
+        foreach ($rawPeople as $row) {
+            $code = $this->normalizeDirectoryCode(isset($row['emp_code']) ? $row['emp_code'] : '');
+            if ($code !== '') {
+                $codeCounts[$code] = isset($codeCounts[$code]) ? $codeCounts[$code] + 1 : 1;
+            }
+        }
+
+        $links = $this->CI->db->where('integration_id', (int) $integrationId)
+            ->get('biometric_directory_links')->result_array();
+        $linksByKey = array();
+        foreach ($links as $link) {
+            $linksByKey[$link['subject_type'] . ':' . (int) $link['subject_key']] = $link;
+        }
+
+        $departments = array(
+            'SL-ROOT' => array('code' => 'SL-ROOT', 'name' => $schoolName, 'parent_code' => null, 'depth' => 0),
+            'SL-STUDENTS' => array('code' => 'SL-STUDENTS', 'name' => 'Students', 'parent_code' => 'SL-ROOT', 'depth' => 1),
+            'SL-STAFF' => array('code' => 'SL-STAFF', 'name' => 'Staff', 'parent_code' => 'SL-ROOT', 'depth' => 1),
+        );
+        $positions = array();
+        $people = array();
+        $conflicts = array();
+        $activeKeys = array();
+
+        foreach ($rawPeople as $row) {
+            $type = (string) $row['subject_type'];
+            $subjectKey = (int) $row['subject_key'];
+            $personKey = $type . ':' . $subjectKey;
+            $activeKeys[$personKey] = true;
+            $code = $this->normalizeDirectoryCode(isset($row['emp_code']) ? $row['emp_code'] : '');
+            $name = trim(trim((string) $row['first_name']) . ' ' . trim((string) $row['last_name']));
+            $reason = null;
+            if ($code === '') {
+                $reason = $type === 'student' ? 'The student has no Admission No.' : 'The staff member has no Employee ID.';
+            } elseif (strlen($code) > 100 || preg_match('/[\x00-\x1F\x7F]/', $code)) {
+                $reason = 'The Admission No. or Employee ID contains unsupported characters or exceeds 100 characters.';
+            } elseif (isset($codeCounts[$code]) && $codeCounts[$code] > 1) {
+                $reason = 'The code is duplicated across the active student and staff roster.';
+            }
+            if ($reason !== null) {
+                $conflicts[] = array(
+                    'person_key' => $personKey,
+                    'subject_type' => $type,
+                    'subject_key' => $subjectKey,
+                    'subject_id' => (int) $row['subject_id'],
+                    'emp_code' => $code,
+                    'name' => $name,
+                    'reason' => $reason,
+                );
+                continue;
+            }
+
+            if ($type === 'student') {
+                $classId = max(0, (int) $row['class_id']);
+                $sectionId = max(0, (int) $row['section_id']);
+                $departmentCode = 'SL-STU-C-' . $classId;
+                $positionCode = 'SL-STU-C-' . $classId . '-S-' . $sectionId;
+                $departments[$departmentCode] = array(
+                    'code' => $departmentCode,
+                    'name' => trim((string) $row['class_name']) !== '' ? trim((string) $row['class_name']) : 'Unassigned Class',
+                    'parent_code' => 'SL-STUDENTS',
+                    'depth' => 2,
+                );
+                $positions[$positionCode] = array(
+                    'code' => $positionCode,
+                    'name' => trim((string) $row['section_name']) !== '' ? trim((string) $row['section_name']) : 'Unassigned Arm',
+                    'parent_code' => null,
+                );
+            } else {
+                $departmentId = max(0, (int) $row['department_id']);
+                $designationId = max(0, (int) $row['designation_id']);
+                $departmentCode = 'SL-STF-D-' . $departmentId;
+                $positionCode = 'SL-STF-P-' . $designationId;
+                $departments[$departmentCode] = array(
+                    'code' => $departmentCode,
+                    'name' => trim((string) $row['department_name']) !== '' ? trim((string) $row['department_name']) : 'Staff',
+                    'parent_code' => 'SL-STAFF',
+                    'depth' => 2,
+                );
+                $positions[$positionCode] = array(
+                    'code' => $positionCode,
+                    'name' => trim((string) $row['designation_name']) !== '' ? trim((string) $row['designation_name']) : 'Staff Member',
+                    'parent_code' => null,
+                );
+            }
+            $managed = array(
+                'emp_code' => $code,
+                'first_name' => trim((string) $row['first_name']),
+                'last_name' => trim((string) $row['last_name']),
+                'gender' => trim((string) $row['gender']),
+                'mobile' => trim((string) $row['mobile']),
+                'email' => trim((string) $row['email']),
+                'hire_date' => $this->validDate(isset($row['hire_date']) ? $row['hire_date'] : '') ? $row['hire_date'] : null,
+                'department_code' => $departmentCode,
+                'position_code' => $positionCode,
+            );
+            $link = isset($linksByKey[$personKey]) ? $linksByKey[$personKey] : null;
+            $people[] = array_merge(array(
+                'person_key' => $personKey,
+                'subject_type' => $type,
+                'subject_key' => $subjectKey,
+                'subject_id' => (int) $row['subject_id'],
+                'provider_person_id' => $link && $link['provider_person_id'] !== null ? (string) $link['provider_person_id'] : null,
+                'applied_hash' => $link && $link['applied_hash'] !== null ? (string) $link['applied_hash'] : null,
+            ), $managed, array(
+                'desired_hash' => hash('sha256', json_encode($managed, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
+            ));
+        }
+
+        $tombstones = array();
+        foreach ($links as $link) {
+            $personKey = $link['subject_type'] . ':' . (int) $link['subject_key'];
+            if (isset($activeKeys[$personKey]) || $link['sync_status'] === 'deleted') {
+                continue;
+            }
+            $tombstones[] = array(
+                'person_key' => $personKey,
+                'subject_type' => (string) $link['subject_type'],
+                'subject_key' => (int) $link['subject_key'],
+                'subject_id' => $link['subject_id'] === null ? null : (int) $link['subject_id'],
+                'emp_code' => (string) $link['external_person_code'],
+                'provider_person_id' => $link['provider_person_id'] === null ? null : (string) $link['provider_person_id'],
+                'reason' => 'The previously synchronized SchoolLift person is disabled, deleted, no longer in the current session, or now excluded.',
+            );
+        }
+
+        $departments = array_values($departments);
+        $positions = array_values($positions);
+        usort($departments, static function ($left, $right) {
+            $depth = (int) $left['depth'] <=> (int) $right['depth'];
+            return $depth !== 0 ? $depth : strcmp($left['code'], $right['code']);
+        });
+        usort($positions, static function ($left, $right) { return strcmp($left['code'], $right['code']); });
+        usort($people, static function ($left, $right) { return strcmp($left['emp_code'], $right['emp_code']); });
+        usort($tombstones, static function ($left, $right) { return strcmp($left['person_key'], $right['person_key']); });
+        usort($conflicts, static function ($left, $right) { return strcmp($left['person_key'], $right['person_key']); });
+        return array(
+            'departments' => $departments,
+            'positions' => $positions,
+            'people' => $people,
+            'tombstones' => $tombstones,
+            'conflicts' => $conflicts,
+        );
+    }
+
+    protected function sanitizeDirectoryResultItem($item)
+    {
+        if (!is_array($item)) {
+            return null;
+        }
+        $allowed = array('person_key', 'subject_type', 'subject_key', 'subject_id', 'emp_code', 'provider_person_id', 'desired_hash', 'applied_hash', 'status', 'error');
+        if (array_diff(array_keys($item), $allowed)) {
+            return null;
+        }
+        $type = strtolower(trim(isset($item['subject_type']) ? (string) $item['subject_type'] : ''));
+        $subjectKey = isset($item['subject_key']) ? (int) $item['subject_key'] : 0;
+        $personKey = trim(isset($item['person_key']) ? (string) $item['person_key'] : '');
+        $status = strtolower(trim(isset($item['status']) ? (string) $item['status'] : ''));
+        $code = $this->normalizeDirectoryCode(isset($item['emp_code']) ? $item['emp_code'] : '');
+        if (!in_array($type, array('student', 'staff'), true) || $subjectKey < 1
+            || $personKey !== $type . ':' . $subjectKey || strlen($code) > 100
+            || !in_array($status, array('created', 'adopted', 'updated', 'unchanged', 'deleted', 'conflict', 'failed', 'pending_approval'), true)) {
+            return null;
+        }
+        if ($code === '' && !in_array($status, array('conflict', 'failed'), true)) {
+            return null;
+        }
+        $subjectId = array_key_exists('subject_id', $item) && $item['subject_id'] !== null ? (int) $item['subject_id'] : null;
+        $providerId = array_key_exists('provider_person_id', $item) && $item['provider_person_id'] !== null
+            ? trim((string) $item['provider_person_id']) : null;
+        foreach (array('desired_hash', 'applied_hash') as $hashField) {
+            if (isset($item[$hashField]) && $item[$hashField] !== null
+                && !preg_match('/^[a-f0-9]{64}$/', (string) $item[$hashField])) {
+                return null;
+            }
+        }
+        if (($providerId !== null && ($providerId === '' || strlen($providerId) > 64 || preg_match('/[\x00-\x1F\x7F]/', $providerId)))
+            || ($subjectId !== null && $subjectId < 1)) {
+            return null;
+        }
+        return array(
+            'person_key' => $personKey,
+            'subject_type' => $type,
+            'subject_key' => $subjectKey,
+            'subject_id' => $subjectId,
+            'emp_code' => $code,
+            'provider_person_id' => $providerId,
+            'desired_hash' => isset($item['desired_hash']) ? $item['desired_hash'] : null,
+            'applied_hash' => isset($item['applied_hash']) ? $item['applied_hash'] : null,
+            'status' => $status,
+            'error' => $this->nullableString(isset($item['error']) ? $this->redactGatewayText($item['error']) : null, 500),
+        );
+    }
+
+    protected function applyDirectoryResultItem($integrationId, $snapshotHash, array $item, $now)
+    {
+        $existing = $this->model->getDirectoryLink($integrationId, $item['subject_type'], $item['subject_key']);
+        $success = in_array($item['status'], array('created', 'adopted', 'updated', 'unchanged'), true);
+        if (!$success && !$existing && $item['status'] !== 'deleted') {
+            return;
+        }
+        if ($success) {
+            $codeOwner = $this->CI->db->where('integration_id', (int) $integrationId)
+                ->where('external_person_code', $item['emp_code'])
+                ->get('biometric_directory_links')->row_array();
+            if ($codeOwner && (!$existing || (int) $codeOwner['id'] !== (int) $existing['id'])) {
+                return;
+            }
+        }
+        if ($item['status'] === 'deleted') {
+            if ($existing) {
+                $this->CI->db->where('id', (int) $existing['id'])->update('biometric_directory_links', array(
+                    'sync_status' => 'deleted',
+                    'provider_person_id' => null,
+                    'last_error' => null,
+                    'last_seen_snapshot' => $snapshotHash,
+                    'last_synced_at' => $now,
+                    'deleted_at' => $now,
+                    'updated_at' => $now,
+                ));
+            }
+            $this->CI->db->where('external_person_code', $item['emp_code'])
+                ->update('biometric_identity_mappings', array('is_active' => 0, 'updated_at' => $now));
+            return;
+        }
+        $row = array(
+            'integration_id' => (int) $integrationId,
+            'subject_type' => $item['subject_type'],
+            'subject_key' => (int) $item['subject_key'],
+            'subject_id' => $item['subject_id'],
+            'external_person_code' => $item['emp_code'],
+            'provider_person_id' => $item['provider_person_id'],
+            'desired_hash' => $item['desired_hash'],
+            'applied_hash' => $item['applied_hash'],
+            'sync_status' => $success ? 'synced' : ($item['status'] === 'pending_approval' ? 'pending_delete' : $item['status']),
+            'last_error' => $item['error'],
+            'last_seen_snapshot' => $snapshotHash,
+            'last_synced_at' => $success ? $now : ($existing ? $existing['last_synced_at'] : null),
+            'deleted_at' => null,
+            'updated_at' => $now,
+        );
+        if ($existing) {
+            $this->CI->db->where('id', (int) $existing['id'])->update('biometric_directory_links', $row);
+        } else {
+            $row['created_at'] = $now;
+            $this->CI->db->insert('biometric_directory_links', $row);
+        }
+        if ($success && $item['subject_id'] !== null) {
+            $this->upsertDirectoryIdentityMapping($item, $now);
+        }
+    }
+
+    protected function upsertDirectoryIdentityMapping(array $item, $now)
+    {
+        $byCode = $this->CI->db->where('external_person_code', $item['emp_code'])
+            ->get('biometric_identity_mappings')->row_array();
+        $bySubject = $this->CI->db->where('subject_type', $item['subject_type'])
+            ->where('subject_id', (int) $item['subject_id'])
+            ->get('biometric_identity_mappings')->row_array();
+        if ($byCode && $bySubject && (int) $byCode['id'] !== (int) $bySubject['id']) {
+            return false;
+        }
+        $row = array(
+            'subject_type' => $item['subject_type'],
+            'subject_id' => (int) $item['subject_id'],
+            'external_person_code' => $item['emp_code'],
+            'valid_from' => null,
+            'valid_until' => null,
+            'is_active' => 1,
+            'updated_by' => null,
+            'updated_at' => $now,
+        );
+        $existing = $byCode ? $byCode : $bySubject;
+        if ($existing) {
+            $this->CI->db->where('id', (int) $existing['id'])->update('biometric_identity_mappings', $row);
+            return true;
+        }
+        $row['live_pilot'] = 0;
+        $row['created_by'] = null;
+        $row['created_at'] = $now;
+        $this->CI->db->insert('biometric_identity_mappings', $row);
+        return true;
+    }
+
+    protected function normalizeDirectoryCode($code)
+    {
+        return strtoupper(trim((string) $code));
+    }
+
     protected function audit($action, $entityType, $entityId, $before, $after, $actorId = null)
     {
         if (!$this->CI->db->table_exists('biometric_audit_logs')) {
@@ -3472,7 +4075,7 @@ class Biometric_attendance_service
     protected function sanitizeGatewayResult($result)
     {
         if (!is_array($result) || array_diff(array_keys($result),
-            array('summary', 'provider', 'schoollift', 'queue', 'retried', 'message'))) {
+            array('summary', 'provider', 'provider_directory', 'schoollift', 'queue', 'retried', 'message'))) {
             return null;
         }
         $safe = $this->boundedGatewayValue($result, 0);
@@ -3545,7 +4148,7 @@ class Biometric_attendance_service
             $this->CI->db->trans_commit();
             return null;
         }
-        if (!in_array($row['command_type'], array('connection_test', 'sync_now', 'retry_failed'), true)) {
+        if (!in_array($row['command_type'], array('connection_test', 'sync_now', 'directory_sync', 'retry_failed'), true)) {
             $this->CI->db->where('id', (int) $row['id'])->update('biometric_gateway_commands', array(
                 'status' => 'expired', 'updated_at' => $now,
             ));

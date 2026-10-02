@@ -85,7 +85,7 @@ class Cron extends CI_Controller
         }
         $this->load->library('biometric_attendance_service');
         if (!$this->biometric_attendance_service->isReady()) {
-            $result = array('ready' => false, 'message' => 'Biometric migrations through 143 are not installed.');
+            $result = array('ready' => false, 'message' => 'Biometric migrations through 144 are not installed.');
         } else {
             $settings = $this->biometric_attendance_service->getSettings();
             $lastRetentionDate = !empty($settings['last_retention_run_at'])

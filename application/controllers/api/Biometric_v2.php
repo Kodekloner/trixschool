@@ -61,12 +61,12 @@ class Biometric_v2 extends CI_Controller
             return $this->respond(array('status' => 'error', 'message' => 'Invalid bearer token.'), 401, array('WWW-Authenticate' => 'Bearer'));
         }
         if (!$this->biometric_attendance_service->isReady()) {
-            return $this->respond(array('status' => 'error', 'message' => 'Biometric migrations through 143 have not been applied.'), 503);
+            return $this->respond(array('status' => 'error', 'message' => 'Biometric migrations through 144 have not been applied.'), 503);
         }
         $settings = $this->biometric_attendance_service->getSettings();
         return $this->respond(array(
             'status' => 'ok',
-            'api_version' => '2.0',
+            'api_version' => '2.1',
             'operating_mode' => $settings['mode'],
             'accepts_gateway_events' => in_array($settings['mode'], array('shadow', 'live'), true),
             'server_time_utc' => gmdate(DateTime::ATOM),
@@ -74,8 +74,53 @@ class Biometric_v2 extends CI_Controller
                 'id' => (int) $integration['id'],
                 'provider' => $integration['provider'],
                 'last_cursor' => $integration['last_cursor'],
+                'directory_sync_mode' => isset($integration['directory_sync_mode']) ? $integration['directory_sync_mode'] : 'off',
             ),
         ), 200);
+    }
+
+    public function directory()
+    {
+        if ($this->input->method(true) !== 'GET') {
+            return $this->respond(array('success' => false, 'message' => 'Method not allowed.'), 405, array('Allow' => 'GET'));
+        }
+        if (!$this->secureTransport()) {
+            return $this->respond(array('success' => false, 'message' => 'HTTPS is required.'), 426);
+        }
+        $integration = $this->authenticate();
+        if (!$integration) {
+            return $this->respond(array('success' => false, 'message' => 'Invalid bearer token.'), 401, array('WWW-Authenticate' => 'Bearer'));
+        }
+        $result = $this->biometric_attendance_service->directorySnapshot($integration);
+        return $this->respond($result, isset($result['http_status']) ? (int) $result['http_status'] : 200);
+    }
+
+    public function directory_result()
+    {
+        if ($this->input->method(true) !== 'POST') {
+            return $this->respond(array('success' => false, 'message' => 'Method not allowed.'), 405, array('Allow' => 'POST'));
+        }
+        if (!$this->secureTransport()) {
+            return $this->respond(array('success' => false, 'message' => 'HTTPS is required.'), 426);
+        }
+        $integration = $this->authenticate();
+        if (!$integration) {
+            return $this->respond(array('success' => false, 'message' => 'Invalid bearer token.'), 401, array('WWW-Authenticate' => 'Bearer'));
+        }
+        $contentType = strtolower(trim((string) $this->input->get_request_header('Content-Type', true)));
+        if ($contentType === '' || strpos($contentType, 'application/json') !== 0) {
+            return $this->respond(array('success' => false, 'message' => 'Content-Type must be application/json.'), 415);
+        }
+        $raw = file_get_contents('php://input');
+        if (!is_string($raw) || strlen($raw) > 5242880) {
+            return $this->respond(array('success' => false, 'message' => 'Payload is too large.'), 413);
+        }
+        $payload = json_decode($raw, true);
+        if (!is_array($payload) || json_last_error() !== JSON_ERROR_NONE) {
+            return $this->respond(array('success' => false, 'message' => 'Request body must be valid JSON.'), 400);
+        }
+        $result = $this->biometric_attendance_service->recordDirectoryResult($integration, $payload);
+        return $this->respond($result, isset($result['http_status']) ? (int) $result['http_status'] : 200);
     }
 
     public function gateway_poll()

@@ -25,7 +25,9 @@ $required = array(
     'notificationQueueSummary', 'listNotificationQueue', 'processNotificationQueue',
     'retryFailedNotifications', 'recentEventsAfter',
     'pollGateway', 'completeGatewayCommand', 'getGatewayStatus',
-    'listGatewayAgents', 'queueGatewayCommand', 'listGatewayCommands', 'deleteGatewayCommand'
+    'listGatewayAgents', 'queueGatewayCommand', 'listGatewayCommands', 'deleteGatewayCommand',
+    'listDirectoryRuns', 'setDirectorySyncMode', 'approveDirectoryDeletion',
+    'directorySnapshot', 'recordDirectoryResult'
 );
 foreach ($required as $method) {
     biometric_contract_assert($service->hasMethod($method) && $service->getMethod($method)->isPublic(), 'Missing public service method: ' . $method);
@@ -68,21 +70,21 @@ foreach (array('biometric_notification_queue', 'live_pilot_enabled', 'live_pilot
     biometric_contract_assert(strpos($hardeningMigration, $item) !== false, 'Migration 140 is missing: ' . $item);
     biometric_contract_assert(strpos($consolidatedSql, $item) !== false, 'Consolidated SQL is missing migration 140 item: ' . $item);
 }
-foreach (array('connection_test', 'sync_now', 'retry_failed') as $command) {
+foreach (array('connection_test', 'sync_now', 'directory_sync', 'retry_failed') as $command) {
     biometric_contract_assert(strpos($service->getFileName() ? file_get_contents($service->getFileName()) : '', "'{$command}'") !== false, 'Gateway command allowlist is missing: ' . $command);
 }
 $migrationConfig = file_get_contents(__DIR__ . '/../application/config/migration.php');
 biometric_contract_assert(
     preg_match('/migration_version[\'\"]?\]\s*=\s*(\d+)\s*;/', $migrationConfig, $migrationMatch) === 1
-        && (int) $migrationMatch[1] >= 143,
-    'Migration target must include biometric notification migration 143 or later.'
+        && (int) $migrationMatch[1] >= 144,
+    'Migration target must include biometric directory migration 144 or later.'
 );
 
 $controller = file_get_contents(__DIR__ . '/../application/controllers/api/Biometric_v2.php');
 biometric_contract_assert(strpos($controller, "'results' => array()") !== false, 'API errors must retain the results[] contract.');
 biometric_contract_assert(strpos($controller, 'authenticateToken') !== false, 'V2 API must authenticate bearer tokens.');
 biometric_contract_assert(strpos($controller, 'gatewayJsonRequest') !== false, 'Gateway control endpoints must share authenticated bounded JSON handling.');
-biometric_contract_assert(strpos($controller, 'migrations through 143') !== false, 'API readiness errors must identify the current biometric migration level.');
+biometric_contract_assert(strpos($controller, 'migrations through 144') !== false, 'API readiness errors must identify the current biometric migration level.');
 
 $modelSource = file_get_contents(__DIR__ . '/../application/models/Biometric_attendance_model.php');
 biometric_contract_assert(strpos($modelSource, "'biometric_gateway_agents'") !== false, 'Biometric readiness must require the gateway agent table.');

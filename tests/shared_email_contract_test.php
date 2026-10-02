@@ -206,7 +206,7 @@ shared_email_assert(
 );
 
 foreach (array(
-    '126 through 143',
+    '126 through 144',
     '141_add_shared_email_inbox.php',
     '142_enable_shared_email_deletion.php',
     'CREATE TABLE IF NOT EXISTS `email_conversations`',

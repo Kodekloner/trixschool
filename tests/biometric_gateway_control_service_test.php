@@ -137,6 +137,14 @@ $newClaim = $service->claimForTest(1, 'school-main-gateway-01', '2026-08-13 09:4
 gateway_service_assert($newClaim['command_uuid'] === str_repeat('b', 32), 'The oldest eligible queued command must be claimable.');
 gateway_service_assert($service->fakeDb->commits === 1 && $service->fakeDb->rollbacks === 0, 'A successful claim must commit atomically.');
 
+$directoryQueued = $queued;
+$directoryQueued['command_uuid'] = str_repeat('c', 32);
+$directoryQueued['command_type'] = 'directory_sync';
+$service = new GatewayControlServiceUnderTest();
+$service->fakeDb->queuedRow = $directoryQueued;
+$directoryClaim = $service->claimForTest(1, 'school-main-gateway-01', '2026-08-13 09:40:00');
+gateway_service_assert($directoryClaim['type'] === 'directory_sync', 'A fixed roster synchronization command must survive the server claim allowlist.');
+
 $service = new GatewayControlServiceUnderTest();
 $service->fakeDb->queuedRow = $queued;
 $service->fakeDb->affected = 0;

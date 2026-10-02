@@ -15,6 +15,7 @@ class Biometric_attendance_model extends MY_Model
             'biometric_scanner_stations', 'biometric_qr_credentials',
             'biometric_audit_logs', 'biometric_gateway_agents',
             'biometric_gateway_commands', 'biometric_notification_queue',
+            'biometric_directory_links', 'biometric_directory_runs',
             'notification_setting'
         ) as $table) {
             if (!$this->db->table_exists($table)) {
@@ -39,6 +40,16 @@ class Biometric_attendance_model extends MY_Model
         }
         if (!$this->db->field_exists('live_pilot', 'biometric_identity_mappings')) {
             return false;
+        }
+        foreach (array(
+            'directory_sync_mode', 'directory_sync_interval_seconds',
+            'directory_delete_approval_hash', 'directory_delete_approved_at',
+            'last_directory_sync_at', 'last_directory_sync_status',
+            'last_directory_sync_error'
+        ) as $field) {
+            if (!$this->db->field_exists($field, 'biometric_integrations')) {
+                return false;
+            }
         }
         foreach (array(
             'id', 'event_id', 'notification_type', 'channel', 'status', 'attempt_count',
@@ -131,6 +142,19 @@ class Biometric_attendance_model extends MY_Model
     {
         return $this->db->where('id', (int) $id)
             ->get('biometric_integrations')->row_array();
+    }
+
+    public function getDirectoryLink($integrationId, $subjectType, $subjectKey)
+    {
+        return $this->db->where('integration_id', (int) $integrationId)
+            ->where('subject_type', $subjectType)->where('subject_key', (int) $subjectKey)
+            ->get('biometric_directory_links')->row_array();
+    }
+
+    public function getDirectoryRun($id)
+    {
+        return $this->db->where('id', (int) $id)
+            ->get('biometric_directory_runs')->row_array();
     }
 
     public function getGatewayAgent($integrationId, $gatewayId)
