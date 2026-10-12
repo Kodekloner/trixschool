@@ -18,6 +18,10 @@
                     <div class="box-header ptbnull">
                         <h3 class="box-title titlefix">Provider Configuration</h3>
                     </div>
+                    <div class="box-body">
+                        <p>Automatic WhatsApp sending needs a connected Meta Cloud API account or a working WhatsApp delivery webhook. Enter the provider details below, then use <a href="<?php echo site_url('admin/mailsms/compose_whatsapp'); ?>">Communicate &gt; Send WhatsApp</a>.</p>
+                        <p>For Meta, use an approved template to start a conversation. Text replies are available for 24 hours after the recipient messages the school. A provider acceptance does not confirm delivery to the phone.</p>
+                    </div>
                     <form method="post" action="<?php echo site_url('admin/whatsappsettings'); ?>">
                         <div class="box-body">
                             <div class="row">
@@ -94,7 +98,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label>Template Name</label>
+                                        <label>Login Credential Template Name</label>
                                         <input type="text" name="meta_template_name" class="form-control" value="<?php echo html_escape($config['meta_template_name']); ?>" placeholder="parent_login_credentials">
                                     </div>
                                 </div>
