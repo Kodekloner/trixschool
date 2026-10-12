@@ -2,6 +2,8 @@
 
 defined('BASEPATH') OR exit('No direct script access allowed');
 
+require_once __DIR__ . '/Biometric_guardian_contact.php';
+
 /**
  * Shared production biometric workflow.
  *
@@ -2562,12 +2564,13 @@ class Biometric_attendance_service
     }
 
     /** Process queued guardian alerts. Delivery failures never undo attendance. */
-    public function processNotificationQueue($limit = 20)
+    public function processNotificationQueue($limit = 20, $integrationId = null, $timeBudgetSeconds = null)
     {
         if (!$this->CI->db->table_exists('biometric_notification_queue')) {
             return array('selected' => 0, 'delivered' => 0, 'retried' => 0, 'failed' => 0, 'skipped' => 0);
         }
         $limit = max(1, min(100, (int) $limit));
+        $deadline = $timeBudgetSeconds === null ? null : microtime(true) + max(1, min(60, (int) $timeBudgetSeconds));
         $now = $this->now();
         // Recover work abandoned by a killed cron process after fifteen minutes.
         $stale = gmdate('Y-m-d H:i:s', time() - 900);
@@ -2576,17 +2579,33 @@ class Biometric_attendance_service
 
         $this->CI->db->group_start()->where('status', 'pending')->or_where('status', 'retry')->group_end();
         $this->CI->db->group_start()->where('next_attempt_at IS NULL', null, false)->or_where('next_attempt_at <=', $now)->group_end();
+        if ($integrationId !== null) {
+            // The authenticated heartbeat must not drain another integration's alerts.
+            $this->CI->db->where('event_id IN (SELECT id FROM biometric_events WHERE integration_id = '
+                . (int) $integrationId . ')', null, false);
+        }
         $rows = $this->CI->db->order_by('id', 'ASC')->limit($limit)
             ->get('biometric_notification_queue')->result_array();
         $result = array('selected' => count($rows), 'delivered' => 0, 'retried' => 0, 'failed' => 0, 'skipped' => 0);
 
         foreach ($rows as $row) {
+            if ($deadline !== null && microtime(true) >= $deadline) {
+                break;
+            }
             $this->CI->db->where('id', $row['id'])->where_in('status', array('pending', 'retry'))
+                ->where('attempt_count', (int) $row['attempt_count'])
+                ->group_start()->where('next_attempt_at IS NULL', null, false)->or_where('next_attempt_at <=', $now)->group_end()
                 ->update('biometric_notification_queue', array('status' => 'processing', 'updated_at' => $now));
             if ($this->CI->db->affected_rows() !== 1) {
                 continue;
             }
-            $delivery = $this->deliverGuardianNotification($row);
+            try {
+                $delivery = $this->deliverGuardianNotification($row);
+            } catch (Throwable $exception) {
+                // Contact lookup / provider setup failures must not abandon the batch.
+                $delivery = array('success' => false, 'skip' => false, 'message' => 'Notification processing failed. Check the school contact and provider configuration.');
+                log_message('error', 'Biometric notification processing failed for queue item ' . (int) $row['id']);
+            }
             $attempts = (int) $row['attempt_count'] + 1;
             if (!empty($delivery['success'])) {
                 $this->CI->db->where('id', $row['id'])->update('biometric_notification_queue', array(
@@ -3358,7 +3377,7 @@ class Biometric_attendance_service
             return array('success' => false, 'skip' => true, 'message' => 'This channel is disabled for the notification template.');
         }
 
-        $student = $this->CI->db->select("students.guardian_name, students.guardian_email, students.guardian_phone, students.firstname, students.middlename, students.lastname, students.admission_no, CONCAT_WS(' ', students.firstname, students.middlename, students.lastname) AS student_name", false)
+        $student = $this->CI->db->select("students.id AS student_id, students.guardian_name, students.guardian_email, students.guardian_phone, students.firstname, students.middlename, students.lastname, students.admission_no, CONCAT_WS(' ', students.firstname, students.middlename, students.lastname) AS student_name", false)
             ->from('student_session')->join('students', 'students.id = student_session.student_id')
             ->where('student_session.id', (int) $event['subject_id'])->get()->row_array();
         if (!$student) {
@@ -3396,10 +3415,11 @@ class Biometric_attendance_service
 
         try {
             if ($channel === 'email') {
-                $recipient = trim((string) $student['guardian_email']);
-                if ($recipient === '') {
-                    return array('success' => false, 'skip' => true, 'message' => 'No guardian email address is recorded.');
+                $contact = $this->guardianEmailContact($student);
+                if ($contact['error'] !== null) {
+                    return array('success' => false, 'skip' => true, 'message' => $contact['error']);
                 }
+                $recipient = $contact['recipient'];
                 $this->CI->load->library('mailer');
                 $sent = $this->CI->mailer->send_mail(
                     $recipient,
@@ -3436,6 +3456,24 @@ class Biometric_attendance_service
         }
         return $this->CI->db->where('type', $type)->limit(1)
             ->get('notification_setting')->row_array();
+    }
+
+    /** Read a student's custom fields, never fields belonging to another entity. */
+    protected function guardianEmailContact(array $student)
+    {
+        $fields = array();
+        if (trim((string) $student['guardian_email']) === ''
+            && !empty($student['student_id'])
+            && $this->CI->db->table_exists('custom_fields')
+            && $this->CI->db->table_exists('custom_field_values')) {
+            $fields = $this->CI->db->select('custom_fields.name, custom_field_values.field_value')
+                ->from('custom_fields')
+                ->join('custom_field_values', 'custom_field_values.custom_field_id = custom_fields.id')
+                ->where('custom_fields.belong_to', 'students')
+                ->where('custom_field_values.belong_table_id', (int) $student['student_id'])
+                ->get()->result_array();
+        }
+        return Biometric_guardian_contact::email($student['guardian_email'], $fields);
     }
 
     protected function enabledTemplateChannels($template, array $masterChannels)

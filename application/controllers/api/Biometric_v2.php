@@ -4,6 +4,8 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Biometric_v2 extends CI_Controller
 {
+    private $notificationIntegrationId = null;
+
     public function __construct()
     {
         parent::__construct();
@@ -159,7 +161,68 @@ class Biometric_v2 extends CI_Controller
         }
         $result = $this->biometric_attendance_service->{$serviceMethod}($integration, $payload);
         $status = isset($result['http_status']) ? (int) $result['http_status'] : (!empty($result['success']) ? 200 : 422);
+        if ($serviceMethod === 'pollGateway' && !empty($result['success']) && $status === 200
+            && $this->config->item('biometric_automatic_notifications') !== false) {
+            $this->notificationIntegrationId = (int) $integration['id'];
+        }
         return $this->respond($result, $status);
+    }
+
+    /** CI calls this once after completing the controller and preparing headers. */
+    public function _output($output)
+    {
+        if ($this->notificationIntegrationId === null) {
+            echo $output;
+            return;
+        }
+
+        $integrationId = $this->notificationIntegrationId;
+        $this->notificationIntegrationId = null;
+        // Release the API/session response before contacting paid providers.
+        // A provider failure must not invalidate a successful gateway heartbeat.
+        ignore_user_abort(true);
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        $this->finishGatewayResponse($output);
+
+        // Legacy providers can print diagnostics. Never append them to API JSON.
+        $bufferLevel = ob_get_level();
+        ob_start();
+        try {
+            $result = $this->biometric_attendance_service->processNotificationQueue(20, $integrationId, 15);
+            log_message('info', 'Biometric automatic notifications: ' . json_encode($result));
+        } catch (Throwable $exception) {
+            log_message('error', 'Biometric automatic notification worker failed; queued alerts remain recoverable.');
+        } finally {
+            while (ob_get_level() > $bufferLevel) {
+                ob_end_clean();
+            }
+        }
+    }
+
+    protected function finishGatewayResponse($output)
+    {
+        // Content-Length permits HTTP/1 clients to finish without waiting for
+        // the PHP process on non-FPM hosts. Do not mislabel compressed output.
+        if (!headers_sent() && !$this->config->item('compress_output') && !ini_get('zlib.output_compression')) {
+            header('Content-Length: ' . strlen($output));
+        }
+        echo $output;
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        } elseif (function_exists('litespeed_finish_request')) {
+            litespeed_finish_request();
+        } else {
+            // Some web servers buffer this fallback; cron remains recommended
+            // for large queues and to deliver retries while the laptop is off.
+            while (ob_get_level() > 0) {
+                if (!@ob_end_flush()) {
+                    break;
+                }
+            }
+            flush();
+        }
     }
 
     protected function authenticate()
