@@ -9,6 +9,7 @@ class Biometricattendance extends Admin_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->config->load('biometric_attendance');
         $this->load->model('biometric_attendance_model');
         $this->load->library('biometric_attendance_service');
         $this->load->library('enc_lib');

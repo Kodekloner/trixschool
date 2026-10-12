@@ -472,6 +472,8 @@ class Mailsms extends Admin_Controller
         $data['sch_setting'] = $this->sch_setting_detail;
         $data['compose_notifications'] = $this->getComposeNotificationTemplates();
         $data['whatsapp_enabled'] = $this->whatsappgateway->isEnabled();
+        $data['whatsapp_provider'] = $this->whatsappgateway->getProvider();
+        $data['whatsapp_errors'] = $this->whatsappgateway->getConfigurationErrors();
 
         $this->load->view('layout/header');
         $this->load->view('admin/mailsms/compose_whatsapp', $data);
@@ -1002,34 +1004,83 @@ class Mailsms extends Admin_Controller
 
     public function send_group_whatsapp()
     {
-        $this->form_validation->set_error_delimiters('<li>', '</li>');
-        $this->form_validation->set_rules('group_title', $this->lang->line('title'), 'required');
-        $this->form_validation->set_rules('group_message', $this->lang->line('message'), 'required');
-        $this->form_validation->set_rules('user[]', $this->lang->line('message') . " " . $this->lang->line('to'), 'required');
-
         if (!$this->rbac->hasPrivilege('whatsapp_messaging', 'can_view')) {
             access_denied();
+            return;
         }
+        if ($this->input->server('REQUEST_METHOD') !== 'POST') {
+            show_error('WhatsApp messages must be submitted using POST.', 405);
+            return;
+        }
+        $delivery_type = $this->input->post('group_delivery_type');
+        $delivery_type = $delivery_type === null ? 'text' : $delivery_type;
+        if (!in_array($delivery_type, array('text', 'template'), true)
+            || ($delivery_type === 'template' && $this->whatsappgateway->getProvider() !== 'meta_cloud')) {
+            echo json_encode(array('status' => 1, 'msg' => array('whatsapp' => '<li>Select a delivery option supported by the WhatsApp provider.</li>')));
+            return;
+        }
+        $text_fields = $delivery_type === 'template' ? array('group_title', 'meta_template_name', 'meta_template_language') : array('group_title', 'group_message');
+        foreach ($text_fields as $field) {
+            $value = $this->input->post($field);
+            if ($value !== null && !is_string($value)) {
+                echo json_encode(array('status' => 1, 'msg' => array('whatsapp' => '<li>Enter valid text for the title and message or template details.</li>')));
+                return;
+            }
+        }
+        $userlisting = $this->input->post('user[]');
+        if ($userlisting !== null && !is_array($userlisting)) {
+            echo json_encode(array('status' => 1, 'msg' => array('whatsapp' => '<li>Select recipient groups using the checkboxes.</li>')));
+            return;
+        }
+        $this->form_validation->set_error_delimiters('<li>', '</li>');
+        $this->form_validation->set_rules('group_title', $this->lang->line('title'), 'required');
+        if ($delivery_type === 'template') {
+            $this->form_validation->set_rules('meta_template_name', 'Approved Template Name', 'trim|required|regex_match[/^[a-z0-9_]+$/]');
+            $this->form_validation->set_rules('meta_template_language', 'Template Language', 'trim|required|regex_match[/^[a-z]{2,3}(?:_[A-Z]{2})?$/]');
+        } else {
+            $this->form_validation->set_rules('group_message', $this->lang->line('message'), 'required');
+        }
+        $this->form_validation->set_rules('user[]', $this->lang->line('message') . " " . $this->lang->line('to'), 'required');
 
         if (!$this->form_validation->run()) {
             $data = array(
                 'group_title' => form_error('group_title'),
                 'group_message' => form_error('group_message'),
                 'user[]' => form_error('user[]'),
+                'meta_template_name' => form_error('meta_template_name'),
+                'meta_template_language' => form_error('meta_template_language'),
             );
 
             echo json_encode(array('status' => 1, 'msg' => $data));
             return;
         }
 
-        if (!$this->whatsappgateway->isEnabled()) {
-            echo json_encode(array('status' => 1, 'msg' => array('whatsapp' => '<li>WhatsApp sending is disabled. Enable it from System Settings > WhatsApp Settings.</li>')));
+        $configuration_errors = $this->whatsappgateway->getConfigurationErrors();
+        if (!empty($configuration_errors)) {
+            echo json_encode(array('status' => 1, 'msg' => array('whatsapp' => '<li>' . html_escape(implode(' ', $configuration_errors)) . '</li>')));
             return;
         }
 
-        $message = $this->input->post('group_message');
+        $template_name = $delivery_type === 'template' ? $this->input->post('meta_template_name') : '';
+        $template_language = $delivery_type === 'template' ? $this->input->post('meta_template_language') : '';
+        $template_parameters = array();
+        if ($delivery_type === 'template') {
+            $raw_parameters = $this->input->post('meta_template_parameters');
+            if ($raw_parameters !== null && !is_string($raw_parameters)) {
+                echo json_encode(array('status' => 1, 'msg' => array('whatsapp' => '<li>Enter one template body value per line.</li>')));
+                return;
+            }
+            if (trim((string) $raw_parameters) !== '') {
+                $template_parameters = preg_split('/\r\n|\r|\n/', trim($raw_parameters));
+            }
+        }
+        $message = $delivery_type === 'template' ? 'Meta template: ' . $template_name . ' (' . $template_language . ')' : $this->input->post('group_message');
         $message_title = $this->input->post('group_title');
-        $user_array = $this->getGroupComposeRecipients($this->input->post('user[]'));
+        $user_array = $this->getGroupComposeRecipients($userlisting);
+        if (empty($user_array)) {
+            echo json_encode(array('status' => 1, 'msg' => array('whatsapp' => '<li>No recipients were found in the selected groups.</li>')));
+            return;
+        }
 
         $data = array(
             'is_group' => 1,
@@ -1040,37 +1091,52 @@ class Mailsms extends Admin_Controller
             'group_list' => json_encode(array()),
             'created_at' => date('Y-m-d H:i:s'),
         );
-        $this->messages_model->add($data);
-
         $sent = 0;
         $failed = 0;
+        $skipped = 0;
+        $errors = array();
 
         if (!empty($user_array)) {
             foreach ($user_array as $user_mail_key => $user_mail_value) {
                 if (!empty($user_mail_value['mobileno'])) {
                     $personal_title = $this->renderComposeTemplate($message_title, $user_mail_value);
-                    $personal_message = $this->renderComposeTemplate($message, $user_mail_value);
-
-                    if ($this->whatsappgateway->sendMessage($user_mail_value['mobileno'], $personal_message, $personal_title)) {
+                    if ($delivery_type === 'template') {
+                        $personal_parameters = array();
+                        foreach ($template_parameters as $parameter) {
+                            $personal_parameters[] = $this->renderComposeTemplate($parameter, $user_mail_value);
+                        }
+                        $accepted = $this->whatsappgateway->sendTemplateMessage($user_mail_value['mobileno'], $template_name, $template_language, $personal_parameters);
+                    } else {
+                        $personal_message = $this->renderComposeTemplate($message, $user_mail_value);
+                        $accepted = $this->whatsappgateway->sendMessage($user_mail_value['mobileno'], $personal_message, $personal_title);
+                    }
+                    if ($accepted) {
                         $sent++;
                     } else {
                         $failed++;
+                        $reason = $this->whatsappgateway->getLastError();
+                        if ($reason !== '') {
+                            $errors[$reason] = true;
+                        }
                     }
+                } else {
+                    $skipped++;
                 }
             }
         }
 
+        $summary = array('accepted' => $sent, 'failed' => $failed, 'missing_phone' => $skipped);
+        $result_message = 'Accepted by WhatsApp provider: ' . $sent . '. Failed: ' . $failed . '. Missing phone: ' . $skipped . '.';
+        if (!empty($errors)) {
+            $result_message .= ' ' . implode(' ', array_keys($errors));
+        }
         if ($sent === 0) {
-            echo json_encode(array('status' => 1, 'msg' => array('whatsapp' => '<li>No WhatsApp message was sent. Check recipient phone numbers and WhatsApp provider settings.</li>')));
+            echo json_encode(array('status' => 1, 'msg' => array('whatsapp' => '<li>' . html_escape($result_message) . '</li>'), 'summary' => $summary));
             return;
         }
 
-        $message = 'WhatsApp message sent successfully. Sent: ' . $sent;
-        if ($failed > 0) {
-            $message .= ', Failed: ' . $failed;
-        }
-
-        echo json_encode(array('status' => 0, 'msg' => $message));
+        $this->messages_model->add($data);
+        echo json_encode(array('status' => 0, 'msg' => html_escape($result_message), 'summary' => $summary));
     }
 
     public function send_group_sms()

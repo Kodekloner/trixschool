@@ -1,6 +1,6 @@
 # Biometric guardian notification workflow
 
-Applies to SchoolLift biometric workflow through database migration 143.
+Applies to SchoolLift biometric notification templates (migration 143), directory workflow (144), and the 12 October 2026 automatic-delivery/contact-lookup fix. The fix needs no new database migration or gateway installation.
 
 ## What the platform does
 
@@ -17,11 +17,22 @@ Messages are written to `biometric_notification_queue`; attendance processing ne
 
 | Channel | Student field used | Required provider |
 |---|---|---|
-| Email | `students.guardian_email` | SchoolLift email configuration |
+| Email | `students.guardian_email`; when blank, a recognised parent/guardian custom email field | SchoolLift email configuration |
 | SMS | `students.guardian_phone` | Active SMS gateway |
 | WhatsApp | `students.guardian_phone` | Enabled WhatsApp gateway |
 
 The current student schema has one guardian phone field. SchoolLift therefore treats the guardian phone as the guardian's WhatsApp number when WhatsApp is enabled. Store it in a format accepted by the configured gateway, preferably including the country code. A missing recipient is recorded as a failed/skipped queue item; the system does not fall back from one channel to another.
+
+### Schools using a custom Parent's Email field
+
+GIS stores its visible **Parent's Email** in student custom field 2 rather than `students.guardian_email`. Biometric email now supports this without copying or rewriting student records:
+
+1. A nonblank standard Guardian Email is authoritative. If it is invalid, fix it; the system does not silently select another address.
+2. Only if Guardian Email is blank, read custom-field values linked to the same stable `students.id` and `belong_to = students`. Never use `student_session.id` to join custom fields.
+3. Recognised labels are Parent Email, Parent's Email, Guardian Email, Guardian's Email, Parent/Guardian Email, and Parent or Guardian Email. Spaces and punctuation are ignored in label matching; arbitrary/student/staff email fields are never used.
+4. One valid address is required. Conflicting addresses or invalid values produce a visible failed alert instead of guessing. Repeated fields containing the identical address are deduplicated.
+
+The custom-field ID is deliberately not hard-coded: other schools may use a different ID. SMS and WhatsApp still require **Guardian Phone**, not Father Phone or a custom phone field. The standard guardian fields can be enabled in Student Profile settings when hidden on the admission form.
 
 ## The two levels of switches
 
@@ -90,7 +101,13 @@ An outstanding-fee notification is deduplicated to **one per student attendance 
 
 ## Queue processing and retries
 
-The biometric maintenance cron calls `processNotificationQueue(20)` and administrators can also use **Process notification queue now** on the biometric Setup tab.
+The existing gateway contacts the website automatically, normally every minute. After an authenticated, valid, successful heartbeat, the website automatically processes up to 20 due guardian alerts belonging to that integration. No **Synchronize now** or **Process notification queue now** click is required while that gateway is running. Invalid/unauthenticated heartbeats, health reads and directory requests do not dispatch messages.
+
+Attendance ingestion still only queues messages and commits attendance independently. The heartbeat response is output before provider calls; PHP-FPM/LiteSpeed finishes the response first. Other PHP hosts use a flush/Content-Length fallback, which some web servers may buffer. The worker has a 15-second *between-items* budget, not a hard timeout on an individual legacy provider request. Keep a dedicated hosting cron for high-volume schools, slow providers and delivery/retries while the school laptop is off.
+
+Configure the existing authenticated `cron/biometricmaintenance/<school-cron-key>` endpoint every minute using your hosting scheduler. Use each school's own URL and existing secret key; do not publish keys or commit them. This dedicated endpoint processes the queue and applies retention at most once per UTC day. Do not run the broader `cron/index` every minute solely for biometric alerts: it also runs backups and unrelated workflows.
+
+The biometric maintenance cron and manual **Process notification queue now** remain supported. Concurrent workers atomically claim rows with the original attempt count and due time, so a stale selection cannot immediately resend a row that another worker has just retried. Existing channel/template switches are rechecked at actual delivery. Set `biometric_automatic_notifications` to `false` in `application/config/biometric_attendance.php` only when deliberately using cron-only delivery.
 
 The worker claims eligible pending/retry rows, sends through the configured provider, and records the result. A transient provider failure is retried at increasing intervals, starting at five minutes, up to five attempts. Work left in `processing` by an interrupted worker is recovered after fifteen minutes. Permanently failed items stay visible with a redacted error and can be deliberately requeued after the provider configuration or guardian contact is corrected.
 
@@ -109,16 +126,19 @@ The GIS go-live operation intentionally left notification switches off. Going Li
 3. Import `docs/biometric-notification-templates-migration-143.sql` into that school database, or run the CodeIgniter migration to version 143.
 4. Confirm both verification queries at the end of the SQL return zero rows.
 5. Configure and test the school's Email, SMS, and/or WhatsApp provider.
-6. Complete `guardian_email` and `guardian_phone` for intended recipients.
+6. Complete `guardian_email` (or one recognised parent/guardian custom email field when blank) and `guardian_phone` for intended recipients.
 7. Review the three messages under **System Settings > Notification Setting** and enable only the required channel checkboxes.
 8. Enable the corresponding master channels and Check In/Check Out switches under **Biometric Attendance > Setup**.
-9. Perform one controlled Live student Check In and Check Out, process the queue, and confirm provider delivery and fee behavior.
+9. Perform one controlled Live student Check In and Check Out. Wait for the next automatic gateway heartbeat; inspect Recent guardian alerts for attempted/delivered or a useful error. Confirm actual inbox receipt separately: provider acceptance is not proof of inbox delivery. Existing pending rows use current contacts and will be picked up automatically after deployment.
+10. Keep the dedicated every-minute hosting cron enabled for delivery when gateways are offline and for retention. This fix does not turn on any previously disabled channel or fee-reminder template, and it does not requeue terminally failed alerts without administrator approval.
 
 Never enable a channel only to test whether provider credentials are correct on a full school population. Use a controlled student record with approved guardian contacts first.
 
 ## Relevant implementation files
 
 - `application/libraries/Biometric_attendance_service.php` — eligibility, queueing, fee checks, rendering, delivery, and retries
+- `application/libraries/Biometric_guardian_contact.php` — safe standard/custom parent email resolution
+- `application/controllers/api/Biometric_v2.php` — authenticated heartbeat-triggered automatic delivery after response output
 - `application/models/Biometric_attendance_model.php` — migration readiness checks
 - `application/controllers/admin/Notification.php` — template channel settings and editing
 - `application/views/admin/notification/setting.php` — Email/SMS/WhatsApp toggles

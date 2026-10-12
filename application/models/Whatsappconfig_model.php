@@ -102,13 +102,11 @@ class Whatsappconfig_model extends MY_Model
         $exists = $this->db->where('id', 1)->count_all_results($this->table);
 
         if ($exists) {
-            $this->db->where('id', 1)->update($this->table, $payload);
+            return $this->db->where('id', 1)->update($this->table, $payload);
         } else {
             $payload['created_at'] = date('Y-m-d H:i:s');
-            $this->db->insert($this->table, $payload);
+            return $this->db->insert($this->table, $payload);
         }
-
-        return true;
     }
 
     private function csvToArray($value)

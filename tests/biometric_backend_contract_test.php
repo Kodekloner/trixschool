@@ -103,7 +103,7 @@ foreach (array(
     biometric_contract_assert(strpos($consolidatedSql, $notificationRule) !== false, 'Consolidated SQL is missing migration 143 item: ' . $notificationRule);
 }
 
-$adminView = file_get_contents(__DIR__ . '/../application/views/admin/biometricattendance/index.php');
+$adminView = str_replace("\r\n", "\n", file_get_contents(__DIR__ . '/../application/views/admin/biometricattendance/index.php'));
 $readyPosition = strpos($adminView, '$(function () {');
 $readyClosePosition = strrpos($adminView, "    });\n})(jQuery);");
 $mappingSelectPosition = strpos($adminView, "configureSubjectSelect('#bio-mapping-type', '#bio-mapping-subject')");

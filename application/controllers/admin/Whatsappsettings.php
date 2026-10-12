@@ -26,8 +26,21 @@ class Whatsappsettings extends Admin_Controller
                 access_denied();
             }
 
-            $this->form_validation->set_rules('provider', 'Provider', 'trim|required');
-            $this->form_validation->set_rules('default_country_code', 'Default Country Code', 'trim|required');
+            $this->form_validation->set_rules('provider', 'Provider', 'trim|required|in_list[meta_cloud,custom_webhook]');
+            $this->form_validation->set_rules('default_country_code', 'Default Country Code', 'trim|required|regex_match[/^[1-9][0-9]{0,3}$/]');
+            if ($this->input->post('enabled')) {
+                if ($this->input->post('provider') === 'meta_cloud') {
+                    $this->form_validation->set_rules('meta_phone_number_id', 'Meta Phone Number ID', 'trim|required|numeric');
+                    $this->form_validation->set_rules('meta_access_token', 'Meta Access Token', 'trim|required');
+                    $this->form_validation->set_rules('meta_graph_api_version', 'Graph API Version', 'trim|required|regex_match[/^v[0-9]+\.0$/]');
+                    if ($this->input->post('auto_send_login_credentials')) {
+                        $this->form_validation->set_rules('meta_template_name', 'Login Credential Template Name', 'trim|required|regex_match[/^[a-z0-9_]+$/]');
+                        $this->form_validation->set_rules('meta_template_language', 'Template Language', 'trim|required|regex_match[/^[a-z]{2,3}(?:_[A-Z]{2})?$/]');
+                    }
+                } elseif ($this->input->post('provider') === 'custom_webhook') {
+                    $this->form_validation->set_rules('webhook_url', 'Webhook URL', 'trim|required|valid_url');
+                }
+            }
 
             if ($this->form_validation->run()) {
                 $saved = $this->whatsappconfig_model->save($this->input->post());
@@ -35,7 +48,7 @@ class Whatsappsettings extends Admin_Controller
                 if ($saved) {
                     $this->session->set_flashdata('msg', '<div class="alert alert-success text-left">WhatsApp settings updated successfully.</div>');
                 } else {
-                    $this->session->set_flashdata('msg', '<div class="alert alert-danger text-left">WhatsApp config table is missing. Run the WhatsApp config SQL migration first.</div>');
+                    $this->session->set_flashdata('msg', '<div class="alert alert-danger text-left">WhatsApp settings could not be saved. Check that the WhatsApp config SQL migration has been applied and the database is writable.</div>');
                 }
 
                 redirect('admin/whatsappsettings');
