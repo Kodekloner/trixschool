@@ -2582,9 +2582,9 @@ class Student extends Admin_Controller
 
         $sch_setting = $this->sch_setting_detail;
         if ($search_type == "search_filter") {
-            $resultlist = $this->student_model->searchdtByClassSection($class, $section);
+            $resultlist = $this->student_model->searchdtByClassSection($class, $section, $sch_setting);
         } elseif ($search_type == "search_full") {
-            $resultlist = $this->student_model->searchFullText($search_text, $carray);
+            $resultlist = $this->student_model->searchFullText($search_text, $carray, $sch_setting);
         }
         $students = array();
         $students = json_decode($resultlist);
@@ -2678,7 +2678,7 @@ class Student extends Admin_Controller
                 echo json_encode($array);
             }
         } else {
-            $params = array('srch_type' => 'search_full', 'class_id' => $class_id, 'section_id' => $section_id);
+            $params = array('srch_type' => 'search_full', 'search_text' => trim((string) $this->input->post('search_text')));
             $array  = array('status' => 1, 'error' => '', 'params' => $params);
             echo json_encode($array);
         }

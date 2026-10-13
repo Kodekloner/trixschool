@@ -284,10 +284,21 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
 </script>
 <script type="text/javascript">
     $(document).ready(function() {
+        $(document).on('keydown', '#search_text', function(e) {
+            if (e.key === 'Enter' || e.which === 13) {
+                e.preventDefault();
+                $(this).closest('form').find('button[value="search_full"]').trigger('click');
+            }
+        });
         $(document).on('submit', '.class_search_form', function(e) {
             e.preventDefault(); // avoid to execute the actual submit of the form.
-            var $this = $(this).find("button[type=submit]:focus");
             var form = $(this);
+            var submitter = e.originalEvent && e.originalEvent.submitter;
+            var $this = submitter ? $(submitter) : form.find("button[type=submit]:focus");
+            if (!$this.length) {
+                var search_type = $('#search_text').is(':focus') || $.trim($('#search_text').val()) !== '' ? 'search_full' : 'search_filter';
+                $this = form.find('button[value="' + search_type + '"]');
+            }
             var url = form.attr('action');
             var form_data = form.serializeArray();
             form_data.push({
@@ -393,6 +404,7 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                             "pageLength": 10,
                             "processing": true,
                             "serverSide": true,
+                            "columnDefs": [{ "targets": -1, "orderable": false, "searchable": false }],
                             "ajax": {
                                 "url": baseurl + "student/dtstudentlist",
                                 "dataSrc": 'data',
@@ -402,7 +414,9 @@ $currency_symbol = $this->customlib->getSchoolCurrencyFormat();
                             },
                             "drawCallback": function(settings) {
 
-                                $('.detail_view_tab').html("").html(settings.json.student_detail_view);
+                                if (settings.json && settings.json.student_detail_view !== undefined) {
+                                    $('.detail_view_tab').html(settings.json.student_detail_view);
+                                }
                             }
 
                         });
