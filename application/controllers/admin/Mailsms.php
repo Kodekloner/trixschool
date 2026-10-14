@@ -473,6 +473,7 @@ class Mailsms extends Admin_Controller
         $data['compose_notifications'] = $this->getComposeNotificationTemplates();
         $data['whatsapp_enabled'] = $this->whatsappgateway->isEnabled();
         $data['whatsapp_provider'] = $this->whatsappgateway->getProvider();
+        $data['whatsapp_supports_templates'] = $this->whatsappgateway->usesApprovedTemplates();
         $data['whatsapp_errors'] = $this->whatsappgateway->getConfigurationErrors();
 
         $this->load->view('layout/header');
@@ -1015,7 +1016,7 @@ class Mailsms extends Admin_Controller
         $delivery_type = $this->input->post('group_delivery_type');
         $delivery_type = $delivery_type === null ? 'text' : $delivery_type;
         if (!in_array($delivery_type, array('text', 'template'), true)
-            || ($delivery_type === 'template' && $this->whatsappgateway->getProvider() !== 'meta_cloud')) {
+            || ($delivery_type === 'template' && !$this->whatsappgateway->usesApprovedTemplates())) {
             echo json_encode(array('status' => 1, 'msg' => array('whatsapp' => '<li>Select a delivery option supported by the WhatsApp provider.</li>')));
             return;
         }
@@ -1074,7 +1075,7 @@ class Mailsms extends Admin_Controller
                 $template_parameters = preg_split('/\r\n|\r|\n/', trim($raw_parameters));
             }
         }
-        $message = $delivery_type === 'template' ? 'Meta template: ' . $template_name . ' (' . $template_language . ')' : $this->input->post('group_message');
+        $message = $delivery_type === 'template' ? 'WhatsApp template: ' . $template_name . ' (' . $template_language . ')' : $this->input->post('group_message');
         $message_title = $this->input->post('group_title');
         $user_array = $this->getGroupComposeRecipients($userlisting);
         if (empty($user_array)) {

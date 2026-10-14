@@ -8,7 +8,7 @@ $compose_notifications = isset($compose_notifications) ? $compose_notifications 
         'audience'  => array('student', 'parent', 'roles'),
     ),
 );
-$is_meta_cloud = isset($whatsapp_provider) && $whatsapp_provider === 'meta_cloud';
+$supports_templates = !empty($whatsapp_supports_templates) || (isset($whatsapp_provider) && in_array($whatsapp_provider, array('meta_cloud', '360dialog'), true));
 $whatsapp_errors = isset($whatsapp_errors) ? $whatsapp_errors : array();
 ?>
 <div class="content-wrapper">
@@ -29,11 +29,11 @@ $whatsapp_errors = isset($whatsapp_errors) ? $whatsapp_errors : array();
                         <div class="box-body">
                             <div class="row">
                                 <div class="col-md-8">
-                                    <?php if ($is_meta_cloud) { ?>
+                                    <?php if ($supports_templates) { ?>
                                         <div class="form-group">
                                             <label>Send using</label>
                                             <select class="form-control" name="group_delivery_type" id="group_delivery_type">
-                                                <option value="template">Approved Meta template</option>
+                                                <option value="template">Approved WhatsApp template</option>
                                                 <option value="text">Text reply within 24 hours</option>
                                             </select>
                                             <span class="help-block">Use an approved template when the school starts a conversation. Text replies require a message from the recipient within the past 24 hours.</span>
@@ -42,7 +42,7 @@ $whatsapp_errors = isset($whatsapp_errors) ? $whatsapp_errors : array();
                                             <div class="form-group">
                                                 <label>Approved Template Name</label><small class="req"> *</small>
                                                 <input type="text" name="meta_template_name" class="form-control" placeholder="school_notice">
-                                                <span class="help-block">Copy the exact approved name from WhatsApp Manager. The recipient receives that template's approved wording.</span>
+                                                <span class="help-block">Copy the exact approved name from WhatsApp Manager or your provider dashboard. The recipient receives that template's approved wording.</span>
                                             </div>
                                             <div class="form-group">
                                                 <label>Template Language</label><small class="req"> *</small>

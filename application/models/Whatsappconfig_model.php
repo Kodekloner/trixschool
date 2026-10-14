@@ -72,6 +72,11 @@ class Whatsappconfig_model extends MY_Model
                 'url' => $config['webhook_url'],
                 'bearer_token' => $config['webhook_bearer_token'],
             ),
+            // One active provider per school; the existing credential column
+            // holds either the direct Meta token or the 360dialog channel key.
+            'dialog360' => array(
+                'api_key' => $config['provider'] === '360dialog' ? $config['meta_access_token'] : '',
+            ),
         );
     }
 
@@ -81,17 +86,30 @@ class Whatsappconfig_model extends MY_Model
             return false;
         }
 
+        $current = $this->get();
+        $provider = isset($data['provider']) ? trim((string) $data['provider']) : 'meta_cloud';
+        if (!in_array($provider, array('meta_cloud', '360dialog', 'custom_webhook'), true)) {
+            return false;
+        }
+        $credential_field = $provider === '360dialog' ? 'dialog360_api_key' : 'meta_access_token';
+        $credential = isset($data[$credential_field]) && is_string($data[$credential_field]) ? trim($data[$credential_field]) : '';
+        if ($credential === '' && $current['provider'] === $provider) {
+            $credential = $current['meta_access_token'];
+        }
+        if (preg_match('/[\r\n]/', (string) $credential)) {
+            return false;
+        }
         $payload = array(
             'id' => 1,
             'enabled' => !empty($data['enabled']) ? 1 : 0,
-            'provider' => isset($data['provider']) ? $data['provider'] : 'meta_cloud',
+            'provider' => $provider,
             'default_country_code' => isset($data['default_country_code']) ? $data['default_country_code'] : '234',
             'auto_send_login_credentials' => !empty($data['auto_send_login_credentials']) ? 1 : 0,
             'auto_credential_for' => $this->arrayToCsv(isset($data['auto_credential_for']) ? $data['auto_credential_for'] : array('parent')),
             'login_template_parameters' => isset($data['login_template_parameters']) ? $data['login_template_parameters'] : 'display_name,school_name,url,username,password',
             'meta_graph_api_version' => isset($data['meta_graph_api_version']) ? $data['meta_graph_api_version'] : 'v20.0',
             'meta_phone_number_id' => isset($data['meta_phone_number_id']) ? $data['meta_phone_number_id'] : '',
-            'meta_access_token' => isset($data['meta_access_token']) ? $data['meta_access_token'] : '',
+            'meta_access_token' => $credential,
             'meta_template_name' => isset($data['meta_template_name']) ? $data['meta_template_name'] : 'parent_login_credentials',
             'meta_template_language' => isset($data['meta_template_language']) ? $data['meta_template_language'] : 'en',
             'webhook_url' => isset($data['webhook_url']) ? $data['webhook_url'] : '',

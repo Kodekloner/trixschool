@@ -35,6 +35,10 @@ class Whatsappgateway {
         return $this->last_error;
     }
 
+    public function usesApprovedTemplates() {
+        return in_array($this->getProvider(), array('meta_cloud', '360dialog'), true);
+    }
+
     public function getConfigurationErrors() {
         $errors = array();
         if (!$this->isEnabled()) {
@@ -47,6 +51,11 @@ class Whatsappgateway {
             }
             if (!isset($meta['access_token']) || trim((string) $meta['access_token']) === '') {
                 $errors[] = 'Set the Meta Access Token in WhatsApp Settings.';
+            }
+        } elseif ($this->getProvider() === '360dialog') {
+            $dialog = $this->configValue('dialog360', array());
+            if (!isset($dialog['api_key']) || trim((string) $dialog['api_key']) === '') {
+                $errors[] = 'Set the 360dialog channel API key in WhatsApp Settings.';
             }
         } elseif ($this->getProvider() === 'custom_webhook') {
             $webhook = $this->configValue('custom_webhook', array());
@@ -101,7 +110,7 @@ class Whatsappgateway {
         $sender_details = $this->prepareLoginCredentialDetails($sender_details);
         $provider       = $this->getProvider();
 
-        if ($provider === 'meta_cloud') {
+        if ($this->usesApprovedTemplates()) {
             return $this->sendMetaCloudTemplate($send_to, $sender_details);
         }
 
@@ -124,7 +133,7 @@ class Whatsappgateway {
 
         $provider = $this->getProvider();
 
-        if ($provider === 'meta_cloud') {
+        if ($this->usesApprovedTemplates()) {
             return $this->sendMetaCloudText($send_to, (string) $message);
         }
 
@@ -140,8 +149,8 @@ class Whatsappgateway {
         if ($send_to === '') {
             return false;
         }
-        if ($this->getProvider() !== 'meta_cloud') {
-            return $this->fail('Approved template sending requires the Meta Cloud API provider.');
+        if (!$this->usesApprovedTemplates()) {
+            return $this->fail('Approved template sending requires Meta Cloud API or 360dialog.');
         }
         if (!is_scalar($template_name) || !preg_match('/^[a-z0-9_]+$/', (string) $template_name)) {
             return $this->fail('Enter the exact approved Meta template name using lowercase letters, numbers and underscores.');
@@ -218,7 +227,7 @@ class Whatsappgateway {
         $access_token    = isset($meta_config['access_token']) ? trim($meta_config['access_token']) : '';
         $api_version     = isset($meta_config['graph_api_version']) ? trim($meta_config['graph_api_version']) : 'v20.0';
 
-        if ($phone_number_id === '' || $access_token === '' || $template_name === '') {
+        if (($this->getProvider() === 'meta_cloud' && ($phone_number_id === '' || $access_token === '')) || $template_name === '') {
             return $this->fail('Set the Meta Phone Number ID, Access Token and approved Template Name in WhatsApp Settings.');
         }
 
@@ -242,12 +251,7 @@ class Whatsappgateway {
             );
         }
 
-        $url = 'https://graph.facebook.com/' . $api_version . '/' . $phone_number_id . '/messages';
-
-        return $this->postJson($url, $payload, array(
-            'Authorization: Bearer ' . $access_token,
-            'Content-Type: application/json',
-        ));
+        return $this->postPlatformPayload($payload);
     }
 
     private function sendCustomWebhook($send_to, $sender_details, $template) {
@@ -280,7 +284,7 @@ class Whatsappgateway {
         $access_token    = isset($meta_config['access_token']) ? trim($meta_config['access_token']) : '';
         $api_version     = isset($meta_config['graph_api_version']) ? trim($meta_config['graph_api_version']) : 'v20.0';
 
-        if ($phone_number_id === '' || $access_token === '') {
+        if ($this->getProvider() === 'meta_cloud' && ($phone_number_id === '' || $access_token === '')) {
             return $this->fail('Set the Meta Phone Number ID and Access Token in WhatsApp Settings.');
         }
 
@@ -295,10 +299,26 @@ class Whatsappgateway {
             ),
         );
 
-        $url = 'https://graph.facebook.com/' . $api_version . '/' . $phone_number_id . '/messages';
+        return $this->postPlatformPayload($payload);
+    }
 
+    private function postPlatformPayload($payload) {
+        if ($this->getProvider() === '360dialog') {
+            $dialog = $this->configValue('dialog360', array());
+            $key = isset($dialog['api_key']) ? trim((string) $dialog['api_key']) : '';
+            if ($key === '' || preg_match('/[\r\n]/', $key)) {
+                return $this->fail('Set a valid 360dialog channel API key in WhatsApp Settings.');
+            }
+            return $this->postJson('https://waba-v2.360dialog.io/messages', $payload, array(
+                'D360-API-KEY: ' . $key,
+                'Content-Type: application/json',
+            ));
+        }
+        $meta = $this->configValue('meta_cloud', array());
+        $version = isset($meta['graph_api_version']) ? trim((string) $meta['graph_api_version']) : 'v20.0';
+        $url = 'https://graph.facebook.com/' . $version . '/' . trim((string) $meta['phone_number_id']) . '/messages';
         return $this->postJson($url, $payload, array(
-            'Authorization: Bearer ' . $access_token,
+            'Authorization: Bearer ' . trim((string) $meta['access_token']),
             'Content-Type: application/json',
         ));
     }
@@ -411,11 +431,19 @@ class Whatsappgateway {
 
     protected function handleProviderResponse($http_code, $response) {
         $data = json_decode($response, true);
-        $error_code = is_array($data) && isset($data['error']['code']) ? (int) $data['error']['code'] : 0;
+        $error_code = is_array($data) && isset($data['error']) && is_array($data['error']) && isset($data['error']['code']) ? (int) $data['error']['code'] : 0;
         $has_error = is_array($data) && (!empty($data['error'])
             || (array_key_exists('success', $data) && !$this->toBool($data['success']))
             || (isset($data['status']) && is_scalar($data['status']) && in_array(strtolower((string) $data['status']), array('error', 'failed', 'failure'), true)));
         if ($http_code < 200 || $http_code >= 300 || $has_error) {
+            if ($this->getProvider() === '360dialog') {
+                if ((int) $http_code === 401) {
+                    return $this->fail('The 360dialog channel API key is invalid. Update the key from the connected number in 360dialog Hub. (HTTP 401)');
+                }
+                if (is_array($data) && isset($data['code']) && $data['code'] === 'insufficient_balance') {
+                    return $this->fail('The 360dialog account has insufficient messaging balance. Check billing in 360dialog Hub. (HTTP ' . (int) $http_code . ')');
+                }
+            }
             $reasons = array(
                 190 => 'The Meta access token is invalid or expired. Update the Access Token in WhatsApp Settings.',
                 10 => 'The Meta access token does not have permission to send WhatsApp messages.',
@@ -434,8 +462,11 @@ class Whatsappgateway {
             $reason = isset($reasons[$error_code]) ? $reasons[$error_code] : 'The WhatsApp provider rejected the message. Check the provider account and configuration.';
             return $this->fail($reason . ' (HTTP ' . (int) $http_code . ($error_code ? ', provider code ' . $error_code : '') . ')');
         }
-        if ($this->getProvider() === 'meta_cloud' && empty($data['messages'][0]['id'])) {
-            return $this->fail('Meta did not return a WhatsApp message ID. The message was not accepted.');
+        if ($this->usesApprovedTemplates() && empty($data['messages'][0]['id'])) {
+            return $this->fail('The WhatsApp provider did not return a message ID. The message was not accepted.');
+        }
+        if ($this->usesApprovedTemplates() && isset($data['messages'][0]['message_status']) && $data['messages'][0]['message_status'] === 'paused') {
+            return $this->fail('The WhatsApp provider paused this message. Check the template and account in the provider dashboard.');
         }
         log_message('info', 'WhatsApp provider accepted message: http_code=' . (int) $http_code);
         return true;
