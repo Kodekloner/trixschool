@@ -19,8 +19,8 @@
                         <h3 class="box-title titlefix">Provider Configuration</h3>
                     </div>
                     <div class="box-body">
-                        <p>Automatic WhatsApp sending needs a connected Meta Cloud API account or a working WhatsApp delivery webhook. Enter the provider details below, then use <a href="<?php echo site_url('admin/mailsms/compose_whatsapp'); ?>">Communicate &gt; Send WhatsApp</a>.</p>
-                        <p>For Meta, use an approved template to start a conversation. Text replies are available for 24 hours after the recipient messages the school. A provider acceptance does not confirm delivery to the phone.</p>
+                        <p>Connect Meta Cloud API, a managed 360dialog account, or a WhatsApp delivery webhook, then use <a href="<?php echo site_url('admin/mailsms/compose_whatsapp'); ?>">Communicate &gt; Send WhatsApp</a>.</p>
+                        <p>Meta and 360dialog require an approved WhatsApp template to start a conversation. Text replies are available for 24 hours after the recipient messages the school. A provider acceptance does not confirm delivery to the phone.</p>
                     </div>
                     <form method="post" action="<?php echo site_url('admin/whatsappsettings'); ?>">
                         <div class="box-body">
@@ -37,8 +37,9 @@
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label>Provider</label>
-                                        <select name="provider" class="form-control">
+                                        <select name="provider" id="whatsapp_provider" class="form-control">
                                             <option value="meta_cloud" <?php echo $config['provider'] == 'meta_cloud' ? 'selected' : ''; ?>>Meta Cloud API</option>
+                                            <option value="360dialog" <?php echo $config['provider'] == '360dialog' ? 'selected' : ''; ?>>360dialog (managed provider)</option>
                                             <option value="custom_webhook" <?php echo $config['provider'] == 'custom_webhook' ? 'selected' : ''; ?>>Custom Webhook</option>
                                         </select>
                                     </div>
@@ -82,41 +83,53 @@
                             </div>
 
                             <hr>
-                            <h4>Meta Cloud API</h4>
+                            <h4 class="platform-fields">WhatsApp Platform Templates</h4>
                             <div class="row">
-                                <div class="col-md-3">
+                                <div class="col-md-3 meta-only">
                                     <div class="form-group">
                                         <label>Graph API Version</label>
                                         <input type="text" name="meta_graph_api_version" class="form-control" value="<?php echo html_escape($config['meta_graph_api_version']); ?>" placeholder="v20.0">
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 meta-only">
                                     <div class="form-group">
                                         <label>Phone Number ID</label>
                                         <input type="text" name="meta_phone_number_id" class="form-control" value="<?php echo html_escape($config['meta_phone_number_id']); ?>">
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 platform-fields">
                                     <div class="form-group">
                                         <label>Login Credential Template Name</label>
                                         <input type="text" name="meta_template_name" class="form-control" value="<?php echo html_escape($config['meta_template_name']); ?>" placeholder="parent_login_credentials">
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 platform-fields">
                                     <div class="form-group">
                                         <label>Template Language</label>
                                         <input type="text" name="meta_template_language" class="form-control" value="<?php echo html_escape($config['meta_template_language']); ?>" placeholder="en">
                                     </div>
                                 </div>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group meta-only">
                                 <label>Access Token</label>
                                 <textarea name="meta_access_token" class="form-control" rows="3"><?php echo html_escape($config['meta_access_token']); ?></textarea>
+                                <span class="help-block"><?php echo !empty($credential_saved) && $config['provider'] === 'meta_cloud' ? 'A token is saved. Leave blank to keep it, or paste a replacement.' : 'Paste the token for the selected Meta sender.'; ?></span>
+                            </div>
+
+                            <div class="dialog360-only">
+                                <h4>360dialog Managed Provider</h4>
+                                <div class="form-group">
+                                    <label>Channel API Key</label>
+                                    <input type="password" name="dialog360_api_key" class="form-control" value="" autocomplete="new-password">
+                                    <span class="help-block"><?php echo !empty($credential_saved) && $config['provider'] === '360dialog' ? 'An API key is saved. Leave blank to keep it, or paste a replacement.' : 'Copy the Messaging API key for this school\'s connected number from 360dialog Hub.'; ?></span>
+                                </div>
+                                <p>Complete 360dialog's coexistence onboarding to keep an existing WhatsApp Business app number. Provider subscription and WhatsApp messaging charges apply. Use templates approved for that connected account.</p>
+                                <p><a href="https://docs.360dialog.com/docs/hub/embedded-signup/coexistence-onboarding" target="_blank" rel="noopener">360dialog coexistence setup guide</a></p>
                             </div>
 
                             <hr>
-                            <h4>Custom Webhook</h4>
-                            <div class="row">
+                            <h4 class="webhook-only">Custom Webhook</h4>
+                            <div class="row webhook-only">
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label>Webhook URL</label>
@@ -140,3 +153,16 @@
         </div>
     </section>
 </div>
+<script>
+    $(function () {
+        function showWhatsAppProviderFields() {
+            var provider = $('#whatsapp_provider').val();
+            $('.meta-only').toggle(provider === 'meta_cloud');
+            $('.dialog360-only').toggle(provider === '360dialog');
+            $('.webhook-only').toggle(provider === 'custom_webhook');
+            $('.platform-fields').toggle(provider === 'meta_cloud' || provider === '360dialog');
+        }
+        $('#whatsapp_provider').on('change', showWhatsAppProviderFields);
+        showWhatsAppProviderFields();
+    });
+</script>

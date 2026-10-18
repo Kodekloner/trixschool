@@ -566,7 +566,40 @@ class Student_model extends MY_Model
 
 
 
-    public function searchFullText($searchterm, $carray = null)
+    private function studentListSearchableFields($custom_columns)
+    {
+        $columns = array(
+            'students.admission_no', 'students.roll_no', 'students.adhar_no', 'students.samagra_id',
+            'students.firstname', 'students.middlename', 'students.lastname',
+            "CONCAT_WS(' ', NULLIF(students.firstname, ''), NULLIF(students.middlename, ''), NULLIF(students.lastname, ''))",
+            "CONCAT_WS(' ', NULLIF(students.firstname, ''), NULLIF(students.lastname, ''))",
+            'classes.class', 'sections.section', 'students.father_name', 'students.dob',
+            'students.gender', 'categories.category', 'students.mobileno'
+        );
+        return implode(',', array_merge($columns, $custom_columns));
+    }
+
+    private function studentListOrderableFields($custom_columns, $sch_setting = null)
+    {
+        // Keep these positions aligned with the optional columns in studentSearch.php.
+        $columns = array('students.admission_no', 'students.firstname', 'classes.class');
+        if ($sch_setting === null || $sch_setting->father_name) {
+            $columns[] = 'students.father_name';
+        }
+        $columns[] = 'students.dob';
+        $columns[] = 'students.gender';
+        if ($sch_setting === null || $sch_setting->category) {
+            $columns[] = 'categories.category';
+        }
+        if ($sch_setting === null || $sch_setting->mobile_no) {
+            $columns[] = 'students.mobileno';
+        }
+        $columns = array_merge($columns, $custom_columns);
+        $columns[] = 'students.id';
+        return implode(',', $columns);
+    }
+
+    public function searchFullText($searchterm, $carray = null, $sch_setting = null)
     {
         $userdata = $this->customlib->getUserData();
         $staff_id = $userdata['id'];
@@ -579,7 +612,7 @@ class Student_model extends MY_Model
         if (!empty($custom_fields)) {
             foreach ($custom_fields as $custom_fields_key => $custom_fields_value) {
                 $tb_counter = "table_custom_" . $i;
-                array_push($field_var_array, 'table_custom_' . $i . '.field_value as ' . $custom_fields_value->name);
+                array_push($field_var_array, 'table_custom_' . $i . '.field_value AS `' . str_replace('`', '``', $custom_fields_value->name) . '`');
                 $this->db->join('custom_field_values as ' . $tb_counter, 'students.id = ' . $tb_counter . '.belong_table_id AND ' . $tb_counter . '.custom_field_id = ' . $custom_fields_value->id, 'left');
                 array_push($field_var_array_name,'table_custom_' . $i . '.field_value');
                 $i++;
@@ -587,34 +620,30 @@ class Student_model extends MY_Model
             }
         }
 
-        // $field_variable = implode(',', $field_var_array);
-        // $field_name = implode(',', $field_var_array_name);
-
-        // If custom fields are empty, avoid empty variable in orderable
-        $field_variable = !empty($field_var_array) ? implode(',', $field_var_array) : '';
-        $field_name = !empty($field_var_array_name) ? implode(',', $field_var_array_name) : '';
+        $field_variable = empty($field_var_array) ? '' : ',' . implode(',', $field_var_array);
 
         if (($userdata["role_id"] == 2) && ($userdata["class_teacher"] == "yes")) {
             if (!empty($carray)) {
 
                 $this->db->where_in("student_session.class_id", $carray);
                 $sections = $this->teacher_model->get_teacherrestricted_modeallsections($staff_id);
+                $sections_id = array();
                 foreach ($sections as $key => $value) {
                     $sections_id[] = $value['section_id'];
                 }
-                $this->db->where_in("student_session.section_id", $sections_id);
+                if (empty($sections_id)) {
+                    $this->db->where('1 = 0', null, false);
+                } else {
+                    $this->db->where_in("student_session.section_id", $sections_id);
+                }
             } else {
                 $this->db->where_in("student_session.class_id", "");
             }
         }
 
-        $orderable_fields = 'students.admission_no,students.firstname,students.middlename,students.lastname,classes.class,students.father_name,students.dob,students.gender,categories.category,students.mobileno,';
+        $orderable_fields = $this->studentListOrderableFields($field_var_array_name, $sch_setting);
 
-        // if (!empty($field_name)) {
-        //     $orderable_fields .= ',' . $field_name . '12';
-        // }
-
-        $this->datatables->select('classes.id AS `class_id`,students.id,student_session.id as student_session_id,classes.class,sections.id AS `section_id`,sections.section,students.id,students.admission_no , students.roll_no,students.admission_date,students.firstname,students.middlename,  students.lastname,students.image,    students.mobileno, students.email ,students.state ,   students.city , students.pincode ,     students.religion,     students.dob ,students.current_address,    students.permanent_address,IFNULL(students.category_id, 0) as `category_id`,IFNULL(categories.category, "") as `category`,      students.adhar_no,students.samagra_id,students.bank_account_no,students.bank_name, students.ifsc_code ,students.father_name , students.guardian_name , students.guardian_relation,students.guardian_phone,students.guardian_address,students.is_active ,students.created_at ,students.updated_at,students.gender,students.rte,student_session.session_id,' . $field_variable);
+        $this->datatables->select('classes.id AS `class_id`,students.id,student_session.id as student_session_id,classes.class,sections.id AS `section_id`,sections.section,students.id,students.admission_no , students.roll_no,students.admission_date,students.firstname,students.middlename,  students.lastname,students.image,    students.mobileno, students.email ,students.state ,   students.city , students.pincode ,     students.religion,     students.dob ,students.current_address,    students.permanent_address,IFNULL(students.category_id, 0) as `category_id`,IFNULL(categories.category, "") as `category`,      students.adhar_no,students.samagra_id,students.bank_account_no,students.bank_name, students.ifsc_code ,students.father_name , students.guardian_name , students.guardian_relation,students.guardian_phone,students.guardian_address,students.is_active ,students.created_at ,students.updated_at,students.gender,students.rte,student_session.session_id' . $field_variable);
         $this->datatables->join('student_session', 'student_session.student_id = students.id');
         $this->datatables->join('classes', 'student_session.class_id = classes.id');
         $this->datatables->join('sections', 'sections.id = student_session.section_id');
@@ -622,10 +651,12 @@ class Student_model extends MY_Model
         $this->datatables->join('school_houses', 'students.school_house_id = school_houses.id', 'left');
         $this->datatables->group_start();
         $this->datatables->or_like_string('students.firstname,students.middlename,students.lastname,school_houses.house_name,students.guardian_name,students.adhar_no,students.samagra_id,students.roll_no,students.admission_no,students.mobileno,students.email,students.religion,students.cast,students.gender,students.current_address,students.permanent_address,students.blood_group,students.bank_name,students.ifsc_code,students.father_name,students.father_phone,students.father_occupation,students.mother_name,students.mother_phone,students.mother_occupation,students.guardian_name,students.guardian_relation,students.guardian_phone,students.guardian_occupation,students.guardian_address,students.guardian_email,students.previous_school,students.note', $searchterm);
+        $this->db->or_like("CONCAT_WS(' ', NULLIF(students.firstname, ''), NULLIF(students.middlename, ''), NULLIF(students.lastname, ''))", $searchterm);
+        $this->db->or_like("CONCAT_WS(' ', NULLIF(students.firstname, ''), NULLIF(students.lastname, ''))", $searchterm);
         $this->datatables->group_end();
         $this->datatables->where('student_session.session_id', $this->current_session);
         $this->datatables->where('students.is_active', 'yes');
-        $this->datatables->searchable('students.admission_no,students.firstname,students.middlename,students.lastname,classes.class,students.father_name,students.dob,students.gender,categories.category,students.mobileno,'. $field_variable);
+        $this->datatables->searchable($this->studentListSearchableFields($field_var_array_name));
         $this->datatables->orderable($orderable_fields);
         $this->datatables->sort('students.id');
         $this->datatables->from('students');
@@ -1902,7 +1933,7 @@ class Student_model extends MY_Model
         }
     }
 
-        public function searchdtByClassSection($class_id = null, $section_id = null)
+    public function searchdtByClassSection($class_id = null, $section_id = null, $sch_setting = null)
     {
 
         $i = 1;
@@ -1913,7 +1944,7 @@ class Student_model extends MY_Model
         if (!empty($custom_fields)) {
             foreach ($custom_fields as $custom_fields_key => $custom_fields_value) {
                 $tb_counter = "table_custom_" . $i;
-                array_push($field_var_array, 'table_custom_' . $i . '.field_value as ' . $custom_fields_value->name);
+                array_push($field_var_array, 'table_custom_' . $i . '.field_value AS `' . str_replace('`', '``', $custom_fields_value->name) . '`');
                 $this->datatables->join('custom_field_values as ' . $tb_counter, 'students.id = ' . $tb_counter . '.belong_table_id AND ' . $tb_counter . '.custom_field_id = ' . $custom_fields_value->id, 'left');
                 array_push($field_var_array_name,'table_custom_' . $i . '.field_value');
                 $i++;
@@ -1921,12 +1952,7 @@ class Student_model extends MY_Model
             }
         }
 
-        // $field_variable = implode(',', $field_var_array);
-        // $field_name = implode(',', $field_var_array_name);
-
-        // If custom fields are empty, avoid empty variable in orderable
-        $field_variable = !empty($field_var_array) ? implode(',', $field_var_array) : '';
-        $field_name = !empty($field_var_array_name) ? implode(',', $field_var_array_name) : '';
+        $field_variable = empty($field_var_array) ? '' : ',' . implode(',', $field_var_array);
 
         if ($class_id != null) {
             $this->datatables->where('student_session.class_id', $class_id);
@@ -1935,15 +1961,11 @@ class Student_model extends MY_Model
             $this->datatables->where('student_session.section_id', $section_id);
         }
 
-        $orderable_fields = 'students.admission_no,students.firstname,classes.class,students.father_name,students.dob,students.gender,categories.category,students.mobileno';
-
-        // if (!empty($field_name)) {
-        //     $orderable_fields .= ',' . $field_name .'11';
-        // }
+        $orderable_fields = $this->studentListOrderableFields($field_var_array_name, $sch_setting);
 
          $this->datatables
-            ->select('classes.id AS `class_id`,student_session.id as student_session_id,students.id,classes.class,sections.id AS `section_id`,sections.section,students.id,students.admission_no , students.roll_no,students.admission_date,students.firstname,students.middlename,  students.lastname,students.image,    students.mobileno, students.email ,students.state ,   students.city , students.pincode ,     students.religion,     students.dob ,students.current_address,    students.permanent_address,IFNULL(students.category_id, 0) as `category_id`,IFNULL(categories.category, "") as `category`,students.adhar_no,students.samagra_id,students.bank_account_no,students.bank_name, students.ifsc_code , students.guardian_name , students.guardian_relation,students.guardian_phone,students.guardian_address,students.is_active ,students.created_at ,students.updated_at,students.father_name,students.app_key,students.parent_app_key,students.rte,students.gender,'. $field_variable)
-            ->searchable('students.admission_no,students.firstname,classes.class,students.father_name,students.dob,students.admission_date,students.gender,categories.category,students.mobileno,'.$field_variable)
+            ->select('classes.id AS `class_id`,student_session.id as student_session_id,students.id,classes.class,sections.id AS `section_id`,sections.section,students.id,students.admission_no , students.roll_no,students.admission_date,students.firstname,students.middlename,  students.lastname,students.image,    students.mobileno, students.email ,students.state ,   students.city , students.pincode ,     students.religion,     students.dob ,students.current_address,    students.permanent_address,IFNULL(students.category_id, 0) as `category_id`,IFNULL(categories.category, "") as `category`,students.adhar_no,students.samagra_id,students.bank_account_no,students.bank_name, students.ifsc_code , students.guardian_name , students.guardian_relation,students.guardian_phone,students.guardian_address,students.is_active ,students.created_at ,students.updated_at,students.father_name,students.app_key,students.parent_app_key,students.rte,students.gender'. $field_variable)
+            ->searchable($this->studentListSearchableFields($field_var_array_name))
             ->join('student_session', 'student_session.student_id = students.id')
             ->join('classes', 'student_session.class_id = classes.id')
             ->join('sections', 'sections.id = student_session.section_id')

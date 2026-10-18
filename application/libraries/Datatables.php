@@ -499,11 +499,11 @@ class Datatables
      */
     private function get_filtering()
     {
-        $sss       = array();
         $mColArray = $this->ci->input->post('columns');
         $sWhere    = '';
         $search    = $this->ci->input->post('search');
-        $sSearch   = $this->ci->db->escape_like_str(trim($search['value']));
+        // Query Builder's like()/or_like() escape the search value themselves.
+        $sSearch   = isset($search['value']) ? trim($search['value']) : '';
         $columns   = array_values(array_diff($this->columns, $this->unset_columns));
 
         if ($sSearch != '' && $this->searchable != '') {
@@ -512,23 +512,25 @@ class Datatables
                 $this->searchable = implode(',', $field);
             }
 
-            $column = explode(',', $this->searchable);
+            $search_columns = array();
+            $column = $this->explode(',', $this->searchable);
             foreach ($column as $key => $col) {
-                $col         = strtolower($col);
-                $col         = strstr($col, ' as ', true) ?: $col;
-                $this->sss[] = $col;
+                $col = preg_replace('/\s+AS\s+.+$/i', '', trim($col));
+                if ($col !== '') {
+                    $search_columns[] = $col;
+                }
             }
 
             if ($sSearch != "") {
-                for ($i = 0; $i < count($this->sss); $i++) {
+                for ($i = 0; $i < count($search_columns); $i++) {
                     if ($i == 0) {
                         $this->ci->db->group_start();
-                        $this->ci->db->like($this->sss[$i], $sSearch);
+                        $this->ci->db->like($search_columns[$i], $sSearch);
                     } else {
-                        $this->ci->db->or_like($this->sss[$i], $sSearch);
+                        $this->ci->db->or_like($search_columns[$i], $sSearch);
                     }
 
-                    if (count($this->sss) - 1 == $i) //last loop
+                    if (count($search_columns) - 1 == $i) //last loop
                     {
                         $this->ci->db->group_end();
                     }
@@ -540,7 +542,7 @@ class Datatables
             if ($sSearch != '') {
                 for ($i = 0; $i < count($mColArray); $i++) {
                     if ($mColArray[$i]['searchable'] == 'true' && !array_key_exists($mColArray[$i]['data'], $this->add_columns)) {
-                        $sWhere .= $this->select[$this->columns[$i]] . " LIKE '%" . $sSearch . "%' OR ";
+                        $sWhere .= $this->select[$this->columns[$i]] . " LIKE '%" . $this->ci->db->escape_like_str($sSearch) . "%' OR ";
                     }
                 }
             }

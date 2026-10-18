@@ -26,18 +26,29 @@ class Whatsappsettings extends Admin_Controller
                 access_denied();
             }
 
-            $this->form_validation->set_rules('provider', 'Provider', 'trim|required|in_list[meta_cloud,custom_webhook]');
+            $this->form_validation->set_rules('provider', 'Provider', 'trim|required|in_list[meta_cloud,360dialog,custom_webhook]');
             $this->form_validation->set_rules('default_country_code', 'Default Country Code', 'trim|required|regex_match[/^[1-9][0-9]{0,3}$/]');
+            $saved_config = $this->whatsappconfig_model->get();
+            $provider = $this->input->post('provider');
+            $has_saved_credential = $saved_config['provider'] === $provider && trim((string) $saved_config['meta_access_token']) !== '';
+            $this->form_validation->set_rules('meta_access_token', 'Meta Access Token', 'trim');
+            $this->form_validation->set_rules('dialog360_api_key', '360dialog Channel API Key', 'trim');
             if ($this->input->post('enabled')) {
                 if ($this->input->post('provider') === 'meta_cloud') {
                     $this->form_validation->set_rules('meta_phone_number_id', 'Meta Phone Number ID', 'trim|required|numeric');
-                    $this->form_validation->set_rules('meta_access_token', 'Meta Access Token', 'trim|required');
+                    $this->form_validation->set_rules('meta_access_token', 'Meta Access Token', $has_saved_credential ? 'trim' : 'trim|required');
                     $this->form_validation->set_rules('meta_graph_api_version', 'Graph API Version', 'trim|required|regex_match[/^v[0-9]+\.0$/]');
                     if ($this->input->post('auto_send_login_credentials')) {
                         $this->form_validation->set_rules('meta_template_name', 'Login Credential Template Name', 'trim|required|regex_match[/^[a-z0-9_]+$/]');
                         $this->form_validation->set_rules('meta_template_language', 'Template Language', 'trim|required|regex_match[/^[a-z]{2,3}(?:_[A-Z]{2})?$/]');
                     }
-                } elseif ($this->input->post('provider') === 'custom_webhook') {
+                } elseif ($provider === '360dialog') {
+                    $this->form_validation->set_rules('dialog360_api_key', '360dialog Channel API Key', $has_saved_credential ? 'trim' : 'trim|required');
+                    if ($this->input->post('auto_send_login_credentials')) {
+                        $this->form_validation->set_rules('meta_template_name', 'Login Credential Template Name', 'trim|required|regex_match[/^[a-z0-9_]+$/]');
+                        $this->form_validation->set_rules('meta_template_language', 'Template Language', 'trim|required|regex_match[/^[a-z]{2,3}(?:_[A-Z]{2})?$/]');
+                    }
+                } elseif ($provider === 'custom_webhook') {
                     $this->form_validation->set_rules('webhook_url', 'Webhook URL', 'trim|required|valid_url');
                 }
             }
@@ -57,6 +68,9 @@ class Whatsappsettings extends Admin_Controller
 
         $data['title'] = 'WhatsApp Settings';
         $data['config'] = $this->whatsappconfig_model->get();
+        $data['credential_saved'] = trim((string) $data['config']['meta_access_token']) !== '';
+        // Stored provider credentials are never sent back in page HTML.
+        $data['config']['meta_access_token'] = '';
         $data['table_exists'] = $this->db->table_exists('whatsapp_config');
 
         $this->load->view('layout/header', $data);
