@@ -1,6 +1,9 @@
 <?php
 include('../database/config.php');
 require_once('../helper/defaultcomment_helper.php');
+require_once('../helper/resultpage_helper.php');
+
+$resultSubType = normalize_result_page_reltype($_POST['resultType'] ?? 'termly') ?: 'termly';
 
 $studentid = (int) ($_POST['studentid'] ?? 0);
 
@@ -9,14 +12,11 @@ $extcomment = mysqli_real_escape_string($link, $extcommentRaw);
 
 $session = (int) ($_POST['session'] ?? 0);
 
-$term = mysqli_real_escape_string($link, trim((string) ($_POST['term'] ?? '')));
+$term = mysqli_real_escape_string($link, get_result_page_effective_term($_POST['term'] ?? '', $resultSubType));
 
 $RemarkType = mysqli_real_escape_string($link, trim((string) ($_POST['RemarkType'] ?? '')));
 
 $staffid = (int) ($_POST['staffid'] ?? 0);
-
-$resultSubTypeRaw = strtolower(trim($_POST['resultType'] ?? 'termly'));
-$resultSubType = ($resultSubTypeRaw === 'midterm' || $resultSubTypeRaw === 'mid-term') ? 'midterm' : 'termly';
 
 if ($RemarkType === 'SchoolHead') {
   $staffid = resolve_school_head_staff_id($link, $staffid);

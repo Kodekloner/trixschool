@@ -61,6 +61,9 @@ mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 promotion_mysql_exec($link, "SET SESSION sql_mode = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'");
 
 $tables = array(
+    'subject_group_class_sections',
+    'subject_group_subjects',
+    'class_sections',
     'promotion_note_overrides',
     'promotion_criteria_subjects',
     'promotion_criteria_classes',
@@ -90,6 +93,21 @@ promotion_mysql_exec($link, "CREATE TABLE subjects (
     id INT NOT NULL,
     name VARCHAR(191) NOT NULL,
     PRIMARY KEY (id)
+) ENGINE=InnoDB");
+promotion_mysql_exec($link, "CREATE TABLE class_sections (
+    id INT NOT NULL PRIMARY KEY,
+    class_id INT NOT NULL,
+    section_id INT NOT NULL
+) ENGINE=InnoDB");
+promotion_mysql_exec($link, "CREATE TABLE subject_group_class_sections (
+    subject_group_id INT NOT NULL,
+    class_section_id INT NOT NULL,
+    session_id INT NOT NULL
+) ENGINE=InnoDB");
+promotion_mysql_exec($link, "CREATE TABLE subject_group_subjects (
+    subject_group_id INT NOT NULL,
+    subject_id INT NOT NULL,
+    session_id INT NOT NULL
 ) ENGINE=InnoDB");
 promotion_mysql_exec($link, "CREATE TABLE students (
     id INT NOT NULL,
@@ -225,6 +243,11 @@ promotion_mysql_exec($link, "CREATE TABLE promotion_note_overrides (
 promotion_mysql_exec($link, "INSERT INTO classes (id, class) VALUES (7, 'Basic 1'), (8, 'Basic 2')");
 promotion_mysql_exec($link, "INSERT INTO subjects (id, name) VALUES
     (101, 'English Language'), (102, 'Mathematics'), (103, 'Basic Science')");
+promotion_mysql_exec($link, "INSERT INTO class_sections (id, class_id, section_id) VALUES (1, 7, 12), (2, 7, 13)");
+promotion_mysql_exec($link, "INSERT INTO subject_group_class_sections (subject_group_id, class_section_id, session_id)
+    VALUES (1, 1, 10), (1, 2, 10)");
+promotion_mysql_exec($link, "INSERT INTO subject_group_subjects (subject_group_id, subject_id, session_id)
+    VALUES (1, 101, 10), (1, 102, 10), (1, 103, 10)");
 promotion_mysql_exec($link, "INSERT INTO students (id, is_active) VALUES
     (1, 'yes'), (2, 'yes'), (3, 'yes'), (4, 'yes'), (5, 'no'), (6, 'yes')");
 promotion_mysql_exec($link, "INSERT INTO student_session

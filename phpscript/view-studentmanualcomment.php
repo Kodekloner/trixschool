@@ -1,13 +1,14 @@
 <?php
 include('../database/config.php');
+require_once('../helper/resultpage_helper.php');
+require_once('../helper/promotion_helper.php');
 
 $classsectionactual = $_POST['classsectionactual'];
 $classid = $_POST['classid'];
 $session = $_POST['session'];
-$term = $_POST['term'];
+$resultSubType = normalize_result_page_reltype($_POST['resultType'] ?? 'termly') ?: 'termly';
+$term = get_result_page_effective_term($_POST['term'] ?? '', $resultSubType);
 $staffid = $_POST['staffid'] ?? 0;
-$resultSubTypeRaw = strtolower(trim($_POST['resultType'] ?? 'termly'));
-$resultSubType = ($resultSubTypeRaw === 'midterm' || $resultSubTypeRaw === 'mid-term') ? 'midterm' : 'termly';
 $RemarkType = $_POST['RemarkType'];
 $remarkStaffFilter = ($RemarkType === 'teacher' && !empty($staffid) && $staffid !== '0') ? " AND `StaffID` = '$staffid'" : '';
 
@@ -291,6 +292,9 @@ echo '<table class="table table-striped table-bordered" id="editable-datatable" 
 if ($resultSubType == 'midterm') {
     echo '<th>Midterm Score (/' . $midtermMaxTotal . ')</th>
                     <th>Midterm Grade</th>';
+} elseif ($resultSubType == 'cummulative') {
+    echo '<th>Cumulative Average</th>
+                    <th>Grade</th>';
 } else {
     echo '<th>Average</th>
                     <th>Grade</th>';
@@ -367,8 +371,15 @@ if ($countGetstudent_session > 0) {
             $displayGrade = $grade;
         } else {
 
-            // Calculate average from score table (only if scores exist)
-            $sqlgetsubscore = "SELECT COUNT(*) AS subj_count FROM `score` 
+            if ($resultSubType == 'cummulative') {
+                // Use the same subject averages as the cumulative report card.
+                $subjectScores = get_result_subject_scores($link, $id, $session, $classid, $classsectionactual, $term, $resultSubType);
+                $average = !empty($subjectScores)
+                    ? safe_result_average(array_sum($subjectScores), count($subjectScores))
+                    : 'NA';
+            } else {
+                // Calculate average from score table (only if scores exist)
+                $sqlgetsubscore = "SELECT COUNT(*) AS subj_count FROM `score`
                             WHERE StudentID = '$id' 
                                 AND ClassID = '$classid' 
                                 AND Session = '$session' 
@@ -376,11 +387,11 @@ if ($countGetstudent_session > 0) {
                                 AND SectionID = '$classsectionactual' 
                                 AND SubjectID != 0
                                 AND (Exam != 0 OR CA1 != 0 OR CA2 != 0 OR CA3 != 0 OR CA4 != 0 OR CA5 != 0 OR CA6 != 0 OR CA7 != 0 OR CA8 != 0 OR CA9 != 0 OR CA10 != 0)";
-            $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
-            $rowsubj = mysqli_fetch_assoc($resultgetsubscore);
-            $subject_count = $rowsubj['subj_count'];
+                $resultgetsubscore = mysqli_query($link, $sqlgetsubscore);
+                $rowsubj = mysqli_fetch_assoc($resultgetsubscore);
+                $subject_count = $rowsubj['subj_count'];
 
-            $sqlgettotalgrade = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total 
+                $sqlgettotalgrade = "SELECT SUM(Exam + CA1 + CA2 + CA3 + CA4 + CA5 + CA6 + CA7 + CA8 + CA9 + CA10) AS total
                                 FROM `score` 
                                 WHERE StudentID = '$id' 
                                 AND ClassID = '$classid' 
@@ -389,11 +400,18 @@ if ($countGetstudent_session > 0) {
                                 AND SectionID = '$classsectionactual' 
                                 AND SubjectID != 0
                                 AND (Exam != 0 OR CA1 != 0 OR CA2 != 0 OR CA3 != 0 OR CA4 != 0 OR CA5 != 0 OR CA6 != 0 OR CA7 != 0 OR CA8 != 0 OR CA9 != 0 OR CA10 != 0)";
-            $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
-            $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
+                $resultgettotalgrade = mysqli_query($link, $sqlgettotalgrade);
+                $rowgettotalgrade = mysqli_fetch_assoc($resultgettotalgrade);
 
-            if ($subject_count > 0 && $rowgettotalgrade['total'] !== null) {
-                $average = round($rowgettotalgrade['total'] / $subject_count, 2);
+                if ($subject_count > 0 && $rowgettotalgrade['total'] !== null) {
+                    $average = round($rowgettotalgrade['total'] / $subject_count, 2);
+                } else {
+                    $average = 'NA';
+                }
+            }
+
+            $grade = 'NA';
+            if (is_numeric($average)) {
                 // Fetch grade from grading structure
                 $sqlgettotgradstuc = "SELECT gs.Grade 
                                       FROM gradingstructure gs
@@ -404,9 +422,6 @@ if ($countGetstudent_session > 0) {
                 $resultgettotgradstuc = mysqli_query($link, $sqlgettotgradstuc);
                 $rowgettotgradstuc = mysqli_fetch_assoc($resultgettotgradstuc);
                 $grade = $rowgettotgradstuc['Grade'] ?? 'NA';
-            } else {
-                $average = 'NA';
-                $grade = 'NA';
             }
 
             $displayScore = $average;

@@ -84,7 +84,6 @@
                     }
 
                     $hasTeacherOnlyRole = !empty($roleNames) && !array_diff($roleNames, ['teacher']);
-                    $canSelectResultSubType = !$hasTeacherOnlyRole;
                     ?>
 
                     <div class="row" style="margin: 15px;">
@@ -131,7 +130,9 @@
                                         <select class="form-control" id="resultType" disabled>
                                             <option value="termly">Termly</option>
                                             <option value="midterm">Mid-term</option>
+                                            <option value="cummulative">Cumulative</option>
                                         </select>
+                                        <small class="form-text text-muted" id="cumulativeCommentHint" hidden>Cumulative comments apply to the full session and use 3rd Term.</small>
                                     </div>
 
                                     <div class="form-group col-sm">
@@ -255,8 +256,6 @@
     <script src="../assets/js/vfs_fonts.js"></script>
 
     <script>
-        var canSelectResultSubType = <?php echo $canSelectResultSubType ? 'true' : 'false'; ?>;
-
         function isValidValue(value) {
             return value !== undefined && value !== null && value !== '' && value !== '0';
         }
@@ -274,13 +273,23 @@
         }
 
         function syncResultTypeState() {
-            var shouldEnable = canSelectResultSubType && isValidValue($("#session").val()) && isValidValue($("#term").val());
+            var isCumulative = $("#resultType").val() === 'cummulative';
+
+            if (isCumulative) {
+                $("#term").val('3rd');
+            }
+
+            var shouldEnable = isValidValue($("#session").val()) && isValidValue($("#term").val());
 
             $("#resultType").prop('disabled', !shouldEnable);
 
             if (!shouldEnable) {
                 $("#resultType").val('termly');
             }
+
+            isCumulative = shouldEnable && isCumulative;
+            $("#term").prop('disabled', isCumulative);
+            $("#cumulativeCommentHint").prop('hidden', !isCumulative);
         }
 
         function loadClasses() {
@@ -347,6 +356,7 @@
         });
 
         $("body").on("change", "#resultType", function() {
+            syncResultTypeState();
             resetTable('Please Filter to proceed.');
         });
 
