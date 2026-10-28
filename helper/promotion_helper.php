@@ -317,7 +317,7 @@ if (!function_exists('get_promotion_priority_requirements')) {
 }
 
 if (!function_exists('get_student_annual_score_data')) {
-    function get_student_annual_score_data($link, $studentId, $sessionId, $classId, $sectionId)
+    function get_student_annual_score_data($link, $studentId, $sessionId, $classId, $sectionId, $assignedSubjectsOnly = false)
     {
         $studentId = (int) $studentId;
         $sessionId = (int) $sessionId;
@@ -337,6 +337,9 @@ if (!function_exists('get_student_annual_score_data')) {
                   AND score.SectionID = '$sectionId'
                   AND score.SubjectID != 0
                   AND $scored";
+        if ($assignedSubjectsOnly) {
+            $scope .= ' AND ' . result_assigned_subject_condition($classId, $sectionId, $sessionId, 'score.SubjectID');
+        }
         $overallResult = mysqli_query(
             $link,
             "SELECT SUM($expression) AS total_score, COUNT(*) AS score_count
@@ -646,6 +649,31 @@ if (!function_exists('result_midterm_score_expression')) {
     }
 }
 
+if (!function_exists('result_assigned_subject_condition')) {
+    function result_assigned_subject_condition($classId, $sectionId, $sessionId, $subjectColumn = 'SubjectID')
+    {
+        $classId = (int) $classId;
+        $sectionId = (int) $sectionId;
+        $sessionId = (int) $sessionId;
+
+        // EXISTS/IN keeps duplicate group mappings from multiplying score rows.
+        return "$subjectColumn IN (
+                    SELECT assigned_subject.id
+                    FROM class_sections assigned_class
+                    INNER JOIN subject_group_class_sections assigned_group
+                        ON assigned_group.class_section_id = assigned_class.id
+                    INNER JOIN subject_group_subjects assigned_group_subject
+                        ON assigned_group_subject.subject_group_id = assigned_group.subject_group_id
+                       AND assigned_group_subject.session_id = assigned_group.session_id
+                    INNER JOIN subjects assigned_subject
+                        ON assigned_subject.id = assigned_group_subject.subject_id
+                    WHERE assigned_class.class_id = '$classId'
+                      AND assigned_class.section_id = '$sectionId'
+                      AND assigned_group.session_id = '$sessionId'
+                )";
+    }
+}
+
 if (!function_exists('get_result_subject_scores')) {
     function get_result_subject_scores($link, $studentId, $sessionId, $classId, $sectionId, $term, $resultSubtype)
     {
@@ -657,11 +685,13 @@ if (!function_exists('get_result_subject_scores')) {
         $resultSubtype = strtolower(trim((string) $resultSubtype));
         $expression = promotion_score_expression('score');
         $scored = promotion_scored_row_condition('score');
+        $assignedSubjects = result_assigned_subject_condition($classId, $sectionId, $sessionId, 'score.SubjectID');
         $scope = "score.StudentID = '$studentId'
                   AND score.Session = '$sessionId'
                   AND score.ClassID = '$classId'
                   AND score.SectionID = '$sectionId'
-                  AND score.SubjectID != 0";
+                  AND score.SubjectID != 0
+                  AND $assignedSubjects";
 
         if ($resultSubtype === 'cummulative' || $resultSubtype === 'cumulative') {
             $sql = "SELECT score.SubjectID AS subject_id,
@@ -745,6 +775,7 @@ if (!function_exists('get_result_bearing_class_count')) {
                        AND result_rows.result_label_index IS NOT NULL
                        $assessmentCondition";
         } else {
+            $assignedSubjects = result_assigned_subject_condition($classId, $sectionId, $sessionId, 'result_rows.SubjectID');
             $termCondition = ($resultSubtype === 'cummulative' || $resultSubtype === 'cumulative')
                 ? ''
                 : " AND result_rows.Term = '$termSafe'";
@@ -766,6 +797,7 @@ if (!function_exists('get_result_bearing_class_count')) {
                        AND result_rows.ClassID = ss.class_id
                        AND result_rows.SectionID = ss.section_id
                        AND result_rows.SubjectID != 0
+                       AND $assignedSubjects
                        $termCondition
                        AND $scored";
         }
@@ -814,6 +846,9 @@ if (!function_exists('get_result_summary_context')) {
             'grade_summary' => '',
             'cumulative_average' => null,
             'academic_row_count' => 0,
+            'subject_count' => 0,
+            'total_score' => 0.0,
+            'average_score' => 0.0,
         ];
 
         if ($format === 'british' || $format === 'kindergarten') {
@@ -835,12 +870,19 @@ if (!function_exists('get_result_summary_context')) {
         foreach ($scores as $score) {
             $grades[] = find_result_grade($score, $gradingRows);
         }
-        $annualData = get_student_annual_score_data($link, $studentId, $sessionId, $classId, $sectionId);
+        $annualData = get_student_annual_score_data($link, $studentId, $sessionId, $classId, $sectionId, true);
 
         $context['grade_key'] = build_result_grade_key($gradingRows);
         $context['grade_summary'] = build_result_grade_summary($grades, $gradingRows);
         $context['cumulative_average'] = $annualData['overall_average'];
         $context['academic_row_count'] = count($scores);
+        $context['subject_count'] = count($scores);
+        $context['total_score'] = round(array_sum($scores), 2);
+        $context['average_score'] = count($scores) > 0 ? round(array_sum($scores) / count($scores), 2) : 0.0;
+        if ($resultSubtype === 'cummulative' || $resultSubtype === 'cumulative') {
+            $context['total_score'] = $annualData['total_score'];
+            $context['average_score'] = $annualData['overall_average'] ?? 0.0;
+        }
 
         return $context;
     }
