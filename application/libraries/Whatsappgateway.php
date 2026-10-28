@@ -1,174 +1,224 @@
 <?php
-
-if (!defined('BASEPATH')) {
-    exit('No direct script access allowed');
-}
+defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Whatsappgateway {
-
     private $_CI;
     private $config = array();
     private $last_error = '';
+    private $last_message = array();
 
-    public function __construct() {
+    public function __construct($configuration = null) {
         $this->_CI = &get_instance();
-        $this->_CI->load->model('setting_model');
-        $this->_CI->load->model('student_model');
-        $this->_CI->load->model('staff_model');
-        $this->_CI->load->model('whatsappconfig_model');
-        $this->config = $this->_CI->whatsappconfig_model->getGatewayConfig();
-
-        if (!is_array($this->config)) {
-            $this->config = array();
+        foreach (array('setting_model', 'student_model', 'staff_model', 'whatsappconfig_model') as $model) {
+            $this->_CI->load->model($model);
         }
+        $this->config = is_array($configuration) ? $configuration : $this->_CI->whatsappconfig_model->getGatewayConfig();
     }
 
-    public function isEnabled() {
-        return $this->toBool($this->configValue('enabled', false));
-    }
+    public function isEnabled() { return $this->toBool($this->configValue('enabled', false)); }
+    public function getProvider() { return 'twilio'; }
+    public function getEnvironment() { return $this->configValue('environment', 'sandbox'); }
+    public function getLastError() { return $this->last_error; }
+    public function getLastMessage() { return $this->last_message; }
+    public function usesApprovedTemplates() { return true; }
 
-    public function getProvider() {
-        return strtolower(trim((string) $this->configValue('provider', 'meta_cloud')));
-    }
-
-    public function getLastError() {
-        return $this->last_error;
-    }
-
-    public function usesApprovedTemplates() {
-        return in_array($this->getProvider(), array('meta_cloud', '360dialog'), true);
-    }
-
-    public function getConfigurationErrors() {
+    private function credentialErrors() {
+        $twilio = $this->configValue('twilio', array());
         $errors = array();
-        if (!$this->isEnabled()) {
-            $errors[] = 'WhatsApp sending is disabled. Enable it in System Settings > WhatsApp Settings.';
-        }
-        if ($this->getProvider() === 'meta_cloud') {
-            $meta = $this->configValue('meta_cloud', array());
-            if (!isset($meta['phone_number_id']) || trim((string) $meta['phone_number_id']) === '') {
-                $errors[] = 'Set the Meta Phone Number ID in WhatsApp Settings.';
-            }
-            if (!isset($meta['access_token']) || trim((string) $meta['access_token']) === '') {
-                $errors[] = 'Set the Meta Access Token in WhatsApp Settings.';
-            }
-        } elseif ($this->getProvider() === '360dialog') {
-            $dialog = $this->configValue('dialog360', array());
-            if (!isset($dialog['api_key']) || trim((string) $dialog['api_key']) === '') {
-                $errors[] = 'Set the 360dialog channel API key in WhatsApp Settings.';
-            }
-        } elseif ($this->getProvider() === 'custom_webhook') {
-            $webhook = $this->configValue('custom_webhook', array());
-            if (!isset($webhook['url']) || trim((string) $webhook['url']) === '') {
-                $errors[] = 'Set the Custom Webhook URL in WhatsApp Settings.';
-            }
-        } else {
-            $errors[] = 'Select a supported provider in WhatsApp Settings.';
-        }
+        if ($this->configValue('provider', 'twilio') !== 'twilio') { $errors[] = 'Configure Twilio in WhatsApp Settings. The previous provider is no longer used.'; }
+        if (!in_array($this->getEnvironment(), array('sandbox', 'production'), true)) { $errors[] = 'Choose Sandbox or Production in WhatsApp Settings.'; }
+        if (empty($twilio['account_sid']) || !preg_match('/^AC[0-9a-fA-F]{32}$/', $twilio['account_sid'])) { $errors[] = 'Set a valid Twilio Account SID in WhatsApp Settings.'; }
+        if (empty($twilio['auth_token']) || !preg_match('/^[0-9a-fA-F]{32}$/', $twilio['auth_token'])) { $errors[] = 'Set a valid Twilio Auth Token in WhatsApp Settings.'; }
         return $errors;
     }
 
-    private function beginSend($phone) {
-        $this->last_error = '';
-        $errors = $this->getConfigurationErrors();
-        if (!empty($errors)) {
-            $this->fail(implode(' ', $errors));
-            return '';
-        }
-        $number = is_scalar($phone) ? $this->normalizePhone($phone) : '';
-        if (!preg_match('/^[1-9][0-9]{7,14}$/', $number)) {
-            $this->fail('The recipient needs a valid WhatsApp phone number including the country code.');
-            return '';
-        }
-        return $number;
+    public function getConfigurationErrors() {
+        $errors = $this->credentialErrors();
+        $twilio = $this->configValue('twilio', array());
+        if (!$this->isEnabled()) { $errors[] = 'WhatsApp sending is disabled. Enable production sending in WhatsApp Settings when ready.'; }
+        if (empty($twilio['from']) || !preg_match('/^\+[1-9][0-9]{7,14}$/', $twilio['from'])) { $errors[] = 'Set the Twilio WhatsApp sender using +countrycode format.'; }
+        if ($this->getEnvironment() === 'sandbox' && !$this->configValue('diagnostic', false)) { $errors[] = 'Sandbox mode allows single-recipient tests from WhatsApp Settings only. Group and automatic messages require Production.'; }
+        return $errors;
     }
 
     private function fail($message) {
         $this->last_error = $message;
-        log_message('error', 'WhatsApp send failed: ' . $message);
+        log_message('error', 'WhatsApp: ' . $message);
         return false;
     }
 
-    public function shouldAutoSendLoginCredential($sender_details) {
-        if (!$this->isEnabled() || !$this->toBool($this->configValue('auto_send_login_credentials', false))) {
-            return false;
+    private function beginSend($phone) {
+        $this->last_error = '';
+        $this->last_message = array();
+        $errors = $this->getConfigurationErrors();
+        if ($errors) { $this->fail(implode(' ', $errors)); return ''; }
+        if (!is_scalar($phone) || !preg_match('/^[+0-9() .-]+$/', (string) $phone)) { $this->fail('Enter a valid recipient phone number including the country code.'); return ''; }
+        $number = $this->normalizePhone($phone);
+        if (!preg_match('/^[1-9][0-9]{7,14}$/', $number)) { $this->fail('Enter a valid recipient phone number including the country code.'); return ''; }
+        if ($this->configValue('diagnostic', false)) {
+            $twilio = $this->configValue('twilio', array());
+            if (empty($twilio['test_recipient']) || !preg_match('/^\+[1-9][0-9]{7,14}$/', $twilio['test_recipient']) || $number !== substr($twilio['test_recipient'], 1)) {
+                $this->fail('Save a test recipient in +countrycode format. Tests can send only to that saved number.');
+                return '';
+            }
         }
-
-        $credential_for = isset($sender_details['credential_for']) ? strtolower($sender_details['credential_for']) : '';
-        $allowed        = $this->configValue('auto_credential_for', array('parent'));
-
-        return in_array($credential_for, $allowed, true);
+        return $number;
     }
 
-    public function sendLoginCredential($sender_details, $template = '') {
-        $send_to = $this->beginSend(isset($sender_details['contact_no']) ? $sender_details['contact_no'] : '');
-
-        if ($send_to === '') {
-            return false;
-        }
-
-        $sender_details = $this->prepareLoginCredentialDetails($sender_details);
-        $provider       = $this->getProvider();
-
-        if ($this->usesApprovedTemplates()) {
-            return $this->sendMetaCloudTemplate($send_to, $sender_details);
-        }
-
-        if ($provider === 'custom_webhook') {
-            return $this->sendCustomWebhook($send_to, $sender_details, $template);
-        }
-
-        return $this->fail('Select a supported provider in WhatsApp Settings.');
+    public function shouldAutoSendLoginCredential($details) {
+        return $this->isEnabled() && $this->getEnvironment() === 'production'
+            && !$this->configValue('diagnostic', false)
+            && $this->toBool($this->configValue('auto_send_login_credentials', false))
+            && in_array(isset($details['credential_for']) ? $details['credential_for'] : '', $this->configValue('auto_credential_for', array()), true);
     }
 
     public function sendMessage($phone, $message, $title = '') {
-        $send_to = $this->beginSend($phone);
-
-        if ($send_to === '') {
-            return false;
-        }
-        if (!is_scalar($message) || trim((string) $message) === '') {
-            return $this->fail('Enter a WhatsApp message before sending.');
-        }
-
-        $provider = $this->getProvider();
-
-        if ($this->usesApprovedTemplates()) {
-            return $this->sendMetaCloudText($send_to, (string) $message);
-        }
-
-        if ($provider === 'custom_webhook') {
-            return $this->sendCustomWebhookMessage($send_to, (string) $message, $title);
-        }
-
-        return $this->fail('Select a supported provider in WhatsApp Settings.');
+        $to = $this->beginSend($phone);
+        if ($to === '') { return false; }
+        if (!is_scalar($message) || trim((string) $message) === '') { return $this->fail('Enter a WhatsApp message before sending.'); }
+        return $this->sendPayload($to, array('Body' => (string) $message));
     }
 
-    public function sendTemplateMessage($phone, $template_name, $language, $values = array()) {
-        $send_to = $this->beginSend($phone);
-        if ($send_to === '') {
-            return false;
+    // Content SID selects both the approved wording and language in Twilio.
+    public function sendTemplateMessage($phone, $content_sid, $language = '', $values = array()) {
+        $to = $this->beginSend($phone);
+        if ($to === '') { return false; }
+        if (!is_string($content_sid) || !preg_match('/^HX[0-9a-fA-F]{32}$/', $content_sid)) { return $this->fail('Enter a valid Twilio Content SID (HX followed by 32 hex characters).'); }
+        if (!is_array($values) || count($values) > 100) { return $this->fail('Enter at most 100 ordered template values.'); }
+        $variables = array();
+        foreach (array_values($values) as $index => $value) {
+            if (!is_scalar($value) || trim((string) $value) === '') { return $this->fail('Each template value must contain text. Check the recipient details.'); }
+            $variables[(string) ($index + 1)] = (string) $value;
         }
-        if (!$this->usesApprovedTemplates()) {
-            return $this->fail('Approved template sending requires Meta Cloud API or 360dialog.');
+        $payload = array('ContentSid' => $content_sid);
+        if ($variables) {
+            $json = json_encode((object) $variables, JSON_UNESCAPED_UNICODE);
+            if ($json === false) { return $this->fail('The WhatsApp template contains invalid text encoding.'); }
+            $payload['ContentVariables'] = $json;
         }
-        if (!is_scalar($template_name) || !preg_match('/^[a-z0-9_]+$/', (string) $template_name)) {
-            return $this->fail('Enter the exact approved Meta template name using lowercase letters, numbers and underscores.');
+        return $this->sendPayload($to, $payload);
+    }
+
+    public function sendLoginCredential($details, $template = '') {
+        $twilio = $this->configValue('twilio', array());
+        $details = $this->prepareLoginCredentialDetails($details);
+        $values = array();
+        foreach ($this->configValue('login_template_parameters', array('display_name', 'school_name', 'url', 'username', 'password')) as $key) {
+            $values[] = isset($details[$key]) ? $details[$key] : '';
         }
-        if (!is_scalar($language) || !preg_match('/^[a-z]{2,3}(?:_[A-Z]{2})?$/', (string) $language)) {
-            return $this->fail('Enter the approved template language code, such as en or en_US.');
+        return $this->sendTemplateMessage(isset($details['contact_no']) ? $details['contact_no'] : '', isset($twilio['login_content_sid']) ? $twilio['login_content_sid'] : '', '', $values);
+    }
+
+    private function sendPayload($to, $payload) {
+        $twilio = $this->configValue('twilio', array());
+        $payload['From'] = 'whatsapp:' . $twilio['from'];
+        $payload['To'] = 'whatsapp:+' . $to;
+        $response = $this->request('POST', $this->accountUrl() . '/Messages.json', $payload);
+        if ($response === false) { return false; }
+        if (empty($response['sid']) || !preg_match('/^(SM|MM)[0-9a-fA-F]{32}$/', $response['sid'])
+            || empty($response['status']) || !in_array($response['status'], array('accepted', 'queued', 'sending', 'sent', 'delivered', 'read'), true)) {
+            return $this->fail('Twilio did not accept the message with a valid Message SID and status. Check Messaging Logs.');
         }
-        if (!is_array($values)) {
-            return $this->fail('Enter the template body values in their approved order.');
+        $this->last_message = array('sid' => $response['sid'], 'status' => $response['status']);
+        log_message('info', 'Twilio accepted WhatsApp request; delivery must be checked separately.');
+        return true;
+    }
+
+    public function checkConnection() {
+        $this->last_error = '';
+        $errors = $this->credentialErrors();
+        if ($errors) { return $this->fail(implode(' ', $errors)); }
+        $account = $this->request('GET', $this->accountUrl() . '.json');
+        if ($account === false) { return false; }
+        $twilio = $this->configValue('twilio', array());
+        if (!isset($account['sid']) || $account['sid'] !== $twilio['account_sid']) { return $this->fail('Twilio returned an unexpected account. Verify the Account SID and Auth Token.'); }
+        if (!isset($account['status']) || $account['status'] !== 'active') { return $this->fail('The Twilio account is not active. Check account suspension, closure and billing in Twilio Console.'); }
+        return true;
+    }
+
+    public function fetchMessageStatus($sid) {
+        $this->last_error = '';
+        if (!is_string($sid) || !preg_match('/^(SM|MM)[0-9a-fA-F]{32}$/', $sid)) { return $this->fail('Send a test message first.'); }
+        $errors = $this->credentialErrors();
+        if ($errors) { return $this->fail(implode(' ', $errors)); }
+        $message = $this->request('GET', $this->accountUrl() . '/Messages/' . $sid . '.json', array(), true);
+        if ($message === false) { return false; }
+        if (!isset($message['sid'], $message['status']) || $message['sid'] !== $sid || !in_array($message['status'], array('accepted', 'queued', 'sending', 'sent', 'delivered', 'read', 'failed', 'undelivered', 'canceled'), true)) {
+            return $this->fail('Twilio returned an invalid message status. Check Messaging Logs.');
         }
-        $parameters = array();
-        foreach ($values as $value) {
-            if (!is_scalar($value) || trim((string) $value) === '') {
-                return $this->fail('Each template body value must contain text. Check the recipient details and template variables.');
-            }
-            $parameters[] = array('type' => 'text', 'text' => (string) $value);
+        $this->last_message = array('sid' => $sid, 'status' => $message['status'], 'error_code' => isset($message['error_code']) && is_numeric($message['error_code']) ? (int) $message['error_code'] : 0);
+        return $this->last_message;
+    }
+
+    private function accountUrl() {
+        $twilio = $this->configValue('twilio', array());
+        return 'https://api.twilio.com/2010-04-01/Accounts/' . $twilio['account_sid'];
+    }
+
+    private function request($method, $url, $payload = array(), $delivery_status = false) {
+        $result = $this->httpRequest($method, $url, $payload);
+        if ($result === false) { return false; }
+        $http = (int) $result[0];
+        $data = json_decode($result[1], true);
+        $code = is_array($data) && isset($data['code']) && is_numeric($data['code']) ? (int) $data['code'] : 0;
+        if (is_array($data) && !empty($data['error_code']) && is_numeric($data['error_code'])) { $code = (int) $data['error_code']; }
+        if ($http < 200 || $http >= 300 || (!$delivery_status && ($code || (isset($data['status']) && in_array($data['status'], array('failed', 'undelivered', 'canceled'), true))))) {
+            return $this->fail($this->errorExplanation($http, $code));
         }
-        return $this->sendMetaCloudApprovedTemplate($send_to, (string) $template_name, (string) $language, $parameters);
+        if (!is_array($data)) { return $this->fail('Twilio returned an unreadable response. Check the server connection and try again.'); }
+        return $data;
+    }
+
+    public function errorExplanation($http, $code) {
+        $reasons = array(
+            20003 => 'Twilio authentication failed. Check the Account SID and Auth Token for this environment. Use live account credentials for the WhatsApp Sandbox.',
+            20404 => 'The Twilio resource was not found. Check the account and Message SID.',
+            20429 => 'Twilio rate limit reached. Wait before trying again.',
+            21211 => 'The recipient number is invalid. Use +countrycode format.',
+            21606 => 'The sender is not available on this Twilio account.',
+            21608 => 'This trial account cannot send to the recipient. Verify the recipient or review Twilio account compliance.',
+            21610 => 'The recipient has opted out. Do not retry until the recipient opts in.',
+            21614 => 'The recipient is not a valid messaging destination.',
+            21617 => 'The message is too long. Shorten it.',
+            21654 => 'A Content SID is required for template variables. Select a Twilio Content template.',
+            21656 => 'The template variables are invalid. Match the numbered variables in Twilio Content Template Builder.',
+            21658 => 'A message parameter or template value exceeds its character limit. Shorten the content.',
+            63003 => 'The recipient is not available on WhatsApp. Check the phone number.',
+            63007 => 'The WhatsApp sender is not connected to this Twilio account. Activate the Sandbox or register the production sender.',
+            63015 => 'The test recipient has not joined this Sandbox, or membership expired. Send the Sandbox join code again from that phone.',
+            63016 => 'The 24-hour reply window is closed. Use an approved Twilio Content SID template.',
+            63018 => 'WhatsApp rate limit reached. Wait before retrying; Sandbox sends must be spaced apart.',
+            63024 => 'WhatsApp declined delivery. Check the recipient and Twilio Messaging Logs.',
+            63027 => 'The template is unavailable in the expected language. Check its Content SID in Twilio.',
+            63028 => 'The template variable count does not match. Check the Content SID and numbered values.',
+            63040 => 'The WhatsApp template was rejected. Choose an approved Twilio Content template.'
+        );
+        $reason = isset($reasons[$code]) ? $reasons[$code] : ($http === 401 || $http === 403
+            ? 'Twilio denied access. Check account credentials, permissions and account status.'
+            : ($http === 429 ? 'Twilio rate limit reached. Wait before retrying.' : 'Twilio rejected the request. Check Messaging Logs, sender approval, template and account balance.'));
+        return $reason . ' (HTTP ' . (int) $http . ($code ? ', Twilio code ' . (int) $code : '') . ')';
+    }
+
+    protected function httpRequest($method, $url, $payload = array()) {
+        if (!function_exists('curl_init')) { return $this->fail('PHP cURL is unavailable. Ask the administrator to enable it.'); }
+        $twilio = $this->configValue('twilio', array());
+        $ch = curl_init($url);
+        curl_setopt_array($ch, array(
+            CURLOPT_RETURNTRANSFER => true, CURLOPT_CUSTOMREQUEST => $method,
+            CURLOPT_HTTPAUTH => CURLAUTH_BASIC, CURLOPT_USERPWD => $twilio['account_sid'] . ':' . $twilio['auth_token'],
+            CURLOPT_HTTPHEADER => array('Accept: application/json', 'Content-Type: application/x-www-form-urlencoded'),
+            CURLOPT_TIMEOUT => 30, CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => true, CURLOPT_SSL_VERIFYHOST => 2, CURLOPT_FOLLOWLOCATION => false
+        ));
+        if ($method === 'POST') { curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($payload, '', '&', PHP_QUERY_RFC3986)); }
+        $body = curl_exec($ch);
+        $errno = curl_errno($ch);
+        $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($body === false) {
+            return $this->fail('Unable to connect to Twilio (cURL code ' . (int) $errno . '). Check outbound HTTPS access, DNS and TLS certificates. The request may have reached Twilio; check Messaging Logs before resending.');
+        }
+        return array($http, $body);
     }
 
     private function prepareLoginCredentialDetails($sender_details) {
@@ -211,168 +261,6 @@ class Whatsappgateway {
         return $sender_details;
     }
 
-    private function sendMetaCloudTemplate($send_to, $sender_details) {
-        $meta_config     = $this->configValue('meta_cloud', array());
-        $template_name   = isset($meta_config['template_name']) ? trim($meta_config['template_name']) : '';
-        $language        = isset($meta_config['template_language']) ? trim($meta_config['template_language']) : 'en';
-        if ($template_name === '') {
-            return $this->fail('Set the approved login credential Template Name in WhatsApp Settings.');
-        }
-        return $this->sendMetaCloudApprovedTemplate($send_to, $template_name, $language, $this->buildTemplateParameters($sender_details));
-    }
-
-    private function sendMetaCloudApprovedTemplate($send_to, $template_name, $language, $parameters) {
-        $meta_config     = $this->configValue('meta_cloud', array());
-        $phone_number_id = isset($meta_config['phone_number_id']) ? trim($meta_config['phone_number_id']) : '';
-        $access_token    = isset($meta_config['access_token']) ? trim($meta_config['access_token']) : '';
-        $api_version     = isset($meta_config['graph_api_version']) ? trim($meta_config['graph_api_version']) : 'v20.0';
-
-        if (($this->getProvider() === 'meta_cloud' && ($phone_number_id === '' || $access_token === '')) || $template_name === '') {
-            return $this->fail('Set the Meta Phone Number ID, Access Token and approved Template Name in WhatsApp Settings.');
-        }
-
-        $payload = array(
-            'messaging_product' => 'whatsapp',
-            'recipient_type'    => 'individual',
-            'to'                => $send_to,
-            'type'              => 'template',
-            'template'          => array(
-                'name'     => $template_name,
-                'language' => array('code' => $language),
-            ),
-        );
-
-        if (!empty($parameters)) {
-            $payload['template']['components'] = array(
-                array(
-                    'type'       => 'body',
-                    'parameters' => $parameters,
-                ),
-            );
-        }
-
-        return $this->postPlatformPayload($payload);
-    }
-
-    private function sendCustomWebhook($send_to, $sender_details, $template) {
-        $webhook_config = $this->configValue('custom_webhook', array());
-        $url            = isset($webhook_config['url']) ? trim($webhook_config['url']) : '';
-        $token          = isset($webhook_config['bearer_token']) ? trim($webhook_config['bearer_token']) : '';
-
-        if ($url === '') {
-            return $this->fail('Set the Custom Webhook URL in WhatsApp Settings.');
-        }
-
-        $payload = array(
-            'to'         => $send_to,
-            'message'    => $this->renderTemplate($sender_details, $template),
-            'parameters' => $sender_details,
-        );
-
-        $headers = array('Content-Type: application/json');
-
-        if ($token !== '') {
-            $headers[] = 'Authorization: Bearer ' . $token;
-        }
-
-        return $this->postJson($url, $payload, $headers);
-    }
-
-    private function sendMetaCloudText($send_to, $message) {
-        $meta_config     = $this->configValue('meta_cloud', array());
-        $phone_number_id = isset($meta_config['phone_number_id']) ? trim($meta_config['phone_number_id']) : '';
-        $access_token    = isset($meta_config['access_token']) ? trim($meta_config['access_token']) : '';
-        $api_version     = isset($meta_config['graph_api_version']) ? trim($meta_config['graph_api_version']) : 'v20.0';
-
-        if ($this->getProvider() === 'meta_cloud' && ($phone_number_id === '' || $access_token === '')) {
-            return $this->fail('Set the Meta Phone Number ID and Access Token in WhatsApp Settings.');
-        }
-
-        $payload = array(
-            'messaging_product' => 'whatsapp',
-            'recipient_type'    => 'individual',
-            'to'                => $send_to,
-            'type'              => 'text',
-            'text'              => array(
-                'preview_url' => false,
-                'body'        => $message,
-            ),
-        );
-
-        return $this->postPlatformPayload($payload);
-    }
-
-    private function postPlatformPayload($payload) {
-        if ($this->getProvider() === '360dialog') {
-            $dialog = $this->configValue('dialog360', array());
-            $key = isset($dialog['api_key']) ? trim((string) $dialog['api_key']) : '';
-            if ($key === '' || preg_match('/[\r\n]/', $key)) {
-                return $this->fail('Set a valid 360dialog channel API key in WhatsApp Settings.');
-            }
-            return $this->postJson('https://waba-v2.360dialog.io/messages', $payload, array(
-                'D360-API-KEY: ' . $key,
-                'Content-Type: application/json',
-            ));
-        }
-        $meta = $this->configValue('meta_cloud', array());
-        $version = isset($meta['graph_api_version']) ? trim((string) $meta['graph_api_version']) : 'v20.0';
-        $url = 'https://graph.facebook.com/' . $version . '/' . trim((string) $meta['phone_number_id']) . '/messages';
-        return $this->postJson($url, $payload, array(
-            'Authorization: Bearer ' . trim((string) $meta['access_token']),
-            'Content-Type: application/json',
-        ));
-    }
-
-    private function sendCustomWebhookMessage($send_to, $message, $title = '') {
-        $webhook_config = $this->configValue('custom_webhook', array());
-        $url            = isset($webhook_config['url']) ? trim($webhook_config['url']) : '';
-        $token          = isset($webhook_config['bearer_token']) ? trim($webhook_config['bearer_token']) : '';
-
-        if ($url === '') {
-            return $this->fail('Set the Custom Webhook URL in WhatsApp Settings.');
-        }
-
-        $payload = array(
-            'to'      => $send_to,
-            'title'   => $title,
-            'message' => $message,
-        );
-
-        $headers = array('Content-Type: application/json');
-
-        if ($token !== '') {
-            $headers[] = 'Authorization: Bearer ' . $token;
-        }
-
-        return $this->postJson($url, $payload, $headers);
-    }
-
-    private function buildTemplateParameters($sender_details) {
-        $parameters = array();
-        $keys       = $this->configValue('login_template_parameters', array('display_name', 'school_name', 'url', 'username', 'password'));
-
-        foreach ($keys as $key) {
-            $parameters[] = array(
-                'type' => 'text',
-                'text' => isset($sender_details[$key]) ? (string) $sender_details[$key] : '',
-            );
-        }
-
-        return $parameters;
-    }
-
-    private function renderTemplate($sender_details, $template) {
-        if (trim((string) $template) === '') {
-            $template = 'Hello {{display_name}}, your {{school_name}} portal login details are: Login URL: {{url}} Username: {{username}} Password: {{password}}';
-        }
-
-        foreach ($sender_details as $key => $value) {
-            $template = str_replace('{{' . $key . '}}', (string) $value, $template);
-        }
-
-        return $template;
-    }
-
     private function normalizePhone($phone) {
         $phone = trim((string) $phone);
         $international = preg_match('/^(?:\+|00)/', $phone) === 1;
@@ -397,79 +285,6 @@ class Whatsappgateway {
         }
 
         return $number;
-    }
-
-    protected function postJson($url, $payload, $headers) {
-        if (!function_exists('curl_init')) {
-            return $this->fail('PHP cURL is unavailable. Ask the server administrator to enable it.');
-        }
-        $json = json_encode($payload);
-        if ($json === false) {
-            return $this->fail('The WhatsApp message contains invalid text encoding.');
-        }
-
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-
-        $response  = curl_exec($ch);
-        $curl_errno = curl_errno($ch);
-        $http_code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($response === false) {
-            return $this->fail('Unable to connect to the WhatsApp provider (cURL code ' . $curl_errno . '). Check the server connection and TLS certificates.');
-        }
-        return $this->handleProviderResponse($http_code, $response);
-    }
-
-    protected function handleProviderResponse($http_code, $response) {
-        $data = json_decode($response, true);
-        $error_code = is_array($data) && isset($data['error']) && is_array($data['error']) && isset($data['error']['code']) ? (int) $data['error']['code'] : 0;
-        $has_error = is_array($data) && (!empty($data['error'])
-            || (array_key_exists('success', $data) && !$this->toBool($data['success']))
-            || (isset($data['status']) && is_scalar($data['status']) && in_array(strtolower((string) $data['status']), array('error', 'failed', 'failure'), true)));
-        if ($http_code < 200 || $http_code >= 300 || $has_error) {
-            if ($this->getProvider() === '360dialog') {
-                if ((int) $http_code === 401) {
-                    return $this->fail('The 360dialog channel API key is invalid. Update the key from the connected number in 360dialog Hub. (HTTP 401)');
-                }
-                if (is_array($data) && isset($data['code']) && $data['code'] === 'insufficient_balance') {
-                    return $this->fail('The 360dialog account has insufficient messaging balance. Check billing in 360dialog Hub. (HTTP ' . (int) $http_code . ')');
-                }
-            }
-            $reasons = array(
-                190 => 'The Meta access token is invalid or expired. Update the Access Token in WhatsApp Settings.',
-                10 => 'The Meta access token does not have permission to send WhatsApp messages.',
-                200 => 'The Meta access token does not have permission to send WhatsApp messages.',
-                131047 => 'The WhatsApp reply window has closed. Send an approved Meta template, or ask the recipient to message the school first.',
-                132000 => 'The template body value count does not match the approved Meta template.',
-                132001 => 'The Meta template name or language is not approved or does not exist for this WhatsApp account.',
-                132015 => 'The approved Meta template is paused. Check WhatsApp Manager.',
-                132016 => 'The approved Meta template is disabled. Check WhatsApp Manager.',
-                131026 => 'WhatsApp could not deliver to this recipient. Check that the phone number has a WhatsApp account.',
-                131030 => 'The recipient is not in the allowed test recipient list in the Meta developer dashboard.',
-                131042 => 'The WhatsApp business account has a payment or eligibility problem. Check WhatsApp Manager.',
-                130429 => 'The WhatsApp provider rate limit was reached. Try again later.',
-                100 => 'Meta rejected a request parameter. Check the Phone Number ID, template name, language and body values.',
-            );
-            $reason = isset($reasons[$error_code]) ? $reasons[$error_code] : 'The WhatsApp provider rejected the message. Check the provider account and configuration.';
-            return $this->fail($reason . ' (HTTP ' . (int) $http_code . ($error_code ? ', provider code ' . $error_code : '') . ')');
-        }
-        if ($this->usesApprovedTemplates() && empty($data['messages'][0]['id'])) {
-            return $this->fail('The WhatsApp provider did not return a message ID. The message was not accepted.');
-        }
-        if ($this->usesApprovedTemplates() && isset($data['messages'][0]['message_status']) && $data['messages'][0]['message_status'] === 'paused') {
-            return $this->fail('The WhatsApp provider paused this message. Check the template and account in the provider dashboard.');
-        }
-        log_message('info', 'WhatsApp provider accepted message: http_code=' . (int) $http_code);
-        return true;
     }
 
     private function configValue($key, $default = null) {

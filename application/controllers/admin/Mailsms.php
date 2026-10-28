@@ -1020,7 +1020,7 @@ class Mailsms extends Admin_Controller
             echo json_encode(array('status' => 1, 'msg' => array('whatsapp' => '<li>Select a delivery option supported by the WhatsApp provider.</li>')));
             return;
         }
-        $text_fields = $delivery_type === 'template' ? array('group_title', 'meta_template_name', 'meta_template_language') : array('group_title', 'group_message');
+        $text_fields = $delivery_type === 'template' ? array('group_title', 'twilio_content_sid') : array('group_title', 'group_message');
         foreach ($text_fields as $field) {
             $value = $this->input->post($field);
             if ($value !== null && !is_string($value)) {
@@ -1036,8 +1036,7 @@ class Mailsms extends Admin_Controller
         $this->form_validation->set_error_delimiters('<li>', '</li>');
         $this->form_validation->set_rules('group_title', $this->lang->line('title'), 'required');
         if ($delivery_type === 'template') {
-            $this->form_validation->set_rules('meta_template_name', 'Approved Template Name', 'trim|required|regex_match[/^[a-z0-9_]+$/]');
-            $this->form_validation->set_rules('meta_template_language', 'Template Language', 'trim|required|regex_match[/^[a-z]{2,3}(?:_[A-Z]{2})?$/]');
+            $this->form_validation->set_rules('twilio_content_sid', 'Twilio Content SID', 'trim|required|regex_match[/^HX[0-9a-fA-F]{32}$/]');
         } else {
             $this->form_validation->set_rules('group_message', $this->lang->line('message'), 'required');
         }
@@ -1048,8 +1047,7 @@ class Mailsms extends Admin_Controller
                 'group_title' => form_error('group_title'),
                 'group_message' => form_error('group_message'),
                 'user[]' => form_error('user[]'),
-                'meta_template_name' => form_error('meta_template_name'),
-                'meta_template_language' => form_error('meta_template_language'),
+                'twilio_content_sid' => form_error('twilio_content_sid'),
             );
 
             echo json_encode(array('status' => 1, 'msg' => $data));
@@ -1062,11 +1060,11 @@ class Mailsms extends Admin_Controller
             return;
         }
 
-        $template_name = $delivery_type === 'template' ? $this->input->post('meta_template_name') : '';
-        $template_language = $delivery_type === 'template' ? $this->input->post('meta_template_language') : '';
+        $template_name = $delivery_type === 'template' ? $this->input->post('twilio_content_sid') : '';
+        $template_language = '';
         $template_parameters = array();
         if ($delivery_type === 'template') {
-            $raw_parameters = $this->input->post('meta_template_parameters');
+            $raw_parameters = $this->input->post('twilio_template_parameters');
             if ($raw_parameters !== null && !is_string($raw_parameters)) {
                 echo json_encode(array('status' => 1, 'msg' => array('whatsapp' => '<li>Enter one template body value per line.</li>')));
                 return;
@@ -1075,7 +1073,7 @@ class Mailsms extends Admin_Controller
                 $template_parameters = preg_split('/\r\n|\r|\n/', trim($raw_parameters));
             }
         }
-        $message = $delivery_type === 'template' ? 'WhatsApp template: ' . $template_name . ' (' . $template_language . ')' : $this->input->post('group_message');
+        $message = $delivery_type === 'template' ? 'Twilio WhatsApp template: ' . $template_name : $this->input->post('group_message');
         $message_title = $this->input->post('group_title');
         $user_array = $this->getGroupComposeRecipients($userlisting);
         if (empty($user_array)) {
