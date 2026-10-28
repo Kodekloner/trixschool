@@ -84,55 +84,47 @@ function whatsapp_compose_response($controller) {
     return $response;
 }
 
-$post = array('group_delivery_type' => 'template', 'group_title' => 'School notice', 'meta_template_name' => ' school_notice ', 'meta_template_language' => ' en_US ', 'meta_template_parameters' => "{{display_name}}\r\n{{school_name}}", 'user' => array('parent'));
+$content_sid = 'HX' . str_repeat('d', 32);
+$post = array('group_delivery_type' => 'template', 'group_title' => 'School notice', 'twilio_content_sid' => ' ' . $content_sid . ' ', 'twilio_template_parameters' => "{{display_name}}\r\n{{school_name}}", 'user' => array('parent'));
 $controller = whatsapp_compose($post);
-$controller->whatsappgateway->responses = array(array(200, '{"messages":[{"id":"wamid.accepted"}]}'), array(400, '{"error":{"code":190}}'));
+$controller->whatsappgateway->responses = array(array(201, '{"sid":"SMbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","status":"queued"}'), array(401, '{"code":20003,"message":"sensitive"}'));
 $response = whatsapp_compose_response($controller);
 whatsapp_assert($response['status'] === 0 && $response['summary'] === array('accepted' => 1, 'failed' => 1, 'missing_phone' => 1), 'Mixed results must count acceptance, failure and missing phones accurately.');
-whatsapp_assert(strpos($response['msg'], 'token') !== false, 'A partial failure must expose the safe provider reason.');
+whatsapp_assert(strpos($response['msg'], 'authentication') !== false, 'Partial failure must include a safe Twilio reason.');
 $requests = $controller->whatsappgateway->requests;
-whatsapp_assert(count($requests) === 2 && $requests[0]['payload']['to'] === '2348012345678', 'Parent messages must use guardian phones, and skip missing phones.');
-whatsapp_assert($requests[0]['payload']['template']['name'] === 'school_notice', 'CodeIgniter validation must trim template names.');
-whatsapp_assert(array_column($requests[0]['payload']['template']['components'][0]['parameters'], 'text') === array('Guardian 1', 'Test School'), 'Each guardian must receive personalized template body values.');
-whatsapp_assert(count($controller->messages_model->rows) === 1 && strpos($controller->messages_model->rows[0]['message'], 'school_notice') !== false, 'Accepted template sends must record the template name.');
-
+whatsapp_assert(count($requests) === 2 && $requests[0]['payload']['To'] === 'whatsapp:+2348012345678', 'Parents must use guardian phones and skip missing contacts.');
+whatsapp_assert($requests[0]['payload']['ContentSid'] === $content_sid && array_values(json_decode($requests[0]['payload']['ContentVariables'], true)) === array('Guardian 1', 'Test School'), 'Content SID must be trimmed and variables personalized.');
+whatsapp_assert(count($controller->messages_model->rows) === 1 && strpos($controller->messages_model->rows[0]['message'], $content_sid) !== false, 'Accepted sends must record Content SID.');
 $controller = whatsapp_compose($post);
-$controller->whatsappgateway->responses = array(array(400, '{"error":{"code":132001}}'), array(400, '{"error":{"code":132001}}'));
+$controller->whatsappgateway->responses = array(array(400, '{"code":21658}'), array(400, '{"code":21658}'));
 $response = whatsapp_compose_response($controller);
-whatsapp_assert($response['status'] === 1 && $response['summary']['accepted'] === 0 && $response['summary']['failed'] === 2, 'An entirely rejected send must report failure.');
-whatsapp_assert(count($controller->messages_model->rows) === 0, 'An entirely rejected send must not create a successful message log.');
-whatsapp_assert(strpos($response['msg']['whatsapp'], 'name or language') !== false, 'An invalid approved template must show the specific reason.');
-
-foreach (array(array('meta_template_name' => 'Bad Name'), array('meta_template_language' => 'English'), array('user' => array()), array('group_title' => array('invalid')), array('user' => 'parent'), array('meta_template_parameters' => array('invalid')), array('group_delivery_type' => 'unsupported')) as $invalid) {
+whatsapp_assert($response['status'] === 1 && $response['summary']['accepted'] === 0 && $response['summary']['failed'] === 2 && !$controller->messages_model->rows, 'Total rejection must not create a successful log.');
+foreach (array(array('twilio_content_sid' => 'school_notice'), array('twilio_content_sid' => array('bad')), array('user' => array()), array('group_title' => array('invalid')), array('user' => 'parent'), array('twilio_template_parameters' => array('invalid')), array('group_delivery_type' => 'unsupported')) as $invalid) {
     $controller = whatsapp_compose(array_replace($post, $invalid));
     $response = whatsapp_compose_response($controller);
-    whatsapp_assert($response['status'] === 1 && !$controller->whatsappgateway->requests, 'Invalid compose input must fail before contacting the provider.');
+    whatsapp_assert($response['status'] === 1 && !$controller->whatsappgateway->requests, 'Invalid input must not contact Twilio.');
 }
-$controller = whatsapp_compose($post, array('enabled' => 0));
-$response = whatsapp_compose_response($controller);
-whatsapp_assert($response['status'] === 1 && strpos($response['msg']['whatsapp'], 'disabled') !== false && !$controller->whatsappgateway->requests, 'Disabled sending must show its configuration problem.');
+foreach (array(array('enabled' => 0), array('environment' => 'sandbox')) as $blocked) {
+    $controller = whatsapp_compose($post, $blocked);
+    $response = whatsapp_compose_response($controller);
+    whatsapp_assert($response['status'] === 1 && !$controller->whatsappgateway->requests, 'Disabled and Sandbox school sends must be blocked.');
+}
 $controller = whatsapp_compose($post);
 $controller->student_model->rows = array();
 $response = whatsapp_compose_response($controller);
-whatsapp_assert($response['status'] === 1 && !$controller->messages_model->rows && !$controller->whatsappgateway->requests, 'Empty recipient groups must not create a message log or send requests.');
-
+whatsapp_assert($response['status'] === 1 && !$controller->messages_model->rows && !$controller->whatsappgateway->requests, 'Empty groups must not send or log success.');
 $text_post = array('group_delivery_type' => 'text', 'group_title' => 'Notice', 'group_message' => 'Hello {{display_name}} from {{school_name}}', 'user' => array('parent'));
-$controller = whatsapp_compose($text_post, array('provider' => 'custom_webhook'));
-$controller->whatsappgateway->responses = array(array(202, '{"success":true}'), array(202, '{"success":true}'));
+$controller = whatsapp_compose($text_post);
 $response = whatsapp_compose_response($controller);
-whatsapp_assert($response['summary']['accepted'] === 2 && $response['summary']['missing_phone'] === 1, 'Custom webhook text messages must keep working.');
-whatsapp_assert($controller->whatsappgateway->requests[0]['payload']['message'] === 'Hello Guardian 1 from Test School', 'Custom webhook text must remain personalized.');
+whatsapp_assert($response['summary']['accepted'] === 2 && $response['summary']['missing_phone'] === 1 && $controller->whatsappgateway->requests[0]['payload']['Body'] === 'Hello Guardian 1 from Test School', 'Text replies must remain personalized.');
 $controller = whatsapp_compose(array_replace($text_post, array('group_message' => '')));
 $response = whatsapp_compose_response($controller);
-whatsapp_assert($response['status'] === 1 && !$controller->whatsappgateway->requests, 'Text mode must still require a message.');
-
+whatsapp_assert($response['status'] === 1 && !$controller->whatsappgateway->requests, 'Text requires a message.');
 foreach (array('GET' => 405, 'DENIED' => 403) as $case => $status) {
     $controller = whatsapp_compose($post);
-    if ($case === 'GET') { $controller->input->http_method = 'GET'; }
-    else { $controller->rbac->allowed = false; }
-    try { whatsapp_compose_response($controller); throw new RuntimeException('Expected request rejection.'); }
-    catch (RuntimeException $error) { whatsapp_assert($error->getCode() === $status, 'Only permitted POST requests may send messages.'); }
-    whatsapp_assert(!$controller->whatsappgateway->requests, 'Rejected requests must not contact the provider.');
+    if ($case === 'GET') { $controller->input->http_method = 'GET'; } else { $controller->rbac->allowed = false; }
+    try { whatsapp_compose_response($controller); throw new RuntimeException('Expected rejection.'); }
+    catch (RuntimeException $error) { whatsapp_assert($error->getCode() === $status, 'Only permitted POST requests may send.'); }
+    whatsapp_assert(!$controller->whatsappgateway->requests, 'Rejected requests must not contact Twilio.');
 }
-
-echo "WhatsApp compose workflow tests passed\n";
+echo "Twilio WhatsApp compose tests passed\n";

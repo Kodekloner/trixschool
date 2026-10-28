@@ -8,7 +8,7 @@ $compose_notifications = isset($compose_notifications) ? $compose_notifications 
         'audience'  => array('student', 'parent', 'roles'),
     ),
 );
-$supports_templates = !empty($whatsapp_supports_templates) || (isset($whatsapp_provider) && in_array($whatsapp_provider, array('meta_cloud', '360dialog'), true));
+$supports_templates = true;
 $whatsapp_errors = isset($whatsapp_errors) ? $whatsapp_errors : array();
 ?>
 <div class="content-wrapper">
@@ -40,18 +40,14 @@ $whatsapp_errors = isset($whatsapp_errors) ? $whatsapp_errors : array();
                                         </div>
                                         <div id="whatsapp_approved_template_fields">
                                             <div class="form-group">
-                                                <label>Approved Template Name</label><small class="req"> *</small>
-                                                <input type="text" name="meta_template_name" class="form-control" placeholder="school_notice">
-                                                <span class="help-block">Copy the exact approved name from WhatsApp Manager or your provider dashboard. The recipient receives that template's approved wording.</span>
-                                            </div>
-                                            <div class="form-group">
-                                                <label>Template Language</label><small class="req"> *</small>
-                                                <input type="text" name="meta_template_language" class="form-control" value="en" placeholder="en or en_US">
+                                                <label>Twilio Content SID</label><small class="req"> *</small>
+                                                <input type="text" name="twilio_content_sid" class="form-control" placeholder="HX followed by 32 hex characters">
+                                                <span class="help-block">Copy the approved Content SID from Twilio Content Template Builder. It selects the wording and language.</span>
                                             </div>
                                             <div class="form-group">
                                                 <label>Template Body Values</label>
-                                                <textarea name="meta_template_parameters" class="form-control" rows="4" placeholder="{{display_name}}&#10;{{school_name}}"></textarea>
-                                                <span class="help-block">For templates with numbered text values in the body, enter one value per line in the approved order. You can use {{display_name}}, {{student_name}} and {{school_name}}. Leave blank for templates without values.</span>
+                                                <textarea name="twilio_template_parameters" class="form-control" rows="4" placeholder="{{display_name}}&#10;{{school_name}}"></textarea>
+                                                <span class="help-block">Enter one text value per line for numbered variables {{1}}, {{2}}, etc. You can personalize with {{display_name}}, {{student_name}} and {{school_name}}. Leave blank for templates without variables.</span>
                                             </div>
                                         </div>
                                     <?php } else { ?>

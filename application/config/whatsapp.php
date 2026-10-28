@@ -9,8 +9,9 @@ if (!defined('BASEPATH')) {
 | WhatsApp Gateway
 |--------------------------------------------------------------------------
 |
-| WhatsApp settings are now stored per school database in `whatsapp_config`.
-| Configure them from Communicate > WhatsApp Settings in the admin panel.
+| Twilio WhatsApp settings are stored per school in `whatsapp_twilio_config`.
+| Configure Sandbox and Production from System Settings > WhatsApp Settings.
+| The legacy Meta/360dialog configuration is no longer loaded.
 |
 */
 $config['whatsapp'] = array();
