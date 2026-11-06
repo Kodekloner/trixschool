@@ -722,148 +722,114 @@ class Mailsms extends Admin_Controller
         $this->form_validation->set_rules('group_message', $this->lang->line('message'), 'required');
         $this->form_validation->set_rules('user[]', $this->lang->line('message') . " " . $this->lang->line('to'), 'required');
         $this->form_validation->set_rules('group_send_by', $this->lang->line('send_through'), 'required|in_list[email]');
-        if ($this->form_validation->run()) {
-            $user_array = array();
-
-            $sms_mail = $this->input->post('group_send_by');
-            if ($sms_mail == "sms") {
-                $send_sms  = 1;
-                $send_mail = 0;
-            } else {
-                $send_sms  = 0;
-                $send_mail = 1;
-            }
-            $message       = $this->input->post('group_message');
-            $message_title = $this->input->post('group_title');
-            $current_session_name = $this->setting_model->getCurrentSessionName();
-            $data          = array(
-                'is_group'   => 1,
-                'title'      => $message_title,
-                'message'    => $message,
-                'send_mail'  => $send_mail,
-                'send_sms'   => $send_sms,
-                'group_list' => json_encode(array()),
-                'created_at' => date('Y-m-d H:i:s'),
-            );
-            $this->messages_model->add($data);
-
-            $userlisting = $this->input->post('user[]');
-            foreach ($userlisting as $users_key => $users_value) {
-                if ($users_value == "student") {
-                    $student_array = $this->student_model->get();
-                    if (!empty($student_array)) {
-                        foreach ($student_array as $student_key => $student_value) {
-                            $student_name = $this->customlib->getFullName(
-                                $student_value['firstname'],
-                                $student_value['middlename'],
-                                $student_value['lastname'],
-                                $this->sch_setting_detail->middlename,
-                                $this->sch_setting_detail->lastname
-                            );
-
-                            $array = array_merge($student_value, array(
-                                'user_id'  => $student_value['id'],
-                                'email'    => $student_value['email'],
-                                'mobileno' => $student_value['mobileno'],
-                                'display_name' => $student_name,
-                                'student_name' => $student_name,
-                                'name' => $student_name,
-                                'url' => site_url('site/userlogin'),
-                                'school_name' => $this->sch_setting_detail->name,
-                                'current_session_name' => $current_session_name,
-                            ));
-                            $user_array[] = $array;
-                        }
-                    }
-                } else if ($users_value == "parent") {
-                    $parent_array = $this->student_model->get();
-                    if (!empty($parent_array)) {
-                        foreach ($parent_array as $parent_key => $parent_value) {
-                            $parent_login = $this->user_model->getParentLoginDetails($parent_value['id']);
-                            $student_name = $this->customlib->getFullName(
-                                $parent_value['firstname'],
-                                $parent_value['middlename'],
-                                $parent_value['lastname'],
-                                $this->sch_setting_detail->middlename,
-                                $this->sch_setting_detail->lastname
-                            );
-
-                            $array = array_merge($parent_value, array(
-                                'user_id'  => $parent_value['id'],
-                                'email'    => $parent_value['guardian_email'],
-                                'mobileno' => $parent_value['guardian_phone'],
-                                'display_name' => $parent_value['guardian_name'],
-                                'name' => $parent_value['guardian_name'],
-                                'student_name' => $student_name,
-                                'username' => isset($parent_login['username']) ? $parent_login['username'] : '',
-                                'password' => isset($parent_login['password']) ? $parent_login['password'] : '',
-                                'url' => site_url('site/userlogin'),
-                                'school_name' => $this->sch_setting_detail->name,
-                                'current_session_name' => $current_session_name,
-                            ));
-                            $user_array[] = $array;
-                        }
-                    }
-                } else if (is_numeric($users_value)) {
-
-                    $staff = $this->staff_model->getEmployeeByRoleID($users_value);
-                    if (!empty($staff)) {
-                        foreach ($staff as $staff_key => $staff_value) {
-                            $staff_name = trim($staff_value['name'] . ' ' . $staff_value['surname']);
-                            $array = array_merge($staff_value, array(
-                                'user_id'  => $staff_value['id'],
-                                'email'    => $staff_value['email'],
-                                'mobileno' => $staff_value['contact_no'],
-                                'display_name' => $staff_name,
-                                'name' => $staff_name,
-                                'username' => !empty($staff_value['employee_id']) ? $staff_value['employee_id'] : $staff_value['email'],
-                                'url' => site_url('site/userlogin'),
-                                'school_name' => $this->sch_setting_detail->name,
-                                'current_session_name' => $current_session_name,
-                            ));
-                            $user_array[] = $array;
-                        }
-                    }
-                }
-            }
-
-            if (!empty($user_array)) {
-                if ($send_mail) {
-                    if (!empty($this->mail_config)) {
-                        foreach ($user_array as $user_mail_key => $user_mail_value) {
-                            if ($user_mail_value['email'] != "") {
-                                $personal_title   = $this->renderComposeTemplate($message_title, $user_mail_value);
-                                $personal_message = $this->renderComposeTemplate($message, $user_mail_value);
-                                $this->mailer->send_mail($user_mail_value['email'], $personal_title, $personal_message, $_FILES);
-                            }
-                        }
-                    }
-                }
-                if ($send_sms) {
-                    foreach ($user_array as $user_mail_key => $user_mail_value) {
-                        if ($user_mail_value['mobileno'] != "") {
-                            $personal_message = $this->renderComposeTemplate($message, $user_mail_value);
-                            $this->smsgateway->sendSMS($user_mail_value['mobileno'], "", ($personal_message));
-                        }
-                    }
-                }
-            }
-
-            echo json_encode(array('status' => 0, 'msg' => $this->lang->line('message_sent_successfully')));
-        } else {
-
-            $data = array(
+        if (!$this->form_validation->run()) {
+            $errors = array(
                 'group_title'   => form_error('group_title'),
                 'group_message' => form_error('group_message'),
                 'group_send_by' => form_error('group_send_by'),
                 'user[]'        => form_error('user[]'),
             );
-
-            echo json_encode(array('status' => 1, 'msg' => $data));
+            echo json_encode(array('status' => 1, 'msg' => $errors));
+            return;
         }
+
+        $groups = (array) $this->input->post('user[]');
+        $is_login_credential = $this->input->post('group_template_type') === 'login_credential';
+        if ($is_login_credential
+            && (in_array('student', $groups, true) || in_array('parent', $groups, true))
+            && !$this->rbac->hasPrivilege('student_login_credential_report', 'can_view')) {
+            echo json_encode(array(
+                'status' => 1,
+                'msg'    => array('user[]' => '<li>You do not have permission to send student or guardian login credentials.</li>'),
+            ));
+            return;
+        }
+
+        $data = array(
+            'is_group'   => 1,
+            'title'      => $this->input->post('group_title'),
+            'message'    => $this->input->post('group_message'),
+            'send_mail'  => 1,
+            'send_sms'   => 0,
+            'group_list' => json_encode(array()),
+            'created_at' => date('Y-m-d H:i:s'),
+        );
+
+        $recipients = $this->getGroupComposeRecipients($groups, $is_login_credential);
+        if ($is_login_credential) {
+            $this->sendGroupLoginCredentialEmails($recipients, $data);
+            return;
+        }
+
+        $this->messages_model->add($data);
+        if (!empty($this->mail_config)) {
+            foreach ($recipients as $recipient) {
+                if ($recipient['email'] != '') {
+                    $title = $this->renderComposeTemplate($data['title'], $recipient, false);
+                    $message = $this->renderComposeTemplate($data['message'], $recipient, false);
+                    $this->mailer->send_mail($recipient['email'], $title, $message, $_FILES);
+                }
+            }
+        }
+        echo json_encode(array('status' => 0, 'msg' => $this->lang->line('message_sent_successfully')));
     }
 
-    private function renderComposeTemplate($template, $values)
+    private function sendGroupLoginCredentialEmails($recipients, $data)
+    {
+        if (empty($this->mail_config)) {
+            echo json_encode(array('status' => 1, 'msg' => array('email' => '<li>Email sending is not configured.</li>')));
+            return;
+        }
+
+        $sent = 0;
+        $failed = 0;
+        $skipped = 0;
+        $seen = array();
+        foreach ($recipients as $recipient) {
+            $email = trim((string) $recipient['email']);
+            if (empty($recipient['credential_account_id']) || trim((string) $recipient['username']) === ''
+                || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $skipped++;
+                continue;
+            }
+
+            $role = $recipient['credential_role'];
+            $key = $role . ':' . $recipient['credential_account_id'] . ':' . strtolower($email);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+
+            // Staff passwords are only available before they are hashed at account creation.
+            $password = (string) ($recipient['password'] ?? '');
+            if ($role === 'staff' || $password === '' || $this->looksLikeStoredPasswordHash($password)) {
+                $reset_page = $role === 'staff' ? 'site/forgotpassword' : 'site/ufpassword';
+                $recipient['password'] = 'Use Forgot Password to set a new password: ' . site_url($reset_page);
+            }
+
+            // Mailer logs subjects. Only the email body may include a password.
+            $title = $this->renderComposeTemplate($data['title'], $recipient, false);
+            $message = $this->renderComposeTemplate($data['message'], $recipient);
+            if ($this->mailer->send_mail($email, $title, $message, $_FILES)) {
+                $sent++;
+            } else {
+                $failed++;
+            }
+        }
+
+        $result = 'Accepted for delivery: ' . $sent . '. Failed: ' . $failed
+            . '. Skipped (missing email or active login): ' . $skipped . '.';
+        if ($sent === 0) {
+            echo json_encode(array('status' => 1, 'msg' => array('email' => '<li>' . $result . '</li>')));
+            return;
+        }
+
+        // Record the template, without the rendered login details.
+        $this->messages_model->add($data);
+        echo json_encode(array('status' => 0, 'msg' => $result));
+    }
+
+    private function renderComposeTemplate($template, $values, $include_password = true)
     {
         if ($template === "" || empty($values) || !is_array($values)) {
             return $template;
@@ -872,6 +838,9 @@ class Mailsms extends Admin_Controller
         $values = $this->suppressStoredPasswordHashes($values);
         $replace = array();
         foreach ($values as $key => $value) {
+            if (!$include_password && stripos((string) $key, 'password') !== false) {
+                $value = '';
+            }
             if (is_scalar($value) || $value === null) {
                 $replace['{{' . $key . '}}'] = (string) $value;
             }
@@ -913,7 +882,7 @@ class Mailsms extends Admin_Controller
         return preg_match('/^\$(2y|2a|2b|argon2i|argon2id)\$/', $value) === 1;
     }
 
-    private function getGroupComposeRecipients($userlisting)
+    private function getGroupComposeRecipients($userlisting, $for_login_credentials = false)
     {
         $user_array = array();
         $current_session_name = $this->setting_model->getCurrentSessionName();
@@ -924,7 +893,7 @@ class Mailsms extends Admin_Controller
 
         foreach ($userlisting as $users_key => $users_value) {
             if ($users_value == "student") {
-                $student_array = $this->student_model->get();
+                $student_array = $for_login_credentials ? $this->student_model->get(null, true) : $this->student_model->get();
                 if (!empty($student_array)) {
                     foreach ($student_array as $student_key => $student_value) {
                         $student_name = $this->customlib->getFullName(
@@ -935,7 +904,7 @@ class Mailsms extends Admin_Controller
                             $this->sch_setting_detail->lastname
                         );
 
-                        $user_array[] = array_merge($student_value, array(
+                        $recipient = array_merge($student_value, array(
                             'user_id' => $student_value['id'],
                             'email' => $student_value['email'],
                             'mobileno' => $student_value['mobileno'],
@@ -947,6 +916,12 @@ class Mailsms extends Admin_Controller
                             'school_name' => $this->sch_setting_detail->name,
                             'current_session_name' => $current_session_name,
                         ));
+                        if ($for_login_credentials) {
+                            $recipient['credential_role'] = 'student';
+                            $recipient['credential_account_id'] = ($student_value['login_is_active'] ?? '') === 'yes'
+                                ? (int) $student_value['login_account_id'] : 0;
+                        }
+                        $user_array[] = $recipient;
                     }
                 }
             } else if ($users_value == "parent") {
@@ -962,7 +937,7 @@ class Mailsms extends Admin_Controller
                             $this->sch_setting_detail->lastname
                         );
 
-                        $user_array[] = array_merge($parent_value, array(
+                        $recipient = array_merge($parent_value, array(
                             'user_id' => $parent_value['id'],
                             'email' => $parent_value['guardian_email'],
                             'mobileno' => $parent_value['guardian_phone'],
@@ -976,6 +951,12 @@ class Mailsms extends Admin_Controller
                             'school_name' => $this->sch_setting_detail->name,
                             'current_session_name' => $current_session_name,
                         ));
+                        if ($for_login_credentials) {
+                            $recipient['credential_role'] = 'parent';
+                            $recipient['credential_account_id'] = ($parent_login['role'] ?? '') === 'parent'
+                                && ($parent_login['is_active'] ?? '') === 'yes' ? (int) $parent_login['id'] : 0;
+                        }
+                        $user_array[] = $recipient;
                     }
                 }
             } else if (is_numeric($users_value)) {
@@ -983,7 +964,7 @@ class Mailsms extends Admin_Controller
                 if (!empty($staff)) {
                     foreach ($staff as $staff_key => $staff_value) {
                         $staff_name = trim($staff_value['name'] . ' ' . $staff_value['surname']);
-                        $user_array[] = array_merge($staff_value, array(
+                        $recipient = array_merge($staff_value, array(
                             'user_id' => $staff_value['id'],
                             'email' => $staff_value['email'],
                             'mobileno' => $staff_value['contact_no'],
@@ -995,6 +976,13 @@ class Mailsms extends Admin_Controller
                             'school_name' => $this->sch_setting_detail->name,
                             'current_session_name' => $current_session_name,
                         ));
+                        if ($for_login_credentials) {
+                            $recipient['credential_role'] = 'staff';
+                            $recipient['credential_account_id'] = (int) $staff_value['id'];
+                            $recipient['username'] = trim((string) $staff_value['email']);
+                            $recipient['url'] = site_url('site/login');
+                        }
+                        $user_array[] = $recipient;
                     }
                 }
             }
