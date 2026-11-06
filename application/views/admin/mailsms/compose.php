@@ -110,6 +110,7 @@ $external_email_draft = isset($external_email_draft) && is_array($external_email
                                             <div class="alert alert-info" id="notification_template_notice" style="display:none;">
                                                 <strong>Template copied from Notification Setting.</strong> You can edit this message before sending; it will not update the saved template.
                                                 <div id="notification_template_variables" class="mt5"></div>
+                                                <div id="login_credential_notice" class="mt5" style="display:none;">Staff receive their login email address and a link to Forgot Password. Students and guardians receive their portal usernames.</div>
                                             </div>
                                             <div class="form-group">
                                                 <label><?php echo $this->lang->line('title'); ?></label><small class="req"> *</small>
@@ -821,6 +822,7 @@ $external_email_draft = isset($external_email_draft) && is_array($external_email
         var config = composeNotifications[selectedTemplate] || composeNotifications.custom;
 
         toggleComposeAudience(config);
+        $('#login_credential_notice').toggle(selectedTemplate === 'login_credential');
 
         if (selectedTemplate === 'custom') {
             $('#notification_template_notice').hide();
