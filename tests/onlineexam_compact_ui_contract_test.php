@@ -99,6 +99,7 @@ compact_ui_assert(strpos($review, "html_escape(\$column['assessment'])") === fal
 compact_ui_assert(strpos($review, '.review-cell { display:inline-block; width:auto;') !== false, 'Review result buttons must size to their content.');
 compact_ui_assert(strpos($review, 'review-student') !== false && strpos($review, 'position:sticky') !== false, 'The review matrix needs a stable student column while papers scroll.');
 compact_ui_assert(strpos($review, 'table-responsive onlineexam-scroll review-scroll') !== false, 'The class review needs a contained responsive table.');
+compact_ui_assert(preg_match('/\.onlineexam-review\s+\.review-scroll\s*\{[^}]*overflow-y\s*:\s*auto\s*;/', $review) === 1, 'The review scroller needs an explicit vertical overflow rule to override the theme.');
 compact_ui_assert(strpos($review, 'Incident register') === false && strpos($review, 'Automatic result-posting ledger') === false, 'Internal incident and posting ledgers must not clutter the class review.');
 $review_cell = compact_ui_source('application/views/admin/onlineexam/_review_cell.php');
 compact_ui_assert(strpos($review_cell, 'Reschedule this paper') !== false && strpos($review_cell, 'Record score from a supervised paper exam') !== false, 'Missed-paper recovery actions must be available from the review cell.');
