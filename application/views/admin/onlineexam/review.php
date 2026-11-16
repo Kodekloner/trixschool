@@ -10,7 +10,7 @@
 .onlineexam-review .review-table thead .review-student { z-index:2; background:#f6f8fa; }
 .onlineexam-review .review-cell { display:inline-block; width:auto; max-width:100%; min-height:0; white-space:nowrap; padding:4px 9px; }
 .onlineexam-review .review-subtitle { display:block; margin-top:4px; font-weight:normal; }
-.onlineexam-review .review-scroll { max-height:70vh; }
+.onlineexam-review .review-scroll { max-height:70vh; overflow-y:auto; }
 .onlineexam-review .review-table thead th { position:sticky; top:0; z-index:1; }
 #onlineexam-review-modal .modal-dialog { max-width:640px; width:calc(100% - 20px); margin:24px auto; }
 #onlineexam-review-modal .modal-body { overflow-wrap:anywhere; }
