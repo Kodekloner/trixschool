@@ -258,44 +258,6 @@
                                         </div>
                                     </div>
 
-                                    <div class="col-md-6">
-                                        <div class="form-group row">
-                                            <label class="col-sm-6"> <?php echo $this->lang->line('biometric') . " " . $this->lang->line('attendance'); ?></label>
-                                            <div class="col-sm-6">
-                                                <label class="radio-inline">
-                                                    <input type="radio" name="biometric" value="0" <?php
-                                                    if (!$result->biometric) {
-                                                        echo "checked";
-                                                    }
-                                                    ?> ><?php echo $this->lang->line('disabled'); ?>
-                                                </label>
-                                                <label class="radio-inline">
-                                                    <input type="radio" name="biometric" value="1" <?php
-                                                    if ($result->biometric) {
-                                                        echo "checked";
-                                                    }
-                                                    ?>><?php echo $this->lang->line('enabled'); ?>
-                                                </label>
-
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-12">
-                                            <div class="form-group">
-                                                <label class="col-sm-3"> <?php echo $this->lang->line('devices') . " (" . $this->lang->line('seprate') . " " . $this->lang->line('by') . " " . $this->lang->line('coma') . ")"; ?> </label>
-                                                <div class="col-sm-9">
-
-                                                    <input type="text" class="form-control" id="name" name="biometric_device" value="<?php echo $result->biometric_device; ?>">
-                                                    <span class="text-danger"><?php echo form_error('biometric_device'); ?></span>
-                                                </div>
-
-
-                                            </div>
-                                        </div>
-
-                                    </div>
                                 </div><!--./row-->
 
 
@@ -610,35 +572,6 @@
 
 
                                 </div><!--./row-->
-                                <div class="row">
-                                    <div class="col-md-12">
-                                        <div class="settinghr"></div>
-                                        <h4 class="session-head"><?php echo $this->lang->line('online_examination'); ?></h4>
-                                    </div><!--./col-md-12-->
-
-                                    <div class="col-md-6">
-                                        <div class="form-group row">
-                                            <label class="col-sm-4"><?php echo $this->lang->line('show_me_only_my_question'); ?></label>
-                                            <div class="col-sm-8">
-                                                <label class="radio-inline">
-                                                    <input type="radio" name="my_question" value="0" <?php
-                                                    if ($result->my_question == 0) {
-                                                        echo "checked";
-                                                    }
-                                                    ?>  ><?php echo $this->lang->line('disabled'); ?>
-                                                </label>
-                                                <label class="radio-inline">
-                                                    <input type="radio" name="my_question" value="1" <?php
-                                                    if ($result->my_question == 1) {
-                                                        echo "checked";
-                                                    }
-                                                    ?> ><?php echo $this->lang->line('enabled'); ?>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-								</div><!--./row-->
-
                                 <div class="row">
                                     <div class="col-md-12">
                                         <div class="settinghr"></div>

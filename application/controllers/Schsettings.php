@@ -263,8 +263,6 @@ class Schsettings extends Admin_Controller
 				'sch_is_rtl'                => form_error('sch_is_rtl'),
 				'theme'                     => form_error('theme'),
 				'adm_start_from'            => form_error('adm_start_from'),
-				'biometric_device'          => form_error('biometric_device'),
-				'biometric'                 => form_error('biometric'),
 				'adm_prefix'                => form_error('adm_prefix'),
 				'adm_no_digit'              => form_error('adm_no_digit'),
 				'staffid_start_from'        => form_error('staffid_start_from'),
@@ -310,13 +308,10 @@ class Schsettings extends Admin_Controller
 				'staffid_no_digit'          => $this->input->post('staffid_no_digit'),
 				'staffid_auto_insert'       => $this->input->post('staffid_auto_insert'),
 				'class_teacher'             => $this->input->post('class_teacher'),
-				'biometric_device'          => $this->input->post('biometric_device'),
-				'biometric'                 => $this->input->post('biometric'),
 				'is_duplicate_fees_invoice' => $this->input->post('is_duplicate_fees_invoice'),
 				'app_primary_color_code'    => $this->input->post('app_primary_color_code'),
 				'app_secondary_color_code'  => $this->input->post('app_secondary_color_code'),
 				'mobile_api_url'            => $this->input->post('mobile_api_url'),
-				'my_question'               => $this->input->post('my_question'),
 
 			);
 			$this->session->userdata['admin']['is_rtl'] = $this->input->post('sch_is_rtl');
